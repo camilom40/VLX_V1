@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('./partials/_head.ejs'); %>
+  <title>Request User and Password</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <%- include('./partials/_header.ejs'); %>
+
+  <div class="container mx-auto mt-16">
+    <div class="max-w-2xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+      <div class="bg-gray-800 p-6">
+        <h1 class="text-3xl font-bold text-white text-center">Request User and Password</h1>
+      </div>
+      <div class="p-6">
+        <form action="/request-user" method="POST">
+          <!-- First Name -->
+          <div class="mb-6">
+            <label for="firstName" class="block text-gray-700 font-semibold mb-2">First Name</label>
+            <input 
+              type="text" 
+              id="firstName" 
+              name="firstName" 
+              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500" 
+              placeholder="Enter your first name" 
+              required>
+          </div>
+          <!-- Last Name -->
+          <div class="mb-6">
+            <label for="lastName" class="block text-gray-700 font-semibold mb-2">Last Name</label>
+            <input 
+              type="text" 
+              id="lastName" 
+              name="lastName" 
+              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500" 
+              placeholder="Enter your last name" 
+              required>
+          </div>
+            <!-- Company -->
+            <div class="mb-6">
+              <label for="company" class="block text-gray-700 font-semibold mb-2">Company</label>
+              <input 
+                type="text" 
+                id="company" 
+                name="company" 
+                class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500" 
+                placeholder="Enter your company name" 
+                required>
+            </div>
+          <!-- Role in the Company -->
+          <div class="mb-6">
+            <label for="role" class="block text-gray-700 font-semibold mb-2">Role in the Company</label>
+            <input 
+              type="text" 
+              id="role" 
+              name="role" 
+              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500" 
+              placeholder="Enter your role in the company" 
+              required>
+          </div>
+          <!-- Email -->
+          <div class="mb-6">
+            <label for="email" class="block text-gray-700 font-semibold mb-2">Email</label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500" 
+              placeholder="Enter your email" 
+              required>
+          </div>
+        
+          <!-- City -->
+          <div class="mb-6">
+            <label for="city" class="block text-gray-700 font-semibold mb-2">City</label>
+            <input 
+              type="text" 
+              id="city" 
+              name="city" 
+              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500" 
+              placeholder="Enter your city" 
+              required>
+          </div>
+          <!-- Country -->
+          <div class="mb-6">
+            <label for="country" class="block text-gray-700 font-semibold mb-2">Country</label>
+            <input 
+              type="text" 
+              id="country" 
+              name="country" 
+              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500" 
+              placeholder="Enter your country" 
+              required>
+          </div>
+          <!-- Phone -->
+          <div class="mb-6">
+            <label for="phone" class="block text-gray-700 font-semibold mb-2">Phone</label>
+            <div class="flex space-x-4">
+              <!-- Dropdown for area code -->
+              <select 
+                id="areaCode" 
+                name="areaCode" 
+                class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                <option value="+213">Algeria (+213)</option>
+                <option value="+54">Argentina (+54)</option>
+                <option value="+61">Australia (+61)</option>
+                <option value="+32">Belgium (+32)</option>
+                <option value="+591">Bolivia (+591)</option>
+                <option value="+55">Brazil (+55)</option>
+                <option value="+56">Chile (+56)</option>
+                <option value="+86">China (+86)</option>
+                <option value="+57">Colombia (+57)</option>
+                <option value="+20">Egypt (+20)</option>
+                <option value="+358">Finland (+358)</option>
+                <option value="+33">France (+33)</option>
+                <option value="+995">Georgia (+995)</option>
+                <option value="+49">Germany (+49)</option>
+                <option value="+91">India (+91)</option>
+                <option value="+62">Indonesia (+62)</option>
+                <option value="+98">Iran (+98)</option>
+                <option value="+964">Iraq (+964)</option>
+                <option value="+972">Israel (+972)</option>
+                <option value="+39">Italy (+39)</option>
+                <option value="+81">Japan (+81)</option>
+                <option value="+254">Kenya (+254)</option>
+                <option value="+60">Malaysia (+60)</option>
+                <option value="+52">Mexico (+52)</option>
+                <option value="+373">Moldova (+373)</option>
+                <option value="+212">Morocco (+212)</option>
+                <option value="+31">Netherlands (+31)</option>
+                <option value="+64">New Zealand (+64)</option>
+                <option value="+234">Nigeria (+234)</option>
+                <option value="+47">Norway (+47)</option>
+                <option value="+92">Pakistan (+92)</option>
+                <option value="+970">Palestine (+970)</option>
+                <option value="+595">Paraguay (+595)</option>
+                <option value="+51">Peru (+51)</option>
+                <option value="+63">Philippines (+63)</option>
+                <option value="+7">Russia (+7)</option>
+                <option value="+966">Saudi Arabia (+966)</option>
+                <option value="+65">Singapore (+65)</option>
+                <option value="+27">South Africa (+27)</option>
+                <option value="+82">South Korea (+82)</option>
+                <option value="+34">Spain (+34)</option>
+                <option value="+94">Sri Lanka (+94)</option>
+                <option value="+46">Sweden (+46)</option>
+                <option value="+41">Switzerland (+41)</option>
+                <option value="+255">Tanzania (+255)</option>
+                <option value="+66">Thailand (+66)</option>
+                <option value="+216">Tunisia (+216)</option>
+                <option value="+90">Turkey (+90)</option>
+                <option value="+380">Ukraine (+380)</option>
+                <option value="+971">United Arab Emirates (+971)</option>
+                <option value="+44">United Kingdom (+44)</option>
+                <option value="+1">United States/Canada (+1)</option>
+                <option value="+598">Uruguay (+598)</option>
+                <option value="+256">Uganda (+256)</option>
+                <option value="+58">Venezuela (+58)</option>
+                <option value="+260">Zambia (+260)</option>
+                <option value="+263">Zimbabwe (+263)</option>
+              </select>
+              <!-- Input for phone number -->
+              <input 
+                type="tel" 
+                id="phone" 
+                name="phone" 
+                class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500" 
+                placeholder="Enter your phone number" 
+                required>
+            </div>
+          </div>
+          <!-- Submit Button -->
+          <button 
+            type="submit" 
+            class="w-full bg-gray-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+            Submit
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div>
+    -
+  </div>
+  <%- include('./partials/_footer.ejs'); %>
+</body>
+</html>

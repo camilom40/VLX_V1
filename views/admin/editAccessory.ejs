@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/_head.ejs') %>
+    <title>Edit Accessory</title>
+    <!-- Include Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <%- include('../partials/_header.ejs') %>
+    <div class="container mx-auto mt-10 flex-grow">
+        <h1 class="text-3xl font-bold mb-5">Edit Accessory</h1>
+        <form action="/admin/accessories/update/<%= accessory._id %>" method="POST" class="bg-white p-6 rounded-lg shadow-md">
+            <div class="mb-4">
+                <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                <input type="text" id="name" name="name" value="<%= accessory.name %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="mb-4">
+                <label for="unit" class="block text-sm font-medium text-gray-700">Unit</label>
+                <input type="text" id="unit" name="unit" value="<%= accessory.unit %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="mb-4">
+                <label for="price" class="block text-sm font-medium text-gray-700">Price Per Unit $</label>
+                <input type="number" step="0.01" id="price" name="price" value="<%= accessory.price %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="mb-4">
+                <label for="weight" class="block text-sm font-medium text-gray-700">Weight (kg)</label>
+                <input type="number" step="0.01" id="weight" name="weight" value="<%= accessory.weight %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="flex items-center justify-between">
+                <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-800">Update Accessory</button>
+                <a href="/admin/accessories" class="text-blue-600 hover:text-blue-900">Cancel</a>
+            </div>
+        </form>
+    </div>
+    <%- include('../partials/_footer.ejs') %>
+    <script src="/js/main.js"></script>
+</body>
+</html>

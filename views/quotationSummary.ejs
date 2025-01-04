@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotation Summary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <%- include('partials/_head.ejs') %>
+</head>
+
+<body class="bg-gray-100">
+    <%- include('partials/_header.ejs') %>
+
+    <div class="container mx-auto mt-8">
+        <h1 class="text-3xl font-semibold mb-4">Quotation Summary</h1>
+
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h2 class="text-xl font-semibold mb-4">Project: <%= quotation.projectName %></h2>
+            <h3 class="text-lg font-semibold mb-4">Client: <%= quotation.clientName %></h3>
+            <ul class="list-disc ml-6 mb-8">
+                <% quotation.windows.forEach(function(window, index) { %>
+                    <li class="mb-4">
+                        <h3 class="text-lg font-semibold mb-2">Window <%= index + 1 %>:</h3>
+                        <ul class="list-disc ml-6">
+                            <li>Width: <%= window.width %> mm</li>
+                            <li>Height: <%= window.height %> mm</li>
+                            <li>System Type: <%= window.systemType %></li>
+                            <li>Aluminum Color: <%= window.aluminumColor %></li>
+                            <% if(window.glass) { %>
+                                <li>Glass Type: <%= window.glass.type %></li>
+                                <li>Glass Color: <%= window.glass.color %></li>
+                                <% if(typeof window.glass.pricePerSquareMeter !== 'undefined') { %>
+                                    <li>Price per Square Meter: <%= window.glass.pricePerSquareMeter.toFixed(2) %></li>
+                                <% } else { %>
+                                    <li>Price per Square Meter: Not Available</li>
+                                <% } %>
+                                <% if(typeof window.glass.weight !== 'undefined') { %>
+                                    <li>Weight: <%= window.glass.weight.toFixed(2) %></li>
+                                <% } else { %>
+                                    <li>Weight: Not Available</li>
+                                <% } %>
+                            <% } %>
+                            <li>Energetical LowE: <%= window.energeticalLowE ? 'Yes' : 'No' %></li>
+                            <% window.accessories.forEach(function(accessory) { %>
+                                <% if(typeof accessory.price !== 'undefined' && typeof accessory.weight !== 'undefined') { %>
+                                    <li>Accessory: <%= accessory.name %>, Price: <%= accessory.price.toFixed(2) %>, Weight: <%= accessory.weight.toFixed(2) %></li>
+                                <% } else { %>
+                                    <li>Accessory: <%= accessory.name %>, Price: Not Available, Weight: Not Available</li>
+                                <% } %>
+                            <% }); %>
+                        </ul>
+                    </li>
+                <% }); %>
+            </ul>
+            <% if(typeof totalPrice !== 'undefined') { %>
+                <h3 class="text-lg font-semibold mb-4">Total Price: $ <%= totalPrice.toFixed(2) %></h3>
+            <% } else { %>
+                <h3 class="text-lg font-semibold mb-4">Total Price: Calculation Error</h3>
+            <% } %>
+            <div class="flex space-x-4" style="padding-bottom: 2.5rem;">
+                <a href="/quotation/add-window/<%= quotation._id %>"
+                    class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md focus:outline-none focus:shadow-outline">Add
+                    More Windows</a>
+                <a href="/export-quotation/<%= quotation._id %>"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-md focus:outline-none focus:shadow-outline">Finalize
+                    and Export to PDF</a>
+            </div>
+            <div style="margin-top: 1 rem;">
+
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/_footer.ejs') %>
+</body>
+
+</html>

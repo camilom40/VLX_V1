@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/_head.ejs'); %>
+  <title>Admin Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <%- include('../partials/_header.ejs'); %>
+
+  <div class="container mx-auto mt-10">
+    <div class="flex justify-center items-center mb-8">
+      <img src="/images/Accesory_icon.png" alt="Admin Console Icon" class="w-10 h-10 mr-3" />
+      <h1 class="text-4xl font-bold text-gray-800">Admin Console</h1>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Card for managing accessories -->
+      <a href="/admin/accessories" class="block p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold mb-2 text-gray-800">Manage Accessories</h2>
+            <p class="text-gray-600">View, add, edit, or delete accessories.</p>
+          </div>
+          <div class="w-12 h-12 bg-blue-500 flex items-center justify-center rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              
+            </svg>
+          </div>
+        </div>
+      </a>
+      <!-- Card for managing glass types -->
+      <a href="/admin/glasses" class="block p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold mb-2 text-gray-800">Manage Glass Types</h2>
+            <p class="text-gray-600">View, add, edit, or delete glass types.</p>
+          </div>
+          <div class="w-12 h-12 bg-green-500 flex items-center justify-center rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              
+            </svg>
+          </div>
+        </div>
+      </a>
+      <!-- Card for managing profiles -->
+      <a href="/admin/profiles" class="block p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold mb-2 text-gray-800">Manage Profiles</h2>
+            <p class="text-gray-600">View, add, edit, or delete profiles.</p>
+          </div>
+          <div class="w-12 h-12 bg-red-500 flex items-center justify-center rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              
+            </svg>
+          </div>
+        </div>
+      </a>
+      <!-- Card for managing cost settings -->
+      <a href="/admin/settings" class="block p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold mb-2 text-gray-800">Manage Cost Settings</h2>
+            <p class="text-gray-600">View and update cost settings.</p>
+          </div>
+          <div class="w-12 h-12 bg-yellow-500 flex items-center justify-center rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              
+            </svg>
+          </div>
+        </div>
+      </a>
+      <!-- Card for managing window systems -->
+      <a href="/admin/compose-window" class="block p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold mb-2 text-gray-800">Create Window Systems</h2>
+            <p class="text-gray-600">Configure window systems.</p>
+          </div>
+          <div class="w-12 h-12 bg-purple-500 flex items-center justify-center rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              
+            </svg>
+          </div>
+        </div>
+      </a>
+      <!-- Card for showing all window systems -->
+      <a href="/admin/list-window-systems" class="block p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold mb-2 text-gray-800">Show All Window Systems</h2>
+            <p class="text-gray-600">View all created window systems.</p>
+          </div>
+          <div class="w-12 h-12 bg-indigo-500 flex items-center justify-center rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              
+            </svg>
+          </div>
+        </div>
+      </a>
+      <!-- Card for viewing registered users -->
+      <a href="/admin/users" class="block p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold mb-2 text-gray-800">View Users</h2>
+            <p class="text-gray-600">See all registered users and their details.</p>
+          </div>
+          <div class="w-12 h-12 bg-teal-500 flex items-center justify-center rounded-lg">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              
+            </svg>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <%- include('../partials/_footer.ejs'); %>
+</body>
+</html>

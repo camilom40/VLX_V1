@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/_head.ejs'); %>
+  <title>Create Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .error {
+      color: red;
+      margin-top: 5px;
+      display: none;
+    }
+    .bg-header-blue {
+      background-color: #1e3a8a; /* Custom blue color */
+    }
+    .bg-header-blue:hover {
+      background-color: #1e40af; /* Darker blue on hover */
+    }
+    .input-padding {
+      padding: 10px; /* Add padding inside the text input */
+      line-height: 1.5; /* Adjust line height to prevent text cut off */
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+  <%- include('../partials/_header.ejs'); %>
+  <main class="flex-grow p-6">
+    <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Create Profile</h1>
+    <form id="createProfileForm" action="/admin/profiles/add" method="POST" class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Profile Name</label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline input-padding" id="name" name="name" type="text" placeholder="Enter profile name" required>
+        <div id="nameError" class="error">Profile name cannot contain spaces.</div>
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="color">Color</label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline input-padding" id="color" name="color" type="text" placeholder="Enter color" required>
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="colorCode">Color Code</label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline input-padding" id="colorCode" name="colorCode" type="text" placeholder="Enter color code" required>
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="pricePerMeter">Price Per Meter COP</label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline input-padding" id="pricePerMeter" name="pricePerMeter" type="number" step="0.01" placeholder="Enter price per meter" required>
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="weight">Weight Kg</label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline input-padding" id="weight" name="weight" type="number" step="0.01" placeholder="Enter weight" required>
+      </div>
+      <div class="flex items-center justify-between">
+        <button class="bg-header-blue hover:bg-header-blue text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" type="button" onclick="validateAndSubmit()">Create Profile</button>
+        <a href="/admin/profiles" class="text-blue-600 hover:text-blue-900">Cancel</a>
+      </div>
+    </form>
+  </main>
+  <%- include('../partials/_footer.ejs'); %>
+  <script>
+    function validateAndSubmit() {
+      const name = document.getElementById('name').value.trim();
+      
+      if (/\s/.test(name)) {
+        document.getElementById('nameError').style.display = 'block';
+        return;
+      } else {
+        document.getElementById('nameError').style.display = 'none';
+        document.getElementById('createProfileForm').submit();
+      }
+    }
+  </script>
+</body>
+</html>

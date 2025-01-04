@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Create Accessory</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .error {
+      color: red;
+      margin-top: 5px;
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 p-6">
+  <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Create Accessory</h1>
+  <form id="createAccessoryForm" action="/admin/accessories/add" method="POST" class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
+    <div class="mb-4">
+      <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Accessory Name</label>
+      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" name="name" type="text" placeholder="Enter accessory name" required>
+      <div id="nameError" class="error">Accessory name cannot contain spaces.</div>
+    </div>
+    <div class="mb-4">
+      <label class="block text-gray-700 text-sm font-bold mb-2" for="price">Price</label>
+      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="price" name="price" type="number" step="0.01" placeholder="Enter price" required>
+    </div>
+    <div class="mb-4">
+      <label class="block text-gray-700 text-sm font-bold mb-2" for="weight">Weight</label>
+      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="weight" name="weight" type="number" step="0.01" placeholder="Enter weight">
+    </div>
+    <div class="mb-4">
+      <label class="block text-gray-700 text-sm font-bold mb-2" for="unit">Unit</label>
+      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="unit" name="unit" type="text" placeholder="Enter unit" required>
+    </div>
+    <div class="flex items-center justify-between">
+      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="button" onclick="validateAndSubmit()">Create Accessory</button>
+    </div>
+  </form>
+  <script>
+    function validateAndSubmit() {
+      const name = document.getElementById('name').value.trim();
+      
+      if (/\s/.test(name)) {
+        document.getElementById('nameError').style.display = 'block';
+        return;
+      } else {
+        document.getElementById('nameError').style.display = 'none';
+        document.getElementById('createAccessoryForm').submit();
+      }
+    }
+  </script>
+</body>
+</html>

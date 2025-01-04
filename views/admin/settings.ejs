@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/_head.ejs') %>
+  <title>Global Cost Settings</title>
+  <!-- Include Tailwind CSS for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    function updateTime() {
+      const now = new Date();
+      const formattedTime = now.toLocaleString();
+      document.getElementById('current-time').textContent = formattedTime;
+    }
+
+    async function updateExchangeRate() {
+      try {
+        const response = await fetch('/admin/api/exchange-rate');
+        const data = await response.json();
+        document.getElementById('exchange-rate').textContent = `$${data.usdToCopRate} COP`;
+      } catch (error) {
+        console.error('Failed to update exchange rate:', error);
+      }
+    }
+
+    function formatCurrency(value) {
+      const number = parseFloat(value.replace(/[^0-9.-]+/g, "")).toFixed(2);
+      return isNaN(number) ? '' : `$${number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    }
+
+    function formatInput(event) {
+      const input = event.target;
+      const value = input.value.replace(/[^0-9.]/g, '');
+      const formattedValue = formatCurrency(value);
+      input.value = formattedValue;
+    }
+
+    function cleanCurrency(value) {
+      return parseFloat(value.replace(/[$,]/g, ''));
+    }
+
+    function cleanFormValues() {
+      const fields = ['seaFreight', 'landFreight', 'packaging', 'labor', 'indirectCosts', 'administrativeExpenses'];
+      fields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) {
+          input.value = cleanCurrency(input.value);
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+      updateTime(); // Set initial time
+      setInterval(updateTime, 1000); // Update time every second
+
+      updateExchangeRate(); // Set initial exchange rate
+      setInterval(updateExchangeRate, 10000); // Update exchange rate every 10 seconds
+
+      // Apply initial formatting and add event listeners
+      const fields = ['seaFreight', 'landFreight', 'packaging', 'labor', 'indirectCosts', 'administrativeExpenses'];
+      fields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) {
+          input.value = formatCurrency(input.value);
+          input.addEventListener('blur', formatInput);
+        }
+      });
+    });
+
+    async function handleImportFormSubmit(event) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      try {
+        const response = await fetch('/admin/import-settings', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        alert(result.message);
+        if (response.ok) {
+          location.reload();
+        }
+      } catch (error) {
+        console.error('Failed to import data:', error);
+        alert('Failed to import data');
+        location.reload();
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100">
+  <%- include('../partials/_header.ejs') %>
+  <main class="py-8">
+    <div class="container mx-auto px-4">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h1 class="text-3xl font-bold">Global Cost Settings</h1>
+          <p style="color: darkred;" class="text-lg font-semibold">Current USD to COP Exchange Rate: <span id="exchange-rate">$<%= usdToCopRate %> COP</span></p>
+        </div>
+        <p class="text-sm text-gray-500" id="current-time"></p>
+      </div>
+      <div class="flex justify-between items-center mb-5">
+        <div class="flex space-x-4">
+          <a href="/admin/export-settings" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Export to Excel</a>
+        </div>
+        <form id="import-form" onsubmit="handleImportFormSubmit(event)" method="POST" enctype="multipart/form-data" class="flex space-x-2 items-center">
+          <input type="file" name="file" accept=".xlsx" class="bg-white text-gray-800 border border-gray-300 rounded py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Import from Excel</button>
+        </form>
+        
+      </div>
+      <h3 style="font-size:large; margin-bottom: 1.5rem; color: darkred;">All Costs are in $COP</h3>
+      <form action="/admin/settings" method="post" onsubmit="cleanFormValues()">
+        <div class="mb-4">
+          <label for="seaFreight" class="block font-semibold mb-2">Sea Freight Per Container</label>
+          <input type="text" id="seaFreight" name="seaFreight" value="<%= settings ? settings.seaFreight : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="mb-4">
+          <label for="landFreight" class="block font-semibold mb-2">Land Freight Per Container</label>
+          <input type="text" id="landFreight" name="landFreight" value="<%= settings ? settings.landFreight : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="mb-4">
+          <label for="packaging" class="block font-semibold mb-2">Packaging Cost Per Window</label>
+          <input type="text" id="packaging" name="packaging" value="<%= settings ? settings.packaging : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="mb-4">
+          <label for="labor" class="block font-semibold mb-2">Labor MOF Per Window</label>
+          <input type="text" id="labor" name="labor" value="<%= settings ? settings.labor : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="mb-4">
+          <label for="indirectCosts" class="block font-semibold mb-2">Indirect Costs of Fabrication CIF Per Window</label>
+          <input type="text" id="indirectCosts" name="indirectCosts" value="<%= settings ? settings.indirectCosts : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="mb-4">
+          <label for="administrativeExpenses" class="block font-semibold mb-2">Administrative Expenses Per Container</label>
+          <input type="text" id="administrativeExpenses" name="administrativeExpenses" value="<%= settings ? settings.administrativeExpenses : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="flex justify-between">
+          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:bg-blue-600">Save Settings</button>
+          <a href="/admin" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Back to Admin Console</a>
+        </div>
+      </form>
+    </div>
+  </main>
+  <%- include('../partials/_footer.ejs') %>
+</body>
+</html>

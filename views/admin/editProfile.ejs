@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/_head.ejs') %>
+  <title>Edit Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .input-padding {
+      padding-left: 10px; /* Add padding inside the text input */
+    }
+    .bg-header-blue {
+      background-color: #1e3a8a; /* Custom blue color */
+    }
+    .bg-header-blue:hover {
+      background-color: #1e40af; /* Darker blue on hover */
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <%- include('../partials/_header.ejs') %>
+  <div class="container mx-auto mt-10 flex-grow">
+    <h1 class="text-2xl font-bold mb-5">Edit Profile</h1>
+    <form action="/admin/profiles/update/<%= profile._id %>" method="POST" class="bg-white p-6 rounded-lg shadow-md">
+      <div class="mb-4">
+        <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+        <input type="text" id="name" name="name" value="<%= profile.name %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
+      </div>
+      <div class="mb-4">
+        <label for="color" class="block text-sm font-medium text-gray-700">Color</label>
+        <input type="text" id="color" name="color" value="<%= profile.color %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
+      </div>
+      <div class="mb-4">
+        <label for="colorCode" class="block text-sm font-medium text-gray-700">Color Code</label>
+        <input type="text" id="colorCode" name="colorCode" value="<%= profile.colorCode %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
+      </div>
+      <div class="mb-4">
+        <label for="pricePerMeter" class="block text-sm font-medium text-gray-700">Price Per Meter COP</label>
+        <input type="number" step="0.01" id="pricePerMeter" name="pricePerMeter" value="<%= profile.pricePerMeter %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
+      </div>
+      <div class="mb-4">
+        <label for="weight" class="block text-sm font-medium text-gray-700">Weight Kg/m</label>
+        <input type="number" step="0.01" id="weight" name="weight" value="<%= profile.weight %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
+      </div>
+      <div class="flex items-center justify-between">
+        <button type="submit" class="bg-header-blue hover:bg-header-blue text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">Update Profile</button>
+        <a href="/admin/profiles" class="text-blue-600 hover:text-blue-900">Cancel</a>
+      </div>
+    </form>
+  </div>
+  <%- include('../partials/_footer.ejs') %>
+</body>
+</html>

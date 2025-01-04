@@ -1,0 +1,41 @@
+# Ignore system files and directories
+.DS_Store
+Thumbs.db
+
+# Ignore editor/IDE files
+*.swp
+*~
+
+# Ignore compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Ignore dependency directories
+node_modules/
+bower_components/
+
+# Ignore log files and temp files
+*.log
+*.tmp
+*.temp
+
+# Ignore environment-specific files
+.env
+.env.local
+
+# Ignore package-lock.json for npm
+package-lock.json
+
+# Ignore IDE project files
+.idea/
+.vscode/
+
+# Ignore OS generated files
+.DS_Store
+ehthumbs.db
+Icon?
+Thumbs.db
+
+uploads/
