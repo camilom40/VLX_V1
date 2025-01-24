@@ -8,6 +8,8 @@ const isAuthenticated = (req, res, next) => {
   }
 };
 
+
+
 const isAdmin = async (req, res, next) => {
   try {
     if (!req.session.userId) {

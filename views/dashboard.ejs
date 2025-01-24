@@ -5,50 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <%- include('partials/_head.ejs') %>
+    <%- include('partials/_head.ejs') %> <!-- Include any shared head content -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
 </head>
 
 <body class="bg-gray-100">
-    <%- include('partials/_header.ejs') %>
+    <%- include('partials/_header.ejs') %> <!-- Include header -->
 
     <main role="main" class="container mx-auto mt-4">
         <h2 class="text-2xl font-semibold mb-4">Dashboard</h2>
         <div class="bg-white p-8 rounded-lg shadow-md">
-            <p class="mb-4" style="font-weight: 700; font-size: 1.5rem;">Welcome to your dashboard. Here you can manage your quotations and add new windows to them.</p>
-            <a href="/quotation/create-quotation"
-                class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600 mb-4 inline-block">Create
-                New Quotation</a>
-            <p class="mb-4">Or select an existing quotation to add windows or view the summary:</p>
-            <% if (quotations && quotations.length > 0) { %>
-                <ul>
-                    <% quotations.forEach(function(quotation) { %>
-                        <li class="mb-4">
-                            <a href="/quotation/add-window/<%= quotation._id %>"
-                                class="text-blue-500 hover:underline"><%= quotation.projectName %> - <%= quotation.clientName %></a>
-                            <ul class="list-disc ml-6 mb-2">
-                                <% quotation.windows.forEach(function(window) { %>
-                                    <li>System Type: <%= window.systemType %>, Width: <%= window.width %>mm, Height: <%= window.height %>mm, Glass Type: <%= window.glassType %>, Color: <%= window.aluminumColor %></li>
-                                <% }); %>
-                            </ul>
-                            <a href="/quotation/export-quotation/<%= quotation._id %>"
-                                class="bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:bg-gray-400">Export
-                                to PDF</a>
-                            <a href="/quotation/quotation-summary/<%= quotation._id %>"
-                                class="bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:bg-gray-400 ml-2">View
-                                Summary</a>
-                        </li>
-                    <% }); %>
-                </ul>
-            <% } else { %>
-                <p>No existing quotations found. Create a new one to get started.</p>
-            <% } %>
+            <p class="mb-4" style="font-weight: 700; font-size: 1.5rem;">Welcome to your dashboard.</p>
+            <p>Here you can manage your content, view your information, or take other actions.</p>
         </div>
     </main>
 
-    <%- include('partials/_footer.ejs') %>
-    <script src="/js/main.js"></script>
+    <%- include('partials/_footer.ejs') %> <!-- Include footer -->
 </body>
 
 </html>

@@ -88,31 +88,35 @@ router.post('/auth/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ username: email });
     if (!user) {
+      console.log('Login failed: User not found');
       return res.status(400).send('User not found');
     }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch) {
       req.session.userId = user._id;
       req.session.isAdmin = user.role === 'admin';
 
+      console.log(`Session set: userId=${req.session.userId}, isAdmin=${req.session.isAdmin}`);
+
       // Update the lastLogin field
       user.lastLogin = new Date();
-      await user.save(); // Save the updated user document
-
+      await user.save();
 
       console.log(`User ${email} logged in successfully.`);
-      res.redirect('/quotation/dashboard'); // Redirecting to dashboard after successful login
+      return res.redirect('/dashboard');
     } else {
+      console.log('Login failed: Incorrect password');
       return res.status(400).send(`
-      <script>
-        alert('Wrong Password. Please Try Again!');
-        window.location.href = '/auth/login'; 
-      </script>
-    `);
+        <script>
+          alert('Wrong Password. Please Try Again!');
+          window.location.href = '/auth/login'; 
+        </script>
+      `);
     }
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).send(error.message);
+    return res.status(500).send('Internal Server Error');
   }
 });
 

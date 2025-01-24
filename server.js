@@ -5,7 +5,6 @@ const express = require("express");
 const session = require("express-session");
 const MongoStore = require('connect-mongo');
 const authRoutes = require("./routes/authRoutes");
-const quotationRoutes = require('./routes/quotationRoutes');
 // const pdfExportRoutes = require('./routes/pdfExportRoutes');
 const accessoryRoutes = require('./routes/admin/accessoryRoutes');
 const glassRoutes = require('./routes/admin/glassRoutes');
@@ -14,6 +13,9 @@ const settingsRoutes = require('./routes/admin/settingsRoutes');
 const { isAdmin } = require('./routes/middleware/adminMiddleware');
 // const windowSystemConfigRoutes = require('./routes/admin/windowSystemConfigRoutes');
 const windowRoutes = require('./routes/admin/windowRoutes'); // Correctly import the routes
+const dashboardRoutes = require('./routes/dashboardRoutes'); // Adjust path if required
+
+
 
 
 
@@ -79,11 +81,12 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use('/dashboard', dashboardRoutes);
+
 // Authentication Routes
 app.use(authRoutes);
 
 // Quotation Routes
-app.use('/quotation', quotationRoutes);
 app.use('/admin/accessories', accessoryRoutes);
 app.use('/admin/glasses', glassRoutes);
 
@@ -98,8 +101,7 @@ app.get('/admin', isAdmin, (req, res) => {
   res.render('admin/adminConsole');
 });
 
- // Import the routes
-app.use('/admin', windowRoutes); // Mount the admin routes
+
 
 // Window Routes
 app.use('/admin', windowRoutes);
@@ -112,11 +114,10 @@ app.use('/admin', windowRoutes);
 // Root path response
 app.get("/", (req, res) => {
   const sess = req.session;
-  // Make session available to all views
   res.locals.session = sess;
-  if(sess.userId){
-    res.redirect("/quotation/dashboard");
-  }else{
+  if (sess.userId) {
+    res.redirect("/dashboard");
+  } else {
     res.redirect("/auth/login");
   }
 });
