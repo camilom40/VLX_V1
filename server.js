@@ -72,6 +72,14 @@ app.use((req, res, next) => {
   const sess = req.session;
   // Make session available to all views
   res.locals.session = sess;
+  
+  // Add isAdmin flag to session for view rendering
+  if (sess.role === 'admin') {
+    res.locals.session.isAdmin = true;
+  } else {
+    res.locals.session.isAdmin = false;
+  }
+  
   if (!sess.views) {
     sess.views = 1;
     console.log("Session created at: ", new Date().toISOString());
