@@ -1,51 +1,548 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Create Accessory</title>
+  <%- include('../partials/_head.ejs') %>
+  <title>Add New Accessory</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .error {
-      color: red;
-      margin-top: 5px;
-      display: none;
+    .form-input {
+      @apply rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200;
+    }
+    /* Highlight and enhance text fields */
+    input[type="text"], input[type="number"], select {
+      @apply bg-blue-50 border-blue-200 hover:border-blue-300 py-3;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      @apply bg-white border-blue-500 ring-4 ring-blue-100 shadow-md transform scale-[1.01];
+    }
+    select {
+      @apply appearance-none bg-blue-50 cursor-pointer pl-10 pr-8;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563EB'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      background-size: 1.5em 1.5em;
+    }
+    .input-with-icon {
+      @apply relative;
+    }
+    .input-icon {
+      @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 pointer-events-none z-10;
+    }
+    .form-label {
+      @apply block text-sm font-medium text-gray-700 mb-1;
+    }
+    /* Make required fields more noticeable */
+    .required-field {
+      @apply text-red-500 ml-1 text-lg leading-none relative top-[3px];
+    }
+    .form-help-text {
+      @apply text-xs text-gray-500 mt-1;
+    }
+    .error-message {
+      @apply text-red-600 text-sm mt-1 hidden;
+    }
+    /* Make buttons stand out more */
+    .btn-primary {
+      @apply bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium py-2.5 px-6 rounded-md shadow-sm hover:shadow-md transition duration-300 ease-in-out transform hover:-translate-y-0.5;
+    }
+    .btn-secondary {
+      @apply bg-gradient-to-r from-gray-500 to-gray-400 hover:from-gray-600 hover:to-gray-500 text-white font-medium py-2.5 px-6 rounded-md shadow-sm hover:shadow-md transition duration-300 ease-in-out transform hover:-translate-y-0.5;
+    }
+    .input-group {
+      @apply relative;
+    }
+    /* Enhance input group styling */
+    .input-group-text {
+      @apply absolute right-0 top-0 h-full px-3 flex items-center bg-blue-100 text-blue-700 font-medium border border-l-0 border-blue-200 rounded-r-md transition-all duration-200;
+    }
+    input:focus + .input-group-text {
+      @apply border-blue-500 bg-blue-200 text-blue-700;
+    }
+    .form-section {
+      @apply border-b border-gray-200 pb-5 mb-5;
+    }
+    .form-section:last-child {
+      @apply border-b-0 pb-0 mb-0;
+    }
+    .form-card {
+      @apply bg-white rounded-lg shadow-md p-6 mb-6 transition-all duration-300;
+    }
+    .form-card:hover {
+      @apply shadow-lg;
+    }
+    .tooltip {
+      @apply relative inline-block ml-2;
+    }
+    .tooltip .tooltip-text {
+      @apply invisible absolute z-10 w-60 bg-gray-900 text-white text-xs rounded-md p-2 -ml-28 mt-2 bottom-full opacity-0 transition-opacity duration-300;
+    }
+    .tooltip:hover .tooltip-text {
+      @apply visible opacity-100;
+    }
+    .tooltip .tooltip-text::after {
+      content: " ";
+      @apply absolute top-full left-2/4 -ml-1 border-4 border-t-gray-900 border-x-transparent border-b-transparent;
+    }
+    .switch {
+      @apply relative inline-block w-11 h-6;
+    }
+    .switch input {
+      @apply opacity-0 w-0 h-0;
+    }
+    .slider {
+      @apply absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-300 transition-all duration-300 rounded-full;
+    }
+    .slider:before {
+      content: "";
+      @apply absolute left-1 bottom-1 bg-white w-4 h-4 transition-all duration-300 rounded-full;
+    }
+    input:checked + .slider {
+      @apply bg-blue-600;
+    }
+    input:focus + .slider {
+      @apply ring-2 ring-blue-300;
+    }
+    input:checked + .slider:before {
+      @apply transform translate-x-5;
     }
   </style>
 </head>
-<body class="bg-gray-100 p-6">
-  <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Create Accessory</h1>
-  <form id="createAccessoryForm" action="/admin/accessories/add" method="POST" class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
-    <div class="mb-4">
-      <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Accessory Name</label>
-      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="name" name="name" type="text" placeholder="Enter accessory name" required>
-      <div id="nameError" class="error">Accessory name cannot contain spaces.</div>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <%- include('../partials/_header.ejs') %>
+
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-3xl font-bold flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600">
+            Add New Accessory
+          </span>
+        </h1>
+        <p class="text-gray-600 mt-1 ml-11">Create a new window system accessory item</p>
+      </div>
+      <a href="/admin/accessories" class="btn-secondary flex items-center text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Accessories
+      </a>
     </div>
-    <div class="mb-4">
-      <label class="block text-gray-700 text-sm font-bold mb-2" for="price">Price</label>
-      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="price" name="price" type="number" step="0.01" placeholder="Enter price" required>
-    </div>
-    <div class="mb-4">
-      <label class="block text-gray-700 text-sm font-bold mb-2" for="weight">Weight</label>
-      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="weight" name="weight" type="number" step="0.01" placeholder="Enter weight">
-    </div>
-    <div class="mb-4">
-      <label class="block text-gray-700 text-sm font-bold mb-2" for="unit">Unit</label>
-      <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="unit" name="unit" type="text" placeholder="Enter unit" required>
-    </div>
-    <div class="flex items-center justify-between">
-      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="button" onclick="validateAndSubmit()">Create Accessory</button>
-    </div>
-  </form>
-  <script>
-    function validateAndSubmit() {
-      const name = document.getElementById('name').value.trim();
+
+    <div class="max-w-3xl mx-auto">
+      <div class="form-card">
+        <form id="createAccessoryForm" action="/admin/accessories/add" method="POST" class="space-y-6">
+          <!-- Name field -->
+          <div class="form-section">
+            <label for="name" class="form-label flex items-center">
+              <span class="text-blue-600 font-semibold">Accessory Name</span> 
+              <span class="required-field">*</span>
+              <div class="tooltip">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="tooltip-text">Enter a unique identifier for the accessory. Use descriptive names without spaces.</span>
+              </div>
+            </label>
+            <div class="mt-1 input-with-icon">
+              <div class="input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <input type="text" id="name" name="name" required class="form-input w-full pl-10" 
+                  placeholder="Enter accessory name (no spaces)" maxlength="50" autocomplete="off">
+            </div>
+            <div id="nameError" class="error-message">Accessory name cannot contain spaces.</div>
+            <p class="form-help-text">Example: WindowHinge, CornerJoint, WeatherSeal (no spaces allowed)</p>
+          </div>
+          
+          <!-- Reference Number field -->
+          <div class="form-section">
+            <label for="referenceNumber" class="form-label flex items-center">
+              <span class="text-indigo-600 font-semibold">Reference Number</span>
+              <span class="required-field">*</span>
+              <div class="tooltip">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="tooltip-text">Enter a unique reference number to identify this accessory.</span>
+              </div>
+            </label>
+            <div class="input-with-icon">
+              <div class="input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                </svg>
+              </div>
+              <input type="text" id="referenceNumber" name="referenceNumber" required class="form-input w-full pl-10" 
+                  placeholder="Enter reference number" maxlength="50" autocomplete="off">
+            </div>
+            <div id="referenceNumberError" class="error-message">Reference number is required.</div>
+            <p class="form-help-text">Example: ACC-001, WIN-HINGE-23, etc.</p>
+          </div>
+          
+          <!-- Provider Name field -->
+          <div class="form-section">
+            <label for="providerName" class="form-label flex items-center">
+              <span class="text-purple-600 font-semibold">Provider Company</span>
+              <div class="tooltip">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="tooltip-text">Enter the name of the company that provides this accessory.</span>
+              </div>
+            </label>
+            <div class="input-with-icon">
+              <div class="input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <input type="text" id="providerName" name="providerName" class="form-input w-full pl-10" 
+                  placeholder="Enter provider company name (optional)" maxlength="100" autocomplete="off">
+            </div>
+            <p class="form-help-text">Name of the supplier or manufacturer (optional)</p>
+          </div>
+          
+          <!-- Unit field -->
+          <div class="form-section">
+            <label for="unit" class="form-label">
+              <span class="text-sky-600 font-semibold">Unit Type</span>
+              <span class="required-field">*</span>
+            </label>
+            <div class="flex">
+              <div class="w-3/4 pr-2">
+                <select id="unit" name="unit" required class="form-input w-full">
+                  <option value="">-- Select Unit Type --</option>
+                  <option value="piece">Piece</option>
+                  <option value="meter">Meter</option>
+                  <option value="set">Set</option>
+                  <option value="pair">Pair</option>
+                  <option value="kit">Kit</option>
+                  <option value="roll">Roll</option>
+                  <option value="sheet">Sheet</option>
+                  <option value="custom">Custom Unit...</option>
+                </select>
+              </div>
+              <div id="customUnitContainer" class="w-1/4 pl-2 hidden">
+                <input type="text" id="customUnit" class="form-input w-full" placeholder="Enter custom unit">
+              </div>
+            </div>
+            <p class="form-help-text">The unit type determines how this accessory is measured or sold</p>
+          </div>
+          
+          <!-- Price field -->
+          <div class="form-section">
+            <label for="price" class="form-label">
+              <span class="text-emerald-600 font-semibold">Price Per Unit (COP)</span>
+              <span class="required-field">*</span>
+            </label>
+            <div class="flex items-center">
+              <div class="input-with-icon w-full">
+                <div class="input-icon">
+                  <span class="text-blue-500 font-medium">$</span>
+                </div>
+                <input type="number" id="price" name="price" step="1" min="0" required 
+                    class="form-input w-full pl-10 pr-16" placeholder="0">
+                <div class="input-group-text">COP</div>
+              </div>
+            </div>
+            <div id="priceError" class="error-message">Price must be a positive number.</div>
+            <p class="form-help-text">Enter whole numbers only, without decimal places or commas</p>
+          </div>
+          
+          <!-- Weight field -->
+          <div class="form-section">
+            <label for="weight" class="form-label">
+              <span class="text-amber-600 font-semibold">Weight (Optional)</span>
+            </label>
+            <div class="input-with-icon">
+              <div class="input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2M6 5v2m12-2v2" />
+                </svg>
+              </div>
+              <input type="number" id="weight" name="weight" step="0.01" min="0" class="form-input w-full pl-10 pr-14" placeholder="0.00">
+              <div class="input-group-text">kg</div>
+            </div>
+            <div id="weightError" class="error-message">Weight must be a positive number.</div>
+            <p class="form-help-text">Leave empty if weight is not applicable or unknown</p>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="flex justify-end space-x-4 pt-6 mt-6 border-t border-gray-100">
+            <a href="/admin/accessories" class="btn-secondary">Cancel</a>
+            <button type="button" id="submitBtn" class="btn-primary flex items-center shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Create Accessory
+            </button>
+          </div>
+        </form>
+      </div>
       
-      if (/\s/.test(name)) {
-        document.getElementById('nameError').style.display = 'block';
-        return;
-      } else {
-        document.getElementById('nameError').style.display = 'none';
-        document.getElementById('createAccessoryForm').submit();
+      <!-- Accessory Types Suggestion Box -->
+      <div class="bg-blue-50 border border-blue-100 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Common Accessory Types
+        </h3>
+        <p class="text-blue-800 mb-4">Here are some suggestions for common window accessory types:</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="bg-white p-3 rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-50" onclick="prefillForm('LockingHandle', 'piece', 55000, 0.25)">
+            <span class="font-medium">Hardware</span>: Handles, locks, hinges, operators
+          </div>
+          <div class="bg-white p-3 rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-50" onclick="prefillForm('WeatherStripSeal', 'meter', 15000, 0.1)">
+            <span class="font-medium">Weatherstripping</span>: Seals, gaskets, caulking
+          </div>
+          <div class="bg-white p-3 rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-50" onclick="prefillForm('WindowTrim', 'set', 120000, 1.5)">
+            <span class="font-medium">Finishing</span>: Trims, caps, covers, sills
+          </div>
+          <div class="bg-white p-3 rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-50" onclick="prefillForm('ExtensionJamb', 'piece', 85000, 2.3)">
+            <span class="font-medium">Extension Jambs</span>: Side, head, sill jambs
+          </div>
+          <div class="bg-white p-3 rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-50" onclick="prefillForm('ScreenMesh', 'roll', 150000, 0.75)">
+            <span class="font-medium">Screens</span>: Mesh, frame, fasteners
+          </div>
+          <div class="bg-white p-3 rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-50" onclick="prefillForm('InstallationKit', 'kit', 65000, 0.5)">
+            <span class="font-medium">Installation</span>: Screws, shims, flashing
+          </div>
+        </div>
+        <p class="text-xs text-blue-700 mt-4">Click on any category to quickly prefill the form with example values (prices in COP)</p>
+      </div>
+    </div>
+  </main>
+  
+  <%- include('../partials/_footer.ejs') %>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const nameInput = document.getElementById('name');
+      const nameError = document.getElementById('nameError');
+      const priceInput = document.getElementById('price');
+      const priceError = document.getElementById('priceError');
+      const weightInput = document.getElementById('weight');
+      const weightError = document.getElementById('weightError');
+      const unitSelect = document.getElementById('unit');
+      const customUnitContainer = document.getElementById('customUnitContainer');
+      const customUnitInput = document.getElementById('customUnit');
+      const form = document.getElementById('createAccessoryForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const includeTaxCheckbox = document.getElementById('includeTax');
+      const referenceNumberInput = document.getElementById('referenceNumber');
+      const referenceNumberError = document.getElementById('referenceNumberError');
+      
+      // Handle custom unit selection
+      unitSelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+          customUnitContainer.classList.remove('hidden');
+          customUnitInput.required = true;
+          customUnitInput.focus();
+        } else {
+          customUnitContainer.classList.add('hidden');
+          customUnitInput.required = false;
+        }
+      });
+      
+      // Validate name
+      nameInput.addEventListener('input', validateName);
+      
+      // Validate reference number
+      referenceNumberInput.addEventListener('input', validateReferenceNumber);
+      
+      // Validate price
+      priceInput.addEventListener('input', validatePrice);
+      
+      // Handle tax inclusion
+      includeTaxCheckbox.addEventListener('change', function() {
+        if (this.checked && priceInput.value) {
+          const currentPrice = parseFloat(priceInput.value);
+          if (!isNaN(currentPrice)) {
+            // Add 19% tax (Colombian IVA)
+            const priceWithTax = Math.round(currentPrice * 1.19);
+            priceInput.value = priceWithTax;
+          }
+        } else if (!this.checked && priceInput.value) {
+          const currentPrice = parseFloat(priceInput.value);
+          if (!isNaN(currentPrice)) {
+            // Remove the 19% tax
+            const priceWithoutTax = Math.round(currentPrice / 1.19);
+            priceInput.value = priceWithoutTax;
+          }
+        }
+      });
+      
+      // Validate weight
+      weightInput.addEventListener('input', validateWeight);
+      
+      // Form submission
+      submitBtn.addEventListener('click', function() {
+        // Run all validations
+        validateName();
+        validateReferenceNumber();
+        validatePrice();
+        validateWeight();
+        
+        // Add visual indication that the button was clicked
+        this.classList.add('animate-pulse');
+        setTimeout(() => {
+          this.classList.remove('animate-pulse');
+        }, 300);
+        
+        // Check if custom unit is selected and has value
+        if (unitSelect.value === 'custom') {
+          if (!customUnitInput.value.trim()) {
+            customUnitInput.classList.add('border-red-500', 'ring', 'ring-red-200');
+            customUnitInput.focus();
+            return;
+          } else {
+            customUnitInput.classList.remove('border-red-500', 'ring', 'ring-red-200');
+            unitSelect.value = customUnitInput.value.trim();
+          }
+        }
+        
+        // Check if the form is valid
+        if (form.checkValidity() && !nameError.classList.contains('block') && 
+            !priceError.classList.contains('block') && !weightError.classList.contains('block') &&
+            !referenceNumberError.classList.contains('block')) {
+          
+          // Show loading state
+          submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Creating...';
+          submitBtn.disabled = true;
+          
+          form.submit();
+        } else {
+          // Trigger browser's built-in validation
+          const invalidFields = form.querySelectorAll(':invalid');
+          if (invalidFields.length > 0) {
+            invalidFields[0].focus();
+            invalidFields[0].classList.add('border-red-500', 'ring', 'ring-red-200');
+            setTimeout(() => {
+              invalidFields[0].classList.remove('border-red-500', 'ring', 'ring-red-200');
+            }, 2000);
+          }
+        }
+      });
+      
+      function validateName() {
+        const name = nameInput.value.trim();
+        if (/\s/.test(name)) {
+          nameError.textContent = 'Accessory name cannot contain spaces.';
+          nameError.classList.remove('hidden');
+          nameError.classList.add('block');
+          nameInput.classList.add('border-red-500');
+          return false;
+        } else if (name.length === 0) {
+          nameError.textContent = 'Accessory name is required.';
+          nameError.classList.remove('hidden');
+          nameError.classList.add('block');
+          nameInput.classList.add('border-red-500');
+          return false;
+        } else {
+          nameError.classList.remove('block');
+          nameError.classList.add('hidden');
+          nameInput.classList.remove('border-red-500');
+          return true;
+        }
       }
+      
+      function validateReferenceNumber() {
+        const refNumber = referenceNumberInput.value.trim();
+        if (refNumber.length === 0) {
+          referenceNumberError.textContent = 'Reference number is required.';
+          referenceNumberError.classList.remove('hidden');
+          referenceNumberError.classList.add('block');
+          referenceNumberInput.classList.add('border-red-500');
+          return false;
+        } else {
+          referenceNumberError.classList.remove('block');
+          referenceNumberError.classList.add('hidden');
+          referenceNumberInput.classList.remove('border-red-500');
+          return true;
+        }
+      }
+      
+      function validatePrice() {
+        const price = parseFloat(priceInput.value);
+        if (isNaN(price) || price < 0) {
+          priceError.classList.remove('hidden');
+          priceError.classList.add('block');
+          priceInput.classList.add('border-red-500');
+          return false;
+        } else {
+          priceError.classList.remove('block');
+          priceError.classList.add('hidden');
+          priceInput.classList.remove('border-red-500');
+          return true;
+        }
+      }
+      
+      function validateWeight() {
+        if (weightInput.value.trim() === '') {
+          // Weight is optional, so empty is fine
+          weightError.classList.remove('block');
+          weightError.classList.add('hidden');
+          weightInput.classList.remove('border-red-500');
+          return true;
+        }
+        
+        const weight = parseFloat(weightInput.value);
+        if (isNaN(weight) || weight < 0) {
+          weightError.classList.remove('hidden');
+          weightError.classList.add('block');
+          weightInput.classList.add('border-red-500');
+          return false;
+        } else {
+          weightError.classList.remove('block');
+          weightError.classList.add('hidden');
+          weightInput.classList.remove('border-red-500');
+          return true;
+        }
+      }
+    });
+    
+    // Function to prefill the form
+    function prefillForm(name, unit, price, weight) {
+      const nameInput = document.getElementById('name');
+      const unitSelect = document.getElementById('unit');
+      const priceInput = document.getElementById('price');
+      const weightInput = document.getElementById('weight');
+      const customUnitContainer = document.getElementById('customUnitContainer');
+      const customUnitInput = document.getElementById('customUnit');
+      
+      // Set values with a small animation
+      nameInput.classList.add('ring', 'ring-blue-300');
+      setTimeout(() => nameInput.classList.remove('ring', 'ring-blue-300'), 1000);
+      nameInput.value = name;
+      
+      unitSelect.classList.add('ring', 'ring-blue-300');
+      setTimeout(() => unitSelect.classList.remove('ring', 'ring-blue-300'), 1000);
+      
+      // Handle both standard and custom units
+      if (['piece', 'set', 'meter', 'roll', 'box', 'pair', 'kit'].includes(unit)) {
+        unitSelect.value = unit;
+        customUnitContainer.classList.add('hidden');
+        customUnitInput.required = false;
+      } else {
+        unitSelect.value = 'custom';
+        customUnitContainer.classList.remove('hidden');
+        customUnitInput.value = unit;
+        customUnitInput.required = true;
+      }
+      
+      priceInput.classList.add('ring', 'ring-blue-300');
+      setTimeout(() => priceInput.classList.remove('ring', 'ring-blue-300'), 1000);
+      priceInput.value = price;
+      
+      weightInput.classList.add('ring', 'ring-blue-300');
+      setTimeout(() => weightInput.classList.remove('ring', 'ring-blue-300'), 1000);
+      weightInput.value = weight;
     }
   </script>
 </body>

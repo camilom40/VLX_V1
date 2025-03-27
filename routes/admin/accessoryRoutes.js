@@ -61,8 +61,15 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 // Route to update an accessory
 router.post('/update/:id', isAdmin, async (req, res) => {
   try {
-    const { name, price, weight, unit } = req.body;
-    await Accessory.findByIdAndUpdate(req.params.id, { name, price, weight, unit });
+    const { name, price, weight, unit, referenceNumber, providerName } = req.body;
+    await Accessory.findByIdAndUpdate(req.params.id, { 
+      name, 
+      price, 
+      weight, 
+      unit, 
+      referenceNumber, 
+      providerName 
+    });
     logger.info(`Accessory with ID: ${req.params.id} updated successfully.`);
     res.redirect('/admin/accessories');
   } catch (error) {
@@ -94,16 +101,51 @@ router.get('/export-accessories', isAdmin, async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Accessories');
 
+    // Define all columns to match our displayed data
     worksheet.columns = [
-      { header: 'Name', key: 'name', width: 20 },
-      { header: 'Unit', key: 'unit', width: 10 },
-      { header: 'Price', key: 'price', width: 10 },
-      { header: 'Weight', key: 'weight', width: 10 }
+      { header: 'Reference Number', key: 'referenceNumber', width: 20 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Provider', key: 'providerName', width: 25 },
+      { header: 'Unit', key: 'unit', width: 15 },
+      { header: 'Price', key: 'price', width: 15 },
+      { header: 'Weight', key: 'weight', width: 15 }
     ];
 
+    // Add styling to the header row
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4F46E5' } // Indigo color
+    };
+
+    // Format the data
     accessories.forEach(accessory => {
-      worksheet.addRow(accessory);
+      const row = worksheet.addRow({
+        referenceNumber: accessory.referenceNumber || 'N/A',
+        name: accessory.name,
+        providerName: accessory.providerName || 'Not specified',
+        unit: accessory.unit,
+        price: accessory.price,
+        weight: accessory.weight || 0
+      });
+      
+      // Format price as currency
+      if (row.getCell('price').value) {
+        row.getCell('price').numFmt = '"$"#,##0';
+      }
+      
+      // Format weight with 2 decimal places
+      if (row.getCell('weight').value) {
+        row.getCell('weight').numFmt = '#,##0.00 "kg"';
+      }
     });
+
+    // Auto-filter for all columns
+    worksheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: 1, column: 6 }
+    };
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=accessories.xlsx');
@@ -120,38 +162,65 @@ router.get('/export-accessories', isAdmin, async (req, res) => {
 router.post('/import-accessories', isAdmin, upload.single('file'), async (req, res) => {
   const filePath = req.file.path;
   try {
-    console.log('Starting import process...');
+    logger.info('Starting import process...');
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
     const worksheet = workbook.getWorksheet('Accessories');
     const accessories = [];
 
-    console.log('Reading rows...');
+    logger.info('Reading rows...');
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return; // Skip header row
-      const [name, unit, price, weight] = row.values.slice(1);
-      accessories.push({ name, unit, price, weight });
+      
+      // Extract all values using column keys
+      const [_, referenceNumber, name, providerName, unit, price, weight] = row.values;
+      
+      // Create accessory object with all fields
+      accessories.push({ 
+        referenceNumber: referenceNumber || generateReferenceNumber(name),
+        name, 
+        providerName: providerName || '',
+        unit, 
+        price: parseFloat(price) || 0,
+        weight: weight ? parseFloat(weight) : null
+      });
     });
 
-    console.log('Clearing existing data...');
+    logger.info('Validating data...');
+    // Validate required fields
+    const invalidAccessories = accessories.filter(acc => 
+      !acc.name || !acc.unit || acc.price === undefined
+    );
+    
+    if (invalidAccessories.length > 0) {
+      throw new Error(`${invalidAccessories.length} accessories are missing required fields (name, unit, or price)`);
+    }
+
+    logger.info('Clearing existing data...');
     await Accessory.deleteMany({});
 
-    console.log('Inserting new data...');
+    logger.info('Inserting new data...');
     await Accessory.insertMany(accessories);
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath); // Delete the uploaded file after processing
     }
 
-    console.log('Import process completed successfully.');
+    logger.info('Import process completed successfully.');
     res.json({ message: 'File uploaded successfully!' });
   } catch (error) {
-    console.error('Error importing data:', error);
+    logger.error('Error importing data:', error);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath); // Delete the uploaded file in case of error
     }
     res.status(500).json({ message: `File upload failed: ${error.message}` });
   }
 });
+
+// Helper function to generate reference numbers
+function generateReferenceNumber(name) {
+  if (!name) return `REF-ACC-${Date.now().toString().substring(6)}`;
+  return `REF-${name.substring(0, 4).toUpperCase()}-${Date.now().toString().substring(6)}`;
+}
 
 module.exports = router;
