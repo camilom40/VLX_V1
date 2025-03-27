@@ -1,25 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-<%- include('partials/_head.ejs') %>
-  <body>
-<%- include('partials/_header.ejs') %>
-    <main role="main">
-      <div class="container mt-5">
-        <h2>Login</h2>
-        <form action="/auth/login" method="POST">
-          <div class="mb-3">
-            <input type="text" name="email" placeholder="email" required class="form-control">
+<head>
+  <%- include('partials/_head.ejs') %>
+  <title>Login - VLX System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <%- include('partials/_header.ejs') %>
+  
+  <main class="py-10 flex-grow">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-lg">
+      <div class="md:flex">
+        <div class="w-full p-6">
+          <div class="flex justify-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Login to Your Account</h2>
           </div>
-          <div class="mb-3">
-            <input type="password" name="password" placeholder="Password" required class="form-control">
-          </div>
-          <div class="mb-3">
-            <button type="submit" class="btn btn-primary">Login</button>
-            Don't have an account? <a href="/auth/register">Register</a>
-          </div>
-        </form>
+          
+          <form action="/auth/login" method="POST">
+            <div class="mb-6">
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                placeholder="Enter your email" 
+                required
+              >
+            </div>
+            
+            <div class="mb-6">
+              <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                placeholder="Enter your password" 
+                required
+              >
+            </div>
+            
+            <div class="mb-6">
+              <button 
+                type="submit" 
+                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Sign In
+              </button>
+            </div>
+            
+            <div class="text-center text-sm text-gray-600">
+              Don't have an account? <a href="/auth/register" class="font-medium text-blue-600 hover:text-blue-500">Register here</a>
+            </div>
+          </form>
+        </div>
       </div>
-    </main>
-  </body>
-<%- include('partials/_footer.ejs') %>
+    </div>
+  </main>
+  
+  <%- include('partials/_footer.ejs') %>
+
+  <script>
+    // Any additional JavaScript for the login page can go here
+  </script>
+</body>
 </html>

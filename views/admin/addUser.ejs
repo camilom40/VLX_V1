@@ -3,62 +3,213 @@
 <head>
   <%- include('../partials/_head.ejs'); %>
   <title>Add New User</title>
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs'); %>
 
-  <div class="container mx-auto mt-16">
-    <div class="max-w-md mx-auto bg-white shadow-md rounded-lg overflow-hidden">
-      <div class="bg-gray-800 p-6">
-        <h1 class="text-2xl font-bold text-white text-center">Add New User</h1>
-      </div>
-      <div class="p-6">
-        <form action="/admin/users/add" method="POST">
-          <!-- Username -->
-          <div class="mb-6">
-            <label for="username" class="block text-gray-700 font-semibold mb-2">Username</label>
-            <input 
-              type="text" 
-              id="username" 
-              name="username" 
-              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent" 
-              placeholder="Enter username" 
-              required>
+  <main class="py-8 flex-grow">
+    <div class="max-w-xl mx-auto px-4">
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-brand-blue to-blue-400 p-6">
+          <div class="flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            <h1 class="text-2xl font-bold text-white">Add New User</h1>
           </div>
-          <!-- Password -->
-          <div class="mb-6">
-            <label for="password" class="block text-gray-700 font-semibold mb-2">Password</label>
-            <input 
-              type="password" 
-              id="password" 
-              name="password" 
-              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent" 
-              placeholder="Enter password" 
-              required>
-          </div>
-          <!-- Role -->
-          <div class="mb-6">
-            <label for="role" class="block text-gray-700 font-semibold mb-2">Role</label>
-            <select 
-              id="role" 
-              name="role" 
-              class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent">
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <!-- Submit Button -->
-          <button 
-            type="submit" 
-            class="w-full bg-gray-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-            Add User
-          </button>
-        </form>
+          <p class="text-blue-100 text-center mt-2 max-w-md mx-auto">
+            Create a new user account with appropriate permissions for the VLX System.
+          </p>
+        </div>
+        
+        <div class="p-6 md:p-8">
+          <form action="/admin/users/add" method="POST" class="space-y-6">
+            <!-- Username -->
+            <div class="bg-blue-50 bg-opacity-50 p-4 rounded-lg border border-blue-100 shadow-sm">
+              <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <input 
+                type="text" 
+                id="username" 
+                name="username" 
+                class="appearance-none block w-full px-4 py-3 text-base border border-gray-200 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue" 
+                placeholder="Enter username" 
+                required>
+              <p class="mt-1 text-xs text-gray-500">Username will be used for login purposes</p>
+            </div>
+            
+            <!-- Password -->
+            <div class="bg-blue-50 bg-opacity-50 p-4 rounded-lg border border-blue-100 shadow-sm">
+              <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <div class="relative">
+                <input 
+                  type="password" 
+                  id="password" 
+                  name="password" 
+                  class="appearance-none block w-full px-4 py-3 text-base border border-gray-200 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue" 
+                  placeholder="Enter password" 
+                  required>
+                <button 
+                  type="button" 
+                  id="togglePassword" 
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
+              <div class="flex justify-between mt-2">
+                <p class="text-xs text-gray-500">Create a strong password for security</p>
+                <button 
+                  type="button" 
+                  id="generatePassword" 
+                  class="text-xs text-brand-blue hover:text-brand-blue-dark font-medium">
+                  Generate secure password
+                </button>
+              </div>
+            </div>
+            
+            <!-- Role -->
+            <div class="bg-blue-50 bg-opacity-50 p-4 rounded-lg border border-blue-100 shadow-sm">
+              <label for="role" class="block text-sm font-medium text-gray-700 mb-2">User Role</label>
+              <select 
+                id="role" 
+                name="role" 
+                class="appearance-none block w-full px-4 py-3 text-base border border-gray-200 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue">
+                <option value="user">User</option>
+                <option value="admin">Administrator</option>
+              </select>
+              <p class="mt-1 text-xs text-gray-500">
+                <span class="font-medium">User:</span> Standard access to system features<br>
+                <span class="font-medium">Administrator:</span> Full access to all system features and settings
+              </p>
+            </div>
+            
+            <!-- Pricing Tier -->
+            <div class="bg-blue-50 bg-opacity-50 p-4 rounded-lg border border-blue-100 shadow-sm">
+              <label for="pricingTier" class="block text-sm font-medium text-gray-700 mb-2">Pricing Tier</label>
+              <select 
+                id="pricingTier" 
+                name="pricingTier" 
+                class="appearance-none block w-full px-4 py-3 text-base border border-gray-200 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-blue focus:border-brand-blue">
+                <option value="">Not Set</option>
+                <option value="tier1">Small Volume (< $10k/year)</option>
+                <option value="tier2">Medium Volume ($10k - $50k/year)</option>
+                <option value="tier3">Large Volume ($50k - $250k/year)</option>
+                <option value="tier4">Enterprise Volume (> $250k/year)</option>
+              </select>
+              <p class="mt-1 text-xs text-gray-500">Select the appropriate pricing tier based on expected purchase volume</p>
+            </div>
+            
+            <!-- Information Card -->
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-brand-blue" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-gray-600">
+                    New users will be able to sign in immediately with these credentials. 
+                    Make sure to communicate their login information securely.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex gap-4">
+              <a href="/admin/users" class="w-1/3 flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue transition-colors duration-200">
+                Cancel
+              </a>
+              <button 
+                type="submit" 
+                class="w-2/3 flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-blue hover:bg-brand-blue-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                Create User
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
+  </main>
 
   <%- include('../partials/_footer.ejs'); %>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Password visibility toggle
+      const togglePassword = document.getElementById('togglePassword');
+      const password = document.getElementById('password');
+      
+      togglePassword.addEventListener('click', function() {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        
+        // Change the icon based on password visibility
+        if (type === 'text') {
+          this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+          </svg>`;
+        } else {
+          this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>`;
+        }
+      });
+      
+      // Password generator
+      const generatePassword = document.getElementById('generatePassword');
+      
+      generatePassword.addEventListener('click', function() {
+        // Generate a random password (12-16 characters)
+        const length = Math.floor(Math.random() * 5) + 12; // Length between 12-16
+        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+";
+        let newPassword = "";
+        
+        // Ensure at least one of each character type
+        newPassword += getRandomChar("ABCDEFGHIJKLMNOPQRSTUVWXYZ"); // Uppercase
+        newPassword += getRandomChar("abcdefghijklmnopqrstuvwxyz"); // Lowercase
+        newPassword += getRandomChar("0123456789"); // Number
+        newPassword += getRandomChar("!@#$%^&*()-_=+"); // Special
+        
+        // Fill the rest randomly
+        for (let i = 4; i < length; i++) {
+          newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+        
+        // Shuffle the password characters
+        newPassword = shuffleString(newPassword);
+        
+        // Set the password value
+        password.value = newPassword;
+        
+        // Show the password temporarily
+        password.type = 'text';
+        setTimeout(() => {
+          password.type = 'password';
+          togglePassword.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>`;
+        }, 2000);
+      });
+      
+      function getRandomChar(charset) {
+        return charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+      
+      function shuffleString(str) {
+        const arr = str.split('');
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr.join('');
+      }
+    });
+  </script>
 </body>
 </html>

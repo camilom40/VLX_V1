@@ -9,6 +9,7 @@ const ExcelJS = require('exceljs');
 const upload = multer({ dest: 'uploads/' });
 const fs = require('fs');
 const User = require('../../models/User'); // Adjust the path based on your project structure
+const Project = require('../../models/Project'); // Added for project aggregation
 
 
 // Route to render the compose window form
@@ -31,10 +32,10 @@ router.get('/users/add', async (req, res) => {
 // Route to handle adding a new user
 router.post('/users/add', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, role, pricingTier } = req.body;
 
     // Create a new user
-    const newUser = new User({ username, password, role });
+    const newUser = new User({ username, password, role, pricingTier });
     await newUser.save();
 
     console.log('New user added:', username);
@@ -67,14 +68,10 @@ router.post('/users/update-role', async (req, res) => {
   try {
     const { userId, newRole } = req.body;
 
-    // Find the user and update their role
-    const user = await User.findById(userId);
-    if (user) {
-      user.role = newRole;
-      await user.save();
-      console.log('User role updated:', user.username, 'New Role:', newRole);
-    }
+    // Update the user's role
+    await User.findByIdAndUpdate(userId, { role: newRole });
 
+    console.log('User role updated:', userId, newRole);
     res.redirect('/admin/users');
   } catch (error) {
     console.error('Error updating user role:', error.message);
@@ -82,12 +79,141 @@ router.post('/users/update-role', async (req, res) => {
   }
 });
 
+// Route to handle updating a user's pricing tier
+router.post('/users/update-pricing', async (req, res) => {
+  try {
+    const { userId, pricingTier } = req.body;
+
+    // Update the user's pricing tier
+    await User.findByIdAndUpdate(userId, { pricingTier: pricingTier });
+
+    console.log('User pricing tier updated:', userId, pricingTier);
+    res.redirect('/admin/users');
+  } catch (error) {
+    console.error('Error updating pricing tier:', error.message);
+    res.status(500).send('Error updating pricing tier');
+  }
+});
+
+// Route to get a user's password (for admin view only)
+router.get('/users/get-password/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Only allow for admins
+    if (req.session.user && req.session.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if plainPassword exists
+    if (!user.plainPassword) {
+      // Get at least the hashed password if plain not available
+      return res.json({ password: 'Enter new password to update (original not stored in plaintext)' });
+    }
+    
+    // Return the plain unhashed password
+    res.json({ password: user.plainPassword });
+  } catch (error) {
+    console.error('Error retrieving user password:', error.message);
+    res.status(500).json({ error: 'Error retrieving password' });
+  }
+});
+
+// Route to update a user's password
+router.post('/users/update-password', async (req, res) => {
+  try {
+    const { userId, newPassword } = req.body;
+    
+    // Only allow for admins
+    if (req.session.user && req.session.user.role !== 'admin') {
+      return res.status(403).send('Unauthorized access');
+    }
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+    
+    // Update both the password and plainPassword fields
+    user.password = newPassword; // Will be hashed by the pre-save hook
+    user.plainPassword = newPassword; // Store the plain text version for admin viewing
+    
+    await user.save(); // This will trigger the pre-save hook to hash the password
+    
+    console.log('Password updated for user:', user.username);
+    res.redirect('/admin/users');
+  } catch (error) {
+    console.error('Error updating password:', error.message);
+    res.status(500).send('Error updating password');
+  }
+});
+
+// New route to handle batch update of multiple users
+router.post('/users/update-all', async (req, res) => {
+  try {
+    const { userId, newRole, pricingTier } = req.body;
+    
+    // Check if we have arrays of user IDs and data
+    if (Array.isArray(userId)) {
+      // Process each user update in parallel
+      const updatePromises = userId.map(async (id, index) => {
+        const updateData = {
+          role: newRole[index],
+          pricingTier: pricingTier[index]
+        };
+        
+        // Update the user with the corresponding data
+        return User.findByIdAndUpdate(id, updateData);
+      });
+      
+      // Wait for all updates to complete
+      await Promise.all(updatePromises);
+      
+      console.log(`Batch updated ${userId.length} users`);
+    }
+    
+    // Redirect back to the users page
+    res.redirect('/admin/users');
+  } catch (error) {
+    console.error('Error batch updating users:', error.message);
+    res.status(500).send('Error updating users');
+  }
+});
 
 // Route to view registered users
 router.get('/users', async (req, res) => {
   try {
-    const users = await User.find({}, 'username role lastLogin'); // Fetch specific fields
-    res.render('admin/users', { users });
+    // Fetch users first
+    const users = await User.find({}, 'username role lastLogin pricingTier');
+    
+    // Get project counts for all users in a single efficient query
+    const projectCounts = await Project.aggregate([
+      { $group: { _id: '$userId', count: { $sum: 1 } } }
+    ]);
+    
+    // Convert to a lookup object for easier access
+    const projectCountMap = {};
+    projectCounts.forEach(item => {
+      projectCountMap[item._id.toString()] = item.count;
+    });
+    
+    // Add project count to each user object
+    const usersWithProjects = users.map(user => {
+      const userObj = user.toObject();
+      userObj.projectCount = projectCountMap[user._id.toString()] || 0;
+      return userObj;
+    });
+    
+    res.render('admin/users', { users: usersWithProjects });
   } catch (error) {
     console.error('Error fetching users:', error.message);
     res.status(500).send('Error loading users');

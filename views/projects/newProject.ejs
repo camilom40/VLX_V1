@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create New Project</title>
+    <%- include('../partials/_head.ejs') %>
+    <!-- Load CSS Framework (Tailwind/Bootstrap) -->
+    <script src="https://cdn.tailwindcss.com"></script> <!-- Adjust as needed -->
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <%- include('../partials/_header.ejs') %>
+
+    <main class="container mx-auto mt-10 px-4 flex-grow">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">Create New Project</h2>
+
+        <div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
+            <form action="/projects" method="POST">
+                <div class="mb-4">
+                    <label for="projectName" class="block text-gray-700 font-semibold mb-2">Project Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="projectName" name="projectName" required class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Smith Residence">
+                </div>
+                <div class="mb-6">
+                    <label for="clientName" class="block text-gray-700 font-semibold mb-2">Client Name</label>
+                    <input type="text" id="clientName" name="clientName" class="border border-gray-300 rounded-lg w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., John Smith (Optional)">
+                </div>
+                <div class="flex items-center justify-between">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+                        Create Project
+                    </button>
+                    <a href="/dashboard" class="text-gray-600 hover:text-gray-800">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <%- include('../partials/_footer.ejs') %>
+</body>
+</html>

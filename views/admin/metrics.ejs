@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/_head.ejs'); %>
+  <title>System Metrics - VLX System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+  <script src="/js/metrics-charts.js" defer></script>
+  <style>
+    .metrics-card {
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+    
+    .gauge-container {
+      position: relative;
+      height: 150px;
+    }
+    
+    .gauge-value {
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    
+    .resource-label {
+      position: absolute;
+      bottom: 45px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    
+    .activity-item:not(:last-child) {
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.125rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .good {
+      background-color: #d1fae5;
+      color: #047857;
+    }
+    
+    .warning {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+    
+    .critical {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <%- include('../partials/_header.ejs'); %>
+
+  <!-- Hidden element to store metrics data -->
+  <div id="metricsDataContainer" 
+       data-current-metric='<%- JSON.stringify(currentMetric || {}) %>'
+       data-last24-hours='<%- JSON.stringify(last24Hours || []) %>'
+       data-most-active-users='<%- JSON.stringify(mostActiveUsers || []) %>'
+       style="display: none;"></div>
+
+  <main class="py-10 flex-grow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Page Header -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-gray-700 to-gray-900 p-7">
+          <div class="flex flex-col md:flex-row justify-center items-center text-center md:text-left">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white mb-4 md:mb-0 md:mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <div>
+              <h1 class="text-2xl md:text-3xl font-bold text-white">System Metrics</h1>
+              <p class="text-gray-300 mt-1 max-w-2xl">
+                Monitor system performance and user activity
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- System Status -->
+        <div class="p-6 bg-white border-b border-gray-200">
+          <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center mb-4 md:mb-0">
+              <% 
+                let statusColor = 'bg-green-500';
+                let statusText = 'System Healthy';
+                
+                if (currentMetric) {
+                  if (currentMetric.cpuUsage > 90 || currentMetric.memoryUsage > 90) {
+                    statusColor = 'bg-red-500';
+                    statusText = 'Critical Load';
+                  } else if (currentMetric.cpuUsage > 75 || currentMetric.memoryUsage > 75) {
+                    statusColor = 'bg-yellow-500';
+                    statusText = 'High Load';
+                  }
+                }
+              %>
+              <div class="<%= statusColor %> h-3 w-3 rounded-full mr-2"></div>
+              <span class="font-medium text-gray-900"><%= statusText %></span>
+            </div>
+            
+            <div class="flex space-x-4">
+              <div class="text-sm text-gray-600">
+                <span>Uptime: </span>
+                <span class="font-medium">
+                  <% if (currentMetric && currentMetric.systemUptime) { %>
+                    <% 
+                      const uptime = currentMetric.systemUptime;
+                      const days = Math.floor(uptime / 86400);
+                      const hours = Math.floor((uptime % 86400) / 3600);
+                      const minutes = Math.floor((uptime % 3600) / 60);
+                    %>
+                    <%= days %>d <%= hours %>h <%= minutes %>m
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </span>
+              </div>
+              
+              <div class="text-sm text-gray-600">
+                <span>Last Update: </span>
+                <span class="font-medium">
+                  <% if (currentMetric && currentMetric.updatedAt) { %>
+                    <%= new Date(currentMetric.updatedAt).toLocaleTimeString() %>
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Current Metrics -->
+      <div class="mb-8">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Current System Resources</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- CPU Usage -->
+          <div class="metrics-card bg-white p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">CPU Usage</h3>
+            <div class="gauge-container">
+              <canvas id="cpuGauge"></canvas>
+              <div class="resource-label">Processor</div>
+              <div class="gauge-value">
+                <% if (currentMetric && currentMetric.cpuUsage !== undefined) { %>
+                  <%= currentMetric.cpuUsage.toFixed(1) %>%
+                <% } else { %>
+                  N/A
+                <% } %>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Memory Usage -->
+          <div class="metrics-card bg-white p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Memory Usage</h3>
+            <div class="gauge-container">
+              <canvas id="memoryGauge"></canvas>
+              <div class="resource-label">RAM</div>
+              <div class="gauge-value">
+                <% if (currentMetric && currentMetric.memoryUsage !== undefined) { %>
+                  <%= currentMetric.memoryUsage.toFixed(1) %>%
+                <% } else { %>
+                  N/A
+                <% } %>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Disk Usage -->
+          <div class="metrics-card bg-white p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Disk Usage</h3>
+            <div class="gauge-container">
+              <canvas id="diskGauge"></canvas>
+              <div class="resource-label">Storage</div>
+              <div class="gauge-value">
+                <% if (currentMetric && currentMetric.diskUsage !== undefined) { %>
+                  <%= currentMetric.diskUsage.toFixed(1) %>%
+                <% } else { %>
+                  N/A
+                <% } %>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Active Users -->
+          <div class="metrics-card bg-white p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Active Users</h3>
+            <div class="gauge-container">
+              <canvas id="usersGauge"></canvas>
+              <div class="resource-label">Online</div>
+              <div class="gauge-value">
+                <% if (currentMetric && currentMetric.activeUsers !== undefined) { %>
+                  <%= currentMetric.activeUsers %>
+                <% } else { %>
+                  N/A
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Performance Metrics -->
+      <div class="mb-8">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- CPU & Memory Chart -->
+          <div class="metrics-card bg-white p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-4">CPU & Memory Usage (Last 24 Hours)</h3>
+            <div class="chart-container">
+              <canvas id="resourcesChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Requests & Response Time -->
+          <div class="metrics-card bg-white p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-4">Requests & Response Time (Last 24 Hours)</h3>
+            <div class="chart-container">
+              <canvas id="requestsChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- User Activity & Errors -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Recent User Activity -->
+        <div class="metrics-card bg-white">
+          <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500">Recent User Activity</h3>
+          </div>
+          <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+            <% if (recentActivities && recentActivities.length > 0) { %>
+              <% recentActivities.forEach(activity => { %>
+                <div class="activity-item p-4">
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="font-medium"><%= activity.username %></div>
+                    <div class="text-xs text-gray-500">
+                      <%= new Date(activity.timestamp).toLocaleString() %>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                      <% 
+                        // Format activity type for display
+                        let activityDisplay = activity.activityType.replace(/_/g, ' ');
+                        activityDisplay = activityDisplay.charAt(0).toUpperCase() + activityDisplay.slice(1);
+                        
+                        let resourceInfo = '';
+                        if (activity.resourceType) {
+                          resourceInfo = ` - ${activity.resourceType}`;
+                        }
+                      %>
+                      <%= activityDisplay %><%= resourceInfo %>
+                    </div>
+                    <div>
+                      <% if (activity.successful) { %>
+                        <span class="status-badge good">Success</span>
+                      <% } else { %>
+                        <span class="status-badge critical">Failed</span>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+              <% }); %>
+            <% } else { %>
+              <div class="p-6 text-center text-gray-500">No recent activity recorded</div>
+            <% } %>
+          </div>
+        </div>
+        
+        <!-- Most Active Users -->
+        <div class="metrics-card bg-white">
+          <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h3 class="text-sm font-medium text-gray-500">Most Active Users (Last 30 Days)</h3>
+          </div>
+          <div class="p-6">
+            <% if (mostActiveUsers && mostActiveUsers.length > 0) { %>
+              <div class="chart-container" style="height: 300px;">
+                <canvas id="activeUsersChart"></canvas>
+              </div>
+            <% } else { %>
+              <div class="text-center text-gray-500 py-16">No user activity data available</div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Error Log -->
+      <div class="metrics-card bg-white mb-8">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <h3 class="text-sm font-medium text-gray-500">System Errors</h3>
+        </div>
+        <div class="p-6">
+          <% if (currentMetric && currentMetric.errorDetails && currentMetric.errorDetails.length > 0) { %>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Occurred</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <% currentMetric.errorDetails.forEach(error => { %>
+                    <tr>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= error.errorType %></td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= error.count %></td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <%= new Date(error.lastOccurred).toLocaleString() %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="text-center text-green-500 py-6">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p>No errors detected in the system</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <%- include('../partials/_footer.ejs'); %>
+</body>
+</html> 

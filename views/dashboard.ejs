@@ -4,23 +4,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <%- include('partials/_head.ejs') %> <!-- Include any shared head content -->
+    <title>My Projects Dashboard</title>
+    <%- include('partials/_head.ejs') %>
+    <!-- Use only Tailwind CSS for consistency - no direct Bootstrap import -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Add modern Heroicons for better UI elements -->
+    <script src="https://unpkg.com/heroicons@1.0.6/outline/index.js"></script>
+    <style>
+        .project-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .project-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            @apply bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium py-2.5 px-5 rounded-md shadow-sm hover:shadow transition duration-300 ease-in-out;
+        }
+        .btn-danger {
+            @apply text-red-600 hover:text-red-800 font-medium transition duration-300;
+        }
+        .search-container {
+            position: relative;
+        }
+        .search-container svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6B7280;
+            width: 18px;
+            height: 18px;
+        }
+        .search-input {
+            padding-left: 42px;
+            height: 44px;
+            padding-right: 12px;
+            transition: all 0.2s ease;
+        }
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+        /* Add badge styles for dates */
+        .date-badge {
+            @apply inline-flex items-center text-xs px-2 py-1 rounded-full;
+        }
+        .date-badge-created {
+            @apply bg-indigo-50 text-indigo-700;
+        }
+        .date-badge-updated {
+            @apply bg-green-50 text-green-700;
+        }
+    </style>
 </head>
 
-<body class="bg-gray-100">
-    <%- include('partials/_header.ejs') %> <!-- Include header -->
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <%- include('partials/_header.ejs') %>
 
-    <main role="main" class="container mx-auto mt-4">
-        <h2 class="text-2xl font-semibold mb-4">Dashboard</h2>
-        <div class="bg-white p-8 rounded-lg shadow-md">
-            <p class="mb-4" style="font-weight: 700; font-size: 1.5rem;">Welcome to your dashboard.</p>
-            <p>Here you can manage your content, view your information, or take other actions.</p>
+    <main role="main" class="container mx-auto mt-6 px-4 flex-grow mb-16">
+        <!-- Dashboard Header with Stats -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">My Projects</h2>
+                
+                <div class="flex flex-col sm:flex-row gap-4 items-center">
+                    <!-- Search Box -->
+                    <div class="search-container w-full sm:w-64 md:w-80">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" id="projectSearch" placeholder="Search projects..." 
+                            class="search-input border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
+                    </div>
+                    
+                    <!-- Create New Project Button -->
+                    <a href="/projects/new" class="btn-primary flex items-center justify-center px-6 py-3 text-base rounded-lg shadow-md hover:shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create New Project
+                    </a>
+                </div>
+            </div>
+
+            <!-- Project Stats Summary -->
+            <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    <div class="text-blue-800 text-2xl font-bold"><%= projects.length %></div>
+                    <div class="text-blue-600">Total Projects</div>
+                </div>
+                <div class="bg-green-50 border border-green-100 rounded-lg p-4">
+                    <div class="text-green-800 text-2xl font-bold">
+                    <% 
+                        const today = new Date();
+                        const recentProjects = projects.filter(p => {
+                            const date = p.updatedAt || p.createdAt;
+                            const projectDate = date instanceof Date ? date : new Date(date);
+                            const diffDays = Math.floor((today - projectDate) / (1000 * 60 * 60 * 24));
+                            return diffDays < 30;
+                        });
+                    %>
+                    <%= recentProjects.length %>
+                    </div>
+                    <div class="text-green-600">Recent Activity (30 days)</div>
+                </div>
+                <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
+                    <div class="text-purple-800 text-2xl font-bold">
+                    <% 
+                        // Count unique clients
+                        const uniqueClients = new Set(projects.map(p => p.clientName).filter(name => name));
+                    %>
+                    <%= uniqueClients.size %>
+                    </div>
+                    <div class="text-purple-600">Unique Clients</div>
+                </div>
+            </div>
+            <% } %>
+        </div>
+
+        <!-- Projects List - Card View for Mobile, Table for Larger Screens -->
+        <div class="block lg:hidden">
+            <!-- Card view for mobile/tablet -->
+            <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="projectCardsContainer">
+                    <% projects.forEach(function(project) { %>
+                        <div class="project-card bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100" data-project-name="<%= project.projectName.toLowerCase() %>" data-client-name="<%= (project.clientName || '').toLowerCase() %>">
+                            <div class="border-l-4 border-blue-500 p-4">
+                                <h3 class="font-bold text-gray-800 text-lg mb-2">
+                                    <a href="/projects/<%= project._id %>" class="hover:text-blue-600">
+                                        <%= project.projectName %>
+                                    </a>
+                                </h3>
+                                <p class="text-gray-600 mb-2">
+                                    <span class="font-medium">Client:</span> 
+                                    <%= project.clientName || 'Not specified' %>
+                                </p>
+                                <div class="flex flex-col space-y-2 mb-3">
+                                    <% const updateDate = project.updatedAt || project.createdAt;
+                                       const createDate = project.createdAt; %>
+                                    
+                                    <p class="text-gray-500 text-sm flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span class="font-medium">Created:</span>
+                                        <span class="ml-1 date-badge date-badge-created">
+                                            <%= createDate instanceof Date ? createDate.toLocaleDateString() : (createDate ? new Date(createDate).toLocaleDateString() : 'N/A') %>
+                                        </span>
+                                    </p>
+                                    
+                                    <p class="text-gray-500 text-sm flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span class="font-medium">Updated:</span>
+                                        <span class="ml-1 date-badge date-badge-updated">
+                                            <%= updateDate instanceof Date ? updateDate.toLocaleDateString() : (updateDate ? new Date(updateDate).toLocaleDateString() : 'N/A') %>
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="flex justify-between items-center mt-2">
+                                    <a href="/projects/<%= project._id %>" class="text-blue-600 hover:text-blue-800 font-medium">
+                                        View Details
+                                    </a>
+                                    <button type="button"
+                                            class="btn-danger flex items-center delete-project-btn"
+                                            data-project-id="<%= project._id %>"
+                                            data-project-name="<%= project.projectName %>">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="bg-white p-8 rounded-lg shadow-sm text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p class="text-lg text-gray-600 mb-4">No projects found.</p>
+                    <a href="/projects/new" class="btn-primary inline-flex items-center px-6 py-3 text-base rounded-lg shadow-md hover:shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create Your First Project
+                    </a>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Table view for desktop -->
+        <div class="hidden lg:block">
+            <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
+                <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200" id="projectTable">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created On</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <% projects.forEach(function(project, index) { %>
+                                    <tr class="hover:bg-gray-50 project-row" data-project-name="<%= project.projectName.toLowerCase() %>" data-client-name="<%= (project.clientName || '').toLowerCase() %>">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-800"><%= index + 1 %></div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <a href="/projects/<%= project._id %>" class="text-base font-medium text-blue-600 hover:text-blue-800">
+                                                <%= project.projectName %>
+                                            </a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900"><%= project.clientName || 'N/A' %></div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <% const createDate = project.createdAt; %>
+                                            <div class="text-sm text-gray-500 flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <span class="date-badge date-badge-created">
+                                                    <%= createDate instanceof Date ? createDate.toLocaleDateString() : (createDate ? new Date(createDate).toLocaleDateString() : 'N/A') %>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <% const updateDate = project.updatedAt || project.createdAt; %>
+                                            <div class="text-sm text-gray-500 flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span class="date-badge date-badge-updated">
+                                                    <%= updateDate instanceof Date ? updateDate.toLocaleDateString() : (updateDate ? new Date(updateDate).toLocaleDateString() : 'N/A') %>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div class="flex items-center justify-end space-x-4">
+                                                <a href="/projects/<%= project._id %>" class="text-blue-600 hover:text-blue-800" title="View Details">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                </a>
+                                                <button type="button"
+                                                        class="text-red-600 hover:text-red-800 delete-project-btn"
+                                                        data-project-id="<%= project._id %>"
+                                                        data-project-name="<%= project.projectName %>"
+                                                        title="Delete Project">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <% } else { %>
+                <div class="bg-white p-8 rounded-lg shadow-sm text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p class="text-lg text-gray-600 mb-4">No projects found.</p>
+                    <a href="/projects/new" class="btn-primary inline-flex items-center px-6 py-3 text-base rounded-lg shadow-md hover:shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create Your First Project
+                    </a>
+                </div>
+            <% } %>
         </div>
     </main>
 
-    <%- include('partials/_footer.ejs') %> <!-- Include footer -->
-</body>
+    <%- include('partials/_footer.ejs') %>
 
+    <!-- JavaScript for Handling Delete Button Clicks and Search -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Delete button functionality
+        const deleteButtons = document.querySelectorAll('.delete-project-btn');
+        deleteButtons.forEach(button => {
+          button.addEventListener('click', function(event) {
+            const projectId = this.getAttribute('data-project-id');
+            const projectName = this.getAttribute('data-project-name');
+
+            // Show confirmation dialog with more details
+            if (confirm(`Are you sure you want to delete the project: "${projectName}"?\n\nThis action cannot be undone.`)) {
+              const form = document.createElement('form');
+              form.method = 'POST';
+              form.action = `/projects/delete/${projectId}`;
+              document.body.appendChild(form);
+              form.submit();
+            }
+          });
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('projectSearch');
+        if (searchInput) {
+          searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            // For cards view
+            const projectCards = document.querySelectorAll('#projectCardsContainer .project-card');
+            projectCards.forEach(card => {
+              const projectName = card.getAttribute('data-project-name');
+              const clientName = card.getAttribute('data-client-name');
+              
+              if (projectName.includes(searchTerm) || clientName.includes(searchTerm)) {
+                card.style.display = '';
+              } else {
+                card.style.display = 'none';
+              }
+            });
+            
+            // For table view
+            const projectRows = document.querySelectorAll('#projectTable .project-row');
+            projectRows.forEach(row => {
+              const projectName = row.getAttribute('data-project-name');
+              const clientName = row.getAttribute('data-client-name');
+              
+              if (projectName.includes(searchTerm) || clientName.includes(searchTerm)) {
+                row.style.display = '';
+              } else {
+                row.style.display = 'none';
+              }
+            });
+          });
+        }
+      });
+    </script>
+</body>
 </html>

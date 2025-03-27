@@ -3,6 +3,8 @@ const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const router = express.Router();
 const nodemailer = require('nodemailer');
+const { activityLoggerMiddleware } = require('../utils/activityLogger');
+const activityLogger = require('../utils/activityLogger');
 
 
 
@@ -85,50 +87,100 @@ router.get('/auth/login', (req, res) => {
 
 router.post('/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ username: email });
+    const { username, password } = req.body;
+    
+    // Find user
+    const user = await User.findOne({ username });
     if (!user) {
-      console.log('Login failed: User not found');
-      return res.status(400).send('User not found');
+      // Failed login - user not found
+      return res.render('login', { 
+        error: 'Invalid username or password',
+        username
+      });
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (isMatch) {
-      req.session.userId = user._id;
-      req.session.isAdmin = user.role === 'admin';
-
-      console.log(`Session set: userId=${req.session.userId}, isAdmin=${req.session.isAdmin}`);
-
-      // Update the lastLogin field
-      user.lastLogin = new Date();
-      await user.save();
-
-      console.log(`User ${email} logged in successfully.`);
-      return res.redirect('/dashboard');
-    } else {
-      console.log('Login failed: Incorrect password');
-      return res.status(400).send(`
-        <script>
-          alert('Wrong Password. Please Try Again!');
-          window.location.href = '/auth/login'; 
-        </script>
-      `);
+    
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      // Log failed login attempt
+      if (user._id) {
+        await activityLogger.logUserActivity(
+          user._id,
+          username,
+          'login',
+          {
+            successful: false,
+            failureReason: 'Invalid password',
+            ipAddress: req.ip || req.connection.remoteAddress,
+            userAgent: req.headers['user-agent']
+          }
+        );
+      }
+      
+      return res.render('login', { 
+        error: 'Invalid username or password',
+        username
+      });
     }
+    
+    // Login successful
+    req.session.userId = user._id;
+    req.session.username = user.username;
+    req.session.role = user.role;
+    
+    // Update last login time
+    user.lastLogin = new Date();
+    await user.save();
+    
+    // Log successful login
+    await activityLogger.logUserActivity(
+      user._id,
+      username,
+      'login',
+      {
+        successful: true,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.headers['user-agent']
+      }
+    );
+    
+    res.redirect('/dashboard');
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).send('Internal Server Error');
+    res.render('login', { 
+      error: 'An error occurred during login',
+      username: req.body.username 
+    });
   }
 });
 
-router.get('/auth/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      console.error('Error during session destruction:', err);
-      return res.status(500).send('Error logging out');
+router.get('/auth/logout', async (req, res) => {
+  try {
+    // Log the logout if user is authenticated
+    if (req.session.userId) {
+      await activityLogger.logUserActivity(
+        req.session.userId,
+        req.session.username,
+        'logout',
+        {
+          successful: true,
+          ipAddress: req.ip || req.connection.remoteAddress,
+          userAgent: req.headers['user-agent']
+        }
+      );
     }
-    console.log('User logged out successfully.');
+    
+    // Destroy session
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error destroying session:', err);
+      }
+      res.redirect('/auth/login');
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
     res.redirect('/auth/login');
-  });
+  }
 });
 
 module.exports = router;

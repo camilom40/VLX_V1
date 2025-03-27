@@ -10,10 +10,13 @@ const accessoryRoutes = require('./routes/admin/accessoryRoutes');
 const glassRoutes = require('./routes/admin/glassRoutes');
 const profileRoutes = require('./routes/admin/profileRoutes');
 const settingsRoutes = require('./routes/admin/settingsRoutes');
+const metricsRoutes = require('./routes/admin/metricsRoutes');
 const { isAdmin } = require('./routes/middleware/adminMiddleware');
 // const windowSystemConfigRoutes = require('./routes/admin/windowSystemConfigRoutes');
 const windowRoutes = require('./routes/admin/windowRoutes'); // Correctly import the routes
 const dashboardRoutes = require('./routes/dashboardRoutes'); // Adjust path if required
+const User = require('./models/User'); // Import User model for pricing tier updates
+const systemMonitor = require('./utils/systemMonitor'); // Import system monitor
 
 
 
@@ -25,7 +28,7 @@ if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET) {
 }
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware to parse request bodies
 app.use(express.urlencoded({ extended: true }));
@@ -96,10 +99,35 @@ app.use('/admin/profiles', profileRoutes);
 // Admin Routes for Settings
 app.use('/admin', settingsRoutes);
 
+// Admin Routes for Metrics
+app.use('/admin/metrics', metricsRoutes);
+
 // Admin Console Route
 app.get('/admin', isAdmin, (req, res) => {
   res.render('admin/adminConsole');
 });
+
+// Add the pricing tier update route
+app.post('/admin/users/update-pricing', isAdmin, (req, res) => {
+  const { userId, pricingTier } = req.body;
+  
+  // Find user by ID and update pricing tier
+  User.findByIdAndUpdate(userId, { pricingTier }, (err) => {
+    if (err) {
+      console.error('Error updating user pricing tier:', err);
+      // Handle error with flash message if available
+    }
+    
+    // Redirect back to users page
+    res.redirect('/admin/users');
+  });
+});
+
+// server.js
+const projectRoutes = require('./routes/projectRoutes'); // Add this require at the top
+// ... other middleware ...
+app.use(projectRoutes); // Add this line to mount the routes
+// ... 404 handler ...
 
 
 
@@ -134,6 +162,19 @@ app.use((err, req, res, next) => {
   res.status(500).send("There was an error serving your request.");
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+const server = app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  
+  // Start collecting system metrics every 5 minutes
+  systemMonitor.startMetricsCollection(5);
+  console.log('System metrics collection started');
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Try these solutions:`);
+    console.error('1. Close the application using this port');
+    console.error('2. Use a different port by setting the PORT environment variable');
+    console.error('   For example: PORT=3001 npm start');
+  } else {
+    console.error('Server error:', err);
+  }
 });

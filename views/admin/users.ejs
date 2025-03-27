@@ -2,77 +2,777 @@
 <html lang="en">
 <head>
   <%- include('../partials/_head.ejs'); %>
-  <title>Registered Users</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>User Management - VLX System</title>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs'); %>
 
-  <div class="flex-grow container mx-auto mt-10">
-    <!-- Page Header -->
-    <div class="flex justify-center items-center mb-8">
-      <img src="/images/User_icon.png" alt="Users Icon" class="w-10 h-10 mr-3" />
-      <h1 class="text-4xl font-bold text-gray-800">Registered Users</h1>
-    </div>
+  <main class="py-10 flex-grow">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6">
+      <!-- Page Header -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-brand-blue to-blue-400 p-7">
+          <div class="flex flex-col md:flex-row justify-center items-center text-center md:text-left">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white mb-4 md:mb-0 md:mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <div>
+              <h1 class="text-2xl md:text-3xl font-bold text-white">User Management</h1>
+              <p class="text-blue-100 mt-1 max-w-2xl">
+                Manage accounts, pricing tiers, and access permissions
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Actions Bar -->
+        <div class="p-4 md:p-6 bg-gray-50 border-b border-gray-100">
+          <div class="flex flex-col sm:flex-row justify-between items-center">
+            <div class="text-sm text-gray-600 mb-4 sm:mb-0">
+              <span class="font-medium"><%= users.length %></span> total user<%= users.length !== 1 ? 's' : '' %> in the system
+            </div>
+            <div class="flex flex-wrap justify-center gap-3">
+              <% if (users.length > 0) { %>
+                <button type="submit" form="userManagementForm" class="bg-brand-blue hover:bg-brand-blue-light text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  Save Changes
+                </button>
+              <% } %>
+              <a href="/admin/users/add" class="bg-brand-blue-light hover:bg-brand-blue text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add New User
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <!-- Add New User Button -->
-    <div class="flex justify-end mb-6">
-      <a href="/admin/users/add" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-        Add New User
-      </a>
-    </div>
+      <!-- Users Table Card -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div class="flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-700">Registered Users</h2>
+            <button id="toggleView" class="md:hidden text-gray-500 hover:text-brand-blue">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <% if (users.length > 0) { %>
+            <form id="userManagementForm" action="/admin/users/update-all" method="POST">
+              <!-- Desktop Table (hidden on small screens) -->
+              <table class="min-w-full divide-y divide-gray-200 table-fixed hidden md:table">
+                <thead class="bg-blue-50">
+                  <tr>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[14%]">Username</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[18%]">Password</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[8%]">Role</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[12%]">New Role</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Current Tier</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[15%]">New Tier</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[6%]">Projects</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Last Login</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[7%]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <% users.forEach(user => { %>
+                    <tr class="hover:bg-blue-50 transition-colors duration-150">
+                      <td class="px-6 py-5 text-sm text-gray-900 font-medium">
+                        <div class="flex items-center">
+                          <div class="h-10 w-10 flex-shrink-0 mr-3">
+                            <div class="rounded-full bg-blue-100 h-10 w-10 flex items-center justify-center">
+                              <span class="text-blue-800 font-semibold"><%= user.username.charAt(0).toUpperCase() %></span>
+                            </div>
+                          </div>
+                          <div class="truncate max-w-[120px]" title="<%= user.username %>">
+                            <%= user.username %>
+                            <input type="hidden" name="userId[]" value="<%= user._id %>">
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-5">
+                        <div class="relative flex items-center">
+                          <input type="password" id="password-<%= user._id %>" readonly value="••••••••" class="pr-16 border-0 bg-transparent focus:ring-0 text-sm text-gray-500 w-full overflow-x-auto" />
+                          <div class="absolute right-0 flex space-x-1">
+                            <button type="button" data-userid="<%= user._id %>" class="view-password-btn bg-gray-50 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                            <button type="button" data-userid="<%= user._id %>" data-username="<%= user.username %>" class="change-password-btn bg-gray-50 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-5">
+                        <span class="px-3 py-1 text-xs font-medium rounded-full <%= user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800' %>">
+                          <%= user.role %>
+                        </span>
+                      </td>
+                      <td class="px-6 py-5">
+                        <select name="newRole[]" class="w-full border border-gray-300 rounded-lg text-center py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                          <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                          <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
+                        </select>
+                      </td>
+                      <td class="px-6 py-5">
+                        <span class="px-3 py-1 text-xs font-medium rounded-full 
+                          <%= !user.pricingTier ? 'bg-gray-100 text-gray-800' : 
+                            user.pricingTier === 'tier1' ? 'bg-blue-100 text-blue-800' :
+                            user.pricingTier === 'tier2' ? 'bg-green-100 text-green-800' :
+                            user.pricingTier === 'tier3' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800' %>">
+                          <%= !user.pricingTier ? 'Not Set' : 
+                            user.pricingTier === 'tier1' ? 'Small' :
+                            user.pricingTier === 'tier2' ? 'Medium' :
+                            user.pricingTier === 'tier3' ? 'Large' :
+                            'Enterprise' %>
+                        </span>
+                      </td>
+                      <td class="px-6 py-5">
+                        <select name="pricingTier[]" class="w-full border border-gray-300 rounded-lg text-center py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                          <option value="" <%= !user.pricingTier ? 'selected' : '' %>>Not Set</option>
+                          <option value="tier1" <%= user.pricingTier === 'tier1' ? 'selected' : '' %>>Small</option>
+                          <option value="tier2" <%= user.pricingTier === 'tier2' ? 'selected' : '' %>>Medium</option>
+                          <option value="tier3" <%= user.pricingTier === 'tier3' ? 'selected' : '' %>>Large</option>
+                          <option value="tier4" <%= user.pricingTier === 'tier4' ? 'selected' : '' %>>Enterprise</option>
+                        </select>
+                      </td>
+                      <td class="px-6 py-5 text-center">
+                        <% if (user.projectCount > 0) { %>
+                          <span class="px-3 py-1 text-xs font-medium rounded-full bg-brand-blue text-white">
+                            <%= user.projectCount %>
+                          </span>
+                        <% } else { %>
+                          <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
+                            0
+                          </span>
+                        <% } %>
+                      </td>
+                      <td class="px-6 py-5 text-sm text-gray-600">
+                        <% if (user.lastLogin) { %>
+                          <div><%= new Date(user.lastLogin).toLocaleDateString() %></div>
+                          <div class="text-xs text-gray-500"><%= new Date(user.lastLogin).toLocaleTimeString() %></div>
+                        <% } else { %>
+                          <span class="text-gray-400">Never</span>
+                        <% } %>
+                      </td>
+                      <td class="px-6 py-5 text-center">
+                        <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
+                          <input type="hidden" name="userId" value="<%= user._id %>">
+                          <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+              
+              <!-- Mobile Cards (shown only on small screens) -->
+              <div class="md:hidden space-y-4 px-4 py-2">
+                <% users.forEach(user => { %>
+                  <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="flex items-center">
+                        <div class="h-12 w-12 flex-shrink-0 mr-3">
+                          <div class="rounded-full bg-blue-100 h-12 w-12 flex items-center justify-center">
+                            <span class="text-blue-800 font-semibold text-lg"><%= user.username.charAt(0).toUpperCase() %></span>
+                          </div>
+                        </div>
+                        <div>
+                          <div class="font-medium text-gray-900"><%= user.username %></div>
+                          <span class="px-2 py-1 text-xs font-medium rounded-full <%= user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800' %>">
+                            <%= user.role %>
+                          </span>
+                          <input type="hidden" name="userId[]" value="<%= user._id %>">
+                        </div>
+                      </div>
+                      <div class="flex space-x-1">
+                        <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
+                          <input type="hidden" name="userId" value="<%= user._id %>">
+                          <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                    
+                    <!-- Password Section -->
+                    <div class="mb-4 border-b pb-4">
+                      <div class="text-sm text-gray-500 mb-1">Password</div>
+                      <div class="relative flex items-center">
+                        <input type="password" id="mobile-password-<%= user._id %>" readonly value="••••••••" class="pr-16 border border-gray-200 rounded-lg bg-white px-3 py-2 focus:ring-0 text-sm text-gray-700 w-full" />
+                        <div class="absolute right-2 flex space-x-1">
+                          <button type="button" data-userid="<%= user._id %>" class="mobile-view-password-btn bg-gray-50 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button type="button" data-userid="<%= user._id %>" data-username="<%= user.username %>" class="mobile-change-password-btn bg-gray-50 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Role Section -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <div class="text-sm text-gray-500 mb-1">New Role</div>
+                        <select name="newRole[]" class="w-full border border-gray-300 rounded-lg text-center py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                          <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                          <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
+                        </select>
+                      </div>
+                      <div>
+                        <div class="text-sm text-gray-500 mb-1">Projects</div>
+                        <div class="text-center py-2">
+                          <% if (user.projectCount > 0) { %>
+                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-brand-blue text-white">
+                              <%= user.projectCount %>
+                            </span>
+                          <% } else { %>
+                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
+                              0
+                            </span>
+                          <% } %>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Pricing Tier Section -->
+                    <div class="mb-4">
+                      <div class="flex justify-between items-center mb-1">
+                        <div class="text-sm text-gray-500">Current Tier</div>
+                        <span class="px-3 py-1 text-xs font-medium rounded-full 
+                          <%= !user.pricingTier ? 'bg-gray-100 text-gray-800' : 
+                            user.pricingTier === 'tier1' ? 'bg-blue-100 text-blue-800' :
+                            user.pricingTier === 'tier2' ? 'bg-green-100 text-green-800' :
+                            user.pricingTier === 'tier3' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800' %>">
+                          <%= !user.pricingTier ? 'Not Set' : 
+                            user.pricingTier === 'tier1' ? 'Small' :
+                            user.pricingTier === 'tier2' ? 'Medium' :
+                            user.pricingTier === 'tier3' ? 'Large' :
+                            'Enterprise' %>
+                        </span>
+                      </div>
+                      <div>
+                        <div class="text-sm text-gray-500 mb-1">New Tier</div>
+                        <select name="pricingTier[]" class="w-full border border-gray-300 rounded-lg text-center py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                          <option value="" <%= !user.pricingTier ? 'selected' : '' %>>Not Set</option>
+                          <option value="tier1" <%= user.pricingTier === 'tier1' ? 'selected' : '' %>>Small</option>
+                          <option value="tier2" <%= user.pricingTier === 'tier2' ? 'selected' : '' %>>Medium</option>
+                          <option value="tier3" <%= user.pricingTier === 'tier3' ? 'selected' : '' %>>Large</option>
+                          <option value="tier4" <%= user.pricingTier === 'tier4' ? 'selected' : '' %>>Enterprise</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <!-- Last Login Section -->
+                    <div class="text-sm text-gray-500">
+                      <div class="font-medium">Last Login</div>
+                      <div class="text-gray-700">
+                        <% if (user.lastLogin) { %>
+                          <%= new Date(user.lastLogin).toLocaleDateString() %> <%= new Date(user.lastLogin).toLocaleTimeString() %>
+                        <% } else { %>
+                          <span class="text-gray-400">Never</span>
+                        <% } %>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            </form>
+          <% } else { %>
+            <div class="bg-blue-50 p-10 rounded-lg text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-blue-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 class="text-xl font-medium text-gray-800 mb-2">No Users Found</h3>
+              <p class="text-gray-600 mb-6">There are no registered users in the system yet.</p>
+              <a href="/admin/users/add" class="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-brand-blue hover:bg-brand-blue-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create First User
+              </a>
+            </div>
+          <% } %>
+        </div>
+      </div>
 
-    <!-- Users Table -->
-    <div class="overflow-x-auto overflow-y-auto max-h-[70vh] bg-white shadow-lg rounded-lg">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <% users.forEach(user => { %>
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-4 text-sm text-gray-900"><%= user.username %></td>
-              <td class="px-6 py-4 text-sm text-gray-900"><%= user.role %></td>
-              <td class="px-6 py-4 text-sm text-gray-900"><%= user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never' %></td>
-              <td class="px-6 py-4 text-sm text-gray-900 flex space-x-2">
-                <!-- Remove User Button -->
-                <form action="/admin/users/remove" method="POST" class="inline">
-                  <input type="hidden" name="userId" value="<%= user._id %>">
-                  <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                    Remove
-                  </button>
-                </form>
-
-                <!-- Update Role Form -->
-                <form action="/admin/users/update-role" method="POST" class="inline">
-                  <input type="hidden" name="userId" value="<%= user._id %>">
-                  <select name="newRole" class="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
-                    <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
-                  </select>
-                  <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                    Update Role
-                  </button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+      <!-- Quick Tips Card -->
+      <div class="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <h2 class="text-lg font-semibold text-gray-700">Pricing Tier Information</h2>
+        </div>
+        <div class="p-4 md:p-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <div class="flex items-center mb-2">
+                <span class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                  <span class="text-blue-800 font-bold">S</span>
+                </span>
+                <h3 class="font-semibold text-gray-800">Small</h3>
+              </div>
+              <p class="text-sm text-gray-600">Purchases under $10,000/year</p>
+              <p class="text-xs text-gray-500 mt-2">Standard pricing with basic support</p>
+            </div>
+            
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <div class="flex items-center mb-2">
+                <span class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-2">
+                  <span class="text-green-800 font-bold">M</span>
+                </span>
+                <h3 class="font-semibold text-gray-800">Medium</h3>
+              </div>
+              <p class="text-sm text-gray-600">$10,000 - $50,000/year</p>
+              <p class="text-xs text-gray-500 mt-2">5% discount with priority support</p>
+            </div>
+            
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+              <div class="flex items-center mb-2">
+                <span class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mr-2">
+                  <span class="text-yellow-800 font-bold">L</span>
+                </span>
+                <h3 class="font-semibold text-gray-800">Large</h3>
+              </div>
+              <p class="text-sm text-gray-600">$50,000 - $250,000/year</p>
+              <p class="text-xs text-gray-500 mt-2">10% discount with dedicated support</p>
+            </div>
+            
+            <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+              <div class="flex items-center mb-2">
+                <span class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2">
+                  <span class="text-red-800 font-bold">E</span>
+                </span>
+                <h3 class="font-semibold text-gray-800">Enterprise</h3>
+              </div>
+              <p class="text-sm text-gray-600">Over $250,000/year</p>
+              <p class="text-xs text-gray-500 mt-2">Custom pricing with premium support</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-  <div>
-    -
-  </div>
-  <div>
-    -
-  </div>
+  </main>
 
   <%- include('../partials/_footer.ejs'); %>
+
+  <!-- Password Change Modal -->
+  <div id="passwordChangeModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 my-6 max-h-[90vh] overflow-y-auto">
+      <div class="bg-gradient-to-r from-brand-blue to-blue-400 px-4 sm:px-6 py-4 rounded-t-lg sticky top-0 z-10">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-white">Change Password</h3>
+          <button type="button" id="closePasswordModal" class="text-white hover:text-gray-200">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <form id="passwordChangeForm" method="POST" action="/admin/users/update-password">
+        <div class="px-4 sm:px-6 py-5">
+          <input type="hidden" id="userId" name="userId">
+          <div class="mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center mb-2">
+              <div class="h-10 w-10 flex-shrink-0 mr-3 bg-blue-100 rounded-full flex items-center justify-center mb-2 sm:mb-0">
+                <span id="usernameInitial" class="text-blue-800 font-semibold"></span>
+              </div>
+              <div>
+                <div class="text-gray-600">Username:</div>
+                <div id="usernameDisplay" class="font-semibold text-gray-900 text-lg"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mb-5">
+            <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+            <div class="relative">
+              <input type="password" id="newPassword" name="newPassword" class="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue" placeholder="Enter new password">
+              <button type="button" id="toggleNewPassword" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            </div>
+            <div class="flex items-center mt-3">
+              <div id="passwordStrength" class="flex-grow h-2 bg-gray-200 rounded-full overflow-hidden mr-3">
+                <div id="passwordStrengthBar" class="h-full w-0 transition-all duration-300 ease-in-out bg-red-500"></div>
+              </div>
+              <span id="passwordStrengthText" class="text-xs text-gray-500 min-w-[70px]">Very weak</span>
+            </div>
+          </div>
+          <div class="mb-5">
+            <button type="button" id="generatePassword" class="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg text-sm transition-colors duration-200 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Generate Secure Password
+            </button>
+          </div>
+        </div>
+        <div class="border-t px-4 sm:px-6 py-4 bg-gray-50 flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 rounded-b-lg">
+          <button type="button" id="cancelPasswordChange" class="w-full sm:w-auto px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" id="updatePasswordBtn" class="w-full sm:w-auto px-4 py-2 bg-brand-blue hover:bg-brand-blue-light text-white rounded-lg flex items-center justify-center" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Update Password
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Toggle between table and card view on mobile
+      const toggleViewButton = document.getElementById('toggleView');
+      const tableView = document.querySelector('.min-w-full.divide-y');
+      const cardView = document.querySelector('.md\\:hidden.space-y-4');
+      
+      // Initialize view based on screen size
+      function updateView() {
+        if (window.innerWidth < 768) { // md breakpoint
+          // Initially hide table on mobile
+          if (tableView) tableView.classList.add('hidden');
+          if (cardView) cardView.classList.remove('hidden');
+        } else {
+          // Always show table on desktop
+          if (tableView) tableView.classList.remove('hidden');
+          if (cardView) cardView.classList.add('hidden');
+        }
+      }
+      
+      // Apply initial view
+      updateView();
+      
+      // Toggle view on mobile when button is clicked
+      if (toggleViewButton) {
+        toggleViewButton.addEventListener('click', function() {
+          if (window.innerWidth < 768) {
+            if (tableView) tableView.classList.toggle('hidden');
+            if (cardView) cardView.classList.toggle('hidden');
+            
+            // Update button icon
+            if (tableView && !tableView.classList.contains('hidden')) {
+              this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+              </svg>`;
+            } else {
+              this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>`;
+            }
+          }
+        });
+      }
+      
+      // Update view on resize
+      window.addEventListener('resize', updateView);
+
+      // Desktop Password viewing functionality
+      const viewPasswordButtons = document.querySelectorAll('.view-password-btn');
+      const mobileViewPasswordButtons = document.querySelectorAll('.mobile-view-password-btn');
+      
+      // Function to handle password viewing
+      function setupPasswordViewing(buttons, idPrefix = '') {
+        buttons.forEach(button => {
+          button.addEventListener('click', async function() {
+            const userId = this.getAttribute('data-userid');
+            const passwordField = document.getElementById(`${idPrefix}password-${userId}`);
+            
+            if (passwordField.value === '••••••••') {
+              try {
+                // Show loading state
+                passwordField.value = 'Loading...';
+                button.classList.add('bg-gray-200');
+                
+                // Fetch the password from the server
+                const response = await fetch(`/admin/users/get-password/${userId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  
+                  // Show the password
+                  passwordField.type = 'text';
+                  passwordField.value = data.password;
+                  passwordField.classList.add('font-medium', 'text-gray-900', 'bg-gray-50', 'px-2', 'py-1', 'rounded');
+                  
+                  // Change icon to "hide"
+                  this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>`;
+                  
+                  button.classList.add('bg-blue-100');
+                  button.classList.remove('bg-gray-50', 'bg-gray-200');
+                  
+                  // Auto-hide after 15 seconds
+                  setTimeout(() => {
+                    passwordField.type = 'password';
+                    passwordField.value = '••••••••';
+                    passwordField.classList.remove('font-medium', 'text-gray-900', 'bg-gray-50', 'px-2', 'py-1', 'rounded');
+                    
+                    button.classList.remove('bg-blue-100');
+                    button.classList.add('bg-gray-50');
+                    
+                    this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>`;
+                  }, 15000);
+                } else {
+                  console.error('Failed to fetch password');
+                  passwordField.value = 'Error loading password';
+                  button.classList.remove('bg-gray-200');
+                  
+                  // Reset after 3 seconds
+                  setTimeout(() => {
+                    passwordField.value = '••••••••';
+                  }, 3000);
+                }
+              } catch (error) {
+                console.error('Error:', error);
+                passwordField.value = 'Error loading password';
+                button.classList.remove('bg-gray-200');
+                
+                // Reset after 3 seconds
+                setTimeout(() => {
+                  passwordField.value = '••••••••';
+                }, 3000);
+              }
+            } else {
+              // Hide the password
+              passwordField.type = 'password';
+              passwordField.value = '••••••••';
+              passwordField.classList.remove('font-medium', 'text-gray-900', 'bg-gray-50', 'px-2', 'py-1', 'rounded');
+              button.classList.remove('bg-blue-100');
+              button.classList.add('bg-gray-50');
+              
+              // Change icon back to "show"
+              this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>`;
+            }
+          });
+        });
+      }
+      
+      // Setup password viewing for both desktop and mobile
+      setupPasswordViewing(viewPasswordButtons);
+      setupPasswordViewing(mobileViewPasswordButtons, 'mobile-');
+
+      // Password change functionality
+      const changePasswordButtons = document.querySelectorAll('.change-password-btn, .mobile-change-password-btn');
+      const passwordChangeModal = document.getElementById('passwordChangeModal');
+      const closePasswordModal = document.getElementById('closePasswordModal');
+      const cancelPasswordChange = document.getElementById('cancelPasswordChange');
+      const passwordChangeForm = document.getElementById('passwordChangeForm');
+      const userId = document.getElementById('userId');
+      const usernameDisplay = document.getElementById('usernameDisplay');
+      const usernameInitial = document.getElementById('usernameInitial');
+      const newPassword = document.getElementById('newPassword');
+      const toggleNewPassword = document.getElementById('toggleNewPassword');
+      const generatePassword = document.getElementById('generatePassword');
+      const passwordStrengthBar = document.getElementById('passwordStrengthBar');
+      const passwordStrengthText = document.getElementById('passwordStrengthText');
+      const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+      
+      // Open password change modal
+      changePasswordButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const id = this.getAttribute('data-userid');
+          const username = this.getAttribute('data-username');
+          
+          userId.value = id;
+          usernameDisplay.textContent = username;
+          usernameInitial.textContent = username.charAt(0).toUpperCase();
+          passwordChangeModal.classList.remove('hidden');
+          newPassword.focus();
+        });
+      });
+      
+      // Close password change modal
+      [closePasswordModal, cancelPasswordChange].forEach(button => {
+        button.addEventListener('click', function() {
+          passwordChangeModal.classList.add('hidden');
+          newPassword.value = '';
+          resetPasswordStrength();
+        });
+      });
+      
+      // Toggle password visibility
+      toggleNewPassword.addEventListener('click', function() {
+        if (newPassword.type === 'password') {
+          newPassword.type = 'text';
+          this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+          </svg>`;
+        } else {
+          newPassword.type = 'password';
+          this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>`;
+        }
+      });
+      
+      // Password strength indicator
+      newPassword.addEventListener('input', function() {
+        const password = this.value;
+        const strength = checkPasswordStrength(password);
+        
+        updatePasswordStrengthUI(strength);
+        
+        // Enable/disable update button based on password length
+        updatePasswordBtn.disabled = password.length < 6;
+      });
+      
+      // Generate secure password
+      generatePassword.addEventListener('click', function() {
+        const length = Math.floor(Math.random() * 5) + 12; // 12-16 characters
+        const password = generateSecurePassword(length);
+        newPassword.type = 'text';
+        newPassword.value = password;
+        
+        // Update strength indicator
+        const strength = checkPasswordStrength(password);
+        updatePasswordStrengthUI(strength);
+        
+        // Enable update button
+        updatePasswordBtn.disabled = false;
+        
+        // Auto-switch back to password type after 5 seconds
+        setTimeout(() => {
+          newPassword.type = 'password';
+          toggleNewPassword.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>`;
+        }, 5000);
+      });
+      
+      // Function to check password strength
+      function checkPasswordStrength(password) {
+        if (!password) return 0;
+        
+        let score = 0;
+        
+        // Length check
+        if (password.length >= 8) score += 1;
+        if (password.length >= 12) score += 1;
+        
+        // Complexity checks
+        if (/[A-Z]/.test(password)) score += 1;
+        if (/[a-z]/.test(password)) score += 1;
+        if (/[0-9]/.test(password)) score += 1;
+        if (/[^A-Za-z0-9]/.test(password)) score += 1;
+        
+        return Math.min(5, score);
+      }
+      
+      // Function to update the password strength UI
+      function updatePasswordStrengthUI(strength) {
+        const percentage = (strength / 5) * 100;
+        passwordStrengthBar.style.width = `${percentage}%`;
+        
+        switch (strength) {
+          case 0:
+            passwordStrengthBar.className = 'h-full w-0 transition-all duration-300 ease-in-out';
+            passwordStrengthText.textContent = 'Enter password';
+            break;
+          case 1:
+            passwordStrengthBar.className = 'h-full transition-all duration-300 ease-in-out bg-red-500';
+            passwordStrengthText.textContent = 'Very weak';
+            break;
+          case 2:
+            passwordStrengthBar.className = 'h-full transition-all duration-300 ease-in-out bg-orange-500';
+            passwordStrengthText.textContent = 'Weak';
+            break;
+          case 3:
+            passwordStrengthBar.className = 'h-full transition-all duration-300 ease-in-out bg-yellow-500';
+            passwordStrengthText.textContent = 'Fair';
+            break;
+          case 4:
+            passwordStrengthBar.className = 'h-full transition-all duration-300 ease-in-out bg-blue-500';
+            passwordStrengthText.textContent = 'Good';
+            break;
+          case 5:
+            passwordStrengthBar.className = 'h-full transition-all duration-300 ease-in-out bg-green-500';
+            passwordStrengthText.textContent = 'Strong';
+            break;
+        }
+      }
+      
+      // Function to reset password strength indicator
+      function resetPasswordStrength() {
+        passwordStrengthBar.style.width = '0%';
+        passwordStrengthBar.className = 'h-full w-0 transition-all duration-300 ease-in-out';
+        passwordStrengthText.textContent = 'Enter password';
+        updatePasswordBtn.disabled = true;
+      }
+      
+      // Function to generate a secure password
+      function generateSecurePassword(length) {
+        const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        const numbers = '0123456789';
+        const special = '!@#$%^&*()-_=+[]{}|;:,.<>?';
+        
+        const allChars = uppercase + lowercase + numbers + special;
+        
+        // Ensure at least one of each character type
+        let password = 
+          uppercase.charAt(Math.floor(Math.random() * uppercase.length)) +
+          lowercase.charAt(Math.floor(Math.random() * lowercase.length)) +
+          numbers.charAt(Math.floor(Math.random() * numbers.length)) +
+          special.charAt(Math.floor(Math.random() * special.length));
+        
+        // Fill the rest randomly
+        for (let i = 4; i < length; i++) {
+          password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+        }
+        
+        // Shuffle the password
+        return shuffleString(password);
+      }
+      
+      // Function to shuffle a string
+      function shuffleString(string) {
+        const array = string.split('');
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array.join('');
+      }
+    });
+  </script>
 </body>
 </html>
