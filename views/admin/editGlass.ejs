@@ -5,51 +5,235 @@
   <title>Edit Glass</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .input-padding {
-      padding-left: 10px; /* Add padding inside the text input */
+    /* Custom input styles */
+    .input-field {
+      @apply mt-1 block w-full px-4 py-3 bg-blue-50 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150;
+      min-height: 42px;
     }
-    .bg-header-blue {
-      background-color: #1e3a8a; /* Custom blue color */
+    
+    .label-text {
+      @apply block text-sm font-medium mb-1 transition duration-150;
     }
-    .bg-header-blue:hover {
-      background-color: #1e40af; /* Darker blue on hover */
+    
+    .section-title {
+      @apply font-bold text-lg bg-gradient-to-r bg-clip-text text-transparent;
+    }
+    
+    /* Section title styles */
+    .section-type { @apply from-indigo-600 to-blue-500; }
+    .section-desc { @apply from-blue-600 to-sky-500; }
+    .section-missile { @apply from-purple-600 to-fuchsia-500; }
+    .section-price { @apply from-emerald-600 to-green-500; }
+    .section-weight { @apply from-amber-600 to-yellow-500; }
+    
+    /* Required field indicator */
+    .required::after {
+      content: "*";
+      color: #ef4444;
+      margin-left: 4px;
+      font-size: 1.2em;
+    }
+    
+    /* Detail styles */
+    .detail-label {
+      @apply text-sm font-medium;
+    }
+    
+    .detail-value {
+      @apply text-sm text-gray-700;
     }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
-  <div class="container mx-auto mt-10 flex-grow">
-    <h1 class="text-3xl font-bold mb-5">Edit Glass</h1>
-    <form action="/admin/glasses/update/<%= glass._id %>" method="POST" class="bg-white p-6 rounded-lg shadow-md">
-      <div class="mb-4">
-        <label for="glass_type" class="block text-sm font-medium text-gray-700">Glass Type</label>
-        <input type="text" id="glass_type" name="glass_type" value="<%= glass.glass_type %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
+  
+  <main class="container mx-auto px-4 py-8 flex-grow">
+    <div class="max-w-3xl mx-auto">
+      <!-- Header -->
+      <div class="bg-white shadow-md rounded-xl p-4 mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+          Edit Glass
+        </h1>
       </div>
-      <div class="mb-4">
-        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-        <textarea id="description" name="description" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding"><%= glass.description %></textarea>
+      
+      <!-- Form Card -->
+      <div class="bg-white shadow-md rounded-xl overflow-hidden">
+        <div class="p-6">
+          <form action="/admin/glasses/update/<%= glass._id %>" method="POST">
+            <!-- Glass Type Section -->
+            <div class="mb-6">
+              <div class="flex items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <label for="glass_type" class="label-text section-title section-type required">Glass Type</label>
+              </div>
+              <input type="text" id="glass_type" name="glass_type" value="<%= glass.glass_type %>" required 
+                    class="input-field" 
+                    placeholder="Enter glass type">
+              <p class="mt-1 text-sm text-gray-500">Enter a unique identifier for this glass type</p>
+            </div>
+            
+            <!-- Description Section -->
+            <div class="mb-6">
+              <div class="flex items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                </svg>
+                <label for="description" class="label-text section-title section-desc required">Description</label>
+              </div>
+              <textarea id="description" name="description" required 
+                       class="input-field" 
+                       placeholder="Enter detailed description"
+                       rows="3"><%= glass.description %></textarea>
+              <p class="mt-1 text-sm text-gray-500">Provide a detailed description of the glass</p>
+            </div>
+            
+            <!-- Missile Type Section -->
+            <div class="mb-6">
+              <div class="flex items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <label for="missile_type" class="label-text section-title section-missile required">Missile Type</label>
+              </div>
+              <select id="missile_type" name="missile_type" required class="input-field">
+                <option value="">Select a missile type</option>
+                <option value="LMI" <%= glass.missile_type === 'LMI' ? 'selected' : '' %>>LMI (Large Missile Impact)</option>
+                <option value="SMI" <%= glass.missile_type === 'SMI' ? 'selected' : '' %>>SMI (Small Missile Impact)</option>
+              </select>
+              <p class="mt-1 text-sm text-gray-500">Specify the missile impact rating of the glass</p>
+            </div>
+            
+            <!-- Price Section -->
+            <div class="mb-6">
+              <div class="flex items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <label for="pricePerSquareMeter" class="label-text section-title section-price required">Price Per Square Meter</label>
+              </div>
+              <div class="flex items-center">
+                <input type="text" 
+                      id="pricePerSquareMeter" 
+                      name="pricePerSquareMeter" 
+                      value="<%= glass.pricePerSquareMeter.toLocaleString('es-CO') %>" 
+                      required 
+                      class="mt-1 block w-full px-4 py-3 bg-blue-50 border border-gray-300 rounded-l-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150" 
+                      placeholder="Enter price per square meter"
+                      inputmode="numeric"
+                      pattern="[0-9,.]+"
+                      title="Please enter a whole number without decimals">
+                <span class="inline-flex items-center px-3 bg-gray-200 text-gray-700 border border-l-0 border-gray-300 rounded-r-md">
+                  COP
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-gray-500">Enter the price per square meter in Colombian Pesos (whole number)</p>
+            </div>
+            
+            <!-- Weight Section -->
+            <div class="mb-6">
+              <div class="flex items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                </svg>
+                <label for="weight" class="label-text section-title section-weight required">Weight</label>
+              </div>
+              <div class="flex items-center">
+                <input type="number" 
+                      id="weight" 
+                      name="weight" 
+                      value="<%= glass.weight %>" 
+                      step="0.01" 
+                      required 
+                      class="mt-1 block w-full px-4 py-3 bg-blue-50 border border-l-0 border-gray-300 rounded-l-none rounded-r-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150" 
+                      placeholder="Enter weight">
+                <span class="inline-flex items-center px-3 bg-gray-200 text-gray-700 border border-l-0 border-gray-300 rounded-r-md">
+                  kg/m²
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-gray-500">Weight in kilograms per square meter</p>
+            </div>
+            
+            <!-- Divider -->
+            <div class="border-t border-gray-200 my-8"></div>
+            
+            <!-- Form Actions -->
+            <div class="flex flex-col sm:flex-row sm:justify-between gap-4">
+              <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                </svg>
+                Update Glass
+              </button>
+              <a href="/admin/glasses" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+        
+        <!-- Glass Details Box -->
+        <div class="bg-gray-50 p-6 border-t border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Glass Information</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col">
+              <span class="detail-label text-indigo-600">Type</span>
+              <span class="detail-value"><%= glass.glass_type %></span>
+            </div>
+            
+            <div class="flex flex-col">
+              <span class="detail-label text-purple-600">Missile Type</span>
+              <span class="detail-value"><%= glass.missile_type %></span>
+            </div>
+            
+            <div class="flex flex-col">
+              <span class="detail-label text-emerald-600">Price</span>
+              <span class="detail-value"><%= glass.pricePerSquareMeter.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) %> per m²</span>
+            </div>
+            
+            <div class="flex flex-col">
+              <span class="detail-label text-amber-600">Weight</span>
+              <span class="detail-value"><%= glass.weight.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %> kg/m²</span>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <span class="detail-label text-blue-600">Description</span>
+            <p class="detail-value mt-1"><%= glass.description %></p>
+          </div>
+        </div>
       </div>
-      <div class="mb-4">
-        <label for="missile_type" class="block text-sm font-medium text-gray-700">Missile Type</label>
-        <select id="missile_type" name="missile_type" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
-          <option value="LMI" <%= glass.missile_type === 'LMI' ? 'selected' : '' %>>LMI</option>
-          <option value="SMI" <%= glass.missile_type === 'SMI' ? 'selected' : '' %>>SMI</option>
-        </select>
-      </div>
-      <div class="mb-4">
-        <label for="pricePerSquareMeter" class="block text-sm font-medium text-gray-700">Price Per Square Meter COP</label>
-        <input type="number" step="0.01" id="pricePerSquareMeter" name="pricePerSquareMeter" value="<%= glass.pricePerSquareMeter %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
-      </div>
-      <div class="mb-4">
-        <label for="weight" class="block text-sm font-medium text-gray-700">Weight Kg/m2</label>
-        <input type="number" step="0.01" id="weight" name="weight" value="<%= glass.weight %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm input-padding">
-      </div>
-      <div class="flex items-center justify-between">
-        <button type="submit" class="bg-header-blue hover:bg-header-blue text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">Update Glass</button>
-        <a href="/admin/glasses" class="text-blue-600 hover:text-blue-900">Cancel</a>
-      </div>
-    </form>
-  </div>
+    </div>
+  </main>
+  
   <%- include('../partials/_footer.ejs') %>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Format price input as Colombian currency (whole numbers only)
+      const priceInput = document.getElementById('pricePerSquareMeter');
+      if (priceInput) {
+        priceInput.addEventListener('input', function(e) {
+          // Remove non-numeric characters
+          let value = this.value.replace(/\D/g, '');
+          
+          // Format with thousand separators if value exists
+          if (value) {
+            this.value = parseInt(value, 10).toLocaleString('es-CO');
+          }
+        });
+        
+        // Before form submission, convert formatted number back to plain number
+        priceInput.form.addEventListener('submit', function() {
+          priceInput.value = priceInput.value.replace(/\D/g, '');
+        });
+      }
+    });
+  </script>
 </body>
 </html>

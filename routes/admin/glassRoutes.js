@@ -94,17 +94,49 @@ router.get('/export-glasses', isAdmin, async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Glasses');
 
+    // Define all columns for export
     worksheet.columns = [
       { header: 'Type', key: 'glass_type', width: 20 },
       { header: 'Description', key: 'description', width: 30 },
       { header: 'Missile Type', key: 'missile_type', width: 15 },
       { header: 'Price Per Square Meter', key: 'pricePerSquareMeter', width: 20 },
-      { header: 'Weight', key: 'weight', width: 20 }
+      { header: 'Weight', key: 'weight', width: 15 }
     ];
 
+    // Add styling to the header row
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4F46E5' } // Indigo color
+    };
+
+    // Format the data
     glasses.forEach(glass => {
-      worksheet.addRow(glass);
+      const row = worksheet.addRow({
+        glass_type: glass.glass_type,
+        description: glass.description,
+        missile_type: glass.missile_type,
+        pricePerSquareMeter: glass.pricePerSquareMeter,
+        weight: glass.weight
+      });
+      
+      // Format price as currency
+      if (row.getCell('pricePerSquareMeter').value) {
+        row.getCell('pricePerSquareMeter').numFmt = '"$"#,##0';
+      }
+      
+      // Format weight with 2 decimal places
+      if (row.getCell('weight').value) {
+        row.getCell('weight').numFmt = '#,##0.00 "kg/m²"';
+      }
     });
+    
+    // Auto-filter for all columns
+    worksheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: 1, column: 5 }
+    };
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=glasses.xlsx');
@@ -112,7 +144,7 @@ router.get('/export-glasses', isAdmin, async (req, res) => {
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    console.error('Error exporting data:', error);
+    logger.error('Error exporting data:', error);
     res.status(500).send('Failed to export data');
   }
 });
@@ -121,39 +153,57 @@ router.get('/export-glasses', isAdmin, async (req, res) => {
 router.post('/import-glasses', isAdmin, upload.single('file'), async (req, res) => {
   const filePath = req.file.path;
   try {
-    console.log('Starting import process...');
+    logger.info('Starting glass import process...');
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
     const worksheet = workbook.getWorksheet('Glasses');
     const glasses = [];
 
-    console.log('Reading rows...');
+    logger.info('Reading rows from glass import...');
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return; // Skip header row
-      const [glass_type, description, missile_type, pricePerSquareMeter, weight] = row.values.slice(1);
-      if (glass_type && description && missile_type && pricePerSquareMeter && weight) {
-        glasses.push({ glass_type, description, missile_type, pricePerSquareMeter, weight });
+      
+      // Extract values using indexes
+      const [_, glass_type, description, missile_type, pricePerSquareMeter, weight] = row.values;
+      
+      // Validate the data
+      if (glass_type && description && missile_type && pricePerSquareMeter !== undefined) {
+        glasses.push({ 
+          glass_type, 
+          description, 
+          missile_type, 
+          pricePerSquareMeter: parseFloat(pricePerSquareMeter) || 0, 
+          weight: weight ? parseFloat(weight) : null 
+        });
       } else {
-        console.warn('Skipping row due to missing values:', row.values);
+        logger.warn('Skipping row due to missing values:', row.values);
       }
     });
 
-    console.log('Read glasses:', glasses);
+    logger.info('Validating glass data...');
+    // Validate required fields
+    const invalidGlasses = glasses.filter(glass => 
+      !glass.glass_type || !glass.description || !glass.missile_type || glass.pricePerSquareMeter === undefined
+    );
+    
+    if (invalidGlasses.length > 0) {
+      throw new Error(`${invalidGlasses.length} glasses are missing required fields (type, description, missile type, or price)`);
+    }
 
-    console.log('Clearing existing data...');
+    logger.info('Clearing existing glass data...');
     await Glass.deleteMany({});
 
-    console.log('Inserting new data...');
+    logger.info('Inserting new glass data...');
     await Glass.insertMany(glasses);
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath); // Delete the uploaded file after processing
     }
 
-    console.log('Import process completed successfully.');
-    res.json({ message: 'File uploaded successfully!' });
+    logger.info('Glass import process completed successfully.');
+    res.json({ message: 'Glasses uploaded successfully!' });
   } catch (error) {
-    console.error('Error importing data:', error);
+    logger.error('Error importing glass data:', error);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath); // Delete the uploaded file in case of error
     }
