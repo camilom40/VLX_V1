@@ -22,6 +22,11 @@ const profileSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  ammaCertification: {
+    type: String,
+    required: true,
+    enum: ['2603', '2604', '2605'],
+  },
 });
 
 module.exports = mongoose.model('Profile', profileSchema);

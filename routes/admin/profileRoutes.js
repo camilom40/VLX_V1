@@ -31,16 +31,25 @@ router.get('/add', isAdmin, (req, res) => {
 
 router.post('/add', isAdmin, async (req, res) => {
   try {
-    const { name, pricePerMeter, weight, color, colorCode } = req.body;
-    const newProfile = new Profile({ name, pricePerMeter, weight, color, colorCode });
+    const { name, color, colorCode, pricePerMeter, weight, ammaCertification } = req.body;
+    
+    // Convert price to a number (remove any formatting)
+    const cleanedPrice = pricePerMeter.toString().replace(/\D/g, '');
+    
+    const newProfile = new Profile({
+      name,
+      color,
+      colorCode,
+      pricePerMeter: Number(cleanedPrice),
+      weight: Number(weight),
+      ammaCertification
+    });
+    
     await newProfile.save();
     res.redirect('/admin/profiles');
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.status(400).send(error.message);
-    }
-    console.error('Error creating profile:', error);
-    res.status(500).send('Error creating profile');
+    console.error('Error adding profile:', error);
+    res.status(500).send('An error occurred while adding the profile');
   }
 });
 
@@ -62,13 +71,25 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 // Route to update a profile
 router.post('/update/:id', isAdmin, async (req, res) => {
   try {
-    const { name, pricePerMeter, weight, color, colorCode } = req.body;
-    await Profile.findByIdAndUpdate(req.params.id, { name, pricePerMeter, weight, color, colorCode });
-    logger.info(`Profile with ID: ${req.params.id} updated successfully.`);
+    const { id } = req.params;
+    const { name, color, colorCode, pricePerMeter, weight, ammaCertification } = req.body;
+    
+    // Convert price to a number (remove any formatting)
+    const cleanedPrice = pricePerMeter.toString().replace(/\D/g, '');
+    
+    await Profile.findByIdAndUpdate(id, {
+      name,
+      color,
+      colorCode,
+      pricePerMeter: Number(cleanedPrice),
+      weight: Number(weight),
+      ammaCertification
+    });
+    
     res.redirect('/admin/profiles');
   } catch (error) {
-    logger.error('Failed to update profile:', error);
-    res.status(500).send('Failed to update profile');
+    console.error('Error updating profile:', error);
+    res.status(500).send('An error occurred while updating the profile');
   }
 });
 
@@ -91,68 +112,135 @@ router.delete('/:id', isAdmin, async (req, res) => {
 // Route to export profiles to Excel
 router.get('/export-profiles', isAdmin, async (req, res) => {
   try {
-    const profiles = await Profile.find({});
+    const profiles = await Profile.find().sort({ name: 1 });
+    
+    // Create a new Excel workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Profiles');
-
+    
+    // Add column headers
     worksheet.columns = [
       { header: 'Name', key: 'name', width: 20 },
-      { header: 'Color', key: 'color', width: 15 },
-      { header: 'Color Code', key: 'colorCode', width: 15 },
-      { header: 'Price Per Meter', key: 'pricePerMeter', width: 15 },
-      { header: 'Weight', key: 'weight', width: 10 },
+      { header: 'Color', key: 'color', width: 20 },
+      { header: 'Reference', key: 'colorCode', width: 15 },
+      { header: 'AMMA Certification', key: 'ammaCertification', width: 20 },
+      { header: 'Price Per Meter (COP)', key: 'pricePerMeter', width: 25 },
+      { header: 'Weight (kg/m)', key: 'weight', width: 15 }
     ];
-
+    
+    // Format the header row
+    worksheet.getRow(1).font = { bold: true };
+    
+    // Add profile data to the worksheet
     profiles.forEach(profile => {
-      worksheet.addRow(profile);
+      worksheet.addRow({
+        name: profile.name,
+        color: profile.color,
+        colorCode: profile.colorCode,
+        ammaCertification: profile.ammaCertification,
+        pricePerMeter: profile.pricePerMeter,
+        weight: profile.weight
+      });
     });
-
+    
+    // Format the price column
+    worksheet.getColumn('pricePerMeter').numFmt = '#,##0';
+    
+    // Format the weight column
+    worksheet.getColumn('weight').numFmt = '#,##0.00';
+    
+    // Set content type and disposition
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=profiles.xlsx');
-
+    res.setHeader('Content-Disposition', 'attachment; filename=Profiles.xlsx');
+    
+    // Write to response
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    console.error('Error exporting data:', error);
-    res.status(500).send('Failed to export data');
+    console.error('Error exporting profiles:', error);
+    res.status(500).send('An error occurred while exporting profiles');
   }
 });
 
 // Route to import profiles from Excel
 router.post('/import-profiles', isAdmin, upload.single('file'), async (req, res) => {
-  const filePath = req.file.path;
   try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    
+    // Read the Excel file
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(filePath);
+    await workbook.xlsx.readFile(req.file.path);
+    
+    // Get the first worksheet
     const worksheet = workbook.getWorksheet('Profiles');
-    const profiles = [];
-
-    worksheet.eachRow((row, rowNumber) => {
+    if (!worksheet) {
+      return res.status(400).json({ message: 'Worksheet "Profiles" not found in the Excel file' });
+    }
+    
+    let importCount = 0;
+    let errorCount = 0;
+    
+    // Process each row (skip the header row)
+    worksheet.eachRow({ includeEmpty: false }, async (row, rowNumber) => {
       if (rowNumber === 1) return; // Skip header row
-      const name = row.getCell(1).value;
-      const color = row.getCell(2).value;
-      const colorCode = row.getCell(3).value;
-      const pricePerMeter = parseFloat(row.getCell(4).value);
-      const weight = parseFloat(row.getCell(5).value);
-      profiles.push({ name, color, colorCode, pricePerMeter, weight });
+      
+      try {
+        const profileData = {
+          name: row.getCell(1).value,
+          color: row.getCell(2).value,
+          colorCode: row.getCell(3).value,
+          ammaCertification: row.getCell(4).value,
+          pricePerMeter: Number(row.getCell(5).value),
+          weight: Number(row.getCell(6).value)
+        };
+        
+        // Validate AMMA certification
+        if (!['2603', '2604', '2605'].includes(profileData.ammaCertification)) {
+          console.warn(`Invalid AMMA certification: ${profileData.ammaCertification} in row ${rowNumber}, setting default 2603`);
+          profileData.ammaCertification = '2603';
+        }
+        
+        // Check if profile already exists (by name)
+        const existingProfile = await Profile.findOne({ name: profileData.name });
+        
+        if (existingProfile) {
+          // Update existing profile
+          await Profile.updateOne({ _id: existingProfile._id }, profileData);
+        } else {
+          // Create new profile
+          const newProfile = new Profile(profileData);
+          await newProfile.save();
+        }
+        
+        importCount++;
+      } catch (error) {
+        console.error(`Error processing row ${rowNumber}:`, error);
+        errorCount++;
+      }
     });
-
-    await Profile.deleteMany({});
-    await Profile.insertMany(profiles);
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath); // Delete the uploaded file after processing
-    }
-
-    res.json({ message: 'File uploaded successfully!' });
+    
+    // Delete the temporary file
+    fs.unlinkSync(req.file.path);
+    
+    res.json({
+      message: `Import complete: ${importCount} profiles imported successfully, ${errorCount} errors.`
+    });
   } catch (error) {
-    console.error('Error importing data:', error);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath); // Delete the uploaded file in case of error
+    console.error('Error importing profiles:', error);
+    
+    // Clean up temp file if it exists
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error removing temp file:', unlinkError);
+      }
     }
-    res.status(500).json({ message: `File upload failed: ${error.message}` });
+    
+    res.status(500).json({ message: 'An error occurred while importing profiles' });
   }
 });
-
 
 module.exports = router;

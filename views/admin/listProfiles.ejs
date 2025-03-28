@@ -6,151 +6,331 @@
   <!-- Include Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .bg-header-blue {
-      background-color: #1e3a8a; /* Custom blue color */
-    }
-    .bg-header-blue:hover {
-      background-color: #1e40af; /* Darker blue on hover */
-    }
+    /* Column header styles */
+    .col-name { @apply text-indigo-600 font-medium; }
+    .col-color { @apply text-blue-600 font-medium; }
+    .col-code { @apply text-purple-600 font-medium; }
+    .col-amma { @apply text-fuchsia-600 font-medium; }
+    .col-price { @apply text-emerald-600 font-medium; }
+    .col-weight { @apply text-amber-600 font-medium; }
+    .col-actions { @apply text-rose-600 font-medium; }
   </style>
   <script>
-    async function handleImportFormSubmit(event) {
-      event.preventDefault();
-      const formData = new FormData(event.target);
-      try {
-        const response = await fetch('/admin/profiles/import-profiles', {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await response.json();
-        alert(result.message);
-        if (response.ok) {
-          location.reload();
-        }
-      } catch (error) {
-        console.error('Failed to import data:', error);
-        alert('Failed to import data');
-        location.reload();
+    document.addEventListener('DOMContentLoaded', function() {
+      // Setup form submission for Excel import
+      const importForm = document.getElementById('import-form');
+      const importFile = document.getElementById('import-file');
+      const importHiddenInput = document.getElementById('import-hidden-input');
+      
+      if (importFile && importForm && importHiddenInput) {
+          importFile.addEventListener('change', function(e) {
+              if (this.files.length > 0) {
+                  // Copy the file to the hidden input
+                  const dataTransfer = new DataTransfer();
+                  dataTransfer.items.add(this.files[0]);
+                  importHiddenInput.files = dataTransfer.files;
+                  
+                  // Submit the form with proper loading indicator
+                  handleImportFormSubmit(e);
+              }
+          });
       }
-    }
+      
+      // Handle import form submission
+      async function handleImportFormSubmit(event) {
+          event.preventDefault();
+          
+          const submitBtn = document.createElement('div');
+          submitBtn.className = 'fixed top-4 right-4 bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center z-50';
+          submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Importing profiles...';
+          document.body.appendChild(submitBtn);
+          
+          const formData = new FormData(importForm);
+          try {
+              const response = await fetch('/admin/profiles/import-profiles', {
+                  method: 'POST',
+                  body: formData
+              });
+              const result = await response.json();
+              
+              // Show notification
+              showNotification(result.message, response.ok ? 'success' : 'error');
+              
+              if (response.ok) {
+                  setTimeout(() => {
+                      location.reload();
+                  }, 1500);
+              } else {
+                  document.body.removeChild(submitBtn);
+              }
+          } catch (error) {
+              console.error('Failed to import data:', error);
+              showNotification('Failed to import data: ' + error.message, 'error');
+              document.body.removeChild(submitBtn);
+          }
+      }
+      
+      // Search functionality
+      const searchInput = document.getElementById('search');
+      const rows = document.querySelectorAll('.profile-row');
+      const totalCount = document.getElementById('profileCount');
+      
+      if (searchInput) {
+          searchInput.addEventListener('keyup', function() {
+              const searchTerm = this.value.toLowerCase();
+              let visibleCount = 0;
+              
+              rows.forEach(row => {
+                  const text = row.textContent.toLowerCase();
+                  if (text.includes(searchTerm)) {
+                      row.style.display = '';
+                      visibleCount++;
+                  } else {
+                      row.style.display = 'none';
+                  }
+              });
+              
+              // Update the displayed count
+              if (totalCount) {
+                  totalCount.textContent = visibleCount;
+              }
+              
+              // Show/hide no results message
+              const table = document.getElementById('profileTable');
+              let noResultsMsg = document.querySelector('.no-results-message');
+              
+              if (visibleCount === 0 && rows.length > 0) {
+                  if (!noResultsMsg) {
+                      noResultsMsg = document.createElement('div');
+                      noResultsMsg.className = 'no-results-message bg-white rounded-lg p-8 text-center mt-4 shadow-md';
+                      noResultsMsg.innerHTML = `
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                          </svg>
+                          <p class="text-gray-600 text-lg">No profiles match your search criteria</p>
+                          <p class="text-gray-500 mt-2">Try adjusting your search term</p>`;
+                      
+                      // Insert after the table
+                      table.parentNode.parentNode.insertBefore(noResultsMsg, table.parentNode.nextSibling);
+                  } else {
+                      noResultsMsg.style.display = 'block';
+                  }
+              } else if (noResultsMsg) {
+                  noResultsMsg.style.display = 'none';
+              }
+          });
+      }
+      
+      // Delete profile function
+      window.deleteProfile = async function(profileId) {
+        if (confirm('Are you sure you want to delete this profile?')) {
+          try {
+            const response = await fetch(`/admin/profiles/${profileId}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            const result = await response.json();
+            
+            showNotification(result.message, response.status === 200 ? 'success' : 'error');
+            
+            if (response.status === 200) {
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            }
+          } catch (error) {
+            console.error('Error deleting profile:', error);
+            showNotification('Failed to delete profile: ' + error.message, 'error');
+          }
+        }
+      };
+      
+      // Notification system
+      window.showNotification = function(message, type) {
+          const notification = document.createElement('div');
+          notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} transition-all duration-300 flex items-center z-50`;
+          
+          const icon = document.createElement('span');
+          icon.className = 'mr-2';
+          icon.innerHTML = type === 'success' 
+              ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>'
+              : '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>';
+          
+          notification.appendChild(icon);
+          notification.appendChild(document.createTextNode(message));
+          document.body.appendChild(notification);
+          
+          // Animate in
+          setTimeout(() => {
+              notification.style.transform = 'translateY(10px)';
+          }, 10);
+          
+          // Fade out and remove after delay
+          setTimeout(() => {
+              notification.style.opacity = '0';
+              notification.style.transform = 'translateY(-10px)';
+              setTimeout(() => {
+                  if (notification.parentNode) {
+                      document.body.removeChild(notification);
+                  }
+              }, 300);
+          }, 4000);
+      }
+    });
   </script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
-  <div class="container mx-auto mt-10 flex-grow">
-    <h1 style="color: #162f56;" class="text-4xl font-bold mb-5">Profiles</h1>
-    <div class="flex justify-between items-center mb-5">
-      <div class="flex space-x-4">
-        <a href="/admin/profiles/add" class="bg-header-blue text-white font-bold py-2 px-4 rounded hover:bg-header-blue-dark">Add New Profile</a>
-        <a href="/admin/profiles/export-profiles" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Export to Excel</a>
-      </div>
-      <form id="import-form" onsubmit="handleImportFormSubmit(event)" method="POST" enctype="multipart/form-data" class="flex space-x-4 items-center ml-4">
-        <input type="file" name="file" accept=".xlsx" class="bg-white text-gray-800 border border-gray-300 rounded py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Import from Excel</button>
-      </form>
-      <input type="text" id="search" placeholder="Search by name" class="border border-gray-300 rounded py-2 px-4 ml-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-    </div>
-    <div class="flex flex-col">
-      <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-        <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-          <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Color
-                  </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Color Code
-                  </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price Per Meter COP
-                  </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Weight Kg
-                  </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody id="profilesTable" class="bg-white divide-y divide-gray-200">
-                <% profiles.forEach(function(profile) { %>
-                  <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900 font-bold"><%= profile.name %></div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900"><%= profile.color %></div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900"><%= profile.colorCode %></div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900"><%= '$' + profile.pricePerMeter.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') %></div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900"><%= profile.weight %></div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
-                      <a href="/admin/profiles/edit/<%= profile._id %>" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                      <button onclick="deleteProfile('<%= profile._id %>')" class="text-red-600 hover:text-red-900 ml-4">Delete</button>
-                    </td>
-                  </tr>
-                <% }); %>
-              </tbody>
-            </table>
-          </div>
+  <div class="container mx-auto px-4 pt-8 pb-12 flex-grow">
+    <!-- Header with Search -->
+    <div class="bg-white shadow-md rounded-xl p-4 mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 class="text-3xl font-bold text-gray-800 bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+          Profile Management
+        </h1>
+        <div class="relative">
+          <input type="text" id="search" placeholder="Search profiles..." 
+                class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
       </div>
     </div>
-    <div class="mt-4 text-center">
-      <a href="/admin" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">Back to Admin Console</a>
+    
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-3 justify-start items-center mb-6">
+      <a href="/admin/profiles/add" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add New Profile
+      </a>
+      
+      <a href="/admin/profiles/export-profiles" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Export to Excel
+      </a>
+      
+      <label for="import-file" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center cursor-pointer transition-colors duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+        </svg>
+        Import from Excel
+      </label>
+      <input type="file" id="import-file" name="file" accept=".xlsx" class="hidden">
+      
+      <form id="import-form" action="/admin/profiles/import-profiles" method="POST" enctype="multipart/form-data" class="hidden">
+        <input type="file" name="file" accept=".xlsx" id="import-hidden-input">
+      </form>
+      
+      <a href="/admin" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Dashboard
+      </a>
     </div>
+      
+    <% if (profiles.length > 0) { %>
+      <!-- Profile Table -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Table header with gradient -->
+        <div class="bg-gradient-to-r from-indigo-700 to-blue-700 text-white py-4 px-6">
+          <h2 class="text-lg font-bold">Profile Inventory</h2>
+        </div>
+        
+        <!-- Table content -->
+        <div class="overflow-x-auto">
+          <table id="profileTable" class="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="px-6 py-3 text-left col-name">Profile Name</th>
+                <th class="px-6 py-3 text-left col-color">Color</th>
+                <th class="px-6 py-3 text-left col-code">Reference</th>
+                <th class="px-6 py-3 text-left col-amma">AMMA Certification</th>
+                <th class="px-6 py-3 text-left col-price">Price (COP)</th>
+                <th class="px-6 py-3 text-left col-weight">Weight (kg/m)</th>
+                <th class="px-6 py-3 text-center col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% profiles.forEach(function(profile) { %>
+                <tr class="profile-row hover:bg-gray-50 transition-colors duration-150">
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      <%= profile.name %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 rounded-full mr-2" style='background-color: <%= profile.colorCode %>'></div>
+                      <span class="text-sm text-gray-700"><%= profile.color %></span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <%= profile.colorCode %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-fuchsia-100 text-fuchsia-800">
+                      <%= profile.ammaCertification || 'N/A' %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                      <%= profile.pricePerMeter.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                      <%= profile.weight.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %> kg/m
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <div class="flex justify-center space-x-2">
+                      <a href="/admin/profiles/edit/<%= profile._id %>" class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 p-1 rounded transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </a>
+                      <button onclick="deleteProfile('<%= profile._id %>')" class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 p-1 rounded transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Table footer with count -->
+        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+          <p class="text-sm text-gray-700">
+            Showing <span id="profileCount" class="font-medium"><%= profiles.length %></span> profiles
+          </p>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="bg-white rounded-xl shadow-md p-6 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+        </svg>
+        <p class="text-xl text-gray-600 mb-4">No profiles found in the inventory</p>
+        <a href="/admin/profiles/add" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+          Add Your First Profile
+        </a>
+      </div>
+    <% } %>
   </div>
   <%- include('../partials/_footer.ejs') %>
-  <script src="/js/main.js"></script>
-  <script>
-    async function deleteProfile(profileId) {
-      if (confirm('Are you sure you want to delete this profile?')) {
-        try {
-          const response = await fetch(`/admin/profiles/${profileId}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          const result = await response.json();
-          if (response.status === 200) {
-            alert(result.message);
-            window.location.reload(); // Reload the page to reflect changes
-          } else {
-            alert(result.message);
-          }
-        } catch (error) {
-          console.error('Error deleting profile:', error);
-          alert('Failed to delete profile');
-        }
-      }
-    }
-
-    // Search functionality
-    document.getElementById('search').addEventListener('input', function() {
-      const searchQuery = this.value.toLowerCase();
-      const rows = document.querySelectorAll('#profilesTable tr');
-      rows.forEach(row => {
-        const nameCell = row.querySelector('td div').textContent.toLowerCase();
-        if (nameCell.includes(searchQuery)) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
-        }
-      });
-    });
-  </script>
 </body>
 </html>
