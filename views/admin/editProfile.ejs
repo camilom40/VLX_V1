@@ -43,6 +43,21 @@
     .detail-value {
       @apply text-sm text-gray-700;
     }
+    
+    /* Color preview */
+    .color-preview-lg {
+      height: 2.5rem;
+      width: 2.5rem;
+      border-radius: 0.375rem;
+      border: 1px solid #D1D5DB;
+    }
+    
+    .color-preview-sm {
+      height: 1rem;
+      width: 1rem;
+      border-radius: 9999px;
+      margin-right: 0.5rem;
+    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
@@ -104,7 +119,7 @@
                       required 
                       class="input-field" 
                       placeholder="Enter reference code">
-                <div class="h-10 w-10 rounded-md border border-gray-300" id="colorPreview" style='background-color: <%= profile.colorCode %>'></div>
+                <div class="color-preview-lg" id="colorPreview" data-color-code="<%= profile.colorCode %>"></div>
               </div>
               <p class="mt-1 text-sm text-gray-500">Profile reference code</p>
             </div>
@@ -212,7 +227,7 @@
             <div class="flex flex-col">
               <span class="detail-label text-purple-600">Reference</span>
               <div class="flex items-center">
-                <div class="h-4 w-4 rounded-full mr-2" style='background-color: <%= profile.colorCode %>'></div>
+                <div class="color-preview-sm" id="colorPreviewSmall" data-color-code="<%= profile.colorCode %>"></div>
                 <span class="detail-value"><%= profile.colorCode %></span>
               </div>
             </div>
@@ -241,13 +256,29 @@
   
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Set initial color of the preview elements using data attributes
+      const colorPreview = document.getElementById('colorPreview');
+      const colorPreviewSmall = document.getElementById('colorPreviewSmall');
+      
+      if (colorPreview) {
+        const colorCode = colorPreview.getAttribute('data-color-code');
+        colorPreview.style.backgroundColor = colorCode;
+      }
+      
+      if (colorPreviewSmall) {
+        const colorCode = colorPreviewSmall.getAttribute('data-color-code');
+        colorPreviewSmall.style.backgroundColor = colorCode;
+      }
+      
       // Handle color code input and preview
       const colorCodeInput = document.getElementById('colorCode');
-      const colorPreview = document.getElementById('colorPreview');
       
       if (colorCodeInput && colorPreview) {
         colorCodeInput.addEventListener('input', function() {
           colorPreview.style.backgroundColor = this.value;
+          if (colorPreviewSmall) {
+            colorPreviewSmall.style.backgroundColor = this.value;
+          }
         });
       }
       

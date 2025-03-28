@@ -109,6 +109,15 @@
       font-size: 1.2em;
     }
     
+    /* Color preview */
+    .color-preview-lg {
+      height: 2.5rem;
+      width: 2.5rem;
+      border-radius: 0.375rem;
+      border: 1px solid #D1D5DB;
+      background-color: #CCCCCC;
+    }
+    
     .error {
       color: red;
       margin-top: 5px;
@@ -181,7 +190,7 @@
                       class="input-field" 
                       placeholder="Enter reference code" 
                       required>
-                <div class="h-10 w-10 rounded-md border border-gray-300" id="colorPreview"></div>
+                <div class="color-preview-lg" id="colorPreview"></div>
               </div>
               <p class="mt-1 text-sm text-gray-500">Profile reference code</p>
             </div>

@@ -14,6 +14,15 @@
     .col-price { @apply text-emerald-600 font-medium; }
     .col-weight { @apply text-amber-600 font-medium; }
     .col-actions { @apply text-rose-600 font-medium; }
+    
+    /* Color preview */
+    .color-preview {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 9999px;
+      margin-right: 0.5rem;
+    }
   </style>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -268,7 +277,7 @@
                   </td>
                   <td class="px-6 py-4">
                     <div class="flex items-center">
-                      <div class="w-4 h-4 rounded-full mr-2" style='background-color: <%= profile.colorCode %>'></div>
+                      <div class="color-preview" id="color-<%= profile._id %>" data-color-code="<%= profile.colorCode %>"></div>
                       <span class="text-sm text-gray-700"><%= profile.color %></span>
                     </div>
                   </td>
@@ -332,5 +341,17 @@
     <% } %>
   </div>
   <%- include('../partials/_footer.ejs') %>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set color preview backgrounds using data attributes instead of embedded EJS
+      const colorPreviews = document.querySelectorAll('[data-color-code]');
+      colorPreviews.forEach(function(preview) {
+        const colorCode = preview.getAttribute('data-color-code');
+        preview.style.backgroundColor = colorCode;
+      });
+      
+      // Rest of your existing JavaScript...
+    });
+  </script>
 </body>
 </html>
