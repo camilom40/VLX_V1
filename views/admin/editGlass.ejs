@@ -7,24 +7,54 @@
   <style>
     /* Custom input styles */
     .input-field {
-      @apply mt-1 block w-full px-4 py-3 bg-blue-50 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background-color: #eff6ff;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.15s ease-in-out;
       min-height: 42px;
     }
     
+    .input-field:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    }
+    
     .label-text {
-      @apply block text-sm font-medium mb-1 transition duration-150;
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      transition: all 0.15s ease-in-out;
     }
     
     .section-title {
-      @apply font-bold text-lg bg-gradient-to-r bg-clip-text text-transparent;
+      font-weight: 700;
+      font-size: 1.125rem;
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
     }
     
     /* Section title styles */
-    .section-type { @apply from-indigo-600 to-blue-500; }
-    .section-desc { @apply from-blue-600 to-sky-500; }
-    .section-missile { @apply from-purple-600 to-fuchsia-500; }
-    .section-price { @apply from-emerald-600 to-green-500; }
-    .section-weight { @apply from-amber-600 to-yellow-500; }
+    .section-type {
+      background-image: linear-gradient(to right, #4f46e5, #3b82f6);
+    }
+    .section-desc {
+      background-image: linear-gradient(to right, #2563eb, #0ea5e9);
+    }
+    .section-missile {
+      background-image: linear-gradient(to right, #9333ea, #d946ef);
+    }
+    .section-price {
+      background-image: linear-gradient(to right, #059669, #22c55e);
+    }
+    .section-weight {
+      background-image: linear-gradient(to right, #d97706, #eab308);
+    }
     
     /* Required field indicator */
     .required::after {
@@ -36,11 +66,40 @@
     
     /* Detail styles */
     .detail-label {
-      @apply text-sm font-medium;
+      font-size: 0.875rem;
+      font-weight: 500;
     }
     
     .detail-value {
-      @apply text-sm text-gray-700;
+      font-size: 0.875rem;
+      color: #374151;
+    }
+    
+    .input-group-text {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background-color: #f3f4f6;
+      color: #4b5563;
+      font-weight: 500;
+      border: 1px solid #d1d5db;
+      border-left: none;
+      border-top-right-radius: 0.375rem;
+      border-bottom-right-radius: 0.375rem;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      transition: all 0.15s ease-in-out;
+    }
+    
+    .input-field:focus + .input-group-text {
+      border-color: #3b82f6;
+      background-color: #e5e7eb;
+      color: #1f2937;
+    }
+    
+    .input-field.rounded-r-none {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
     }
   </style>
 </head>
@@ -119,12 +178,12 @@
                       name="pricePerSquareMeter" 
                       value="<%= glass.pricePerSquareMeter.toLocaleString('es-CO') %>" 
                       required 
-                      class="mt-1 block w-full px-4 py-3 bg-blue-50 border border-gray-300 rounded-l-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150" 
+                      class="input-field rounded-r-none" 
                       placeholder="Enter price per square meter"
                       inputmode="numeric"
                       pattern="[0-9,.]+"
                       title="Please enter a whole number without decimals">
-                <span class="inline-flex items-center px-3 bg-gray-200 text-gray-700 border border-l-0 border-gray-300 rounded-r-md">
+                <span class="input-group-text">
                   COP
                 </span>
               </div>
@@ -146,9 +205,9 @@
                       value="<%= glass.weight %>" 
                       step="0.01" 
                       required 
-                      class="mt-1 block w-full px-4 py-3 bg-blue-50 border border-l-0 border-gray-300 rounded-l-none rounded-r-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150" 
+                      class="input-field rounded-r-none" 
                       placeholder="Enter weight">
-                <span class="inline-flex items-center px-3 bg-gray-200 text-gray-700 border border-l-0 border-gray-300 rounded-r-md">
+                <span class="input-group-text">
                   kg/m²
                 </span>
               </div>

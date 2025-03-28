@@ -18,7 +18,8 @@
       transition-property: all;
       transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       transition-duration: 150ms;
-      min-height: 42px;
+      height: 45px;
+      line-height: 1.5;
     }
     
     .input-field:focus {
@@ -123,6 +124,47 @@
       margin-top: 5px;
       display: none;
     }
+
+    .input-group-text {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.50rem 1rem;
+      background-color: #f3f4f6;
+      color: #4b5563;
+      font-weight: 500;
+      border: 1px solid #d1d5db;
+      border-left: none;
+      border-top-right-radius: 0.375rem;
+      border-bottom-right-radius: 0.375rem;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      transition: all 0.15s ease-in-out;
+      height: 44px;
+      min-width: 60px;
+      justify-content: center;
+      line-height: 1.5;
+    }
+    
+    .input-field:focus + .input-group-text {
+      border-color: #3b82f6;
+      background-color: #e5e7eb;
+      color: #1f2937;
+    }
+    
+    .input-field.rounded-r-none {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    select.input-field {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
@@ -190,7 +232,6 @@
                       class="input-field" 
                       placeholder="Enter reference code" 
                       required>
-                <div class="color-preview-lg" id="colorPreview"></div>
               </div>
               <p class="mt-1 text-sm text-gray-500">Profile reference code</p>
             </div>
@@ -227,11 +268,13 @@
                 <input type="text" 
                       id="pricePerMeter" 
                       name="pricePerMeter" 
+                      required 
                       class="input-field rounded-r-none" 
-                      placeholder="Enter price per meter" 
-                      inputmode="numeric" 
-                      required>
-                <span class="inline-flex items-center px-3 bg-gray-200 text-gray-700 border border-gray-300 rounded-r-md h-[42px]">
+                      placeholder="Enter price per meter"
+                      inputmode="numeric"
+                      pattern="[0-9,.]+"
+                      title="Please enter a valid number">
+                <span class="input-group-text">
                   COP
                 </span>
               </div>
@@ -251,10 +294,10 @@
                       id="weight" 
                       name="weight" 
                       step="0.01" 
+                      required 
                       class="input-field rounded-r-none" 
-                      placeholder="Enter weight" 
-                      required>
-                <span class="inline-flex items-center px-3 bg-gray-200 text-gray-700 border border-gray-300 rounded-r-md h-[42px]">
+                      placeholder="Enter weight">
+                <span class="input-group-text">
                   kg/m
                 </span>
               </div>
@@ -287,16 +330,6 @@
   <%- include('../partials/_footer.ejs'); %>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Handle color code input and preview
-      const colorCodeInput = document.getElementById('colorCode');
-      const colorPreview = document.getElementById('colorPreview');
-      
-      if (colorCodeInput && colorPreview) {
-        colorCodeInput.addEventListener('input', function() {
-          colorPreview.style.backgroundColor = this.value;
-        });
-      }
-      
       // Format price input as Colombian currency
       const priceInput = document.getElementById('pricePerMeter');
       if (priceInput) {

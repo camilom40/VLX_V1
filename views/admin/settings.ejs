@@ -5,6 +5,82 @@
   <title>Global Cost Settings</title>
   <!-- Include Tailwind CSS for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .input-field {
+      width: 100%;
+      padding: 0.625rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #d1d5db;
+      background-color: white;
+      color: #111827;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    }
+    .input-field:hover {
+      border-color: #60a5fa;
+    }
+    .label {
+      display: block;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #111827;
+    }
+    .label-transport {
+      color: #1e40af;
+    }
+    .label-manufacturing {
+      color: #166534;
+    }
+    .label-administrative {
+      color: #6b21a8;
+    }
+    .input-group {
+      position: relative;
+    }
+    .input-group::before {
+      content: '$';
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+    }
+    .input-group::after {
+      content: 'COP';
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    .input-group input {
+      padding-left: 2rem;
+      padding-right: 3rem;
+    }
+    .field-description {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+    .section-header {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .section-subheader {
+      font-size: 0.875rem;
+      color: #4b5563;
+      margin-bottom: 1rem;
+    }
+  </style>
   <script>
     function updateTime() {
       const now = new Date();
@@ -24,7 +100,7 @@
 
     function formatCurrency(value) {
       const number = parseFloat(value.replace(/[^0-9.-]+/g, "")).toFixed(2);
-      return isNaN(number) ? '' : `$${number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+      return isNaN(number) ? '' : number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
     function formatInput(event) {
@@ -49,13 +125,12 @@
     }
 
     document.addEventListener('DOMContentLoaded', (event) => {
-      updateTime(); // Set initial time
-      setInterval(updateTime, 1000); // Update time every second
+      updateTime();
+      setInterval(updateTime, 1000);
 
-      updateExchangeRate(); // Set initial exchange rate
-      setInterval(updateExchangeRate, 10000); // Update exchange rate every 10 seconds
+      updateExchangeRate();
+      setInterval(updateExchangeRate, 10000);
 
-      // Apply initial formatting and add event listeners
       const fields = ['seaFreight', 'landFreight', 'packaging', 'labor', 'indirectCosts', 'administrativeExpenses'];
       fields.forEach(field => {
         const input = document.getElementById(field);
@@ -76,72 +151,186 @@
         });
 
         const result = await response.json();
-        alert(result.message);
+        showNotification(result.message, response.ok ? 'success' : 'error');
         if (response.ok) {
-          location.reload();
+          setTimeout(() => {
+            location.reload();
+          }, 1500);
         }
       } catch (error) {
         console.error('Failed to import data:', error);
-        alert('Failed to import data');
-        location.reload();
+        showNotification('Failed to import data: ' + error.message, 'error');
       }
+    }
+
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} transition-all duration-300 flex items-center z-50`;
+      
+      const icon = document.createElement('span');
+      icon.className = 'mr-2';
+      icon.innerHTML = type === 'success' 
+        ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>'
+        : '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>';
+      
+      notification.appendChild(icon);
+      notification.appendChild(document.createTextNode(message));
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          notification.style.transform = 'translateY(-10px)';
+          setTimeout(() => {
+            if (notification.parentNode) {
+              document.body.removeChild(notification);
+            }
+          }, 300);
+        }, 4000);
+      }, 10);
     }
   </script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-50 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
-  <main class="py-8">
-    <div class="container mx-auto px-4">
-      <div class="flex justify-between items-center mb-4">
+  
+  <main class="flex-grow container mx-auto px-4 py-6">
+    <!-- Header Section -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <div class="flex flex-col md:flex-row justify-between items-center mb-6">
         <div>
-          <h1 class="text-3xl font-bold">Global Cost Settings</h1>
-          <p style="color: darkred;" class="text-lg font-semibold">Current USD to COP Exchange Rate: <span id="exchange-rate">$<%= usdToCopRate %> COP</span></p>
+          <h1 class="text-2xl font-bold mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span class="text-gray-800">
+              Global Cost Settings
+            </span>
+          </h1>
+          <div class="flex items-center space-x-4">
+            <span class="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-md text-sm font-medium">
+              USD to COP: <span id="exchange-rate" class="font-bold">$<%= usdToCopRate %></span>
+            </span>
+            <span class="text-sm text-gray-500" id="current-time"></span>
+          </div>
         </div>
-        <p class="text-sm text-gray-500" id="current-time"></p>
       </div>
-      <div class="flex justify-between items-center mb-5">
-        <div class="flex space-x-4">
-          <a href="/admin/export-settings" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Export to Excel</a>
-        </div>
-        <form id="import-form" onsubmit="handleImportFormSubmit(event)" method="POST" enctype="multipart/form-data" class="flex space-x-2 items-center">
-          <input type="file" name="file" accept=".xlsx" class="bg-white text-gray-800 border border-gray-300 rounded py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-          <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Import from Excel</button>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap gap-3 justify-start items-center">
+        <a href="/admin/export-settings" class="w-full sm:w-auto bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Export to Excel
+        </a>
+        
+        <form id="import-form" onsubmit="handleImportFormSubmit(event)" method="POST" enctype="multipart/form-data" class="w-full sm:w-auto">
+          <label for="import-file" class="w-full sm:w-auto bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+            </svg>
+            Import from Excel
+          </label>
+          <input type="file" id="import-file" name="file" accept=".xlsx" class="hidden">
         </form>
         
+        <a href="/admin" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Dashboard
+        </a>
       </div>
-      <h3 style="font-size:large; margin-bottom: 1.5rem; color: darkred;">All Costs are in $COP</h3>
-      <form action="/admin/settings" method="post" onsubmit="cleanFormValues()">
-        <div class="mb-4">
-          <label for="seaFreight" class="block font-semibold mb-2">Sea Freight Per Container</label>
-          <input type="text" id="seaFreight" name="seaFreight" value="<%= settings ? settings.seaFreight : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+    </div>
+
+    <!-- Settings Form -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="mb-6">
+        <h2 class="section-header">Cost Settings</h2>
+        <p class="section-subheader">All costs are in Colombian Pesos (COP)</p>
+      </div>
+
+      <form action="/admin/settings" method="post" onsubmit="cleanFormValues()" class="space-y-6">
+        <!-- Transportation Costs Section -->
+        <div class="mb-8">
+          <h3 class="text-base font-semibold text-gray-700 mb-4">Transportation Costs</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="seaFreight" class="label label-transport">Sea Freight Per Container</label>
+              <div class="input-group">
+                <input type="text" id="seaFreight" name="seaFreight" value="<%= settings ? settings.seaFreight : '' %>" required class="input-field" placeholder="Enter amount">
+              </div>
+              <p class="field-description">Cost of shipping one container by sea</p>
+            </div>
+            
+            <div>
+              <label for="landFreight" class="label label-transport">Land Freight Per Container</label>
+              <div class="input-group">
+                <input type="text" id="landFreight" name="landFreight" value="<%= settings ? settings.landFreight : '' %>" required class="input-field" placeholder="Enter amount">
+              </div>
+              <p class="field-description">Cost of transporting one container by land</p>
+            </div>
+          </div>
         </div>
-        <div class="mb-4">
-          <label for="landFreight" class="block font-semibold mb-2">Land Freight Per Container</label>
-          <input type="text" id="landFreight" name="landFreight" value="<%= settings ? settings.landFreight : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+
+        <!-- Manufacturing Costs Section -->
+        <div class="mb-8">
+          <h3 class="text-base font-semibold text-gray-700 mb-4">Manufacturing Costs</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="packaging" class="label label-manufacturing">Packaging Cost Per Window</label>
+              <div class="input-group">
+                <input type="text" id="packaging" name="packaging" value="<%= settings ? settings.packaging : '' %>" required class="input-field" placeholder="Enter amount">
+              </div>
+              <p class="field-description">Cost of packaging materials per window unit</p>
+            </div>
+            
+            <div>
+              <label for="labor" class="label label-manufacturing">Labor MOF Per Window</label>
+              <div class="input-group">
+                <input type="text" id="labor" name="labor" value="<%= settings ? settings.labor : '' %>" required class="input-field" placeholder="Enter amount">
+              </div>
+              <p class="field-description">Manufacturing labor cost per window unit</p>
+            </div>
+            
+            <div>
+              <label for="indirectCosts" class="label label-manufacturing">Indirect Costs of Fabrication CIF Per Window</label>
+              <div class="input-group">
+                <input type="text" id="indirectCosts" name="indirectCosts" value="<%= settings ? settings.indirectCosts : '' %>" required class="input-field" placeholder="Enter amount">
+              </div>
+              <p class="field-description">Additional fabrication costs per window unit</p>
+            </div>
+          </div>
         </div>
-        <div class="mb-4">
-          <label for="packaging" class="block font-semibold mb-2">Packaging Cost Per Window</label>
-          <input type="text" id="packaging" name="packaging" value="<%= settings ? settings.packaging : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
+
+        <!-- Administrative Costs Section -->
+        <div class="mb-8">
+          <h3 class="text-base font-semibold text-gray-700 mb-4">Administrative Costs</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="administrativeExpenses" class="label label-administrative">Administrative Expenses Per Container</label>
+              <div class="input-group">
+                <input type="text" id="administrativeExpenses" name="administrativeExpenses" value="<%= settings ? settings.administrativeExpenses : '' %>" required class="input-field" placeholder="Enter amount">
+              </div>
+              <p class="field-description">Administrative and overhead costs per container</p>
+            </div>
+          </div>
         </div>
-        <div class="mb-4">
-          <label for="labor" class="block font-semibold mb-2">Labor MOF Per Window</label>
-          <input type="text" id="labor" name="labor" value="<%= settings ? settings.labor : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
-        </div>
-        <div class="mb-4">
-          <label for="indirectCosts" class="block font-semibold mb-2">Indirect Costs of Fabrication CIF Per Window</label>
-          <input type="text" id="indirectCosts" name="indirectCosts" value="<%= settings ? settings.indirectCosts : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
-        </div>
-        <div class="mb-4">
-          <label for="administrativeExpenses" class="block font-semibold mb-2">Administrative Expenses Per Container</label>
-          <input type="text" id="administrativeExpenses" name="administrativeExpenses" value="<%= settings ? settings.administrativeExpenses : '' %>" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500">
-        </div>
-        <div class="flex justify-between">
-          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:bg-blue-600">Save Settings</button>
-          <a href="/admin" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Back to Admin Console</a>
+
+        <div class="flex justify-end space-x-4 pt-4">
+          <button type="submit" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-lg flex items-center transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Save Settings
+          </button>
         </div>
       </form>
     </div>
   </main>
+  
   <%- include('../partials/_footer.ejs') %>
 </body>
 </html>

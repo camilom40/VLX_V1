@@ -181,21 +181,21 @@
     
     <!-- Action Buttons -->
     <div class="flex flex-wrap gap-3 justify-start items-center mb-6">
-      <a href="/admin/glasses/add" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+      <a href="/admin/glasses/add" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         Add New Glass
       </a>
       
-      <a href="/admin/glasses/export-glasses" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+      <a href="/admin/glasses/export-glasses" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
         Export to Excel
       </a>
       
-      <label for="import-file" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center cursor-pointer transition-colors duration-200">
+      <label for="import-file" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
         </svg>
@@ -207,7 +207,7 @@
         <input type="file" name="file" accept=".xlsx" id="import-hidden-input">
       </form>
       
-      <a href="/admin" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+      <a href="/admin" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -228,11 +228,11 @@
           <table id="glassTable" class="min-w-full divide-y divide-gray-200">
             <thead>
               <tr class="bg-gray-50">
-                <th class="px-6 py-3 text-left col-type">Glass Type</th>
+                <th class="px-6 py-3 text-left col-type">Type</th>
                 <th class="px-6 py-3 text-left col-desc">Description</th>
-                <th class="px-6 py-3 text-left col-missile">Missile Type</th>
-                <th class="px-6 py-3 text-left col-price">Price (COP)</th>
-                <th class="px-6 py-3 text-left col-weight">Weight (kg/m²)</th>
+                <th class="px-6 py-3 text-left col-missile">Missile</th>
+                <th class="px-6 py-3 text-left col-price">Price</th>
+                <th class="px-6 py-3 text-left col-weight">Weight</th>
                 <th class="px-6 py-3 text-center col-actions">Actions</th>
               </tr>
             </thead>

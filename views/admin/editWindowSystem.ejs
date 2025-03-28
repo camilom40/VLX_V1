@@ -148,29 +148,35 @@
   </div>
   <%- include('../partials/_footer.ejs') %>
 
+  <script type="application/json" id="window-system-data">
+    <%- JSON.stringify(windowSystem) %>
+  </script>
   <script>
-    let profiles = <%- JSON.stringify(windowSystem.profiles.map(profile => ({
+    // Initialize data from server
+    const windowSystemData = JSON.parse(document.getElementById('window-system-data').textContent);
+    
+    let profiles = windowSystemData.profiles.map(profile => ({
       profileId: profile.profile._id,
       profileName: profile.profile.name,
       quantity: profile.quantity,
       orientation: profile.orientation,
       lengthDiscount: profile.lengthDiscount,
-    }))) %>;
+    }));
 
-    let accessories = <%- JSON.stringify(windowSystem.accessories.map(accessory => ({
+    let accessories = windowSystemData.accessories.map(accessory => ({
       accessoryId: accessory.accessory._id,
       accessoryName: accessory.accessory.name,
       quantity: accessory.quantity,
       unit: accessory.unit,
-    }))) %>;
+    }));
 
-    let glassRestrictions = <%- JSON.stringify(windowSystem.glassRestrictions.map(glass => ({
+    let glassRestrictions = windowSystemData.glassRestrictions.map(glass => ({
       type: glass.type,
       width: glass.width,
       height: glass.height,
       positivePressure: glass.positivePressure,
       negativePressure: glass.negativePressure,
-    }))) %>; 
+    }));
 
     function addProfileEntry() {
       const profileSelect = document.getElementById('profile-id');
