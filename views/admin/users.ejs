@@ -71,15 +71,14 @@
               <table class="min-w-full divide-y divide-gray-200 table-fixed hidden md:table">
                 <thead class="bg-blue-50">
                   <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[14%]">Username</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[18%]">Password</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[8%]">Role</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[15%]">Username</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[20%]">Password</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Role</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[12%]">New Role</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Current Tier</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[15%]">New Tier</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[6%]">Projects</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Last Login</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[7%]">Actions</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[12%]">Current Tier</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[12%]">New Tier</th>
+                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[8%]">Projects</th>
+                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[11%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -92,7 +91,7 @@
                               <span class="text-blue-800 font-semibold"><%= user.username.charAt(0).toUpperCase() %></span>
                             </div>
                           </div>
-                          <div class="truncate max-w-[120px]" title="<%= user.username %>">
+                          <div class="truncate max-w-[140px]" title="<%= user.username %>">
                             <%= user.username %>
                             <input type="hidden" name="userId[]" value="<%= user._id %>">
                           </div>
@@ -122,7 +121,7 @@
                         </span>
                       </td>
                       <td class="px-6 py-5">
-                        <select name="newRole[]" class="w-full border border-gray-300 rounded-lg text-center py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                        <select name="newRole[]" class="w-full border border-gray-300 rounded-lg text-center py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
                           <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
                           <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
                         </select>
@@ -161,14 +160,6 @@
                           </span>
                         <% } %>
                       </td>
-                      <td class="px-6 py-5 text-sm text-gray-600">
-                        <% if (user.lastLogin) { %>
-                          <div><%= new Date(user.lastLogin).toLocaleDateString() %></div>
-                          <div class="text-xs text-gray-500"><%= new Date(user.lastLogin).toLocaleTimeString() %></div>
-                        <% } else { %>
-                          <span class="text-gray-400">Never</span>
-                        <% } %>
-                      </td>
                       <td class="px-6 py-5 text-center">
                         <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
                           <input type="hidden" name="userId" value="<%= user._id %>">
@@ -203,15 +194,22 @@
                           <input type="hidden" name="userId[]" value="<%= user._id %>">
                         </div>
                       </div>
-                      <div class="flex space-x-1">
-                        <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
-                          <input type="hidden" name="userId" value="<%= user._id %>">
-                          <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                          </button>
-                        </form>
+                      <div class="flex space-x-2">
+                        <button type="button" data-userid="<%= user._id %>" data-username="<%= user.username %>" data-role="<%= user.role %>" data-pricingtier="<%= user.pricingTier %>" class="mobile-edit-user-btn bg-blue-50 hover:bg-blue-100 text-blue-500 border border-blue-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <div class="flex space-x-1">
+                          <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
+                            <input type="hidden" name="userId" value="<%= user._id %>">
+                            <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                              </svg>
+                            </button>
+                          </form>
+                        </div>
                       </div>
                     </div>
                     
@@ -287,18 +285,6 @@
                           <option value="tier3" <%= user.pricingTier === 'tier3' ? 'selected' : '' %>>Large</option>
                           <option value="tier4" <%= user.pricingTier === 'tier4' ? 'selected' : '' %>>Enterprise</option>
                         </select>
-                      </div>
-                    </div>
-                    
-                    <!-- Last Login Section -->
-                    <div class="text-sm text-gray-500">
-                      <div class="font-medium">Last Login</div>
-                      <div class="text-gray-700">
-                        <% if (user.lastLogin) { %>
-                          <%= new Date(user.lastLogin).toLocaleDateString() %> <%= new Date(user.lastLogin).toLocaleTimeString() %>
-                        <% } else { %>
-                          <span class="text-gray-400">Never</span>
-                        <% } %>
                       </div>
                     </div>
                   </div>
@@ -411,7 +397,7 @@
           <div class="mb-5">
             <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
             <div class="relative">
-              <input type="password" id="newPassword" name="newPassword" class="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue" placeholder="Enter new password">
+              <input type="password" id="newPassword" name="newPassword" class="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue" placeholder="Enter password">
               <button type="button" id="toggleNewPassword" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

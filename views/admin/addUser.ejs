@@ -3,347 +3,198 @@
 <head>
   <%- include('../partials/_head.ejs'); %>
   <title>Add New User</title>
-  <style>
-    .input-field {
-      width: 100%;
-      padding: 0.625rem 1rem;
-      border-radius: 0.5rem;
-      border: 1px solid #d1d5db;
-      background-color: white;
-      color: #111827;
-    }
-    .input-field:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-    }
-    .input-field:hover {
-      border-color: #60a5fa;
-    }
-    .label {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      color: #111827;
-    }
-    .label-transport {
-      color: #1e40af;
-    }
-    .label-manufacturing {
-      color: #166534;
-    }
-    .label-administrative {
-      color: #6b21a8;
-    }
-    .input-group {
-      position: relative;
-    }
-    .input-group::before {
-      content: '$';
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #6b7280;
-    }
-    .input-group::after {
-      content: 'COP';
-      position: absolute;
-      right: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #6b7280;
-      font-size: 0.875rem;
-    }
-    .input-group input {
-      padding-left: 2rem;
-      padding-right: 3rem;
-    }
-    .field-description {
-      font-size: 0.75rem;
-      color: #6b7280;
-      margin-top: 0.25rem;
-    }
-    .section-header {
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: #1f2937;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .section-subheader {
-      font-size: 0.875rem;
-      color: #4b5563;
-      margin-bottom: 1rem;
-    }
-    .form-input {
-      width: 100%;
-      padding: 0.625rem 1rem;
-      border-radius: 0.375rem;
-      border: 1px solid #d1d5db;
-      background-color: white;
-      color: #111827;
-      transition: all 0.2s;
-    }
-    .form-input:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-    }
-    .form-input:hover {
-      border-color: #60a5fa;
-    }
-    .input-with-icon {
-      position: relative;
-    }
-    .input-icon {
-      position: absolute;
-      left: 0.75rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #3b82f6;
-      pointer-events: none;
-      z-index: 10;
-    }
-    .form-label {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #374151;
-      margin-bottom: 0.25rem;
-    }
-    .required-field {
-      color: #ef4444;
-      margin-left: 0.25rem;
-      font-size: 1.125rem;
-      line-height: 1;
-      position: relative;
-      top: 3px;
-    }
-    .form-help-text {
-      font-size: 0.75rem;
-      color: #6b7280;
-      margin-top: 0.25rem;
-    }
-    .error-message {
-      color: #ef4444;
-      font-size: 0.875rem;
-      margin-top: 0.25rem;
-      display: none;
-    }
-    .btn-primary {
-      background: linear-gradient(to right, #2563eb, #3b82f6);
-      color: white;
-      font-weight: 500;
-      padding: 0.625rem 1.5rem;
-      border-radius: 0.375rem;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease-in-out;
-    }
-    .btn-primary:hover {
-      background: linear-gradient(to right, #1d4ed8, #2563eb);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transform: translateY(-0.5px);
-    }
-    .btn-secondary {
-      background: linear-gradient(to right, #4b5563, #6b7280);
-      color: white;
-      font-weight: 500;
-      padding: 0.625rem 1.5rem;
-      border-radius: 0.375rem;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease-in-out;
-    }
-    .btn-secondary:hover {
-      background: linear-gradient(to right, #374151, #4b5563);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transform: translateY(-0.5px);
-    }
-    .btn-danger {
-      background: linear-gradient(to right, #dc2626, #ef4444);
-      color: white;
-      font-weight: 500;
-      padding: 0.625rem 1.5rem;
-      border-radius: 0.375rem;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease-in-out;
-    }
-    .btn-danger:hover {
-      background: linear-gradient(to right, #b91c1c, #dc2626);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transform: translateY(-0.5px);
-    }
-    .input-group-text {
-      position: absolute;
-      right: 0;
-      top: 0;
-      height: 100%;
-      padding: 0 0.75rem;
-      display: flex;
-      align-items: center;
-      background-color: #dbeafe;
-      color: #1e40af;
-      font-weight: 500;
-      border: 1px solid #bfdbfe;
-      border-left: none;
-      border-top-right-radius: 0.375rem;
-      border-bottom-right-radius: 0.375rem;
-      transition: all 0.2s;
-    }
-    input:focus + .input-group-text {
-      border-color: #3b82f6;
-      background-color: #bfdbfe;
-      color: #1e40af;
-    }
-    .form-section {
-      border-bottom: 1px solid #e5e7eb;
-      padding-bottom: 1.25rem;
-      margin-bottom: 1.25rem;
-    }
-    .form-section:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-      margin-bottom: 0;
-    }
-    .form-card {
-      background-color: white;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      transition: all 0.3s;
-    }
-    .form-card:hover {
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-  </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs'); %>
 
-  <main class="flex-grow container mx-auto px-4 py-6">
-    <!-- Header Section -->
-    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-      <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-        <div>
-          <h1 class="text-2xl font-bold mb-4 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+  <main class="py-10 flex-grow">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6">
+      <!-- Page Header -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-brand-blue to-blue-400 p-7">
+          <div class="flex flex-col md:flex-row justify-center items-center text-center md:text-left">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white mb-4 md:mb-0 md:mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
-            <span class="text-gray-800">Add New User</span>
-          </h1>
-          <p class="text-gray-600">Create a new user account with appropriate permissions for the VLX System.</p>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex flex-wrap gap-3 justify-start items-center">
-        <a href="/admin/users" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to Users
-        </a>
-      </div>
-    </div>
-
-    <!-- User Form -->
-    <div class="bg-white rounded-xl shadow-sm p-6">
-      <div class="mb-6">
-        <h2 class="section-header">User Information</h2>
-        <p class="section-subheader">Fill in the details for the new user account</p>
-      </div>
-
-      <form action="/admin/users/add" method="POST" class="space-y-6">
-        <!-- Username -->
-        <div>
-          <label for="username" class="label">Username</label>
-          <input 
-            type="text" 
-            id="username" 
-            name="username" 
-            class="input-field"
-            placeholder="Enter username" 
-            required>
-          <p class="field-description">Username will be used for login purposes</p>
+            <div>
+              <h1 class="text-2xl md:text-3xl font-bold text-white">Add New User</h1>
+              <p class="text-blue-100 mt-1 max-w-2xl">
+                Create a new user account with appropriate permissions for the VLX System
+              </p>
+            </div>
+          </div>
         </div>
         
-        <!-- Password -->
-        <div>
-          <label for="password" class="label">Password</label>
-          <div class="relative">
-            <input 
-              type="password" 
-              id="password" 
-              name="password" 
-              class="input-field"
-              placeholder="Enter password" 
-              required>
-            <button 
-              type="button" 
-              id="togglePassword" 
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        <!-- Actions Bar -->
+        <div class="p-4 md:p-6 bg-gray-50 border-b border-gray-100">
+          <div class="flex flex-wrap gap-3 justify-start items-center">
+            <a href="/admin/users" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-            </button>
-          </div>
-          <div class="flex justify-between mt-2">
-            <p class="field-description">Create a strong password for security</p>
-            <button 
-              type="button" 
-              id="generatePassword" 
-              class="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              Generate secure password
-            </button>
+              Back to Users
+            </a>
           </div>
         </div>
-        
-        <!-- Role -->
-        <div>
-          <label for="role" class="label">User Role</label>
-          <select 
-            id="role" 
-            name="role" 
-            class="input-field">
-            <option value="user">User</option>
-            <option value="admin">Administrator</option>
-          </select>
-          <p class="field-description">
-            <span class="font-medium">User:</span> Standard access to system features<br>
-            <span class="font-medium">Administrator:</span> Full access to all system features and settings
-          </p>
-        </div>
-        
-        <!-- Pricing Tier -->
-        <div>
-          <label for="pricingTier" class="label">Pricing Tier</label>
-          <select 
-            id="pricingTier" 
-            name="pricingTier" 
-            class="input-field">
-            <option value="">Not Set</option>
-            <option value="tier1">Small Volume (< $10k/year)</option>
-            <option value="tier2">Medium Volume ($10k - $50k/year)</option>
-            <option value="tier3">Large Volume ($50k - $250k/year)</option>
-            <option value="tier4">Enterprise Volume (> $250k/year)</option>
-          </select>
-          <p class="field-description">Select the appropriate pricing tier based on expected purchase volume</p>
-        </div>
+      </div>
 
-        <!-- Actions -->
-        <div class="flex justify-end space-x-4 pt-4">
-          <button type="submit" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-lg flex items-center transition-colors duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            Create User
-          </button>
+      <!-- User Form Card -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <h2 class="text-lg font-semibold text-gray-700">User Information</h2>
         </div>
-      </form>
+        
+        <div class="p-6">
+          <form action="/admin/users/add" method="POST" class="space-y-6">
+            <!-- Username -->
+            <div>
+              <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <input 
+                type="text" 
+                id="username" 
+                name="username" 
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+                placeholder="Enter username" 
+                required
+                autocomplete="off"
+                value="">
+              <p class="mt-1 text-sm text-gray-500">Username will be used for login purposes</p>
+            </div>
+            
+            <!-- Password -->
+            <div>
+              <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <div class="relative">
+                <input 
+                  type="password" 
+                  id="password" 
+                  name="password" 
+                  class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+                  placeholder="Enter password" 
+                  required
+                  autocomplete="new-password"
+                  value="">
+                <button 
+                  type="button" 
+                  id="togglePassword" 
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
+              <div class="flex justify-between mt-2">
+                <p class="text-sm text-gray-500">Create a strong password for security</p>
+                <button 
+                  type="button" 
+                  id="generatePassword" 
+                  class="text-sm text-brand-blue hover:text-brand-blue-light font-medium">
+                  Generate secure password
+                </button>
+              </div>
+            </div>
+            
+            <!-- Role -->
+            <div>
+              <label for="role" class="block text-sm font-medium text-gray-700 mb-2">User Role</label>
+              <select 
+                id="role" 
+                name="role" 
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+                autocomplete="off">
+                <option value="user" selected>User</option>
+                <option value="admin">Administrator</option>
+              </select>
+              <p class="mt-1 text-sm text-gray-500">
+                <span class="font-medium">User:</span> Standard access to system features<br>
+                <span class="font-medium">Administrator:</span> Full access to all system features and settings
+              </p>
+            </div>
+            
+            <!-- Pricing Tier -->
+            <div>
+              <label for="pricingTier" class="block text-sm font-medium text-gray-700 mb-2">Pricing Tier</label>
+              <select 
+                id="pricingTier" 
+                name="pricingTier" 
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+                autocomplete="off">
+                <option value="" selected>Not Set</option>
+                <option value="tier1">Small Volume (< $10k/year)</option>
+                <option value="tier2">Medium Volume ($10k - $50k/year)</option>
+                <option value="tier3">Large Volume ($50k - $250k/year)</option>
+                <option value="tier4">Enterprise Volume (> $250k/year)</option>
+              </select>
+              <p class="mt-1 text-sm text-gray-500">Select the appropriate pricing tier based on expected purchase volume</p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end pt-4">
+              <button type="submit" class="bg-brand-blue hover:bg-brand-blue-light text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Create User
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Pricing Tier Information Card -->
+      <div class="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <h2 class="text-lg font-semibold text-gray-700">Pricing Tier Information</h2>
+        </div>
+        <div class="p-4 md:p-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <div class="flex items-center mb-2">
+                <span class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                  <span class="text-blue-800 font-bold">S</span>
+                </span>
+                <h3 class="font-semibold text-gray-800">Small</h3>
+              </div>
+              <p class="text-sm text-gray-600">Purchases under $10,000/year</p>
+              <p class="text-xs text-gray-500 mt-2">Standard pricing with basic support</p>
+            </div>
+            
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <div class="flex items-center mb-2">
+                <span class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-2">
+                  <span class="text-green-800 font-bold">M</span>
+                </span>
+                <h3 class="font-semibold text-gray-800">Medium</h3>
+              </div>
+              <p class="text-sm text-gray-600">$10,000 - $50,000/year</p>
+              <p class="text-xs text-gray-500 mt-2">5% discount with priority support</p>
+            </div>
+            
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+              <div class="flex items-center mb-2">
+                <span class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mr-2">
+                  <span class="text-yellow-800 font-bold">L</span>
+                </span>
+                <h3 class="font-semibold text-gray-800">Large</h3>
+              </div>
+              <p class="text-sm text-gray-600">$50,000 - $250,000/year</p>
+              <p class="text-xs text-gray-500 mt-2">10% discount with dedicated support</p>
+            </div>
+            
+            <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+              <div class="flex items-center mb-2">
+                <span class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2">
+                  <span class="text-red-800 font-bold">E</span>
+                </span>
+                <h3 class="font-semibold text-gray-800">Enterprise</h3>
+              </div>
+              <p class="text-sm text-gray-600">Over $250,000/year</p>
+              <p class="text-xs text-gray-500 mt-2">Custom pricing with premium support</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 

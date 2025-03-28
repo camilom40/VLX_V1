@@ -10,52 +10,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Add modern Heroicons for better UI elements -->
     <script src="https://unpkg.com/heroicons@1.0.6/outline/index.js"></script>
-    <style>
-        .project-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .project-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .btn-primary {
-            @apply bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium py-2.5 px-5 rounded-md shadow-sm hover:shadow transition duration-300 ease-in-out;
-        }
-        .btn-danger {
-            @apply text-red-600 hover:text-red-800 font-medium transition duration-300;
-        }
-        .search-container {
-            position: relative;
-        }
-        .search-container svg {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6B7280;
-            width: 18px;
-            height: 18px;
-        }
-        .search-input {
-            padding-left: 42px;
-            height: 44px;
-            padding-right: 12px;
-            transition: all 0.2s ease;
-        }
-        .search-input:focus {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-        }
-        /* Add badge styles for dates */
-        .date-badge {
-            @apply inline-flex items-center text-xs px-2 py-1 rounded-full;
-        }
-        .date-badge-created {
-            @apply bg-indigo-50 text-indigo-700;
-        }
-        .date-badge-updated {
-            @apply bg-green-50 text-green-700;
-        }
-    </style>
+    <!-- Add dashboard styles -->
+    <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 
 <body class="bg-gray-50 min-h-screen flex flex-col">
@@ -65,7 +21,29 @@
         <!-- Dashboard Header with Stats -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <h2 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">My Projects</h2>
+                <div class="flex items-center space-x-6 mb-4 md:mb-0">
+                    <!-- Company Logo Section -->
+                    <div class="company-logo-container">
+                        <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
+                            <img src="<%= companyLogo %>" alt="Company Logo" class="company-logo-image">
+                        <% } else { %>
+                            <div class="company-logo-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        <% } %>
+                        <label for="logoUpload" class="logo-upload-btn">
+                            <%= typeof companyLogo !== 'undefined' && companyLogo ? 'Change Logo' : 'Upload Logo' %>
+                        </label>
+                        <input type="file" id="logoUpload" class="hidden" accept="image/*">
+                    </div>
+                    
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-800">My Projects</h2>
+                        <p class="text-sm text-gray-600 mt-1">Welcome back, <%= typeof user !== 'undefined' ? user.username : 'User' %></p>
+                    </div>
+                </div>
                 
                 <div class="flex flex-col sm:flex-row gap-4 items-center">
                     <!-- Search Box -->
@@ -346,6 +324,54 @@
                 row.style.display = 'none';
               }
             });
+          });
+        }
+
+        // Logo upload functionality
+        const logoUpload = document.getElementById('logoUpload');
+        if (logoUpload) {
+          logoUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+              const formData = new FormData();
+              formData.append('logo', file);
+
+              // Show loading state
+              const logoContainer = document.querySelector('.company-logo-container');
+              logoContainer.classList.add('opacity-50');
+
+              // Send the file to the server
+              fetch('/api/upload-logo', {
+                method: 'POST',
+                body: formData
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  // Update the logo image
+                  const logoImage = document.querySelector('.company-logo-image');
+                  if (logoImage) {
+                    logoImage.src = data.logoUrl + '?t=' + new Date().getTime();
+                  } else {
+                    // If no image exists, create one
+                    const placeholder = document.querySelector('.company-logo-placeholder');
+                    if (placeholder) {
+                      placeholder.innerHTML = `<img src="${data.logoUrl}?t=${new Date().getTime()}" alt="Company Logo" class="company-logo-image">`;
+                    }
+                  }
+                } else {
+                  alert('Failed to upload logo. Please try again.');
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading the logo. Please try again.');
+              })
+              .finally(() => {
+                // Remove loading state
+                logoContainer.classList.remove('opacity-50');
+              });
+            }
           });
         }
       });

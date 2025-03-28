@@ -4,6 +4,10 @@ const mongoose = require("mongoose");
 const express = require("express");
 const session = require("express-session");
 const MongoStore = require('connect-mongo');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const sharp = require('sharp');
 const authRoutes = require("./routes/authRoutes");
 // const pdfExportRoutes = require('./routes/pdfExportRoutes');
 const accessoryRoutes = require('./routes/admin/accessoryRoutes');
@@ -39,6 +43,23 @@ app.set("view engine", "ejs");
 
 // Serve static files
 app.use(express.static("public"));
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage(); // Change to memory storage for processing
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        // Accept only image files
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+            return cb(new Error('Only image files are allowed!'), false);
+        }
+        cb(null, true);
+    }
+});
 
 // Database connection
 mongoose
@@ -129,6 +150,49 @@ app.post('/admin/users/update-pricing', isAdmin, (req, res) => {
     // Redirect back to users page
     res.redirect('/admin/users');
   });
+});
+
+// Logo upload route
+app.post('/api/upload-logo', upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        // Create upload directory if it doesn't exist
+        const uploadDir = 'public/uploads/company';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        // Generate unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = 'company-logo-' + uniqueSuffix + '.png';
+        const filepath = path.join(uploadDir, filename);
+
+        // Process and save the image
+        await sharp(req.file.buffer)
+            .resize(200, 200, { // Set maximum dimensions
+                fit: 'contain', // Maintain aspect ratio
+                background: { r: 255, g: 255, b: 255, alpha: 0 } // Transparent background
+            })
+            .png({ quality: 90 }) // Convert to PNG with good quality
+            .toFile(filepath);
+
+        // Get the file path relative to public directory
+        const logoUrl = '/uploads/company/' + filename;
+
+        res.json({
+            success: true,
+            logoUrl: logoUrl
+        });
+    } catch (error) {
+        console.error('Logo upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error uploading logo'
+        });
+    }
 });
 
 // server.js
