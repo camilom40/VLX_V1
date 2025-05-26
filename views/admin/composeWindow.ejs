@@ -2,150 +2,364 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Compose Window</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Window System</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    .step-active { background-color: #3b82f6; color: white; }
+    .step-complete { background-color: #10b981; color: white; }
+    .step-inactive { background-color: #e5e7eb; color: #6b7280; }
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+    .help-tooltip { position: relative; display: inline-block; }
+    .help-tooltip .tooltip-text {
+      visibility: hidden;
+      width: 200px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .help-tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-50">
   <%- include('../partials/_header.ejs') %>
-  <div class="container mx-auto py-8">
-    <h1 class="text-3xl font-bold mb-6 text-center">Create New Window System</h1>
+  <div class="container mx-auto py-8 px-4">
+    <h1 class="text-3xl font-bold mb-6 text-center text-blue-800">Create New Window System</h1>
+    
+    <!-- Step Indicator -->
+    <div class="flex mb-8 justify-center">
+      <div id="step1-indicator" class="step-active rounded-l-lg py-2 px-4 flex items-center">
+        <span class="mr-2 font-bold">1</span> Window Type
+      </div>
+      <div id="step2-indicator" class="step-inactive py-2 px-4 flex items-center">
+        <span class="mr-2 font-bold">2</span> Profiles
+      </div>
+      <div id="step3-indicator" class="step-inactive py-2 px-4 flex items-center">
+        <span class="mr-2 font-bold">3</span> Accessories
+      </div>
+      <div id="step4-indicator" class="step-inactive rounded-r-lg py-2 px-4 flex items-center">
+        <span class="mr-2 font-bold">4</span> Glass Restrictions
+      </div>
+    </div>
+    
     <div class="bg-white shadow-md rounded-lg p-6">
       <form id="window-form" action="/admin/compose-window/compose" method="POST">
-        <div class="mb-4">
-          <label for="type" class="block text-gray-700 font-bold mb-2">Window Type:</label>
-          <input type="text" id="type" name="type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-        </div>
-
-        <!-- Profiles Section -->
-        <div id="profiles-section" class="mb-8">
-          <div class="flex mb-4">
-            <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-              <option value="">Select Profile</option>
-              <% profiles.forEach(profile => { %>
-                <option value="<%= profile._id %>"><%= profile.name %></option>
-              <% }); %>
-            </select>
-            <input type="number" id="profile-quantity" placeholder="Quantity" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-            <select id="profile-orientation" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-              <option value="" disabled selected>Orientation</option>
-              <option value="horizontal">Horizontal</option>
-              <option value="vertical">Vertical</option>
-            </select>
-            <input type="number" id="profile-length-discount" placeholder="Length Discount (inches)" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-            <button type="button" onclick="addProfileEntry()" class="bg-blue-500 text-white px-4 py-2 rounded ml-2">Add Profile</button>
+        
+        <!-- Step 1: Window Type -->
+        <div id="step1-section" class="form-section active">
+          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 1: Basic Information</h2>
+          <div class="mb-4">
+            <label for="type" class="block text-gray-700 font-bold mb-2">
+              Window Type:
+              <span class="help-tooltip ml-1">
+                <i class="fas fa-question-circle text-blue-500"></i>
+                <span class="tooltip-text">Enter the type of window system you are creating</span>
+              </span>
+            </label>
+            <input type="text" id="type" name="type" class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" required>
           </div>
-
-          <!-- Table to display added profiles -->
-          <div class="mt-6">
-            <h3 class="text-lg font-bold text-gray-700 mb-4">Added Profiles</h3>
-            <table class="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th class="py-2 px-4 bg-gray-200">Profile</th>
-                  <th class="py-2 px-4 bg-gray-200">Quantity</th>
-                  <th class="py-2 px-4 bg-gray-200">Orientation</th>
-                  <th class="py-2 px-4 bg-gray-200">Length Discount</th>
-                  <th class="py-2 px-4 bg-gray-200">Action</th>
-                </tr>
-              </thead>
-              <tbody id="profiles-table-body">
-                <!-- Rows will be dynamically added here -->
-              </tbody>
-            </table>
+          
+          <div class="mt-8 flex justify-between">
+            <a href="/admin" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
+              <i class="fas fa-arrow-left mr-2"></i>Back
+            </a>
+            <button type="button" id="to-step2-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition duration-200">
+              Next<i class="fas fa-arrow-right ml-2"></i>
+            </button>
           </div>
         </div>
-
-        <!-- Thicker Dark Blue Divider -->
-        <hr class="my-10 border-t-4 border-blue-800">
-
-        <!-- Accessories Section -->
-        <div id="accessories-section" class="mb-8">
-          <div class="flex mb-4">
-            <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-              <option value="">Select Accessory</option>
-              <% accessories.forEach(accessory => { %>
-                <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
-              <% }); %>
-            </select>
-            <input type="number" id="accessory-quantity" placeholder="Quantity" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-            <input type="text" id="accessory-unit" placeholder="Unit" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" readonly required>
-            <button type="button" onclick="addAccessoryEntry()" class="bg-blue-500 text-white px-4 py-2 rounded ml-2">Add Accessory</button>
+        
+        <!-- Step 2: Profiles -->
+        <div id="step2-section" class="form-section">
+          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 2: Profiles</h2>
+          
+          <div class="bg-blue-50 p-4 rounded-lg mb-6">
+            <p class="text-sm text-blue-800">
+              <i class="fas fa-info-circle mr-2"></i>
+              Add profiles that compose this window system. Select profile type, specify quantity, orientation, and any length discount needed.
+            </p>
           </div>
 
-          <!-- Table to display added accessories -->
-          <div class="mt-6">
-            <h3 class="text-lg font-bold text-gray-700 mb-4">Added Accessories</h3>
-            <table class="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th class="py-2 px-4 bg-gray-200">Accessory</th>
-                  <th class="py-2 px-4 bg-gray-200">Quantity</th>
-                  <th class="py-2 px-4 bg-gray-200">Unit</th>
-                  <th class="py-2 px-4 bg-gray-200">Action</th>
-                </tr>
-              </thead>
-              <tbody id="accessories-table-body">
-                <!-- Rows will be dynamically added here -->
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <!-- Profiles Section -->
+          <div id="profiles-section" class="mb-8">
+            <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="md:col-span-2">
+                  <label for="profile-id" class="block text-gray-700 font-medium mb-1">Profile Type:</label>
+                  <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <option value="">Select Profile</option>
+                    <% profiles.forEach(profile => { %>
+                      <option value="<%= profile._id %>"><%= profile.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                
+                <div>
+                  <label for="profile-quantity" class="block text-gray-700 font-medium mb-1">Quantity:</label>
+                  <input type="number" id="profile-quantity" placeholder="Qty" min="1" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                </div>
+                
+                <div>
+                  <label for="profile-orientation" class="block text-gray-700 font-medium mb-1">Orientation:</label>
+                  <select id="profile-orientation" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <option value="" disabled selected>Select</option>
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label for="profile-length-discount" class="block text-gray-700 font-medium mb-1">Length Discount:</label>
+                  <div class="flex items-center">
+                    <input type="number" id="profile-length-discount" placeholder="0.0" step="0.01" min="0" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <span class="ml-2 text-gray-600">in.</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 text-right">
+                <button type="button" onclick="addProfileEntry()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200">
+                  <i class="fas fa-plus mr-2"></i>Add Profile
+                </button>
+              </div>
+            </div>
 
-        <!-- Thicker Dark Blue Divider -->
-        <hr class="my-10 border-t-4 border-blue-800">
-
-        <!-- Glass Restrictions Section -->
-        <div class="mb-8">
-          <h2 class="text-lg font-bold text-gray-700 mb-4">Glass Restrictions</h2>
-          <div id="glass-restrictions-container">
-            <div class="glass-restriction-entry mb-4 p-4 bg-gray-50 rounded-lg shadow-inner">
-              <label class="block text-gray-700 font-bold mb-1">Glass Type:</label>
-              <select id="glass-type" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="Ai">Ai</option>
-                <option value="Bi">Bi</option>
-              </select>
-              <label class="block text-gray-700 font-bold mb-1">Width (inches):</label>
-              <input type="number" id="glass-width" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-              <label class="block text-gray-700 font-bold mb-1">Height (inches):</label>
-              <input type="number" id="glass-height" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-              <label class="block text-gray-700 font-bold mb-1">Positive Pressure (EXT+):</label>
-              <input type="number" id="glass-positive-pressure" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-              <label class="block text-gray-700 font-bold mb-1">Negative Pressure (EXT):</label>
-              <input type="number" id="glass-negative-pressure" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-              <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded mt-4" onclick="addGlassRestriction()">Add Glass Restriction</button>
+            <!-- Table to display added profiles -->
+            <div class="mt-6 overflow-x-auto">
+              <h3 class="text-lg font-medium text-gray-700 mb-3">Added Profiles</h3>
+              <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+                <thead>
+                  <tr>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Profile</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Orientation</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Length Discount</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="profiles-table-body">
+                  <!-- Rows will be dynamically added here -->
+                </tbody>
+              </table>
+              <div id="profiles-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
+                No profiles added yet. Add at least one profile to continue.
+              </div>
             </div>
           </div>
 
-          <!-- Table to display added glass restrictions -->
-          <div class="mt-6">
-            <h3 class="text-lg font-bold text-gray-700 mb-4">Added Glass Restrictions</h3>
-            <table class="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th class="py-2 px-4 bg-gray-200">Type</th>
-                  <th class="py-2 px-4 bg-gray-200">Width (inches)</th>
-                  <th class="py-2 px-4 bg-gray-200">Height (inches)</th>
-                  <th class="py-2 px-4 bg-gray-200">Positive Pressure (EXT+)</th>
-                  <th class="py-2 px-4 bg-gray-200">Negative Pressure (EXT)</th>
-                  <th class="py-2 px-4 bg-gray-200">Action</th>
-                </tr>
-              </thead>
-              <tbody id="glass-restrictions-table-body">
-                <!-- Rows will be dynamically added here -->
-              </tbody>
-            </table>
+          <div class="mt-8 flex justify-between">
+            <button type="button" id="back-to-step1-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
+              <i class="fas fa-arrow-left mr-2"></i>Previous
+            </button>
+            <button type="button" id="to-step3-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition duration-200">
+              Next<i class="fas fa-arrow-right ml-2"></i>
+            </button>
           </div>
         </div>
+        
+        <!-- Step 3: Accessories -->
+        <div id="step3-section" class="form-section">
+          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 3: Accessories</h2>
+          
+          <div class="bg-blue-50 p-4 rounded-lg mb-6">
+            <p class="text-sm text-blue-800">
+              <i class="fas fa-info-circle mr-2"></i>
+              Add any accessories needed for this window system. The unit will be automatically set based on the selected accessory.
+            </p>
+          </div>
 
-        <!-- Submit Button -->
-        <div class="mt-4 flex justify-end">
-          <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">Create</button>
+          <div id="accessories-section" class="mb-8">
+            <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-2">
+                  <label for="accessory-id" class="block text-gray-700 font-medium mb-1">Accessory Type:</label>
+                  <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <option value="">Select Accessory</option>
+                    <% accessories.forEach(accessory => { %>
+                      <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                
+                <div>
+                  <label for="accessory-quantity" class="block text-gray-700 font-medium mb-1">Quantity:</label>
+                  <input type="number" id="accessory-quantity" placeholder="Qty" min="1" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                </div>
+                
+                <div>
+                  <label for="accessory-unit" class="block text-gray-700 font-medium mb-1">Unit:</label>
+                  <input type="text" id="accessory-unit" placeholder="Unit" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none" readonly>
+                </div>
+              </div>
+              
+              <div class="mt-4 text-right">
+                <button type="button" onclick="addAccessoryEntry()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200">
+                  <i class="fas fa-plus mr-2"></i>Add Accessory
+                </button>
+              </div>
+            </div>
+
+            <!-- Table to display added accessories -->
+            <div class="mt-6 overflow-x-auto">
+              <h3 class="text-lg font-medium text-gray-700 mb-3">Added Accessories</h3>
+              <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+                <thead>
+                  <tr>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Accessory</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Unit</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="accessories-table-body">
+                  <!-- Rows will be dynamically added here -->
+                </tbody>
+              </table>
+              <div id="accessories-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
+                No accessories added yet.
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button type="button" id="back-to-step2-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
+              <i class="fas fa-arrow-left mr-2"></i>Previous
+            </button>
+            <button type="button" id="to-step4-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition duration-200">
+              Next<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Step 4: Glass Restrictions -->
+        <div id="step4-section" class="form-section">
+          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 4: Glass Restrictions</h2>
+          
+          <div class="bg-blue-50 p-4 rounded-lg mb-6">
+            <p class="text-sm text-blue-800">
+              <i class="fas fa-info-circle mr-2"></i>
+              Define the glass restrictions for this window system. Specify glass type, dimensions, and pressure ratings.
+            </p>
+          </div>
+
+          <div class="mb-8">
+            <div class="p-6 bg-gray-50 rounded-lg shadow-sm mb-4">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label for="glass-type" class="block text-gray-700 font-medium mb-2">Glass Type:</label>
+                  <select id="glass-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <option value="">Select Type</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="Ai">Ai</option>
+                    <option value="Bi">Bi</option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">Select the appropriate glass type</p>
+                </div>
+                
+                <div>
+                  <label for="glass-width" class="block text-gray-700 font-medium mb-2">Width:</label>
+                  <div class="flex items-center">
+                    <input type="number" id="glass-width" min="0" step="0.01" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <span class="ml-2 text-gray-600">inches</span>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Maximum width allowed</p>
+                </div>
+                
+                <div>
+                  <label for="glass-height" class="block text-gray-700 font-medium mb-2">Height:</label>
+                  <div class="flex items-center">
+                    <input type="number" id="glass-height" min="0" step="0.01" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <span class="ml-2 text-gray-600">inches</span>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Maximum height allowed</p>
+                </div>
+                
+                <div>
+                  <label for="glass-positive-pressure" class="block text-gray-700 font-medium mb-2">
+                    Positive Pressure (EXT+):
+                    <span class="help-tooltip ml-1">
+                      <i class="fas fa-question-circle text-blue-500"></i>
+                      <span class="tooltip-text">Maximum positive pressure rating</span>
+                    </span>
+                  </label>
+                  <input type="number" id="glass-positive-pressure" min="0" step="0.01" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                </div>
+                
+                <div>
+                  <label for="glass-negative-pressure" class="block text-gray-700 font-medium mb-2">
+                    Negative Pressure (EXT):
+                    <span class="help-tooltip ml-1">
+                      <i class="fas fa-question-circle text-blue-500"></i>
+                      <span class="tooltip-text">Maximum negative pressure rating</span>
+                    </span>
+                  </label>
+                  <input type="number" id="glass-negative-pressure" min="0" step="0.01" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                </div>
+              </div>
+              
+              <div class="mt-6 text-right">
+                <button type="button" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200" onclick="addGlassRestriction()">
+                  <i class="fas fa-plus mr-2"></i>Add Glass Restriction
+                </button>
+              </div>
+            </div>
+
+            <!-- Table to display added glass restrictions -->
+            <div class="mt-6 overflow-x-auto">
+              <h3 class="text-lg font-medium text-gray-700 mb-3">Added Glass Restrictions</h3>
+              <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+                <thead>
+                  <tr>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Type</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Width (inches)</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Height (inches)</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Positive Pressure</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Negative Pressure</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="glass-restrictions-table-body">
+                  <!-- Rows will be dynamically added here -->
+                </tbody>
+              </table>
+              <div id="glass-restrictions-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
+                No glass restrictions added yet. Add at least one restriction to continue.
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button type="button" id="back-to-step3-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
+              <i class="fas fa-arrow-left mr-2"></i>Previous
+            </button>
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition duration-200">
+              <i class="fas fa-check mr-2"></i>Create Window System
+            </button>
+          </div>
         </div>
       </form>
-      <a href="/admin" class="bg-gray-500 text-white px-4 py-2 rounded mt-4 inline-block">Back to Admin Console</a>
+      
+      <div class="mt-6 text-center">
+        <a href="/admin" class="text-blue-600 hover:text-blue-800 transition duration-200">
+          <i class="fas fa-arrow-circle-left mr-1"></i>Back to Admin Console
+        </a>
+      </div>
     </div>
   </div>
   <%- include('../partials/_footer.ejs') %>
@@ -154,19 +368,166 @@
     let profiles = [];
     let accessories = [];
     let glassRestrictions = [];
+    let currentStep = 1;
+    
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      updateEmptyStates();
+      setupStepNavigation();
+    });
+    
+    // Step navigation
+    function setupStepNavigation() {
+      // Step 1 to Step 2
+      document.getElementById('to-step2-btn').addEventListener('click', function() {
+        const windowType = document.getElementById('type').value;
+        if (!windowType) {
+          showAlert('Please enter a window type before proceeding.');
+          return;
+        }
+        goToStep(2);
+      });
+      
+      // Step 2 to Step 1
+      document.getElementById('back-to-step1-btn').addEventListener('click', function() {
+        goToStep(1);
+      });
+      
+      // Step 2 to Step 3
+      document.getElementById('to-step3-btn').addEventListener('click', function() {
+        if (profiles.length === 0) {
+          showAlert('Please add at least one profile before proceeding.');
+          return;
+        }
+        goToStep(3);
+      });
+      
+      // Step 3 to Step 2
+      document.getElementById('back-to-step2-btn').addEventListener('click', function() {
+        goToStep(2);
+      });
+      
+      // Step 3 to Step 4
+      document.getElementById('to-step4-btn').addEventListener('click', function() {
+        goToStep(4);
+      });
+      
+      // Step 4 to Step 3
+      document.getElementById('back-to-step3-btn').addEventListener('click', function() {
+        goToStep(3);
+      });
+    }
+    
+    function goToStep(step) {
+      // Hide all sections
+      document.querySelectorAll('.form-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      
+      // Reset all step indicators
+      document.querySelectorAll('[id^="step"]').forEach(indicator => {
+        if (indicator.id.includes('-indicator')) {
+          indicator.classList.remove('step-active', 'step-complete', 'step-inactive');
+          indicator.classList.add('step-inactive');
+        }
+      });
+      
+      // Show current section
+      document.getElementById(`step${step}-section`).classList.add('active');
+      
+      // Update step indicators
+      for (let i = 1; i <= 4; i++) {
+        const indicator = document.getElementById(`step${i}-indicator`);
+        if (i < step) {
+          indicator.classList.remove('step-inactive');
+          indicator.classList.add('step-complete');
+        } else if (i === step) {
+          indicator.classList.remove('step-inactive');
+          indicator.classList.add('step-active');
+        }
+      }
+      
+      currentStep = step;
+    }
+    
+    // Show alert message
+    function showAlert(message) {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce';
+      alertDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
+      document.body.appendChild(alertDiv);
+      
+      setTimeout(() => {
+        alertDiv.remove();
+      }, 3000);
+    }
+    
+    // Update empty state messages
+    function updateEmptyStates() {
+      // Profiles
+      const profilesEmpty = document.getElementById('profiles-empty-state');
+      if (profiles.length > 0) {
+        profilesEmpty.style.display = 'none';
+      } else {
+        profilesEmpty.style.display = 'block';
+      }
+      
+      // Accessories
+      const accessoriesEmpty = document.getElementById('accessories-empty-state');
+      if (accessories.length > 0) {
+        accessoriesEmpty.style.display = 'none';
+      } else {
+        accessoriesEmpty.style.display = 'block';
+      }
+      
+      // Glass Restrictions
+      const glassEmpty = document.getElementById('glass-restrictions-empty-state');
+      if (glassRestrictions.length > 0) {
+        glassEmpty.style.display = 'none';
+      } else {
+        glassEmpty.style.display = 'block';
+      }
+    }
 
+    // Profile functions
     function addProfileEntry() {
       const profileSelect = document.getElementById('profile-id');
       const profileId = profileSelect.value;
-      const profileName = profileSelect.options[profileSelect.selectedIndex].text;
+      const profileName = profileSelect.options[profileSelect.selectedIndex]?.text || '';
       const quantity = document.getElementById('profile-quantity').value;
       const orientation = document.getElementById('profile-orientation').value;
       const lengthDiscount = document.getElementById('profile-length-discount').value;
 
-      if (profileId && quantity && orientation && lengthDiscount) {
-        profiles.push({ profileId, profileName, quantity, orientation, lengthDiscount });
-        renderProfilesTable();
+      if (!profileId) {
+        showAlert('Please select a profile');
+        return;
       }
+      
+      if (!quantity || quantity <= 0) {
+        showAlert('Please enter a valid quantity');
+        return;
+      }
+      
+      if (!orientation) {
+        showAlert('Please select an orientation');
+        return;
+      }
+      
+      if (!lengthDiscount && lengthDiscount !== 0) {
+        showAlert('Please enter a length discount');
+        return;
+      }
+
+      profiles.push({ profileId, profileName, quantity, orientation, lengthDiscount });
+      renderProfilesTable();
+      
+      // Reset form inputs
+      profileSelect.selectedIndex = 0;
+      document.getElementById('profile-quantity').value = '';
+      document.getElementById('profile-orientation').selectedIndex = 0;
+      document.getElementById('profile-length-discount').value = '';
+      
+      updateEmptyStates();
     }
 
     function renderProfilesTable() {
@@ -174,13 +535,15 @@
       tableBody.innerHTML = '';
       profiles.forEach((profile, index) => {
         const row = `
-          <tr>
-            <td class="py-2 px-4 border">${profile.profileName}</td>
-            <td class="py-2 px-4 border">${profile.quantity}</td>
-            <td class="py-2 px-4 border">${profile.orientation}</td>
-            <td class="py-2 px-4 border">${profile.lengthDiscount}</td>
-            <td class="py-2 px-4 border">
-              <button type="button" class="bg-red-500 text-white px-4 py-2 rounded" onclick="removeProfile(${index})">Remove</button>
+          <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+            <td class="py-3 px-4 border-b">${profile.profileName}</td>
+            <td class="py-3 px-4 border-b">${profile.quantity}</td>
+            <td class="py-3 px-4 border-b">${profile.orientation}</td>
+            <td class="py-3 px-4 border-b">${profile.lengthDiscount} in.</td>
+            <td class="py-3 px-4 border-b">
+              <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${index})">
+                <i class="fas fa-trash mr-1"></i>Remove
+              </button>
             </td>
           </tr>
         `;
@@ -191,19 +554,36 @@
     function removeProfile(index) {
       profiles.splice(index, 1);
       renderProfilesTable();
+      updateEmptyStates();
     }
 
+    // Accessory functions
     function addAccessoryEntry() {
       const accessorySelect = document.getElementById('accessory-id');
       const accessoryId = accessorySelect.value;
-      const accessoryName = accessorySelect.options[accessorySelect.selectedIndex].text;
+      const accessoryName = accessorySelect.options[accessorySelect.selectedIndex]?.text || '';
       const quantity = document.getElementById('accessory-quantity').value;
       const unit = document.getElementById('accessory-unit').value;
 
-      if (accessoryId && quantity && unit) {
-        accessories.push({ accessoryId, accessoryName, quantity, unit });
-        renderAccessoriesTable();
+      if (!accessoryId) {
+        showAlert('Please select an accessory');
+        return;
       }
+      
+      if (!quantity || quantity <= 0) {
+        showAlert('Please enter a valid quantity');
+        return;
+      }
+
+      accessories.push({ accessoryId, accessoryName, quantity, unit });
+      renderAccessoriesTable();
+      
+      // Reset form inputs
+      accessorySelect.selectedIndex = 0;
+      document.getElementById('accessory-quantity').value = '';
+      document.getElementById('accessory-unit').value = '';
+      
+      updateEmptyStates();
     }
 
     function renderAccessoriesTable() {
@@ -211,12 +591,14 @@
       tableBody.innerHTML = '';
       accessories.forEach((accessory, index) => {
         const row = `
-          <tr>
-            <td class="py-2 px-4 border">${accessory.accessoryName}</td>
-            <td class="py-2 px-4 border">${accessory.quantity}</td>
-            <td class="py-2 px-4 border">${accessory.unit}</td>
-            <td class="py-2 px-4 border">
-              <button type="button" class="bg-red-500 text-white px-4 py-2 rounded" onclick="removeAccessory(${index})">Remove</button>
+          <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+            <td class="py-3 px-4 border-b">${accessory.accessoryName}</td>
+            <td class="py-3 px-4 border-b">${accessory.quantity}</td>
+            <td class="py-3 px-4 border-b">${accessory.unit}</td>
+            <td class="py-3 px-4 border-b">
+              <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeAccessory(${index})">
+                <i class="fas fa-trash mr-1"></i>Remove
+              </button>
             </td>
           </tr>
         `;
@@ -227,8 +609,10 @@
     function removeAccessory(index) {
       accessories.splice(index, 1);
       renderAccessoriesTable();
+      updateEmptyStates();
     }
 
+    // Glass restriction functions
     function addGlassRestriction() {
       const type = document.getElementById('glass-type').value;
       const width = document.getElementById('glass-width').value;
@@ -236,10 +620,42 @@
       const positivePressure = document.getElementById('glass-positive-pressure').value;
       const negativePressure = document.getElementById('glass-negative-pressure').value;
 
-      if (type && width && height && positivePressure && negativePressure) {
-        glassRestrictions.push({ type, width, height, positivePressure, negativePressure });
-        renderGlassRestrictionsTable();
+      if (!type) {
+        showAlert('Please select a glass type');
+        return;
       }
+      
+      if (!width || width <= 0) {
+        showAlert('Please enter a valid width');
+        return;
+      }
+      
+      if (!height || height <= 0) {
+        showAlert('Please enter a valid height');
+        return;
+      }
+      
+      if (!positivePressure && positivePressure !== 0) {
+        showAlert('Please enter a positive pressure value');
+        return;
+      }
+      
+      if (!negativePressure && negativePressure !== 0) {
+        showAlert('Please enter a negative pressure value');
+        return;
+      }
+
+      glassRestrictions.push({ type, width, height, positivePressure, negativePressure });
+      renderGlassRestrictionsTable();
+      
+      // Reset form inputs
+      document.getElementById('glass-type').selectedIndex = 0;
+      document.getElementById('glass-width').value = '';
+      document.getElementById('glass-height').value = '';
+      document.getElementById('glass-positive-pressure').value = '';
+      document.getElementById('glass-negative-pressure').value = '';
+      
+      updateEmptyStates();
     }
 
     function renderGlassRestrictionsTable() {
@@ -247,14 +663,16 @@
       tableBody.innerHTML = '';
       glassRestrictions.forEach((glass, index) => {
         const row = `
-          <tr>
-            <td class="py-2 px-4 border">${glass.type}</td>
-            <td class="py-2 px-4 border">${glass.width}</td>
-            <td class="py-2 px-4 border">${glass.height}</td>
-            <td class="py-2 px-4 border">${glass.positivePressure}</td>
-            <td class="py-2 px-4 border">${glass.negativePressure}</td>
-            <td class="py-2 px-4 border">
-              <button type="button" class="bg-red-500 text-white px-4 py-2 rounded" onclick="removeGlassRestriction(${index})">Remove</button>
+          <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+            <td class="py-3 px-4 border-b">${glass.type}</td>
+            <td class="py-3 px-4 border-b">${glass.width}</td>
+            <td class="py-3 px-4 border-b">${glass.height}</td>
+            <td class="py-3 px-4 border-b">${glass.positivePressure}</td>
+            <td class="py-3 px-4 border-b">${glass.negativePressure}</td>
+            <td class="py-3 px-4 border-b">
+              <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeGlassRestriction(${index})">
+                <i class="fas fa-trash mr-1"></i>Remove
+              </button>
             </td>
           </tr>
         `;
@@ -265,17 +683,54 @@
     function removeGlassRestriction(index) {
       glassRestrictions.splice(index, 1);
       renderGlassRestrictionsTable();
+      updateEmptyStates();
     }
 
     // Attach event listeners and ensure correct data is sent on form submission
     document.getElementById('accessory-id').addEventListener('change', function() {
       const selectedOption = this.options[this.selectedIndex];
-      const unit = selectedOption.getAttribute('data-unit');
-      document.getElementById('accessory-unit').value = unit || '';
+      if (selectedOption && selectedOption.getAttribute('data-unit')) {
+        const unit = selectedOption.getAttribute('data-unit');
+        document.getElementById('accessory-unit').value = unit || '';
+      } else {
+        document.getElementById('accessory-unit').value = '';
+      }
     });
 
     document.getElementById('window-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+      
+      // Validate form
+      const windowType = document.getElementById('type').value;
+      if (!windowType) {
+        showAlert('Please enter a window type');
+        goToStep(1);
+        return;
+      }
+      
+      if (profiles.length === 0) {
+        showAlert('Please add at least one profile');
+        goToStep(2);
+        return;
+      }
+      
+      if (glassRestrictions.length === 0) {
+        showAlert('Please add at least one glass restriction');
+        goToStep(4);
+        return;
+      }
+      
+      // Add hidden fields
       const form = event.target;
+      
+      // Clear existing hidden inputs if any
+      const existingInputs = form.querySelectorAll('input[type="hidden"]');
+      existingInputs.forEach(input => {
+        if (['profiles', 'accessories', 'glassRestrictions'].includes(input.name)) {
+          input.remove();
+        }
+      });
+      
       const profilesInput = document.createElement('input');
       profilesInput.type = 'hidden';
       profilesInput.name = 'profiles';
@@ -293,9 +748,11 @@
       glassRestrictionsInput.name = 'glassRestrictions';
       glassRestrictionsInput.value = JSON.stringify(glassRestrictions);
       form.appendChild(glassRestrictionsInput);
+      
+      // Submit the form
+      form.submit();
     });
   </script>
 </body>
 </html>
 
-<!-- TODO Profiles Section -- Hacer todo el crud manejando las tablas nuuebas de perfiles accesorios y restricciones>
