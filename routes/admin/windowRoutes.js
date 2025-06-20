@@ -17,7 +17,9 @@ router.get('/compose-window', isAdmin, async (req, res) => {
   try {
     const profiles = await Profile.find({});
     const accessories = await Accessory.find({});
-    res.render('admin/composeWindow', { profiles, accessories });
+    const ComponentGroup = require('../../models/ComponentGroup');
+    const componentGroups = await ComponentGroup.find({ isActive: true }).sort({ sortOrder: 1, displayName: 1 });
+    res.render('admin/composeWindow', { profiles, accessories, componentGroups });
   } catch (error) {
     console.error('Failed to fetch profiles and accessories:', error.message);
     res.status(500).json({ error: error.message });
@@ -234,12 +236,17 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       quantity: parseInt(profile.quantity, 10),
       orientation: profile.orientation,
       lengthDiscount: parseFloat(profile.lengthDiscount),
+      showToUser: Boolean(profile.showToUser),
     }));
 
     const accessoryEntries = accessories.map(accessory => ({
       accessory: accessory.accessoryId,
       quantity: parseInt(accessory.quantity, 10),
       unit: accessory.unit,
+      showToUser: Boolean(accessory.showToUser),
+      componentGroup: accessory.componentGroup || null,
+      selectionType: accessory.selectionType || 'quantity',
+      isDefault: Boolean(accessory.isDefault),
     }));
 
     const glassRestrictionEntries = glassRestrictions.map(glass => ({
@@ -284,7 +291,9 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
     const windowSystem = await WindowSystem.findById(req.params.id).populate('profiles.profile accessories.accessory');
     const profiles = await Profile.find({});
     const accessories = await Accessory.find({});
-    res.render('admin/editWindowSystem', { windowSystem, profiles, accessories });
+    const ComponentGroup = require('../../models/ComponentGroup');
+    const componentGroups = await ComponentGroup.find({ isActive: true }).sort({ sortOrder: 1, displayName: 1 });
+    res.render('admin/editWindowSystem', { windowSystem, profiles, accessories, componentGroups });
   } catch (error) {
     console.error('Failed to fetch window system:', error.message);
     res.status(500).json({ error: error.message });
@@ -301,12 +310,17 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       quantity: parseInt(profile.quantity, 10),
       orientation: profile.orientation,
       lengthDiscount: parseFloat(profile.lengthDiscount),
+      showToUser: Boolean(profile.showToUser),
     }));
 
     const accessoryEntries = JSON.parse(accessories).map(accessory => ({
       accessory: accessory.accessoryId,
       quantity: parseInt(accessory.quantity, 10),
       unit: accessory.unit,
+      showToUser: Boolean(accessory.showToUser),
+      componentGroup: accessory.componentGroup || null,
+      selectionType: accessory.selectionType || 'quantity',
+      isDefault: Boolean(accessory.isDefault),
     }));
 
     const glassRestrictionEntries = JSON.parse(glassRestrictions).map(glass => ({

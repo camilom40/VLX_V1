@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/_head.ejs') %>
+  <title>Edit Component Group</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <%- include('../partials/_header.ejs') %>
+  <div class="container mx-auto mt-10 flex-grow">
+    <div class="max-w-2xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Edit Component Group</h1>
+        <a href="/admin/component-groups" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+          <i class="fas fa-arrow-left mr-2"></i>Back to List
+        </a>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p class="text-blue-800 text-sm">
+          <i class="fas fa-info-circle mr-2"></i>
+          Editing component group: <strong><%= componentGroup.displayName %></strong>
+        </p>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <form action="/admin/component-groups/edit/<%= componentGroup._id %>" method="POST" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="displayName" class="block text-sm font-medium text-gray-700 mb-2">
+                Display Name *
+              </label>
+              <input type="text" 
+                     id="displayName" 
+                     name="displayName" 
+                     value="<%= componentGroup.displayName %>"
+                     required
+                     placeholder="e.g., Handles"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <p class="text-xs text-gray-500 mt-1">This is what users will see in dropdown menus</p>
+            </div>
+
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                Internal Name *
+              </label>
+              <input type="text" 
+                     id="name" 
+                     name="name" 
+                     value="<%= componentGroup.name %>"
+                     required
+                     placeholder="e.g., handles"
+                     pattern="[a-z0-9_-]+"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers, underscores, and hyphens only</p>
+            </div>
+          </div>
+
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea id="description" 
+                      name="description" 
+                      rows="3"
+                      placeholder="Optional description for this component group..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"><%= componentGroup.description %></textarea>
+            <p class="text-xs text-gray-500 mt-1">Optional description to help other admins understand this group's purpose</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="sortOrder" class="block text-sm font-medium text-gray-700 mb-2">
+                Sort Order
+              </label>
+              <input type="number" 
+                     id="sortOrder" 
+                     name="sortOrder" 
+                     value="<%= componentGroup.sortOrder %>"
+                     min="0"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 md:w-32">
+              <p class="text-xs text-gray-500 mt-1">Lower numbers appear first in dropdown lists (0 = first)</p>
+            </div>
+
+            <div>
+              <label for="isActive" class="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <div class="flex items-center mt-2">
+                <input type="checkbox" 
+                       id="isActive" 
+                       name="isActive" 
+                       <%= componentGroup.isActive ? 'checked' : '' %>
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="isActive" class="ml-2 text-sm text-gray-700">
+                  Active (appears in dropdown lists)
+                </label>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Inactive groups are hidden from users but not deleted</p>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-200 pt-6">
+            <div class="flex justify-between items-center">
+              <div class="text-sm text-gray-600">
+                <i class="fas fa-asterisk text-red-500 mr-1"></i>
+                Required fields
+              </div>
+              <div class="flex space-x-3">
+                <a href="/admin/component-groups" 
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                  Cancel
+                </a>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                  <i class="fas fa-save mr-2"></i>Update Component Group
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- Additional Information -->
+        <div class="mt-8 pt-6 border-t border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Additional Information</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+            <div>
+              <strong>Created:</strong> <%= new Date(componentGroup.createdAt).toLocaleDateString() %>
+            </div>
+            <div>
+              <strong>Last Updated:</strong> <%= new Date(componentGroup.updatedAt).toLocaleDateString() %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <%- include('../partials/_footer.ejs') %>
+
+  <script>
+    // Auto-generate internal name from display name (optional)
+    document.getElementById('displayName').addEventListener('input', function() {
+      // Only auto-generate if internal name is empty or matches the pattern
+      const nameField = document.getElementById('name');
+      const currentName = nameField.value;
+      
+      // Check if current name seems auto-generated (no manual edits)
+      const displayName = this.value;
+      const autoName = displayName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') 
+        .replace(/\s+/g, '-') 
+        .replace(/-+/g, '-') 
+        .replace(/^-|-$/g, '');
+      
+      // Only update if the field appears to be auto-generated or empty
+      if (!currentName || currentName === autoName) {
+        nameField.value = autoName;
+      }
+    });
+
+    // Validate internal name format
+    document.getElementById('name').addEventListener('input', function() {
+      const value = this.value;
+      const isValid = /^[a-z0-9_-]*$/.test(value);
+      
+      if (!isValid && value.length > 0) {
+        this.setCustomValidity('Only lowercase letters, numbers, underscores, and hyphens are allowed');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+  </script>
+</body>
+</html> 

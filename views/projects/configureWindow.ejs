@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configure Window: <%= windowRef %> - <%= project.projectName %></title>
+  <%- include('../partials/_head.ejs') %>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <style>
+    .component-card {
+      transition: all 0.2s ease;
+    }
+    .component-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <%- include('../partials/_header.ejs') %>
+
+  <main role="main" class="container mx-auto mt-6 px-4 flex-grow mb-16">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+        <div>
+          <div class="flex items-center space-x-2 mb-2">
+            <h2 class="text-2xl font-bold text-gray-800"><%= (typeof isEdit !== 'undefined' && isEdit) ? 'Edit' : 'Configure' %> Window: <span class="text-blue-600"><%= windowRef %></span></h2>
+            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"><%= selectedWindowSystem.type %></span>
+          </div>
+          <p class="text-gray-600">Project: <span class="font-medium"><%= project.projectName %></span></p>
+          <p class="text-sm text-gray-500">Client: <%= project.clientName || 'Not specified' %></p>
+        </div>
+        
+        <div class="mt-4 lg:mt-0 bg-green-50 rounded-lg px-6 py-4 border border-green-100">
+          <div class="text-green-800 text-xl font-bold" id="totalPrice">$0.00</div>
+          <div class="text-green-600 text-sm">Estimated Total</div>
+        </div>
+      </div>
+    </div>
+
+    <form id="windowConfigForm" action="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? `/projects/${project._id}/windows/${existingWindow._id}/update` : `/projects/${project._id}/windows/save` %>" method="POST" class="space-y-6">
+      <input type="hidden" name="windowRef" value="<%= windowRef %>">
+      <input type="hidden" name="windowSystemId" value="<%= selectedWindowSystem._id %>">
+      
+      <!-- Edit Mode Notice -->
+      <% if (typeof isEdit !== 'undefined' && isEdit) { %>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <div class="text-sm text-yellow-800">
+              <p class="font-medium mb-1">Edit Mode:</p>
+              <p>Basic dimensions and glass type are pre-filled. For detailed component configurations (profiles, accessories), please review and adjust the default settings as needed. The pricing will update automatically as you make changes.</p>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- Basic Specifications -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Window Specifications</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Left Column: Dimensions -->
+          <div>
+            <h4 class="text-lg font-medium text-gray-700 mb-4">Dimensions & Quantity</h4>
+            <div class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="width" class="form-label">Width (inches) *</label>
+                  <input type="number" id="width" name="width" step="0.01" min="0" required 
+                         class="form-input w-full" placeholder="0.00" 
+                         value="<%= isEdit && existingWindow ? existingWindow.width : '' %>"
+                         onchange="calculatePricing()">
+                </div>
+                <div>
+                  <label for="height" class="form-label">Height (inches) *</label>
+                  <input type="number" id="height" name="height" step="0.01" min="0" required 
+                         class="form-input w-full" placeholder="0.00" 
+                         value="<%= isEdit && existingWindow ? existingWindow.height : '' %>"
+                         onchange="calculatePricing()">
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="quantity" class="form-label">Quantity *</label>
+                  <input type="number" id="quantity" name="quantity" min="1" 
+                         value="<%= isEdit && existingWindow ? existingWindow.quantity : '1' %>" required 
+                         class="form-input w-full" onchange="calculatePricing()">
+                </div>
+                <div>
+                  <label for="glassType" class="form-label">Glass Type *</label>
+                  <select id="glassType" name="glassType" required class="form-input w-full" onchange="calculatePricing()">
+                    <option value="">Select Glass Type</option>
+                    <% allGlasses.forEach(glass => { %>
+                      <% 
+                        let isSelected = false;
+                        if (isEdit && existingWindow && existingWindow.description) {
+                          // Try to match glass type from description
+                          isSelected = existingWindow.description.includes(glass.glass_type);
+                        }
+                      %>
+                      <option value="<%= glass._id %>" data-price="<%= glass.pricePerSquareMeter %>" data-type="<%= glass.glass_type %>" <%= isSelected ? 'selected' : '' %>>
+                        <%= glass.glass_type %> - <%= glass.description %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Column: System Info -->
+          <div>
+            <h4 class="text-lg font-medium text-gray-700 mb-4">System Information</h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Window System:</span>
+                <span class="font-medium"><%= selectedWindowSystem.type %></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Total Profiles:</span>
+                <span class="font-medium"><%= selectedWindowSystem.profiles.length %></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">User-Configurable:</span>
+                <span class="font-medium text-green-600"><%= userConfigurableProfiles.length %> profiles</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Total Accessories:</span>
+                <span class="font-medium"><%= selectedWindowSystem.accessories.length %></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">User-Configurable:</span>
+                <span class="font-medium text-green-600"><%= userConfigurableAccessories.length %> accessories</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Glass Restrictions:</span>
+                <span class="font-medium"><%= selectedWindowSystem.glassRestrictions ? selectedWindowSystem.glassRestrictions.length : 0 %></span>
+              </div>
+            </div>
+            
+            <!-- Glass Restrictions -->
+            <% if (selectedWindowSystem.glassRestrictions && selectedWindowSystem.glassRestrictions.length > 0) { %>
+              <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h5 class="text-sm font-medium text-yellow-800 mb-2">Glass Restrictions:</h5>
+                <% selectedWindowSystem.glassRestrictions.forEach(restriction => { %>
+                  <div class="text-xs text-yellow-700 mb-2">
+                    <strong>Type <%= restriction.type %>:</strong> Max <%= restriction.width %>" × <%= restriction.height %>"
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Components Configuration -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Components Configuration</h3>
+        
+        <!-- Profiles Section -->
+        <div class="mb-8">
+          <h4 class="text-lg font-medium text-gray-700 mb-4">Profiles (Based on <%= selectedWindowSystem.type %>)</h4>
+          
+          <div id="profilesContainer" class="space-y-4">
+            <% if (userConfigurableProfiles.length > 0) { %>
+              <% userConfigurableProfiles.forEach((profileItem, index) => { %>
+                <div class="component-card border border-gray-200 rounded-lg p-4">
+                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                      <label class="form-label">Profile</label>
+                      <select name="profiles[<%= index %>][profileId]" class="form-input w-full profile-select" onchange="calculatePricing()">
+                        <% allProfiles.forEach(profile => { %>
+                          <option value="<%= profile._id %>" 
+                                  data-price="<%= profile.pricePerMeter %>"
+                                  data-weight="<%= profile.weight %>"
+                                  <%= profileItem.profile && profileItem.profile._id.toString() === profile._id.toString() ? 'selected' : '' %>>
+                            <%= profile.name %> - <%= profile.color %>
+                          </option>
+                        <% }) %>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="form-label">Quantity</label>
+                      <input type="number" name="profiles[<%= index %>][quantity]" value="<%= profileItem.quantity %>" 
+                             min="1" class="form-input w-full" onchange="calculatePricing()">
+                    </div>
+                    <div>
+                      <label class="form-label">Orientation</label>
+                      <select name="profiles[<%= index %>][orientation]" class="form-input w-full">
+                        <option value="horizontal" <%= profileItem.orientation === 'horizontal' ? 'selected' : '' %>>Horizontal</option>
+                        <option value="vertical" <%= profileItem.orientation === 'vertical' ? 'selected' : '' %>>Vertical</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="form-label">Length Discount (in)</label>
+                      <input type="number" name="profiles[<%= index %>][lengthDiscount]" value="<%= profileItem.lengthDiscount %>" 
+                             step="0.01" class="form-input w-full" onchange="calculatePricing()">
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-blue-800 text-sm">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  All profiles for this window system are automatically configured. No user input required.
+                </p>
+              </div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Accessories Section -->
+        <div class="mb-8">
+          <h4 class="text-lg font-medium text-gray-700 mb-4">Accessories</h4>
+          
+          <div id="accessoriesContainer" class="space-y-6">
+            <% if (accessoryChoiceGroups.length > 0 || individualAccessories.length > 0) { %>
+              
+              <!-- Choice Groups (e.g., handles, locks) -->
+              <% accessoryChoiceGroups.forEach((group, groupIndex) => { %>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <div class="flex items-center justify-between mb-4">
+                    <h5 class="text-lg font-medium text-gray-800 capitalize"><%= group.name %></h5>
+                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                      <%= group.selectionType === 'single' ? 'Choose One' : 'Multiple Choice' %>
+                    </span>
+                  </div>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <% group.accessories.forEach((accessoryItem, accessoryIndex) => { %>
+                      <% const accessory = allAccessories.find(a => a._id.toString() === accessoryItem.accessory._id.toString()) %>
+                      <% if (accessory) { %>
+                                                 <div class="choice-option border border-gray-300 rounded-lg p-4 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer" 
+                              data-group="<%= group.name %>" 
+                              data-selection-type="<%= group.selectionType %>" 
+                              data-accessory-id="<%= accessoryItem.accessory._id %>"
+                              onclick="selectChoice(this)">
+                          <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                              <div class="flex items-center mb-2">
+                                <input type="<%= group.selectionType === 'single' ? 'radio' : 'checkbox' %>" 
+                                       name="choiceGroup_<%= group.name %>" 
+                                       value="<%= accessoryItem.accessory._id %>"
+                                       class="mr-2"
+                                       <%= accessoryItem.isDefault ? 'checked' : '' %>
+                                       onchange="calculatePricing()">
+                                <h6 class="font-medium text-gray-800"><%= accessory.name %></h6>
+                                <% if (accessoryItem.isDefault) { %>
+                                  <span class="ml-2 text-yellow-500">⭐</span>
+                                <% } %>
+                              </div>
+                              <p class="text-sm text-gray-600 mb-2"><%= accessory.description || 'No description available' %></p>
+                              <div class="text-sm font-medium text-green-600">
+                                $<%= accessory.price.toFixed(2) %>/<%= accessory.unit %>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div class="mt-3 pt-3 border-t border-gray-200">
+                            <label class="block text-xs text-gray-600 mb-1">Quantity:</label>
+                            <input type="number" 
+                                   name="accessories_choice_<%= group.name %>_<%= accessoryItem.accessory._id %>_quantity" 
+                                   value="<%= accessoryItem.quantity %>" 
+                                   min="1" 
+                                   class="form-input w-full text-sm" 
+                                   onchange="calculatePricing()">
+                          </div>
+                          
+                          <!-- Hidden fields to store accessory info -->
+                          <input type="hidden" name="accessories_choice_<%= group.name %>_<%= accessoryItem.accessory._id %>_price" value="<%= accessory.price %>">
+                          <input type="hidden" name="accessories_choice_<%= group.name %>_<%= accessoryItem.accessory._id %>_unit" value="<%= accessory.unit %>">
+                        </div>
+                      <% } %>
+                    <% }) %>
+                  </div>
+                </div>
+              <% }) %>
+              
+              <!-- Individual Accessories (quantity-based) -->
+              <% if (individualAccessories.length > 0) { %>
+                <div class="space-y-4">
+                  <h5 class="text-lg font-medium text-gray-700">Additional Accessories</h5>
+                  <% individualAccessories.forEach((accessoryItem, index) => { %>
+                    <div class="component-card border border-gray-200 rounded-lg p-4">
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                          <label class="form-label">Accessory</label>
+                          <select name="accessories[<%= index %>][accessoryId]" class="form-input w-full accessory-select" onchange="calculatePricing()">
+                            <% allAccessories.forEach(accessory => { %>
+                              <option value="<%= accessory._id %>" 
+                                      data-price="<%= accessory.price %>"
+                                      data-unit="<%= accessory.unit %>"
+                                      <%= accessoryItem.accessory && accessoryItem.accessory._id.toString() === accessory._id.toString() ? 'selected' : '' %>>
+                                <%= accessory.name %> - $<%= accessory.price %>/<%= accessory.unit %>
+                              </option>
+                            <% }) %>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="form-label">Quantity</label>
+                          <input type="number" name="accessories[<%= index %>][quantity]" value="<%= accessoryItem.quantity %>" 
+                                 min="1" class="form-input w-full" onchange="calculatePricing()">
+                        </div>
+                        <div>
+                          <label class="form-label">Unit</label>
+                          <input type="text" name="accessories[<%= index %>][unit]" value="<%= accessoryItem.unit %>" 
+                                 class="form-input w-full bg-gray-100" readonly>
+                        </div>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } %>
+              
+            <% } else { %>
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-blue-800 text-sm">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  All accessories for this window system are automatically configured. No user input required.
+                </p>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing Summary -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Pricing Summary</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 class="text-lg font-medium text-gray-700 mb-4">Cost Breakdown</h4>
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Base Materials:</span>
+                <span class="font-medium" id="baseMaterialsCost">$0.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Glass Cost:</span>
+                <span class="font-medium" id="glassCost">$0.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Accessories:</span>
+                <span class="font-medium" id="accessoriesCost">$0.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Additional Costs:</span>
+                <span class="font-medium" id="additionalCosts">$0.00</span>
+              </div>
+              <hr class="border-gray-300">
+              <div class="flex justify-between text-lg font-bold">
+                <span class="text-gray-800">Total Price:</span>
+                <span class="text-green-600" id="finalTotalPrice">$0.00</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="text-lg font-medium text-gray-700 mb-4">Additional Information</h4>
+            <div>
+              <label for="notes" class="form-label">Notes (Optional)</label>
+              <textarea id="notes" name="notes" rows="4" class="form-input w-full" 
+                        placeholder="Any special requirements or notes for this window..."><%= 
+                          isEdit && existingWindow && existingWindow.description ? 
+                          (() => {
+                            const desc = existingWindow.description;
+                            const notesMatch = desc.match(/Notes: (.+)$/m);
+                            return notesMatch ? notesMatch[1] : '';
+                          })() : '' 
+                        %></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-between items-center">
+        <a href="/projects/<%= project._id %>" class="btn-secondary">
+          ← Back to Project
+        </a>
+        
+        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium">
+          <%= isEdit ? 'Update Window Configuration' : 'Save Window Configuration' %>
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <%- include('../partials/_footer.ejs') %>
+
+  <script>
+    const costSettings = <%- JSON.stringify({
+      seaFreight: (costSettings && costSettings.seaFreight) || 0,
+      landFreight: (costSettings && costSettings.landFreight) || 0,
+      packaging: (costSettings && costSettings.packaging) || 0,
+      labor: (costSettings && costSettings.labor) || 0,
+      indirectCosts: (costSettings && costSettings.indirectCosts) || 0,
+      administrativeExpenses: (costSettings && costSettings.administrativeExpenses) || 0
+    }) %>;
+
+    // Format numbers with commas
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    }
+
+    // Handle choice selection for grouped accessories
+    function selectChoice(element) {
+      const group = element.getAttribute('data-group');
+      const selectionType = element.getAttribute('data-selection-type');
+      const accessoryId = element.getAttribute('data-accessory-id');
+      
+      const checkbox = element.querySelector('input[type="radio"], input[type="checkbox"]');
+      
+      if (selectionType === 'single') {
+        // For radio buttons, uncheck all others in the group
+        const otherRadios = document.querySelectorAll(`input[name="choiceGroup_${group}"]`);
+        otherRadios.forEach(radio => {
+          if (radio !== checkbox) {
+            radio.checked = false;
+            // Remove selection styling from other options
+            const otherOption = radio.closest('.choice-option');
+            otherOption.classList.remove('border-blue-400', 'bg-blue-50');
+            otherOption.classList.add('border-gray-300');
+          }
+        });
+      }
+      
+      // Toggle the current selection
+      checkbox.checked = !checkbox.checked;
+      
+      // Update visual styling
+      if (checkbox.checked) {
+        element.classList.remove('border-gray-300');
+        element.classList.add('border-blue-400', 'bg-blue-50');
+      } else {
+        element.classList.remove('border-blue-400', 'bg-blue-50');
+        element.classList.add('border-gray-300');
+      }
+      
+      // Recalculate pricing
+      calculatePricing();
+    }
+
+    function calculatePricing() {
+      const width = parseFloat(document.getElementById('width').value) || 0;
+      const height = parseFloat(document.getElementById('height').value) || 0;
+      const quantity = parseInt(document.getElementById('quantity').value) || 1;
+      
+      // Calculate square footage (convert inches to square meters: 1 sqm = 1550 sq inches)
+      const areaInches = width * height;
+      const areaSquareMeters = areaInches / 1550;
+      
+      let totalCost = 0;
+      
+      // Glass cost
+      const glassSelect = document.getElementById('glassType');
+      const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
+      const glassPrice = parseFloat(selectedGlass?.getAttribute('data-price')) || 0;
+      const glassCost = glassPrice * areaSquareMeters;
+      totalCost += glassCost;
+      
+      // Profile costs
+      let profilesCost = 0;
+      const profileSelects = document.querySelectorAll('.profile-select');
+      profileSelects.forEach((select, index) => {
+        const selectedProfile = select.options[select.selectedIndex];
+        const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
+        const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
+        const lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
+        
+        // Estimate profile length based on window perimeter
+        const perimeterInches = 2 * (width + height);
+        const perimeterMeters = perimeterInches * 0.0254; // Convert inches to meters
+        const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
+        
+        profilesCost += pricePerMeter * adjustedLength * qty;
+      });
+      totalCost += profilesCost;
+      
+      // Accessory costs
+      let accessoriesCost = 0;
+      
+      // Individual accessories (dropdown selects)
+      const accessorySelects = document.querySelectorAll('.accessory-select');
+      accessorySelects.forEach(select => {
+        const selectedAccessory = select.options[select.selectedIndex];
+        const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
+        const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
+        accessoriesCost += price * qty;
+      });
+      
+      // Choice group accessories (radio buttons and checkboxes)
+      const checkedChoices = document.querySelectorAll('input[name^="choiceGroup_"]:checked');
+      checkedChoices.forEach(choice => {
+        const accessoryId = choice.value;
+        const groupName = choice.name.replace('choiceGroup_', '');
+        
+        // Find the corresponding price and quantity inputs
+        const priceInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_price"]`;
+        const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
+        const priceInput = document.querySelector(priceInputSelector);
+        const quantityInput = document.querySelector(quantityInputSelector);
+        
+        if (priceInput && quantityInput) {
+          const price = parseFloat(priceInput.value) || 0;
+          const qty = parseInt(quantityInput.value) || 1;
+          accessoriesCost += price * qty;
+        }
+      });
+      
+      totalCost += accessoriesCost;
+      
+      // Apply per-window cost settings (as percentages)
+      // Only packaging, indirect costs, and labor are applied per window
+      const baseCost = totalCost;
+      const additionalCosts = baseCost * (
+        (costSettings.packaging / 100) +
+        (costSettings.labor / 100) +
+        (costSettings.indirectCosts / 100)
+      );
+      
+      // Note: Sea freight, land freight, and administrative expenses 
+      // will be applied at quotation level with user checkboxes
+      
+      totalCost += additionalCosts;
+      const finalTotal = totalCost * quantity;
+      
+      // Update displays with comma formatting
+      document.getElementById('totalPrice').textContent = formatCurrency(finalTotal);
+      document.getElementById('baseMaterialsCost').textContent = formatCurrency(profilesCost);
+      document.getElementById('glassCost').textContent = formatCurrency(glassCost);
+      document.getElementById('accessoriesCost').textContent = formatCurrency(accessoriesCost);
+      document.getElementById('additionalCosts').textContent = formatCurrency(additionalCosts);
+      document.getElementById('finalTotalPrice').textContent = formatCurrency(finalTotal);
+    }
+
+    // Initialize calculations
+    document.addEventListener('DOMContentLoaded', function() {
+      calculatePricing();
+    });
+  </script>
+</body>
+</html>

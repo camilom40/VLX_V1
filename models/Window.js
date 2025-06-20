@@ -15,12 +15,20 @@ const windowSchema = new Schema({
     profile: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
     quantity: { type: Number, required: true },
     orientation: { type: String, required: true },
-    lengthDiscount: { type: Number, required: true } // in inches
+    lengthDiscount: { type: Number, required: true }, // in inches
+    showToUser: { type: Boolean, default: false }, // Whether to show this profile to users for configuration
+    componentGroup: { type: String, default: null }, // Group name for related components (e.g., "frame-types", "mullions")
+    selectionType: { type: String, enum: ['single', 'multiple', 'quantity'], default: 'quantity' }, // How users can select this component
+    isDefault: { type: Boolean, default: false } // Whether this is the default choice in a single-selection group
   }],
   accessories: [{
     accessory: { type: Schema.Types.ObjectId, ref: 'Accessory', required: true },
     quantity: { type: Number, required: true },
-    unit: { type: String, required: true }
+    unit: { type: String, required: true },
+    showToUser: { type: Boolean, default: false }, // Whether to show this accessory to users for configuration
+    componentGroup: { type: String, default: null }, // Group name for related components (e.g., "handles", "locks")
+    selectionType: { type: String, enum: ['single', 'multiple', 'quantity'], default: 'quantity' }, // How users can select this component
+    isDefault: { type: Boolean, default: false } // Whether this is the default choice in a single-selection group
   }],
   glassRestrictions: [glassRestrictionSchema] // Embedded glass restrictions
 });

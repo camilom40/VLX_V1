@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/_head.ejs') %>
+  <title>Add Component Group</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <%- include('../partials/_header.ejs') %>
+  <div class="container mx-auto mt-10 flex-grow">
+    <div class="max-w-2xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Add Component Group</h1>
+        <a href="/admin/component-groups" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+          <i class="fas fa-arrow-left mr-2"></i>Back to List
+        </a>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p class="text-blue-800 text-sm">
+          <i class="fas fa-info-circle mr-2"></i>
+          Component groups help organize accessories into logical categories for user selection. 
+          Examples: "Handles", "Locks & Security", "Hinges", etc.
+        </p>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <form action="/admin/component-groups/add" method="POST" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="displayName" class="block text-sm font-medium text-gray-700 mb-2">
+                Display Name *
+              </label>
+              <input type="text" 
+                     id="displayName" 
+                     name="displayName" 
+                     required
+                     placeholder="e.g., Handles"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <p class="text-xs text-gray-500 mt-1">This is what users will see in dropdown menus</p>
+            </div>
+
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                Internal Name *
+              </label>
+              <input type="text" 
+                     id="name" 
+                     name="name" 
+                     required
+                     placeholder="e.g., handles"
+                     pattern="[a-z0-9_-]+"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers, underscores, and hyphens only</p>
+            </div>
+          </div>
+
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea id="description" 
+                      name="description" 
+                      rows="3"
+                      placeholder="Optional description for this component group..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+            <p class="text-xs text-gray-500 mt-1">Optional description to help other admins understand this group's purpose</p>
+          </div>
+
+          <div>
+            <label for="sortOrder" class="block text-sm font-medium text-gray-700 mb-2">
+              Sort Order
+            </label>
+            <input type="number" 
+                   id="sortOrder" 
+                   name="sortOrder" 
+                   value="0"
+                   min="0"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 md:w-32">
+            <p class="text-xs text-gray-500 mt-1">Lower numbers appear first in dropdown lists (0 = first)</p>
+          </div>
+
+          <div class="border-t border-gray-200 pt-6">
+            <div class="flex justify-between items-center">
+              <div class="text-sm text-gray-600">
+                <i class="fas fa-asterisk text-red-500 mr-1"></i>
+                Required fields
+              </div>
+              <div class="flex space-x-3">
+                <a href="/admin/component-groups" 
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                  Cancel
+                </a>
+                <button type="submit" 
+                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                  <i class="fas fa-save mr-2"></i>Create Component Group
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <%- include('../partials/_footer.ejs') %>
+
+  <script>
+    // Auto-generate internal name from display name
+    document.getElementById('displayName').addEventListener('input', function() {
+      const displayName = this.value;
+      const internalName = displayName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single
+        .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+      
+      document.getElementById('name').value = internalName;
+    });
+
+    // Validate internal name format
+    document.getElementById('name').addEventListener('input', function() {
+      const value = this.value;
+      const isValid = /^[a-z0-9_-]*$/.test(value);
+      
+      if (!isValid && value.length > 0) {
+        this.setCustomValidity('Only lowercase letters, numbers, underscores, and hyphens are allowed');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+  </script>
+</body>
+</html> 

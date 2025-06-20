@@ -97,7 +97,7 @@
           <!-- Profiles Section -->
           <div id="profiles-section" class="mb-8">
             <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <div class="md:col-span-2">
                   <label for="profile-id" class="block text-gray-700 font-medium mb-1">Profile Type:</label>
                   <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
@@ -129,6 +129,15 @@
                     <span class="ml-2 text-gray-600">in.</span>
                   </div>
                 </div>
+                
+                <div>
+                  <label for="profile-show-to-user" class="block text-gray-700 font-medium mb-1">User Configurable:</label>
+                  <div class="flex items-center mt-2">
+                    <input type="checkbox" id="profile-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="profile-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Allow users to modify this profile</p>
+                </div>
               </div>
               
               <div class="mt-4 text-right">
@@ -148,6 +157,7 @@
                     <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
                     <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Orientation</th>
                     <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Length Discount</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">User Config</th>
                     <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
                   </tr>
                 </thead>
@@ -184,7 +194,7 @@
 
           <div id="accessories-section" class="mb-8">
             <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div class="md:col-span-2">
                   <label for="accessory-id" class="block text-gray-700 font-medium mb-1">Accessory Type:</label>
                   <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
@@ -204,6 +214,51 @@
                   <label for="accessory-unit" class="block text-gray-700 font-medium mb-1">Unit:</label>
                   <input type="text" id="accessory-unit" placeholder="Unit" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none" readonly>
                 </div>
+                
+                <div>
+                  <label for="accessory-show-to-user" class="block text-gray-700 font-medium mb-1">User Configurable:</label>
+                  <div class="flex items-center mt-2">
+                    <input type="checkbox" id="accessory-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="accessory-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Allow users to modify this accessory</p>
+                </div>
+              </div>
+              
+              <!-- Advanced Configuration (only show when user configurable is checked) -->
+              <div id="accessory-advanced-config" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200" style="display: none;">
+                <div>
+                  <label for="accessory-component-group-select" class="block text-gray-700 font-medium mb-1">Component Group:</label>
+                  <select id="accessory-component-group-select" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" onchange="toggleCustomGroupInput()">
+                    <option value="">Select a group...</option>
+                    <% componentGroups.forEach(group => { %>
+                      <option value="<%= group.name %>"><%= group.displayName %></option>
+                    <% }); %>
+                    <option value="custom">Custom (Type your own)</option>
+                  </select>
+                  <input type="text" id="accessory-component-group-custom" placeholder="Enter custom group name" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 mt-2" style="display: none;">
+                  <input type="hidden" id="accessory-component-group" value="">
+                  <p class="text-xs text-gray-500 mt-1">Group related components together for user selection</p>
+                </div>
+                
+                <div>
+                  <label for="accessory-selection-type" class="block text-gray-700 font-medium mb-1">Selection Type:</label>
+                  <select id="accessory-selection-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <option value="quantity">Quantity (Default)</option>
+                    <option value="single">Single Choice</option>
+                    <option value="multiple">Multiple Choice</option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">How users can select this component</p>
+                </div>
+                
+                <div>
+                  <label for="accessory-is-default" class="block text-gray-700 font-medium mb-1">Default Choice:</label>
+                  <div class="flex items-center mt-2">
+                    <input type="checkbox" id="accessory-is-default" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="accessory-is-default" class="ml-2 text-sm text-gray-700">Default selection</label>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Pre-select this in choice groups</p>
+                </div>
               </div>
               
               <div class="mt-4 text-right">
@@ -222,6 +277,8 @@
                     <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Accessory</th>
                     <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
                     <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Unit</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">User Config</th>
+                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Choice Group</th>
                     <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
                   </tr>
                 </thead>
@@ -374,6 +431,55 @@
     document.addEventListener('DOMContentLoaded', function() {
       updateEmptyStates();
       setupStepNavigation();
+      setupAdvancedConfigToggle();
+    });
+    
+    // Setup advanced configuration toggle
+    function setupAdvancedConfigToggle() {
+      const showToUserCheckbox = document.getElementById('accessory-show-to-user');
+      const advancedConfig = document.getElementById('accessory-advanced-config');
+      
+      showToUserCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+          advancedConfig.style.display = 'grid';
+        } else {
+          advancedConfig.style.display = 'none';
+          // Reset advanced config fields when hiding
+          document.getElementById('accessory-component-group-select').value = '';
+          document.getElementById('accessory-component-group-custom').style.display = 'none';
+          document.getElementById('accessory-component-group-custom').value = '';
+          document.getElementById('accessory-component-group').value = '';
+          document.getElementById('accessory-selection-type').value = 'quantity';
+          document.getElementById('accessory-is-default').checked = false;
+        }
+      });
+    }
+    
+    // Toggle between dropdown and custom input for component groups
+    function toggleCustomGroupInput() {
+      const select = document.getElementById('accessory-component-group-select');
+      const customInput = document.getElementById('accessory-component-group-custom');
+      const hiddenInput = document.getElementById('accessory-component-group');
+      
+      if (select.value === 'custom') {
+        customInput.style.display = 'block';
+        customInput.focus();
+        hiddenInput.value = customInput.value;
+      } else {
+        customInput.style.display = 'none';
+        customInput.value = '';
+        hiddenInput.value = select.value;
+      }
+    }
+    
+    // Update hidden input when custom text changes
+    document.addEventListener('DOMContentLoaded', function() {
+      const customInput = document.getElementById('accessory-component-group-custom');
+      const hiddenInput = document.getElementById('accessory-component-group');
+      
+      customInput.addEventListener('input', function() {
+        hiddenInput.value = this.value;
+      });
     });
     
     // Step navigation
@@ -497,6 +603,7 @@
       const quantity = document.getElementById('profile-quantity').value;
       const orientation = document.getElementById('profile-orientation').value;
       const lengthDiscount = document.getElementById('profile-length-discount').value;
+      const showToUser = document.getElementById('profile-show-to-user').checked;
 
       if (!profileId) {
         showAlert('Please select a profile');
@@ -518,7 +625,7 @@
         return;
       }
 
-      profiles.push({ profileId, profileName, quantity, orientation, lengthDiscount });
+      profiles.push({ profileId, profileName, quantity, orientation, lengthDiscount, showToUser });
       renderProfilesTable();
       
       // Reset form inputs
@@ -526,6 +633,7 @@
       document.getElementById('profile-quantity').value = '';
       document.getElementById('profile-orientation').selectedIndex = 0;
       document.getElementById('profile-length-discount').value = '';
+      document.getElementById('profile-show-to-user').checked = false;
       
       updateEmptyStates();
     }
@@ -534,12 +642,17 @@
       const tableBody = document.getElementById('profiles-table-body');
       tableBody.innerHTML = '';
       profiles.forEach((profile, index) => {
+        const userConfigStatus = profile.showToUser ? 
+          '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Configurable</span>' : 
+          '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto-managed</span>';
+        
         const row = `
           <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
             <td class="py-3 px-4 border-b">${profile.profileName}</td>
             <td class="py-3 px-4 border-b">${profile.quantity}</td>
             <td class="py-3 px-4 border-b">${profile.orientation}</td>
             <td class="py-3 px-4 border-b">${profile.lengthDiscount} in.</td>
+            <td class="py-3 px-4 border-b">${userConfigStatus}</td>
             <td class="py-3 px-4 border-b">
               <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${index})">
                 <i class="fas fa-trash mr-1"></i>Remove
@@ -564,6 +677,12 @@
       const accessoryName = accessorySelect.options[accessorySelect.selectedIndex]?.text || '';
       const quantity = document.getElementById('accessory-quantity').value;
       const unit = document.getElementById('accessory-unit').value;
+      const showToUser = document.getElementById('accessory-show-to-user').checked;
+      
+      // Get advanced configuration fields
+      const componentGroup = document.getElementById('accessory-component-group').value;
+      const selectionType = document.getElementById('accessory-selection-type').value;
+      const isDefault = document.getElementById('accessory-is-default').checked;
 
       if (!accessoryId) {
         showAlert('Please select an accessory');
@@ -575,13 +694,32 @@
         return;
       }
 
-      accessories.push({ accessoryId, accessoryName, quantity, unit });
+      accessories.push({ 
+        accessoryId, 
+        accessoryName, 
+        quantity, 
+        unit, 
+        showToUser,
+        componentGroup: componentGroup || null,
+        selectionType,
+        isDefault
+      });
       renderAccessoriesTable();
       
       // Reset form inputs
       accessorySelect.selectedIndex = 0;
       document.getElementById('accessory-quantity').value = '';
       document.getElementById('accessory-unit').value = '';
+      document.getElementById('accessory-show-to-user').checked = false;
+      document.getElementById('accessory-component-group-select').value = '';
+      document.getElementById('accessory-component-group-custom').style.display = 'none';
+      document.getElementById('accessory-component-group-custom').value = '';
+      document.getElementById('accessory-component-group').value = '';
+      document.getElementById('accessory-selection-type').value = 'quantity';
+      document.getElementById('accessory-is-default').checked = false;
+      
+      // Hide advanced config
+      document.getElementById('accessory-advanced-config').style.display = 'none';
       
       updateEmptyStates();
     }
@@ -590,11 +728,35 @@
       const tableBody = document.getElementById('accessories-table-body');
       tableBody.innerHTML = '';
       accessories.forEach((accessory, index) => {
+        const userConfigStatus = accessory.showToUser ? 
+          '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Configurable</span>' : 
+          '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto-managed</span>';
+        
+        // Choice group information
+        let choiceGroupInfo = '<span class="text-gray-400">-</span>';
+        if (accessory.showToUser && accessory.componentGroup) {
+          const selectionTypeLabel = {
+            'single': 'Single Choice',
+            'multiple': 'Multiple Choice', 
+            'quantity': 'Quantity'
+          }[accessory.selectionType] || 'Quantity';
+          
+          const defaultMarker = accessory.isDefault ? ' ⭐' : '';
+          choiceGroupInfo = `
+            <div class="text-sm">
+              <strong>${accessory.componentGroup}</strong><br>
+              <span class="text-xs text-gray-600">${selectionTypeLabel}${defaultMarker}</span>
+            </div>
+          `;
+        }
+        
         const row = `
           <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
             <td class="py-3 px-4 border-b">${accessory.accessoryName}</td>
             <td class="py-3 px-4 border-b">${accessory.quantity}</td>
             <td class="py-3 px-4 border-b">${accessory.unit}</td>
+            <td class="py-3 px-4 border-b">${userConfigStatus}</td>
+            <td class="py-3 px-4 border-b">${choiceGroupInfo}</td>
             <td class="py-3 px-4 border-b">
               <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeAccessory(${index})">
                 <i class="fas fa-trash mr-1"></i>Remove

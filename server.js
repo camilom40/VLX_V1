@@ -15,6 +15,7 @@ const glassRoutes = require('./routes/admin/glassRoutes');
 const profileRoutes = require('./routes/admin/profileRoutes');
 const settingsRoutes = require('./routes/admin/settingsRoutes');
 const metricsRoutes = require('./routes/admin/metricsRoutes');
+const componentGroupRoutes = require('./routes/admin/componentGroupRoutes');
 const { isAdmin } = require('./routes/middleware/adminMiddleware');
 // const windowSystemConfigRoutes = require('./routes/admin/windowSystemConfigRoutes');
 const windowRoutes = require('./routes/admin/windowRoutes'); // Correctly import the routes
@@ -130,6 +131,9 @@ app.use('/admin', settingsRoutes);
 
 // Admin Routes for Metrics
 app.use('/admin/metrics', metricsRoutes);
+
+// Admin Routes for Component Groups
+app.use('/admin', componentGroupRoutes);
 
 // Admin Console Route
 app.get('/admin', isAdmin, (req, res) => {

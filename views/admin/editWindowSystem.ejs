@@ -18,40 +18,69 @@
 
         <!-- Profiles Section -->
         <div id="profiles-section" class="mb-8">
-          <div class="flex mb-4">
-            <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <option value="">Select Profile</option>
-              <% profiles.forEach(profile => { %>
-                <option value="<%= profile._id %>"><%= profile.name %></option>
-              <% }); %>
-            </select>
-            <input type="number" id="profile-quantity" placeholder="Quantity" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            <select id="profile-orientation" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <option value="" disabled selected>Orientation</option>
-              <option value="horizontal">Horizontal</option>
-              <option value="vertical">Vertical</option>
-            </select>
-            <input type="number" id="profile-length-discount" placeholder="Length Discount (inches)" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            <button type="button" onclick="addProfileEntry()" class="bg-blue-500 text-white px-4 py-2 rounded ml-2">Add Profile</button>
+          <h2 class="text-xl font-bold text-gray-700 mb-4">Profiles Configuration</h2>
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+            <div class="md:col-span-2">
+              <label class="block text-gray-700 font-medium mb-1">Profile Type:</label>
+              <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <option value="">Select Profile</option>
+                <% profiles.forEach(profile => { %>
+                  <option value="<%= profile._id %>"><%= profile.name %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-1">Quantity:</label>
+              <input type="number" id="profile-quantity" placeholder="Qty" min="1" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-1">Orientation:</label>
+              <select id="profile-orientation" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <option value="" disabled selected>Select</option>
+                <option value="horizontal">Horizontal</option>
+                <option value="vertical">Vertical</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-1">Length Discount:</label>
+              <input type="number" id="profile-length-discount" placeholder="0.0" step="0.01" min="0" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-1">User Configurable:</label>
+              <div class="flex items-center mt-2">
+                <input type="checkbox" id="profile-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="profile-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Allow users to modify this profile</p>
+            </div>
+            <div class="flex items-end">
+              <button type="button" onclick="addProfileEntry()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200 w-full">
+                Add Profile
+              </button>
+            </div>
           </div>
 
           <!-- Table to display added profiles -->
           <div class="mt-6">
             <h3 class="text-lg font-bold text-gray-700 mb-4">Added Profiles</h3>
-            <table class="min-w-full bg-white">
+            <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
               <thead>
                 <tr>
-                  <th class="py-2 px-4 bg-gray-200">Profile</th>
-                  <th class="py-2 px-4 bg-gray-200">Quantity</th>
-                  <th class="py-2 px-4 bg-gray-200">Orientation</th>
-                  <th class="py-2 px-4 bg-gray-200">Length Discount</th>
-                  <th class="py-2 px-4 bg-gray-200">Action</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Profile</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Orientation</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Length Discount</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">User Config</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody id="profiles-table-body">
                 <!-- Rows will be dynamically added here -->
               </tbody>
             </table>
+            <div id="profiles-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
+              No profiles added yet. Add at least one profile to continue.
+            </div>
           </div>
         </div>
 
@@ -60,34 +89,97 @@
 
         <!-- Accessories Section -->
         <div id="accessories-section" class="mb-8">
-          <div class="flex mb-4">
-            <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <option value="">Select Accessory</option>
-              <% accessories.forEach(accessory => { %>
-                <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
-              <% }); %>
-            </select>
-            <input type="number" id="accessory-quantity" placeholder="Quantity" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            <input type="text" id="accessory-unit" placeholder="Unit" class="form-control ml-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" readonly>
-            <button type="button" onclick="addAccessoryEntry()" class="bg-blue-500 text-white px-4 py-2 rounded ml-2">Add Accessory</button>
+          <h2 class="text-xl font-bold text-gray-700 mb-4">Accessories Configuration</h2>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+            <div class="md:col-span-2">
+              <label class="block text-gray-700 font-medium mb-1">Accessory Type:</label>
+              <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <option value="">Select Accessory</option>
+                <% accessories.forEach(accessory => { %>
+                  <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-1">Quantity:</label>
+              <input type="number" id="accessory-quantity" placeholder="Qty" min="1" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-1">Unit:</label>
+              <input type="text" id="accessory-unit" placeholder="Unit" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none" readonly>
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-1">User Configurable:</label>
+              <div class="flex items-center mt-2">
+                <input type="checkbox" id="accessory-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="accessory-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Allow users to modify this accessory</p>
+            </div>
+            
+            <!-- Advanced Configuration (only show when user configurable is checked) -->
+            <div id="accessory-advanced-config" class="md:col-span-5 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200" style="display: none;">
+              <div>
+                <label for="accessory-component-group-select" class="block text-gray-700 font-medium mb-1">Component Group:</label>
+                <select id="accessory-component-group-select" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" onchange="toggleCustomGroupInput()">
+                  <option value="">Select a group...</option>
+                  <% componentGroups.forEach(group => { %>
+                    <option value="<%= group.name %>"><%= group.displayName %></option>
+                  <% }); %>
+                  <option value="custom">Custom (Type your own)</option>
+                </select>
+                <input type="text" id="accessory-component-group-custom" placeholder="Enter custom group name" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 mt-2" style="display: none;">
+                <input type="hidden" id="accessory-component-group" value="">
+                <p class="text-xs text-gray-500 mt-1">Group related components together for user selection</p>
+              </div>
+              
+              <div>
+                <label for="accessory-selection-type" class="block text-gray-700 font-medium mb-1">Selection Type:</label>
+                <select id="accessory-selection-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <option value="quantity">Quantity (Default)</option>
+                  <option value="single">Single Choice</option>
+                  <option value="multiple">Multiple Choice</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">How users can select this component</p>
+              </div>
+              
+              <div>
+                <label for="accessory-is-default" class="block text-gray-700 font-medium mb-1">Default Choice:</label>
+                <div class="flex items-center mt-2">
+                  <input type="checkbox" id="accessory-is-default" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                  <label for="accessory-is-default" class="ml-2 text-sm text-gray-700">Default selection</label>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Pre-select this in choice groups</p>
+              </div>
+            </div>
+            <div class="flex items-end">
+              <button type="button" onclick="addAccessoryEntry()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200 w-full">
+                Add Accessory
+              </button>
+            </div>
           </div>
 
           <!-- Table to display added accessories -->
           <div class="mt-6">
             <h3 class="text-lg font-bold text-gray-700 mb-4">Added Accessories</h3>
-            <table class="min-w-full bg-white">
+            <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
               <thead>
                 <tr>
-                  <th class="py-2 px-4 bg-gray-200">Accessory</th>
-                  <th class="py-2 px-4 bg-gray-200">Quantity</th>
-                  <th class="py-2 px-4 bg-gray-200">Unit</th>
-                  <th class="py-2 px-4 bg-gray-200">Action</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Accessory</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Unit</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">User Config</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Choice Group</th>
+                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody id="accessories-table-body">
                 <!-- Rows will be dynamically added here -->
               </tbody>
             </table>
+            <div id="accessories-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
+              No accessories added yet. Add accessories to complete the window system.
+            </div>
           </div>
         </div>
 
@@ -161,6 +253,7 @@
       quantity: profile.quantity,
       orientation: profile.orientation,
       lengthDiscount: profile.lengthDiscount,
+      showToUser: profile.showToUser || false,
     }));
 
     let accessories = windowSystemData.accessories.map(accessory => ({
@@ -168,6 +261,10 @@
       accessoryName: accessory.accessory.name,
       quantity: accessory.quantity,
       unit: accessory.unit,
+      showToUser: accessory.showToUser || false,
+      componentGroup: accessory.componentGroup || null,
+      selectionType: accessory.selectionType || 'quantity',
+      isDefault: accessory.isDefault || false,
     }));
 
     let glassRestrictions = windowSystemData.glassRestrictions.map(glass => ({
@@ -185,30 +282,53 @@
       const quantity = document.getElementById('profile-quantity').value;
       const orientation = document.getElementById('profile-orientation').value;
       const lengthDiscount = document.getElementById('profile-length-discount').value;
+      const showToUser = document.getElementById('profile-show-to-user').checked;
 
-      if (profileId && quantity && orientation && lengthDiscount) {
-        profiles.push({ profileId, profileName, quantity, orientation, lengthDiscount });
+      if (profileId && quantity && orientation && lengthDiscount !== '') {
+        profiles.push({ profileId, profileName, quantity, orientation, lengthDiscount, showToUser });
         renderProfilesTable();
+        
+        // Clear form fields
+        document.getElementById('profile-id').value = '';
+        document.getElementById('profile-quantity').value = '';
+        document.getElementById('profile-orientation').value = '';
+        document.getElementById('profile-length-discount').value = '';
+        document.getElementById('profile-show-to-user').checked = false;
+      } else {
+        alert('Please fill in all profile fields');
       }
     }
 
     function renderProfilesTable() {
       const tableBody = document.getElementById('profiles-table-body');
-      tableBody.innerHTML = '';
-      profiles.forEach((profile, index) => {
-        const row = `
-          <tr>
-            <td class="py-2 px-4 border">${profile.profileName}</td>
-            <td class="py-2 px-4 border">${profile.quantity}</td>
-            <td class="py-2 px-4 border">${profile.orientation}</td>
-            <td class="py-2 px-4 border">${profile.lengthDiscount}</td>
-            <td class="py-2 px-4 border">
-              <button type="button" class="bg-red-500 text-white px-4 py-2 rounded" onclick="removeProfile(${index})">Remove</button>
-            </td>
-          </tr>
-        `;
-        tableBody.insertAdjacentHTML('beforeend', row);
-      });
+      const emptyState = document.getElementById('profiles-empty-state');
+      
+      if (profiles.length === 0) {
+        tableBody.innerHTML = '';
+        emptyState.style.display = 'block';
+      } else {
+        emptyState.style.display = 'none';
+        tableBody.innerHTML = '';
+        profiles.forEach((profile, index) => {
+          const configBadge = profile.showToUser 
+            ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>'
+            : '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>';
+          
+          const row = `
+            <tr class="hover:bg-gray-50">
+              <td class="py-3 px-4 border-b border-gray-200">${profile.profileName}</td>
+              <td class="py-3 px-4 border-b border-gray-200">${profile.quantity}</td>
+              <td class="py-3 px-4 border-b border-gray-200">${profile.orientation}</td>
+              <td class="py-3 px-4 border-b border-gray-200">${profile.lengthDiscount}</td>
+              <td class="py-3 px-4 border-b border-gray-200">${configBadge}</td>
+              <td class="py-3 px-4 border-b border-gray-200">
+                <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${index})">Remove</button>
+              </td>
+            </tr>
+          `;
+          tableBody.insertAdjacentHTML('beforeend', row);
+        });
+      }
     }
 
     function removeProfile(index) {
@@ -222,29 +342,93 @@
       const accessoryName = accessorySelect.options[accessorySelect.selectedIndex].text;
       const quantity = document.getElementById('accessory-quantity').value;
       const unit = document.getElementById('accessory-unit').value;
+      const showToUser = document.getElementById('accessory-show-to-user').checked;
+      
+      // Get advanced configuration fields
+      const componentGroup = document.getElementById('accessory-component-group').value;
+      const selectionType = document.getElementById('accessory-selection-type').value;
+      const isDefault = document.getElementById('accessory-is-default').checked;
 
       if (accessoryId && quantity && unit) {
-        accessories.push({ accessoryId, accessoryName, quantity, unit });
+        accessories.push({ 
+          accessoryId, 
+          accessoryName, 
+          quantity, 
+          unit, 
+          showToUser,
+          componentGroup: componentGroup || null,
+          selectionType,
+          isDefault
+        });
         renderAccessoriesTable();
+        
+        // Clear form fields
+        document.getElementById('accessory-id').value = '';
+        document.getElementById('accessory-quantity').value = '';
+        document.getElementById('accessory-unit').value = '';
+        document.getElementById('accessory-show-to-user').checked = false;
+        document.getElementById('accessory-component-group-select').value = '';
+        document.getElementById('accessory-component-group-custom').style.display = 'none';
+        document.getElementById('accessory-component-group-custom').value = '';
+        document.getElementById('accessory-component-group').value = '';
+        document.getElementById('accessory-selection-type').value = 'quantity';
+        document.getElementById('accessory-is-default').checked = false;
+        
+        // Hide advanced config
+        document.getElementById('accessory-advanced-config').style.display = 'none';
+      } else {
+        alert('Please fill in all accessory fields');
       }
     }
 
     function renderAccessoriesTable() {
       const tableBody = document.getElementById('accessories-table-body');
-      tableBody.innerHTML = '';
-      accessories.forEach((accessory, index) => {
-        const row = `
-          <tr>
-            <td class="py-2 px-4 border">${accessory.accessoryName}</td>
-            <td class="py-2 px-4 border">${accessory.quantity}</td>
-            <td class="py-2 px-4 border">${accessory.unit}</td>
-            <td class="py-2 px-4 border">
-              <button type="button" class="bg-red-500 text-white px-4 py-2 rounded" onclick="removeAccessory(${index})">Remove</button>
-            </td>
-          </tr>
-        `;
-        tableBody.insertAdjacentHTML('beforeend', row);
-      });
+      const emptyState = document.getElementById('accessories-empty-state');
+      
+      if (accessories.length === 0) {
+        tableBody.innerHTML = '';
+        emptyState.style.display = 'block';
+      } else {
+        emptyState.style.display = 'none';
+        tableBody.innerHTML = '';
+        accessories.forEach((accessory, index) => {
+          const configBadge = accessory.showToUser 
+            ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>'
+            : '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>';
+          
+          // Choice group information
+          let choiceGroupInfo = '<span class="text-gray-400">-</span>';
+          if (accessory.showToUser && accessory.componentGroup) {
+            const selectionTypeLabel = {
+              'single': 'Single Choice',
+              'multiple': 'Multiple Choice', 
+              'quantity': 'Quantity'
+            }[accessory.selectionType] || 'Quantity';
+            
+            const defaultMarker = accessory.isDefault ? ' ⭐' : '';
+            choiceGroupInfo = `
+              <div class="text-sm">
+                <strong>${accessory.componentGroup}</strong><br>
+                <span class="text-xs text-gray-600">${selectionTypeLabel}${defaultMarker}</span>
+              </div>
+            `;
+          }
+          
+          const row = `
+            <tr class="hover:bg-gray-50">
+              <td class="py-3 px-4 border-b border-gray-200">${accessory.accessoryName}</td>
+              <td class="py-3 px-4 border-b border-gray-200">${accessory.quantity}</td>
+              <td class="py-3 px-4 border-b border-gray-200">${accessory.unit}</td>
+              <td class="py-3 px-4 border-b border-gray-200">${configBadge}</td>
+              <td class="py-3 px-4 border-b border-gray-200">${choiceGroupInfo}</td>
+              <td class="py-3 px-4 border-b border-gray-200">
+                <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeAccessory(${index})">Remove</button>
+              </td>
+            </tr>
+          `;
+          tableBody.insertAdjacentHTML('beforeend', row);
+        });
+      }
     }
 
     function removeAccessory(index) {
@@ -296,6 +480,77 @@
       const unit = selectedOption.getAttribute('data-unit');
       document.getElementById('accessory-unit').value = unit || '';
     });
+    
+    // Setup advanced configuration toggle for accessories
+    document.getElementById('accessory-show-to-user').addEventListener('change', function() {
+      const advancedConfig = document.getElementById('accessory-advanced-config');
+      if (this.checked) {
+        advancedConfig.style.display = 'grid';
+      } else {
+        advancedConfig.style.display = 'none';
+        // Reset advanced config fields when hiding
+        document.getElementById('accessory-component-group-select').value = '';
+        document.getElementById('accessory-component-group-custom').style.display = 'none';
+        document.getElementById('accessory-component-group-custom').value = '';
+        document.getElementById('accessory-component-group').value = '';
+        document.getElementById('accessory-selection-type').value = 'quantity';
+        document.getElementById('accessory-is-default').checked = false;
+      }
+    });
+    
+    // Toggle between dropdown and custom input for component groups
+    function toggleCustomGroupInput() {
+      const select = document.getElementById('accessory-component-group-select');
+      const customInput = document.getElementById('accessory-component-group-custom');
+      const hiddenInput = document.getElementById('accessory-component-group');
+      
+      if (select.value === 'custom') {
+        customInput.style.display = 'block';
+        customInput.focus();
+        hiddenInput.value = customInput.value;
+      } else {
+        customInput.style.display = 'none';
+        customInput.value = '';
+        hiddenInput.value = select.value;
+      }
+    }
+    
+    // Update hidden input when custom text changes
+    document.getElementById('accessory-component-group-custom').addEventListener('input', function() {
+      document.getElementById('accessory-component-group').value = this.value;
+    });
+    
+    // Function to populate component group dropdown when editing existing accessories
+    function populateComponentGroupDropdown(componentGroup) {
+      const select = document.getElementById('accessory-component-group-select');
+      const customInput = document.getElementById('accessory-component-group-custom');
+      const hiddenInput = document.getElementById('accessory-component-group');
+      
+      if (!componentGroup) {
+        select.value = '';
+        customInput.style.display = 'none';
+        customInput.value = '';
+        hiddenInput.value = '';
+        return;
+      }
+      
+      // Check if the component group exists in our dropdown options
+      const options = Array.from(select.options).map(option => option.value);
+      const predefinedOptions = options.filter(opt => opt !== '' && opt !== 'custom');
+      
+      if (predefinedOptions.includes(componentGroup)) {
+        select.value = componentGroup;
+        customInput.style.display = 'none';
+        customInput.value = '';
+        hiddenInput.value = componentGroup;
+      } else {
+        // It's a custom group
+        select.value = 'custom';
+        customInput.style.display = 'block';
+        customInput.value = componentGroup;
+        hiddenInput.value = componentGroup;
+      }
+    }
 
     document.getElementById('window-form').addEventListener('submit', function(event) {
       const form = event.target;
@@ -322,6 +577,19 @@
     renderProfilesTable();
     renderAccessoriesTable();
     renderGlassRestrictionsTable();
+
+    // Initially hide empty states if we have data
+    if (profiles.length === 0) {
+      document.getElementById('profiles-empty-state').style.display = 'block';
+    } else {
+      document.getElementById('profiles-empty-state').style.display = 'none';
+    }
+    
+    if (accessories.length === 0) {
+      document.getElementById('accessories-empty-state').style.display = 'block';
+    } else {
+      document.getElementById('accessories-empty-state').style.display = 'none';
+    }
   </script>
 </body>
 </html>
