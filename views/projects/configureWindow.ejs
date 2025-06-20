@@ -94,8 +94,8 @@
                     <button type="button" id="inchesBtn" class="unit-toggle active px-3 py-1 text-sm font-medium rounded-md transition-all" onclick="switchUnits('inches')">
                       Inches
                     </button>
-                    <button type="button" id="cmBtn" class="unit-toggle px-3 py-1 text-sm font-medium rounded-md transition-all" onclick="switchUnits('cm')">
-                      cm
+                    <button type="button" id="mmBtn" class="unit-toggle px-3 py-1 text-sm font-medium rounded-md transition-all" onclick="switchUnits('mm')">
+                      mm
                     </button>
                   </div>
                 </div>
@@ -222,7 +222,7 @@
                     </div>
                     <div>
                       <label class="form-label">Quantity</label>
-                      <input type="number" name="profiles[<%= index %>][quantity]" value="<%= profileItem.quantity %>" 
+                      <input type="number" name="profiles[<%= index %>][quantity]" value="1" 
                              min="1" class="form-input w-full" onchange="calculatePricing()">
                     </div>
                     <div>
@@ -302,7 +302,7 @@
                             <label class="block text-xs text-gray-600 mb-1">Quantity:</label>
                             <input type="number" 
                                    name="accessories_choice_<%= group.name %>_<%= accessoryItem.accessory._id %>_quantity" 
-                                   value="<%= accessoryItem.quantity %>" 
+                                   value="1" 
                                    min="1" 
                                    class="form-input w-full text-sm" 
                                    onchange="calculatePricing()" 
@@ -341,7 +341,7 @@
                         </div>
                         <div>
                           <label class="form-label">Quantity</label>
-                          <input type="number" name="accessories[<%= index %>][quantity]" value="<%= accessoryItem.quantity %>" 
+                          <input type="number" name="accessories[<%= index %>][quantity]" value="1" 
                                  min="1" class="form-input w-full" onchange="calculatePricing()">
                         </div>
                         <div>
@@ -601,12 +601,12 @@
     let currentUnit = 'inches';
     
     // Unit conversion functions
-    function inchesToCm(inches) {
-      return inches * 2.54;
+    function inchesToMm(inches) {
+      return inches * 25.4;
     }
     
-    function cmToInches(cm) {
-      return cm / 2.54;
+    function mmToInches(mm) {
+      return mm / 25.4;
     }
     
     // Switch between units
@@ -618,7 +618,7 @@
       const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
       
       const inchesBtn = document.getElementById('inchesBtn');
-      const cmBtn = document.getElementById('cmBtn');
+      const mmBtn = document.getElementById('mmBtn');
       
       // Get current values
       const currentWidth = parseFloat(widthInput.value) || 0;
@@ -628,12 +628,12 @@
       if (currentUnit !== newUnit && (currentWidth || currentHeight)) {
         let newWidth, newHeight;
         
-        if (newUnit === 'cm' && currentUnit === 'inches') {
-          newWidth = inchesToCm(currentWidth);
-          newHeight = inchesToCm(currentHeight);
-        } else if (newUnit === 'inches' && currentUnit === 'cm') {
-          newWidth = cmToInches(currentWidth);
-          newHeight = cmToInches(currentHeight);
+        if (newUnit === 'mm' && currentUnit === 'inches') {
+          newWidth = inchesToMm(currentWidth);
+          newHeight = inchesToMm(currentHeight);
+        } else if (newUnit === 'inches' && currentUnit === 'mm') {
+          newWidth = mmToInches(currentWidth);
+          newHeight = mmToInches(currentHeight);
         } else {
           newWidth = currentWidth;
           newHeight = currentHeight;
@@ -648,10 +648,10 @@
           const currentValue = parseFloat(input.value) || 0;
           if (currentValue) {
             let newValue;
-            if (newUnit === 'cm' && currentUnit === 'inches') {
-              newValue = inchesToCm(currentValue);
-            } else if (newUnit === 'inches' && currentUnit === 'cm') {
-              newValue = cmToInches(currentValue);
+            if (newUnit === 'mm' && currentUnit === 'inches') {
+              newValue = inchesToMm(currentValue);
+            } else if (newUnit === 'inches' && currentUnit === 'mm') {
+              newValue = mmToInches(currentValue);
             } else {
               newValue = currentValue;
             }
@@ -661,7 +661,7 @@
       }
       
       // Update unit labels
-      const unitAbbr = newUnit === 'inches' ? 'in' : 'cm';
+      const unitAbbr = newUnit === 'inches' ? 'in' : 'mm';
       widthUnitSpan.textContent = unitAbbr;
       heightUnitSpan.textContent = unitAbbr;
       
@@ -675,7 +675,7 @@
       
       // Update button states
       inchesBtn.classList.toggle('active', newUnit === 'inches');
-      cmBtn.classList.toggle('active', newUnit === 'cm');
+      mmBtn.classList.toggle('active', newUnit === 'mm');
       
       // Update current unit
       currentUnit = newUnit;
@@ -695,9 +695,9 @@
       const quantity = parseInt(document.getElementById('quantity').value) || 1;
       
       // Convert to inches for calculations (since backend expects inches)
-      if (currentUnit === 'cm') {
-        width = cmToInches(width);
-        height = cmToInches(height);
+      if (currentUnit === 'mm') {
+        width = mmToInches(width);
+        height = mmToInches(height);
       }
       
       // Calculate square footage (convert inches to square meters: 1 sqm = 1550 sq inches)
@@ -723,8 +723,8 @@
         let lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
         
         // Convert length discount to inches if needed
-        if (currentUnit === 'cm') {
-          lengthDiscount = cmToInches(lengthDiscount);
+        if (currentUnit === 'mm') {
+          lengthDiscount = mmToInches(lengthDiscount);
         }
         
         // Estimate profile length based on window perimeter
@@ -799,20 +799,20 @@
       const heightInput = document.getElementById('height');
       const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
       
-      // Convert all measurements to inches if currently in cm
-      if (currentUnit === 'cm') {
+      // Convert all measurements to inches if currently in mm
+      if (currentUnit === 'mm') {
         // Convert width and height
         if (widthInput.value) {
-          widthInput.value = cmToInches(parseFloat(widthInput.value)).toFixed(2);
+          widthInput.value = mmToInches(parseFloat(widthInput.value)).toFixed(2);
         }
         if (heightInput.value) {
-          heightInput.value = cmToInches(parseFloat(heightInput.value)).toFixed(2);
+          heightInput.value = mmToInches(parseFloat(heightInput.value)).toFixed(2);
         }
         
         // Convert length discounts
         lengthDiscountInputs.forEach(input => {
           if (input.value) {
-            input.value = cmToInches(parseFloat(input.value)).toFixed(2);
+            input.value = mmToInches(parseFloat(input.value)).toFixed(2);
           }
         });
         
