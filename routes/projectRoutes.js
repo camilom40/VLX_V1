@@ -345,10 +345,40 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     // Accessories cost calculation (include both user-configurable and auto-managed)
     let accessoriesCost = 0;
     
-    // Process all accessories from the window system
+    // Process choice group accessories first (from radio buttons/checkboxes)
+    const choiceGroupAccessories = [];
+    Object.keys(req.body).forEach(key => {
+      if (key.startsWith('choiceGroup_')) {
+        const groupName = key.replace('choiceGroup_', '');
+        const selectedAccessoryIds = Array.isArray(req.body[key]) ? req.body[key] : [req.body[key]];
+        
+        selectedAccessoryIds.forEach(accessoryId => {
+          const quantityKey = `accessories_choice_${groupName}_${accessoryId}_quantity`;
+          const priceKey = `accessories_choice_${groupName}_${accessoryId}_price`;
+          
+          if (req.body[quantityKey] && req.body[priceKey]) {
+            const quantity = parseInt(req.body[quantityKey]) || 1;
+            const price = parseFloat(req.body[priceKey]) || 0;
+            console.log(`Choice Group - ${groupName}: Accessory ${accessoryId}, Qty: ${quantity}, Price: ${price}`);
+            choiceGroupAccessories.push({ accessoryId, quantity, price });
+            accessoriesCost += price * quantity;
+          }
+        });
+      }
+    });
+    
+    console.log(`Total choice group accessories cost: ${accessoriesCost}`);
+    
+    // Process traditional individual accessories and auto-managed accessories
     windowSystem.accessories.forEach(accessoryItem => {
       const accessory = allAccessories.find(a => a._id.toString() === accessoryItem.accessory.toString());
       if (accessory) {
+        // Skip if this accessory was already processed as part of choice groups
+        const alreadyProcessed = choiceGroupAccessories.some(cga => cga.accessoryId === accessoryItem.accessory.toString());
+        if (alreadyProcessed) {
+          return;
+        }
+        
         // Use user input for configurable accessories, defaults for auto-managed
         let quantity = accessoryItem.quantity;
         
@@ -606,9 +636,41 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
 
     // Accessories cost calculation
     let accessoriesCost = 0;
+    
+    // Process choice group accessories first (from radio buttons/checkboxes)
+    const choiceGroupAccessories = [];
+    Object.keys(req.body).forEach(key => {
+      if (key.startsWith('choiceGroup_')) {
+        const groupName = key.replace('choiceGroup_', '');
+        const selectedAccessoryIds = Array.isArray(req.body[key]) ? req.body[key] : [req.body[key]];
+        
+        selectedAccessoryIds.forEach(accessoryId => {
+          const quantityKey = `accessories_choice_${groupName}_${accessoryId}_quantity`;
+          const priceKey = `accessories_choice_${groupName}_${accessoryId}_price`;
+          
+          if (req.body[quantityKey] && req.body[priceKey]) {
+            const quantity = parseInt(req.body[quantityKey]) || 1;
+            const price = parseFloat(req.body[priceKey]) || 0;
+            console.log(`Choice Group UPDATE - ${groupName}: Accessory ${accessoryId}, Qty: ${quantity}, Price: ${price}`);
+            choiceGroupAccessories.push({ accessoryId, quantity, price });
+            accessoriesCost += price * quantity;
+          }
+        });
+      }
+    });
+    
+    console.log(`Total choice group accessories cost (UPDATE): ${accessoriesCost}`);
+    
+    // Process traditional individual accessories and auto-managed accessories
     windowSystem.accessories.forEach(accessoryItem => {
       const accessory = allAccessories.find(a => a._id.toString() === accessoryItem.accessory.toString());
       if (accessory) {
+        // Skip if this accessory was already processed as part of choice groups
+        const alreadyProcessed = choiceGroupAccessories.some(cga => cga.accessoryId === accessoryItem.accessory.toString());
+        if (alreadyProcessed) {
+          return;
+        }
+        
         let quantity = accessoryItem.quantity;
         
         if (accessoryItem.showToUser && accessories && Array.isArray(accessories)) {

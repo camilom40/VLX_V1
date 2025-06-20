@@ -15,6 +15,21 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
+    
+    /* Unit Toggle Styling */
+    .unit-toggle {
+      color: #6b7280;
+      background-color: transparent;
+    }
+    .unit-toggle.active {
+      color: #ffffff;
+      background-color: #3b82f6;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    .unit-toggle:hover:not(.active) {
+      color: #374151;
+      background-color: #e5e7eb;
+    }
   </style>
 </head>
 
@@ -44,6 +59,7 @@
     <form id="windowConfigForm" action="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? `/projects/${project._id}/windows/${existingWindow._id}/update` : `/projects/${project._id}/windows/save` %>" method="POST" class="space-y-6">
       <input type="hidden" name="windowRef" value="<%= windowRef %>">
       <input type="hidden" name="windowSystemId" value="<%= selectedWindowSystem._id %>">
+      <input type="hidden" id="currentUnit" name="currentUnit" value="inches">
       
       <!-- Edit Mode Notice -->
       <% if (typeof isEdit !== 'undefined' && isEdit) { %>
@@ -67,21 +83,39 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Left Column: Dimensions -->
           <div>
-            <h4 class="text-lg font-medium text-gray-700 mb-4">Dimensions & Quantity</h4>
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="text-lg font-medium text-gray-700">Dimensions & Quantity</h4>
+              
+              <!-- Unit Toggle Switch -->
+              <div class="flex items-center space-x-3">
+                <span class="text-sm text-gray-600">Units:</span>
+                <div class="relative">
+                  <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button type="button" id="inchesBtn" class="unit-toggle active px-3 py-1 text-sm font-medium rounded-md transition-all" onclick="switchUnits('inches')">
+                      Inches
+                    </button>
+                    <button type="button" id="cmBtn" class="unit-toggle px-3 py-1 text-sm font-medium rounded-md transition-all" onclick="switchUnits('cm')">
+                      cm
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div class="space-y-4">
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label for="width" class="form-label">Width (inches) *</label>
+                  <label for="width" class="form-label">Width (<span id="widthUnit">in</span>) *</label>
                   <input type="number" id="width" name="width" step="0.01" min="0" required 
                          class="form-input w-full" placeholder="0.00" 
-                         value="<%= isEdit && existingWindow ? existingWindow.width : '' %>"
+                         value="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow.width : '' %>"
                          onchange="calculatePricing()">
                 </div>
                 <div>
-                  <label for="height" class="form-label">Height (inches) *</label>
+                  <label for="height" class="form-label">Height (<span id="heightUnit">in</span>) *</label>
                   <input type="number" id="height" name="height" step="0.01" min="0" required 
                          class="form-input w-full" placeholder="0.00" 
-                         value="<%= isEdit && existingWindow ? existingWindow.height : '' %>"
+                         value="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow.height : '' %>"
                          onchange="calculatePricing()">
                 </div>
               </div>
@@ -90,7 +124,7 @@
                 <div>
                   <label for="quantity" class="form-label">Quantity *</label>
                   <input type="number" id="quantity" name="quantity" min="1" 
-                         value="<%= isEdit && existingWindow ? existingWindow.quantity : '1' %>" required 
+                         value="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow.quantity : '1' %>" required 
                          class="form-input w-full" onchange="calculatePricing()">
                 </div>
                 <div>
@@ -100,7 +134,7 @@
                     <% allGlasses.forEach(glass => { %>
                       <% 
                         let isSelected = false;
-                        if (isEdit && existingWindow && existingWindow.description) {
+                        if ((typeof isEdit !== 'undefined' && isEdit) && existingWindow && existingWindow.description) {
                           // Try to match glass type from description
                           isSelected = existingWindow.description.includes(glass.glass_type);
                         }
@@ -251,7 +285,7 @@
                                        value="<%= accessoryItem.accessory._id %>"
                                        class="mr-2"
                                        <%= accessoryItem.isDefault ? 'checked' : '' %>
-                                       onchange="calculatePricing()">
+                                       onchange="handleChoiceGroupChange(this)">
                                 <h6 class="font-medium text-gray-800"><%= accessory.name %></h6>
                                 <% if (accessoryItem.isDefault) { %>
                                   <span class="ml-2 text-yellow-500">⭐</span>
@@ -271,7 +305,8 @@
                                    value="<%= accessoryItem.quantity %>" 
                                    min="1" 
                                    class="form-input w-full text-sm" 
-                                   onchange="calculatePricing()">
+                                   onchange="calculatePricing()" 
+                                   oninput="calculatePricing()">
                           </div>
                           
                           <!-- Hidden fields to store accessory info -->
@@ -370,7 +405,7 @@
               <label for="notes" class="form-label">Notes (Optional)</label>
               <textarea id="notes" name="notes" rows="4" class="form-input w-full" 
                         placeholder="Any special requirements or notes for this window..."><%= 
-                          isEdit && existingWindow && existingWindow.description ? 
+                          ((typeof isEdit !== 'undefined' && isEdit) && existingWindow && existingWindow.description) ? 
                           (() => {
                             const desc = existingWindow.description;
                             const notesMatch = desc.match(/Notes: (.+)$/m);
@@ -389,7 +424,7 @@
         </a>
         
         <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium">
-          <%= isEdit ? 'Update Window Configuration' : 'Save Window Configuration' %>
+          <%= (typeof isEdit !== 'undefined' && isEdit) ? 'Update Window Configuration' : 'Save Window Configuration' %>
         </button>
       </div>
     </form>
@@ -419,40 +454,48 @@
 
     // Handle choice selection for grouped accessories
     function selectChoice(element) {
-      const group = element.getAttribute('data-group');
-      const selectionType = element.getAttribute('data-selection-type');
-      const accessoryId = element.getAttribute('data-accessory-id');
-      
       const checkbox = element.querySelector('input[type="radio"], input[type="checkbox"]');
       
-      if (selectionType === 'single') {
-        // For radio buttons, uncheck all others in the group
-        const otherRadios = document.querySelectorAll(`input[name="choiceGroup_${group}"]`);
-        otherRadios.forEach(radio => {
-          if (radio !== checkbox) {
-            radio.checked = false;
-            // Remove selection styling from other options
-            const otherOption = radio.closest('.choice-option');
-            otherOption.classList.remove('border-blue-400', 'bg-blue-50');
-            otherOption.classList.add('border-gray-300');
-          }
-        });
+      // Don't interfere if the click was directly on the checkbox or quantity input
+      if (event.target === checkbox || event.target.type === 'number') {
+        return;
       }
       
-      // Toggle the current selection
-      checkbox.checked = !checkbox.checked;
+      // Let the checkbox handle the change naturally
+      checkbox.click();
+    }
+    
+    // Handle choice group selection changes
+    function handleChoiceGroupChange(inputElement) {
+      const choiceCard = inputElement.closest('.choice-option');
+      const group = choiceCard.getAttribute('data-group');
+      const selectionType = choiceCard.getAttribute('data-selection-type');
       
-      // Update visual styling
-      if (checkbox.checked) {
-        element.classList.remove('border-gray-300');
-        element.classList.add('border-blue-400', 'bg-blue-50');
+      if (selectionType === 'single') {
+        // For radio buttons, update styling for all options in the group
+        const allOptionsInGroup = document.querySelectorAll(`[data-group="${group}"].choice-option`);
+        allOptionsInGroup.forEach(option => {
+          const radio = option.querySelector('input[type="radio"]');
+          updateChoiceCardStyling(option, radio.checked);
+        });
       } else {
-        element.classList.remove('border-blue-400', 'bg-blue-50');
-        element.classList.add('border-gray-300');
+        // For checkboxes, just update this option
+        updateChoiceCardStyling(choiceCard, inputElement.checked);
       }
       
       // Recalculate pricing
       calculatePricing();
+    }
+    
+    // Update visual styling for choice cards
+    function updateChoiceCardStyling(cardElement, isSelected) {
+      if (isSelected) {
+        cardElement.classList.remove('border-gray-300');
+        cardElement.classList.add('border-blue-400', 'bg-blue-50');
+      } else {
+        cardElement.classList.remove('border-blue-400', 'bg-blue-50');
+        cardElement.classList.add('border-gray-300');
+      }
     }
 
     function calculatePricing() {
@@ -505,6 +548,8 @@
       
       // Choice group accessories (radio buttons and checkboxes)
       const checkedChoices = document.querySelectorAll('input[name^="choiceGroup_"]:checked');
+      console.log(`Found ${checkedChoices.length} checked choice group items`);
+      
       checkedChoices.forEach(choice => {
         const accessoryId = choice.value;
         const groupName = choice.name.replace('choiceGroup_', '');
@@ -518,11 +563,15 @@
         if (priceInput && quantityInput) {
           const price = parseFloat(priceInput.value) || 0;
           const qty = parseInt(quantityInput.value) || 1;
+          console.log(`Choice Group - ${groupName}: ${accessoryId}, Price: $${price}, Qty: ${qty}, Subtotal: $${price * qty}`);
           accessoriesCost += price * qty;
+        } else {
+          console.warn(`Missing price or quantity inputs for choice group ${groupName}, accessory ${accessoryId}`);
         }
       });
       
       totalCost += accessoriesCost;
+      console.log(`Total accessories cost: $${accessoriesCost}`);
       
       // Apply per-window cost settings (as percentages)
       // Only packaging, indirect costs, and labor are applied per window
@@ -548,8 +597,242 @@
       document.getElementById('finalTotalPrice').textContent = formatCurrency(finalTotal);
     }
 
+    // Current unit state
+    let currentUnit = 'inches';
+    
+    // Unit conversion functions
+    function inchesToCm(inches) {
+      return inches * 2.54;
+    }
+    
+    function cmToInches(cm) {
+      return cm / 2.54;
+    }
+    
+    // Switch between units
+    function switchUnits(newUnit) {
+      const widthInput = document.getElementById('width');
+      const heightInput = document.getElementById('height');
+      const widthUnitSpan = document.getElementById('widthUnit');
+      const heightUnitSpan = document.getElementById('heightUnit');
+      const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
+      
+      const inchesBtn = document.getElementById('inchesBtn');
+      const cmBtn = document.getElementById('cmBtn');
+      
+      // Get current values
+      const currentWidth = parseFloat(widthInput.value) || 0;
+      const currentHeight = parseFloat(heightInput.value) || 0;
+      
+      // Convert values if switching units
+      if (currentUnit !== newUnit && (currentWidth || currentHeight)) {
+        let newWidth, newHeight;
+        
+        if (newUnit === 'cm' && currentUnit === 'inches') {
+          newWidth = inchesToCm(currentWidth);
+          newHeight = inchesToCm(currentHeight);
+        } else if (newUnit === 'inches' && currentUnit === 'cm') {
+          newWidth = cmToInches(currentWidth);
+          newHeight = cmToInches(currentHeight);
+        } else {
+          newWidth = currentWidth;
+          newHeight = currentHeight;
+        }
+        
+        // Update input values
+        widthInput.value = newWidth ? newWidth.toFixed(2) : '';
+        heightInput.value = newHeight ? newHeight.toFixed(2) : '';
+        
+        // Convert length discount values
+        lengthDiscountInputs.forEach(input => {
+          const currentValue = parseFloat(input.value) || 0;
+          if (currentValue) {
+            let newValue;
+            if (newUnit === 'cm' && currentUnit === 'inches') {
+              newValue = inchesToCm(currentValue);
+            } else if (newUnit === 'inches' && currentUnit === 'cm') {
+              newValue = cmToInches(currentValue);
+            } else {
+              newValue = currentValue;
+            }
+            input.value = newValue.toFixed(2);
+          }
+        });
+      }
+      
+      // Update unit labels
+      const unitAbbr = newUnit === 'inches' ? 'in' : 'cm';
+      widthUnitSpan.textContent = unitAbbr;
+      heightUnitSpan.textContent = unitAbbr;
+      
+      // Update length discount labels
+      const lengthDiscountLabels = document.querySelectorAll('label[for*="lengthDiscount"], .form-label');
+      lengthDiscountLabels.forEach(label => {
+        if (label.textContent.includes('Length Discount')) {
+          label.innerHTML = `Length Discount (${unitAbbr})`;
+        }
+      });
+      
+      // Update button states
+      inchesBtn.classList.toggle('active', newUnit === 'inches');
+      cmBtn.classList.toggle('active', newUnit === 'cm');
+      
+      // Update current unit
+      currentUnit = newUnit;
+      
+      // Update hidden input
+      document.getElementById('currentUnit').value = newUnit;
+      
+      // Recalculate pricing
+      calculatePricing();
+    }
+    
+    // Modified calculatePricing function to handle unit conversion
+    function calculatePricingWithUnits() {
+      // Get values in current unit
+      let width = parseFloat(document.getElementById('width').value) || 0;
+      let height = parseFloat(document.getElementById('height').value) || 0;
+      const quantity = parseInt(document.getElementById('quantity').value) || 1;
+      
+      // Convert to inches for calculations (since backend expects inches)
+      if (currentUnit === 'cm') {
+        width = cmToInches(width);
+        height = cmToInches(height);
+      }
+      
+      // Calculate square footage (convert inches to square meters: 1 sqm = 1550 sq inches)
+      const areaInches = width * height;
+      const areaSquareMeters = areaInches / 1550;
+      
+      let totalCost = 0;
+      
+      // Glass cost
+      const glassSelect = document.getElementById('glassType');
+      const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
+      const glassPrice = parseFloat(selectedGlass?.getAttribute('data-price')) || 0;
+      const glassCost = glassPrice * areaSquareMeters;
+      totalCost += glassCost;
+      
+      // Profile costs
+      let profilesCost = 0;
+      const profileSelects = document.querySelectorAll('.profile-select');
+      profileSelects.forEach((select, index) => {
+        const selectedProfile = select.options[select.selectedIndex];
+        const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
+        const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
+        let lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
+        
+        // Convert length discount to inches if needed
+        if (currentUnit === 'cm') {
+          lengthDiscount = cmToInches(lengthDiscount);
+        }
+        
+        // Estimate profile length based on window perimeter
+        const perimeterInches = 2 * (width + height);
+        const perimeterMeters = perimeterInches * 0.0254; // Convert inches to meters
+        const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
+        
+        profilesCost += pricePerMeter * adjustedLength * qty;
+      });
+      totalCost += profilesCost;
+      
+      // Accessory costs (same as before)
+      let accessoriesCost = 0;
+      
+      // Individual accessories (dropdown selects)
+      const accessorySelects = document.querySelectorAll('.accessory-select');
+      accessorySelects.forEach(select => {
+        const selectedAccessory = select.options[select.selectedIndex];
+        const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
+        const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
+        accessoriesCost += price * qty;
+      });
+      
+      // Choice group accessories (radio buttons and checkboxes)
+      const checkedChoices = document.querySelectorAll('input[name^="choiceGroup_"]:checked');
+      
+      checkedChoices.forEach(choice => {
+        const accessoryId = choice.value;
+        const groupName = choice.name.replace('choiceGroup_', '');
+        
+        // Find the corresponding price and quantity inputs
+        const priceInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_price"]`;
+        const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
+        const priceInput = document.querySelector(priceInputSelector);
+        const quantityInput = document.querySelector(quantityInputSelector);
+        
+        if (priceInput && quantityInput) {
+          const price = parseFloat(priceInput.value) || 0;
+          const qty = parseInt(quantityInput.value) || 1;
+          accessoriesCost += price * qty;
+        }
+      });
+      
+      totalCost += accessoriesCost;
+      
+      // Apply per-window cost settings (as percentages)
+      const baseCost = totalCost;
+      const additionalCosts = baseCost * (
+        (costSettings.packaging / 100) +
+        (costSettings.labor / 100) +
+        (costSettings.indirectCosts / 100)
+      );
+      
+      totalCost += additionalCosts;
+      const finalTotal = totalCost * quantity;
+      
+      // Update displays with comma formatting
+      document.getElementById('totalPrice').textContent = formatCurrency(finalTotal);
+      document.getElementById('baseMaterialsCost').textContent = formatCurrency(profilesCost);
+      document.getElementById('glassCost').textContent = formatCurrency(glassCost);
+      document.getElementById('accessoriesCost').textContent = formatCurrency(accessoriesCost);
+      document.getElementById('additionalCosts').textContent = formatCurrency(additionalCosts);
+      document.getElementById('finalTotalPrice').textContent = formatCurrency(finalTotal);
+    }
+    
+    // Override the original calculatePricing function
+    window.calculatePricing = calculatePricingWithUnits;
+
+    // Form submission handler to ensure backend gets inches
+    document.getElementById('windowConfigForm').addEventListener('submit', function(e) {
+      const widthInput = document.getElementById('width');
+      const heightInput = document.getElementById('height');
+      const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
+      
+      // Convert all measurements to inches if currently in cm
+      if (currentUnit === 'cm') {
+        // Convert width and height
+        if (widthInput.value) {
+          widthInput.value = cmToInches(parseFloat(widthInput.value)).toFixed(2);
+        }
+        if (heightInput.value) {
+          heightInput.value = cmToInches(parseFloat(heightInput.value)).toFixed(2);
+        }
+        
+        // Convert length discounts
+        lengthDiscountInputs.forEach(input => {
+          if (input.value) {
+            input.value = cmToInches(parseFloat(input.value)).toFixed(2);
+          }
+        });
+        
+        // Update the unit tracker to inches so backend knows it's receiving inches
+        document.getElementById('currentUnit').value = 'inches';
+      }
+    });
+
+    // Initialize choice group visual states
+    function initializeChoiceGroups() {
+      const allChoiceInputs = document.querySelectorAll('input[name^="choiceGroup_"]');
+      allChoiceInputs.forEach(input => {
+        const choiceCard = input.closest('.choice-option');
+        updateChoiceCardStyling(choiceCard, input.checked);
+      });
+    }
+
     // Initialize calculations
     document.addEventListener('DOMContentLoaded', function() {
+      initializeChoiceGroups();
       calculatePricing();
     });
   </script>

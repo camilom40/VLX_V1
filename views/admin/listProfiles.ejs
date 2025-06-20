@@ -2,28 +2,8 @@
 <html lang="en">
 <head>
   <%- include('../partials/_head.ejs') %>
-  <title>Profile List</title>
-  <!-- Include Tailwind CSS for styling -->
+  <title>Profile Management</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Column header styles */
-    .col-name { @apply text-indigo-600 font-medium; }
-    .col-color { @apply text-blue-600 font-medium; }
-    .col-code { @apply text-purple-600 font-medium; }
-    .col-amma { @apply text-fuchsia-600 font-medium; }
-    .col-price { @apply text-emerald-600 font-medium; }
-    .col-weight { @apply text-amber-600 font-medium; }
-    .col-actions { @apply text-rose-600 font-medium; }
-    
-    /* Color preview */
-    .color-preview {
-      display: inline-block;
-      width: 1rem;
-      height: 1rem;
-      border-radius: 9999px;
-      margin-right: 0.5rem;
-    }
-  </style>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Setup form submission for Excel import
@@ -80,7 +60,7 @@
       }
       
       // Search functionality
-      const searchInput = document.getElementById('search');
+      const searchInput = document.getElementById('searchInput');
       const rows = document.querySelectorAll('.profile-row');
       const totalCount = document.getElementById('profileCount');
       
@@ -187,128 +167,141 @@
               }, 300);
           }, 4000);
       }
+
+
     });
   </script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
-  <div class="container mx-auto px-4 pt-8 pb-12 flex-grow">
-    <!-- Header with Search -->
-    <div class="bg-white shadow-md rounded-xl p-4 mb-6">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 class="text-3xl font-bold text-gray-800 bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-          Profile Management
-        </h1>
-        <div class="relative">
-          <input type="text" id="search" placeholder="Search profiles..." 
-                class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <!-- Header with search and filters -->
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+      <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold mb-4 md:mb-0 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700">
+            Profile Management
+          </span>
+        </h1>
+        
+        <div class="w-full md:w-auto flex flex-col md:flex-row items-center gap-4">
+          <!-- Search Box -->
+          <div class="relative w-full md:w-80">
+            <input type="text" id="searchInput" placeholder="Search profiles..." 
+                class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Add Button -->
+          <a href="/admin/profiles/add" class="w-full md:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white px-5 py-2 rounded-lg shadow transition-all flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add New Profile
+          </a>
         </div>
       </div>
-    </div>
-    
-    <!-- Action Buttons -->
-    <div class="flex flex-wrap gap-3 justify-start items-center mb-6">
-      <a href="/admin/profiles/add" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add New Profile
-      </a>
       
-      <a href="/admin/profiles/export-profiles" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-        Export to Excel
-      </a>
-      
-      <label for="import-file" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-200">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-        </svg>
-        Import from Excel
-      </label>
-      <input type="file" id="import-file" name="file" accept=".xlsx" class="hidden">
-      
-      <form id="import-form" action="/admin/profiles/import-profiles" method="POST" enctype="multipart/form-data" class="hidden">
-        <input type="file" name="file" accept=".xlsx" id="import-hidden-input">
-      </form>
-      
-      <a href="/admin" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Dashboard
-      </a>
-    </div>
-      
-    <% if (profiles.length > 0) { %>
-      <!-- Profile Table -->
-      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-        <!-- Table header with gradient -->
-        <div class="bg-gradient-to-r from-indigo-700 to-blue-700 text-white py-4 px-6">
-          <h2 class="text-lg font-bold">Profile Inventory</h2>
-        </div>
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap gap-3 justify-start items-center">
+        <a href="/admin/profiles/export-profiles" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Export to Excel
+        </a>
         
-        <!-- Table content -->
+        <label for="import-file" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+          </svg>
+          Import from Excel
+        </label>
+        <input type="file" id="import-file" name="file" accept=".xlsx" class="hidden">
+        
+        <form id="import-form" action="/admin/profiles/import-profiles" method="POST" enctype="multipart/form-data" class="hidden">
+          <input type="file" name="file" accept=".xlsx" id="import-hidden-input">
+        </form>
+        
+        <a href="/admin" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
+    </div>
+
+    <!-- Profiles Table -->
+    <% if (profiles.length > 0) { %>
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
         <div class="overflow-x-auto">
-          <table id="profileTable" class="min-w-full divide-y divide-gray-200">
+          <table id="profileTable" class="w-full">
             <thead>
-              <tr class="bg-gray-50">
-                <th class="px-6 py-3 text-left col-name">Profile Name</th>
-                <th class="px-6 py-3 text-left col-color">Color</th>
-                <th class="px-6 py-3 text-left col-code">Reference</th>
-                <th class="px-6 py-3 text-left col-amma">AMMA</th>
-                <th class="px-6 py-3 text-left col-price">Price</th>
-                <th class="px-6 py-3 text-left col-weight">Weight</th>
-                <th class="px-6 py-3 text-center col-actions">Actions</th>
+              <tr class="text-left bg-gradient-to-r from-blue-600 to-indigo-700">
+                <th class="px-6 py-4 text-white font-semibold text-sm rounded-tl-lg">NAME</th>
+                <th class="px-6 py-4 text-white font-semibold text-sm">COLOR</th>
+                <th class="px-6 py-4 text-white font-semibold text-sm">REFERENCE</th>
+                <th class="px-6 py-4 text-white font-semibold text-sm">AMMA</th>
+                <th class="px-6 py-4 text-white font-semibold text-sm">PRICE (COP)</th>
+                <th class="px-6 py-4 text-white font-semibold text-sm">WEIGHT (kg/m)</th>
+                <th class="px-6 py-4 text-white font-semibold text-sm rounded-tr-lg">ACTIONS</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <% profiles.forEach(function(profile) { %>
-                <tr class="profile-row hover:bg-gray-50 transition-colors duration-150">
-                  <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                      <%= profile.name %>
-                    </span>
+            <tbody>
+              <% profiles.forEach(function(profile, index) { %>
+                <tr class="profile-row hover:bg-blue-50 border-b border-gray-100 transition-colors duration-150">
+                  <td class="px-6 py-4 <%= index === profiles.length-1 ? 'rounded-bl-lg' : '' %>">
+                    <div class="font-medium text-gray-900"><%= profile.name %></div>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="flex items-center">
-                      <div class="color-preview" id="color-<%= profile._id %>" data-color-code="<%= profile.colorCode %>"></div>
-                      <span class="text-sm text-gray-700"><%= profile.color %></span>
-                    </div>
+                    <div class="font-medium text-gray-900"><%= profile.color %></div>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-md text-xs font-medium whitespace-nowrap">
                       <%= profile.colorCode %>
                     </span>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-fuchsia-100 text-fuchsia-800">
-                      <%= profile.ammaCertification || 'N/A' %>
+                    <% if (profile.ammaCertification) { %>
+                      <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-md text-xs font-medium whitespace-nowrap">
+                        <%= profile.ammaCertification %>
+                      </span>
+                    <% } else { %>
+                      <span class="text-gray-400 text-sm italic">N/A</span>
+                    <% } %>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-md text-xs font-medium whitespace-nowrap">
+                      <%= new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(profile.pricePerMeter) %>
                     </span>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                      <%= profile.pricePerMeter.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) %>
+                    <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-md text-xs font-medium whitespace-nowrap">
+                      <%= profile.weight.toFixed(2) %> kg/m
                     </span>
                   </td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                      <%= profile.weight.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %> kg/m
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 text-center">
-                    <div class="flex justify-center space-x-2">
-                      <a href="/admin/profiles/edit/<%= profile._id %>" class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 p-1 rounded transition-colors duration-200">
+                  <td class="px-6 py-4 <%= index === profiles.length-1 ? 'rounded-br-lg' : '' %>">
+                    <div class="flex space-x-4">
+                      <a href="/admin/profiles/edit/<%= profile._id %>" 
+                         class="text-blue-600 hover:text-blue-800 transition-colors flex items-center" 
+                         title="Edit">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 0L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </a>
-                      <button onclick="deleteProfile('<%= profile._id %>')" class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 p-1 rounded transition-colors duration-200">
+                      
+                      <button onclick="deleteProfile('<%= profile._id %>')" 
+                              class="text-red-600 hover:text-red-800 transition-colors flex items-center" 
+                              title="Delete">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -320,38 +313,34 @@
             </tbody>
           </table>
         </div>
-        
-        <!-- Table footer with count -->
-        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
-          <p class="text-sm text-gray-700">
-            Showing <span id="profileCount" class="font-medium"><%= profiles.length %></span> profiles
-          </p>
-        </div>
+      </div>
+      
+      <div class="mt-4 text-sm text-gray-500 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Total profiles: <span id="profileCount" class="font-medium text-blue-600 ml-1"><%= profiles.length %></span>
       </div>
     <% } else { %>
-      <div class="bg-white rounded-xl shadow-md p-6 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+      <!-- Empty state -->
+      <div class="text-center py-12 bg-white rounded-lg shadow-md">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
-        <p class="text-xl text-gray-600 mb-4">No profiles found in the inventory</p>
-        <a href="/admin/profiles/add" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-          Add Your First Profile
-        </a>
+        <h2 class="text-2xl font-semibold text-gray-800 mb-2">No profiles found</h2>
+        <p class="text-gray-600 mb-6">Get started by adding your first profile or importing from Excel</p>
+        <div class="flex justify-center space-x-4">
+          <a href="/admin/profiles/add" class="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white px-5 py-2 rounded-lg shadow transition-all flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add First Profile
+          </a>
+        </div>
       </div>
     <% } %>
-  </div>
+  </main>
+
   <%- include('../partials/_footer.ejs') %>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Set color preview backgrounds using data attributes instead of embedded EJS
-      const colorPreviews = document.querySelectorAll('[data-color-code]');
-      colorPreviews.forEach(function(preview) {
-        const colorCode = preview.getAttribute('data-color-code');
-        preview.style.backgroundColor = colorCode;
-      });
-      
-      // Rest of your existing JavaScript...
-    });
-  </script>
 </body>
 </html>
