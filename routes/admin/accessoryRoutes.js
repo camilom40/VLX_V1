@@ -9,6 +9,32 @@ const { isAdmin } = require('../middleware/adminMiddleware');
 // Middleware to handle file uploads
 const upload = multer({ dest: 'uploads/' });
 
+// Middleware specifically for accessory image uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/accessories/')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'accessory-' + uniqueSuffix + '.' + file.originalname.split('.').pop())
+  }
+});
+
+const accessoryImageUpload = multer({ 
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    // Accept only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
 // Log utility
 const logger = require('../../utils/logger');
 
@@ -28,17 +54,83 @@ router.get('/add', isAdmin, (req, res) => {
   res.render('admin/addAccessory');
 });
 
-router.post('/add', isAdmin, async (req, res) => {
+router.post('/add', isAdmin, accessoryImageUpload.single('image'), async (req, res) => {
+  console.log('🔥 ACCESSORY CREATION ROUTE HIT! 🔥');
+  console.log('Headers:', req.headers['content-type']);
+  console.log('Has file:', !!req.file);
+  console.log('Body keys:', Object.keys(req.body));
+  
   try {
-    const { name, price, weight, unit } = req.body;
-    const newAccessory = new Accessory({ name, price, weight, unit });
+    // Debug: Log entire request body
+    console.log('=== DEBUGGING ACCESSORY CREATION ===');
+    console.log('req.body:', JSON.stringify(req.body, null, 2));
+    console.log('req.file:', req.file ? req.file.filename : 'No file uploaded');
+    console.log('======================================');
+    
+    const { name, price, weight, unit, referenceNumber, providerName, customUnit } = req.body;
+    const imageFilename = req.file ? req.file.filename : '';
+    
+    // Validate required fields before proceeding
+    if (!name || !price || !unit || !referenceNumber) {
+      const missingFields = [];
+      if (!name) missingFields.push('name');
+      if (!price) missingFields.push('price');
+      if (!unit) missingFields.push('unit');
+      if (!referenceNumber) missingFields.push('referenceNumber');
+      
+      console.log('Missing required fields:', missingFields);
+      return res.status(400).send(`Missing required fields: ${missingFields.join(', ')}`);
+    }
+    
+    // Handle custom unit
+    const finalUnit = unit === 'custom' ? customUnit : unit;
+    
+    // Enhanced debug logging
+    console.log('=== ENHANCED DEBUGGING ===');
+    console.log('req.file object:', req.file);
+    console.log('req.body:', req.body);
+    console.log('imageFilename:', imageFilename);
+    console.log('multer storage destination:', accessoryImageUpload._storage);
+    console.log('==========================');
+    
+    logger.info('Form data received:', {
+      name,
+      price,
+      weight,
+      unit,
+      customUnit,
+      finalUnit,
+      referenceNumber,
+      providerName,
+      hasImage: !!req.file,
+      imageDetails: req.file ? {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        destination: req.file.destination,
+        path: req.file.path
+      } : 'No file uploaded'
+    });
+    
+    const newAccessory = new Accessory({ 
+      name, 
+      price, 
+      weight, 
+      unit: finalUnit, 
+      referenceNumber, 
+      providerName,
+      image: imageFilename
+    });
     await newAccessory.save();
+    logger.info(`New accessory created: ${name} with image: ${imageFilename}`);
     res.redirect('/admin/accessories');
   } catch (error) {
     if (error.name === 'ValidationError') {
+      logger.error('Validation error:', error.message);
       return res.status(400).send(error.message);
     }
-    console.error('Error creating accessory:', error);
+    logger.error('Error creating accessory:', error);
     res.status(500).send('Error creating accessory');
   }
 });
@@ -59,17 +151,39 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 });
 
 // Route to update an accessory
-router.post('/update/:id', isAdmin, async (req, res) => {
+router.post('/update/:id', isAdmin, accessoryImageUpload.single('image'), async (req, res) => {
   try {
-    const { name, price, weight, unit, referenceNumber, providerName } = req.body;
-    await Accessory.findByIdAndUpdate(req.params.id, { 
+    const { name, price, weight, unit, referenceNumber, providerName, removeImage } = req.body;
+    
+    // Debug logging
+    console.log('=== UPDATING ACCESSORY ===');
+    console.log('req.body:', JSON.stringify(req.body, null, 2));
+    console.log('req.file:', req.file ? req.file.filename : 'No new file uploaded');
+    console.log('removeImage flag:', removeImage);
+    console.log('==========================');
+    
+    const updateFields = { 
       name, 
       price, 
       weight, 
       unit, 
       referenceNumber, 
       providerName 
-    });
+    };
+    
+    // Handle image updates
+    if (removeImage === 'true') {
+      // User wants to remove the image
+      updateFields.image = '';
+      logger.info(`Image will be removed for accessory ID: ${req.params.id}`);
+    } else if (req.file) {
+      // User uploaded a new image
+      updateFields.image = req.file.filename;
+      logger.info(`New image uploaded for accessory ID: ${req.params.id}: ${req.file.filename}`);
+    }
+    // If neither removeImage nor new file, keep existing image unchanged
+    
+    await Accessory.findByIdAndUpdate(req.params.id, updateFields);
     logger.info(`Accessory with ID: ${req.params.id} updated successfully.`);
     res.redirect('/admin/accessories');
   } catch (error) {

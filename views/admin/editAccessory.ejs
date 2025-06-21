@@ -247,6 +247,20 @@
         input:checked + .slider:before {
           transform: translateX(1.25rem);
         }
+        .btn-danger {
+          background: linear-gradient(to right, #dc2626, #ef4444);
+          color: white;
+          font-weight: 500;
+          padding: 0.625rem 1.5rem;
+          border-radius: 0.375rem;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          transition: all 0.3s ease-in-out;
+        }
+        .btn-danger:hover {
+          background: linear-gradient(to right, #b91c1c, #dc2626);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          transform: translateY(-0.5px);
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
@@ -274,7 +288,7 @@
         </div>
         
         <div class="max-w-3xl mx-auto form-card">
-            <form id="editAccessoryForm" action="/admin/accessories/update/<%= accessory._id %>" method="POST" enctype="application/x-www-form-urlencoded" class="space-y-6">
+            <form id="editAccessoryForm" action="/admin/accessories/update/<%= accessory._id %>" method="POST" enctype="multipart/form-data" class="space-y-6">
                 <!-- Name field -->
                 <div class="form-section">
                     <label for="name" class="form-label flex items-center">
@@ -397,6 +411,88 @@
                     <p class="form-help-text">Leave empty if weight is not applicable or unknown</p>
                 </div>
                 
+                <!-- Image Management Section -->
+                <div class="form-section">
+                    <label class="form-label flex items-center">
+                        <span class="text-pink-600 font-semibold">Accessory Image</span>
+                        <div class="tooltip">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="tooltip-text">Upload an image to help users identify this accessory when selecting it</span>
+                        </div>
+                    </label>
+                    
+                    <!-- DEBUG: Image field value: '<%= accessory.image %>' -->
+                    <% if (accessory.image && accessory.image.trim() !== '') { %>
+                        <!-- Current Image Display -->
+                        <div id="currentImageContainer" class="mb-4">
+                            <div class="bg-gray-100 border-2 border-gray-200 rounded-lg p-4">
+                                <div class="flex items-start space-x-4">
+                                    <img id="currentImage" src="/uploads/accessories/<%= accessory.image %>" 
+                                         alt="<%= accessory.name %>" 
+                                         class="w-32 h-32 object-cover rounded-lg shadow-md">
+                                    <div class="flex-1">
+                                        <h4 class="font-medium text-gray-800 mb-2">Current Image</h4>
+                                        <p class="text-sm text-gray-600 mb-3">Filename: <%= accessory.image %></p>
+                                        <div class="flex space-x-3">
+                                            <button type="button" id="replaceImageBtn" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
+                                                <svg class="inline h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                                </svg>
+                                                Replace
+                                            </button>
+                                            <button type="button" id="removeImageBtn" class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors">
+                                                <svg class="inline h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <% } %>
+                    
+                    <!-- Image Upload Area -->
+                    <div id="imageUploadArea" class="<%= accessory.image && accessory.image.trim() !== '' ? 'hidden' : '' %> border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                        <input type="file" id="image" name="image" accept="image/*" class="hidden">
+                        <div id="uploadPrompt">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="mt-4">
+                                <p class="text-sm text-gray-600">
+                                    <span class="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">Click to upload</span> or drag and drop
+                                </p>
+                                <p class="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
+                            </div>
+                        </div>
+                        <div id="imagePreview" class="hidden">
+                            <img id="previewImg" src="" alt="Preview" class="mx-auto max-h-32 rounded-lg shadow-md">
+                            <p id="fileName" class="mt-2 text-sm text-gray-600"></p>
+                            <button type="button" id="cancelImageBtn" class="mt-2 text-red-600 hover:text-red-800 text-sm">
+                                <svg class="inline h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden field to track if image should be removed -->
+                    <input type="hidden" id="removeImageFlag" name="removeImage" value="false">
+                    
+                    <p class="form-help-text mt-2">
+                        <% if (accessory.image && accessory.image.trim() !== '') { %>
+                            You can replace the current image with a new one or remove it entirely.
+                        <% } else { %>
+                            Adding an image helps users visually identify the accessory when configuring windows.
+                        <% } %>
+                    </p>
+                </div>
+                
                 <!-- Action Buttons -->
                 <div class="flex justify-between items-center pt-6 mt-6 border-t border-gray-100">
                     <!-- Delete button on the left -->
@@ -468,6 +564,32 @@
             const referenceNumberInput = document.getElementById('referenceNumber');
             const referenceNumberError = document.getElementById('referenceNumberError');
             
+            // Image management elements
+            const imageInput = document.getElementById('image');
+            const imageUploadArea = document.getElementById('imageUploadArea');
+            const uploadPrompt = document.getElementById('uploadPrompt');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            const fileName = document.getElementById('fileName');
+            const cancelImageBtn = document.getElementById('cancelImageBtn');
+            const replaceImageBtn = document.getElementById('replaceImageBtn');
+            const removeImageBtn = document.getElementById('removeImageBtn');
+            const currentImageContainer = document.getElementById('currentImageContainer');
+            const removeImageFlag = document.getElementById('removeImageFlag');
+            
+            // DEBUG: Check what elements we found
+            console.log('🔧 [EDIT] Page loaded, checking elements:');
+            console.log('🔧 [EDIT] Elements found:', {
+                imageInput: !!imageInput,
+                imageUploadArea: !!imageUploadArea,
+                uploadPrompt: !!uploadPrompt,
+                imagePreview: !!imagePreview,
+                replaceImageBtn: !!replaceImageBtn,
+                removeImageBtn: !!removeImageBtn,
+                currentImageContainer: !!currentImageContainer,
+                removeImageFlag: !!removeImageFlag
+            });
+            
             // Validate name
             nameInput.addEventListener('input', validateName);
             
@@ -498,6 +620,24 @@
                 
                 // Check if the form is valid
                 if (nameValid && refValid && priceValid && weightValid && form.checkValidity()) {
+                    // Debug: Log form data before submission
+                    const formData = new FormData(form);
+                    console.log('📝 [EDIT] Form data being submitted:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(key + ':', value);
+                    }
+                    
+                    // Specifically check the image input
+                    const imageFile = imageInput ? imageInput.files[0] : null;
+                    console.log('🖼️ [EDIT] Image input status:', {
+                        hasImageInput: !!imageInput,
+                        hasFiles: imageInput ? imageInput.files.length > 0 : false,
+                        fileName: imageFile ? imageFile.name : 'No file',
+                        fileSize: imageFile ? imageFile.size : 0,
+                        inputValue: imageInput ? imageInput.value : 'No input',
+                        removeImageFlag: removeImageFlag ? removeImageFlag.value : 'No flag'
+                    });
+                    
                     // Show loading state
                     submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Updating...';
                     submitBtn.disabled = true;
@@ -528,6 +668,128 @@
                     }, 2000);
                 }
             });
+            
+            // Image management event listeners
+            if (imageUploadArea) {
+                imageUploadArea.addEventListener('click', () => {
+                    console.log('🖱️ [EDIT] Upload area clicked, triggering file input');
+                    imageInput.click();
+                });
+                
+                imageUploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    imageUploadArea.classList.add('border-blue-400', 'bg-blue-50');
+                });
+                
+                imageUploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    imageUploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+                });
+                
+                imageUploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    imageUploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        handleImageFile(files[0]);
+                    }
+                });
+            }
+            
+            if (imageInput) {
+                imageInput.addEventListener('change', (e) => {
+                    console.log('📁 [EDIT] Image input change event triggered');
+                    console.log('📁 [EDIT] Files count:', e.target.files.length);
+                    if (e.target.files.length > 0) {
+                        console.log('📁 [EDIT] First file:', e.target.files[0].name);
+                        handleImageFile(e.target.files[0]);
+                    } else {
+                        console.log('⚠️ [EDIT] No files selected in change event');
+                    }
+                });
+            }
+            
+            if (replaceImageBtn) {
+                replaceImageBtn.addEventListener('click', () => {
+                    console.log('🔄 [EDIT] Replace button clicked, triggering file input');
+                    imageInput.click();
+                });
+            }
+            
+            if (removeImageBtn) {
+                removeImageBtn.addEventListener('click', () => {
+                    if (confirm('Are you sure you want to remove the current image?')) {
+                        // Hide current image container
+                        currentImageContainer.classList.add('hidden');
+                        // Show upload area
+                        imageUploadArea.classList.remove('hidden');
+                        // Set remove flag
+                        removeImageFlag.value = 'true';
+                        // Clear any selected file
+                        imageInput.value = '';
+                    }
+                });
+            }
+            
+            if (cancelImageBtn) {
+                cancelImageBtn.addEventListener('click', () => {
+                    // Clear the file input
+                    imageInput.value = '';
+                    // Hide preview, show upload prompt
+                    uploadPrompt.classList.remove('hidden');
+                    imagePreview.classList.add('hidden');
+                    // If there's a current image, show it again
+                    if (currentImageContainer) {
+                        currentImageContainer.classList.remove('hidden');
+                        imageUploadArea.classList.add('hidden');
+                    }
+                    // Reset remove flag
+                    removeImageFlag.value = 'false';
+                });
+            }
+            
+            function handleImageFile(file) {
+                console.log('🖼️ [EDIT] File selected:', file.name, file.size, file.type);
+                
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file');
+                    return;
+                }
+                
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Image size must be less than 5MB');
+                    return;
+                }
+                
+                console.log('✅ [EDIT] File validation passed, creating preview');
+                
+                // IMPORTANT: Make sure the file is actually set on the input element
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                imageInput.files = dataTransfer.files;
+                console.log('🔧 [EDIT] File manually set on input element');
+                
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    fileName.textContent = file.name;
+                    uploadPrompt.classList.add('hidden');
+                    imagePreview.classList.remove('hidden');
+                    
+                    // Hide current image if replacing
+                    if (currentImageContainer) {
+                        currentImageContainer.classList.add('hidden');
+                    }
+                    
+                    // Reset remove flag since we're uploading a new image
+                    removeImageFlag.value = 'false';
+                    console.log('✅ [EDIT] Preview created successfully');
+                };
+                reader.readAsDataURL(file);
+            }
             
             // Delete button
             deleteButton.addEventListener('click', function() {

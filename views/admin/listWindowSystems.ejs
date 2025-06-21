@@ -112,7 +112,7 @@
                       <% windowSystem.profiles.forEach(profileEntry => { %>
                         <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
                           <div>
-                            <% if (profileEntry.profile) { %>
+                        <% if (profileEntry.profile) { %>
                               <span class="font-semibold"><%= profileEntry.profile.name %></span> - <%= profileEntry.quantity %>
                               <br><span class="text-xs text-gray-500">Discount: <%= profileEntry.lengthDiscount %>, <%= profileEntry.orientation %></span>
                             <% } else { %>
@@ -122,9 +122,9 @@
                           </div>
                           <% if (profileEntry.showToUser) { %>
                             <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>
-                          <% } else { %>
+                        <% } else { %>
                             <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>
-                          <% } %>
+                        <% } %>
                         </div>
                       <% }); %>
                     </div>
@@ -134,7 +134,7 @@
                       <% windowSystem.accessories.forEach(accessoryEntry => { %>
                         <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
                           <div>
-                            <% if (accessoryEntry.accessory) { %>
+                        <% if (accessoryEntry.accessory) { %>
                               <span class="font-semibold"><%= accessoryEntry.accessory.name %></span> - <%= accessoryEntry.quantity %>
                               <br><span class="text-xs text-gray-500">Unit: <%= accessoryEntry.unit %></span>
                             <% } else { %>
@@ -144,9 +144,9 @@
                           </div>
                           <% if (accessoryEntry.showToUser) { %>
                             <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>
-                          <% } else { %>
+                        <% } else { %>
                             <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>
-                          <% } %>
+                        <% } %>
                         </div>
                       <% }); %>
                     </div>

@@ -22,12 +22,12 @@
           <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
             <div class="md:col-span-2">
               <label class="block text-gray-700 font-medium mb-1">Profile Type:</label>
-              <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <option value="">Select Profile</option>
-                <% profiles.forEach(profile => { %>
-                  <option value="<%= profile._id %>"><%= profile.name %></option>
-                <% }); %>
-              </select>
+            <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+              <option value="">Select Profile</option>
+              <% profiles.forEach(profile => { %>
+                <option value="<%= profile._id %>"><%= profile.name %></option>
+              <% }); %>
+            </select>
             </div>
             <div>
               <label class="block text-gray-700 font-medium mb-1">Quantity:</label>
@@ -37,9 +37,9 @@
               <label class="block text-gray-700 font-medium mb-1">Orientation:</label>
               <select id="profile-orientation" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                 <option value="" disabled selected>Select</option>
-                <option value="horizontal">Horizontal</option>
-                <option value="vertical">Vertical</option>
-              </select>
+              <option value="horizontal">Horizontal</option>
+              <option value="vertical">Vertical</option>
+            </select>
             </div>
             <div>
               <label class="block text-gray-700 font-medium mb-1">Length Discount:</label>
@@ -93,12 +93,12 @@
           <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
             <div class="md:col-span-2">
               <label class="block text-gray-700 font-medium mb-1">Accessory Type:</label>
-              <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <option value="">Select Accessory</option>
-                <% accessories.forEach(accessory => { %>
-                  <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
-                <% }); %>
-              </select>
+            <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+              <option value="">Select Accessory</option>
+              <% accessories.forEach(accessory => { %>
+                <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
+              <% }); %>
+            </select>
             </div>
             <div>
               <label class="block text-gray-700 font-medium mb-1">Quantity:</label>
@@ -308,13 +308,13 @@
         emptyState.style.display = 'block';
       } else {
         emptyState.style.display = 'none';
-        tableBody.innerHTML = '';
-        profiles.forEach((profile, index) => {
+      tableBody.innerHTML = '';
+      profiles.forEach((profile, index) => {
           const configBadge = profile.showToUser 
             ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>'
             : '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>';
           
-          const row = `
+        const row = `
             <tr class="hover:bg-gray-50">
               <td class="py-3 px-4 border-b border-gray-200">${profile.profileName}</td>
               <td class="py-3 px-4 border-b border-gray-200">${profile.quantity}</td>
@@ -323,11 +323,11 @@
               <td class="py-3 px-4 border-b border-gray-200">${configBadge}</td>
               <td class="py-3 px-4 border-b border-gray-200">
                 <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${index})">Remove</button>
-              </td>
-            </tr>
-          `;
-          tableBody.insertAdjacentHTML('beforeend', row);
-        });
+            </td>
+          </tr>
+        `;
+        tableBody.insertAdjacentHTML('beforeend', row);
+      });
       }
     }
 
@@ -390,8 +390,8 @@
         emptyState.style.display = 'block';
       } else {
         emptyState.style.display = 'none';
-        tableBody.innerHTML = '';
-        accessories.forEach((accessory, index) => {
+      tableBody.innerHTML = '';
+      accessories.forEach((accessory, index) => {
           const configBadge = accessory.showToUser 
             ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>'
             : '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>';
@@ -414,7 +414,7 @@
             `;
           }
           
-          const row = `
+        const row = `
             <tr class="hover:bg-gray-50">
               <td class="py-3 px-4 border-b border-gray-200">${accessory.accessoryName}</td>
               <td class="py-3 px-4 border-b border-gray-200">${accessory.quantity}</td>
@@ -423,11 +423,11 @@
               <td class="py-3 px-4 border-b border-gray-200">${choiceGroupInfo}</td>
               <td class="py-3 px-4 border-b border-gray-200">
                 <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeAccessory(${index})">Remove</button>
-              </td>
-            </tr>
-          `;
-          tableBody.insertAdjacentHTML('beforeend', row);
-        });
+            </td>
+          </tr>
+        `;
+        tableBody.insertAdjacentHTML('beforeend', row);
+      });
       }
     }
 

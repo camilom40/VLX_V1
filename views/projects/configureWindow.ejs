@@ -278,6 +278,15 @@
                               data-accessory-id="<%= accessoryItem.accessory._id %>"
                               onclick="selectChoice(this)">
                           <div class="flex items-start justify-between">
+                            <!-- Image Section -->
+                            <% if (accessory.image && accessory.image.trim() !== '') { %>
+                              <div class="flex-shrink-0 mr-4">
+                                <img src="/uploads/accessories/<%= accessory.image %>" 
+                                     alt="<%= accessory.name %>" 
+                                     class="w-16 h-16 object-cover rounded-lg shadow-sm border border-gray-200">
+                              </div>
+                            <% } %>
+                            
                             <div class="flex-1">
                               <div class="flex items-center mb-2">
                                 <input type="<%= group.selectionType === 'single' ? 'radio' : 'checkbox' %>" 
@@ -291,7 +300,15 @@
                                   <span class="ml-2 text-yellow-500">⭐</span>
                                 <% } %>
                               </div>
-                              <p class="text-sm text-gray-600 mb-2"><%= accessory.description || 'No description available' %></p>
+                              <p class="text-sm text-gray-600 mb-2">
+                                <% if (accessory.referenceNumber) { %>
+                                  <span class="font-medium">Ref:</span> <%= accessory.referenceNumber %><br>
+                                <% } %>
+                                <% if (accessory.providerName) { %>
+                                  <span class="font-medium">Provider:</span> <%= accessory.providerName %><br>
+                                <% } %>
+                                <%= accessory.description || 'High-quality window accessory' %>
+                              </p>
                               <div class="text-sm font-medium text-green-600">
                                 $<%= accessory.price.toFixed(2) %>/<%= accessory.unit %>
                               </div>
@@ -328,16 +345,32 @@
                       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div>
                           <label class="form-label">Accessory</label>
-                          <select name="accessories[<%= index %>][accessoryId]" class="form-input w-full accessory-select" onchange="calculatePricing()">
-                            <% allAccessories.forEach(accessory => { %>
-                              <option value="<%= accessory._id %>" 
-                                      data-price="<%= accessory.price %>"
-                                      data-unit="<%= accessory.unit %>"
-                                      <%= accessoryItem.accessory && accessoryItem.accessory._id.toString() === accessory._id.toString() ? 'selected' : '' %>>
-                                <%= accessory.name %> - $<%= accessory.price %>/<%= accessory.unit %>
-                              </option>
-                            <% }) %>
-                          </select>
+                          <div class="relative">
+                            <select name="accessories[<%= index %>][accessoryId]" class="form-input w-full accessory-select" data-index="<%= index %>" onchange="calculatePricing(); updateAccessoryInfo(this)">
+                              <% allAccessories.forEach(accessory => { %>
+                                <option value="<%= accessory._id %>" 
+                                        data-price="<%= accessory.price %>"
+                                        data-unit="<%= accessory.unit %>"
+                                        data-image="<%= accessory.image || '' %>"
+                                        data-reference="<%= accessory.referenceNumber || '' %>"
+                                        data-provider="<%= accessory.providerName || '' %>"
+                                        <%= accessoryItem.accessory && accessoryItem.accessory._id.toString() === accessory._id.toString() ? 'selected' : '' %>>
+                                  <%= accessory.name %> - $<%= accessory.price %>/<%= accessory.unit %>
+                                  <% if (accessory.referenceNumber) { %> (Ref: <%= accessory.referenceNumber %>)<% } %>
+                                </option>
+                              <% }) %>
+                            </select>
+                            
+                            <!-- Accessory preview -->
+                            <div id="accessoryPreview_<%= index %>" class="mt-2 hidden">
+                              <div class="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
+                                <img id="accessoryImage_<%= index %>" src="" alt="" class="w-12 h-12 object-cover rounded border">
+                                <div class="text-sm">
+                                  <div id="accessoryDetails_<%= index %>" class="text-gray-600"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                         <div>
                           <label class="form-label">Quantity</label>
@@ -497,6 +530,50 @@
         cardElement.classList.add('border-gray-300');
       }
     }
+    
+    // Update accessory preview information
+    function updateAccessoryInfo(selectElement) {
+      const index = selectElement.getAttribute('data-index');
+      const selectedOption = selectElement.options[selectElement.selectedIndex];
+      
+      if (!selectedOption || !index) return;
+      
+      const previewDiv = document.getElementById(`accessoryPreview_${index}`);
+      const imageElement = document.getElementById(`accessoryImage_${index}`);
+      const detailsElement = document.getElementById(`accessoryDetails_${index}`);
+      
+      if (!previewDiv || !imageElement || !detailsElement) return;
+      
+      const imageSrc = selectedOption.getAttribute('data-image');
+      const reference = selectedOption.getAttribute('data-reference');
+      const provider = selectedOption.getAttribute('data-provider');
+      const price = selectedOption.getAttribute('data-price');
+      const unit = selectedOption.getAttribute('data-unit');
+      
+      if (imageSrc && imageSrc.trim() !== '') {
+        imageElement.src = `/uploads/accessories/${imageSrc}`;
+        imageElement.style.display = 'block';
+        
+        // Build details text
+        let details = [];
+        if (reference) details.push(`Ref: ${reference}`);
+        if (provider) details.push(`Provider: ${provider}`);
+        if (price && unit) details.push(`$${parseFloat(price).toFixed(2)}/${unit}`);
+        
+        detailsElement.innerHTML = details.join('<br>');
+        previewDiv.classList.remove('hidden');
+      } else {
+        previewDiv.classList.add('hidden');
+      }
+    }
+    
+    // Initialize accessory previews on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const accessorySelects = document.querySelectorAll('.accessory-select');
+      accessorySelects.forEach(select => {
+        updateAccessoryInfo(select);
+      });
+    });
 
     function calculatePricing() {
       const width = parseFloat(document.getElementById('width').value) || 0;
@@ -838,3 +915,4 @@
   </script>
 </body>
 </html>
+ 

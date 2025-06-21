@@ -274,7 +274,7 @@
 
     <div class="max-w-3xl mx-auto">
       <div class="form-card">
-        <form id="createAccessoryForm" action="/admin/accessories/add" method="POST" class="space-y-6">
+        <form id="createAccessoryForm" action="/admin/accessories/add" method="POST" enctype="multipart/form-data" class="space-y-6">
           <!-- Name field -->
           <div class="form-section">
             <label for="name" class="form-label flex items-center">
@@ -369,7 +369,7 @@
                 </select>
               </div>
               <div id="customUnitContainer" class="w-1/4 pl-2 hidden">
-                <input type="text" id="customUnit" class="form-input w-full" placeholder="Enter custom unit">
+                <input type="text" id="customUnit" name="customUnit" class="form-input w-full" placeholder="Enter custom unit">
               </div>
             </div>
             <p class="form-help-text">The unit type determines how this accessory is measured or sold</p>
@@ -411,6 +411,46 @@
             </div>
             <div id="weightError" class="error-message">Weight must be a positive number.</div>
             <p class="form-help-text">Leave empty if weight is not applicable or unknown</p>
+          </div>
+          
+          <!-- Image Upload field -->
+          <div class="form-section">
+            <label for="image" class="form-label flex items-center">
+              <span class="text-pink-600 font-semibold">Accessory Image (Optional)</span>
+              <div class="tooltip">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="tooltip-text">Upload an image to help users identify this accessory when selecting it</span>
+              </div>
+            </label>
+            <div class="mt-1">
+              <div id="imageUploadArea" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                <input type="file" id="image" name="image" accept="image/*" class="hidden">
+                <div id="uploadPrompt">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <div class="mt-4">
+                    <p class="text-sm text-gray-600">
+                      <span class="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">Click to upload</span> or drag and drop
+                    </p>
+                    <p class="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
+                  </div>
+                </div>
+                <div id="imagePreview" class="hidden">
+                  <img id="previewImg" src="" alt="Preview" class="mx-auto max-h-32 rounded-lg shadow-md">
+                  <p id="fileName" class="mt-2 text-sm text-gray-600"></p>
+                  <button type="button" id="removeImage" class="mt-2 text-red-600 hover:text-red-800 text-sm">
+                    <svg class="inline h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Remove image
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p class="form-help-text">Adding an image helps users visually identify the accessory when configuring windows</p>
           </div>
           
           <!-- Action Buttons -->
@@ -475,9 +515,25 @@
       const customUnitInput = document.getElementById('customUnit');
       const form = document.getElementById('createAccessoryForm');
       const submitBtn = document.getElementById('submitBtn');
-      const includeTaxCheckbox = document.getElementById('includeTax');
       const referenceNumberInput = document.getElementById('referenceNumber');
       const referenceNumberError = document.getElementById('referenceNumberError');
+      
+      // Image upload elements
+      const imageInput = document.getElementById('image');
+      const imageUploadArea = document.getElementById('imageUploadArea');
+      const uploadPrompt = document.getElementById('uploadPrompt');
+      const imagePreview = document.getElementById('imagePreview');
+      const previewImg = document.getElementById('previewImg');
+      const fileName = document.getElementById('fileName');
+      const removeImageBtn = document.getElementById('removeImage');
+      
+      // Debug: Check if image elements are found
+      console.log('Image elements found:', {
+        imageInput: !!imageInput,
+        imageUploadArea: !!imageUploadArea,
+        uploadPrompt: !!uploadPrompt,
+        imagePreview: !!imagePreview
+      });
       
       // Handle custom unit selection
       unitSelect.addEventListener('change', function() {
@@ -500,75 +556,152 @@
       // Validate price
       priceInput.addEventListener('input', validatePrice);
       
-      // Handle tax inclusion
-      includeTaxCheckbox.addEventListener('change', function() {
-        if (this.checked && priceInput.value) {
-          const currentPrice = parseFloat(priceInput.value);
-          if (!isNaN(currentPrice)) {
-            // Add 19% tax (Colombian IVA)
-            const priceWithTax = Math.round(currentPrice * 1.19);
-            priceInput.value = priceWithTax;
-          }
-        } else if (!this.checked && priceInput.value) {
-          const currentPrice = parseFloat(priceInput.value);
-          if (!isNaN(currentPrice)) {
-            // Remove the 19% tax
-            const priceWithoutTax = Math.round(currentPrice / 1.19);
-            priceInput.value = priceWithoutTax;
-          }
-        }
-      });
+
       
       // Validate weight
       weightInput.addEventListener('input', validateWeight);
       
+      // Image upload handling
+      imageUploadArea.addEventListener('click', () => imageInput.click());
+      
+      imageUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        imageUploadArea.classList.add('border-blue-400', 'bg-blue-50');
+      });
+      
+      imageUploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        imageUploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+      });
+      
+      imageUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        imageUploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleImageFile(files[0]);
+        }
+      });
+      
+      imageInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          handleImageFile(e.target.files[0]);
+        }
+      });
+      
+      removeImageBtn.addEventListener('click', () => {
+        imageInput.value = '';
+        uploadPrompt.classList.remove('hidden');
+        imagePreview.classList.add('hidden');
+        imageUploadArea.classList.remove('border-blue-400');
+        imageUploadArea.classList.add('border-gray-300');
+      });
+      
+      function handleImageFile(file) {
+        console.log('🖼️ File selected:', file.name, file.size, file.type);
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          alert('Please select an image file');
+          return;
+        }
+        
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Image size must be less than 5MB');
+          return;
+        }
+        
+        console.log('✅ File validation passed, creating preview');
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target.result;
+          fileName.textContent = file.name;
+          uploadPrompt.classList.add('hidden');
+          imagePreview.classList.remove('hidden');
+          imageUploadArea.classList.remove('border-gray-300');
+          imageUploadArea.classList.add('border-blue-400');
+          console.log('✅ Preview created successfully');
+        };
+        reader.readAsDataURL(file);
+      }
+      
       // Form submission
-      submitBtn.addEventListener('click', function() {
-        // Run all validations
-        validateName();
-        validateReferenceNumber();
-        validatePrice();
-        validateWeight();
+      submitBtn.addEventListener('click', function(e) {
+        e.preventDefault(); // Prevent any default behavior
         
-        // Add visual indication that the button was clicked
-        this.classList.add('animate-pulse');
-        setTimeout(() => {
-          this.classList.remove('animate-pulse');
-        }, 300);
+        console.log('Submit button clicked!');
         
-        // Check if custom unit is selected and has value
-        if (unitSelect.value === 'custom') {
-          if (!customUnitInput.value.trim()) {
-            customUnitInput.classList.add('border-red-500', 'ring', 'ring-red-200');
-            customUnitInput.focus();
-            return;
-          } else {
-            customUnitInput.classList.remove('border-red-500', 'ring', 'ring-red-200');
-            unitSelect.value = customUnitInput.value.trim();
-          }
+        // Check basic required field values directly
+        const nameValue = nameInput.value.trim();
+        const refValue = referenceNumberInput.value.trim();
+        const priceValue = priceInput.value;
+        const unitValue = unitSelect.value;
+        
+        console.log('Field values:', {
+          name: nameValue,
+          referenceNumber: refValue,
+          price: priceValue,
+          unit: unitValue
+        });
+        
+        // Simple validation
+        if (!nameValue) {
+          alert('Please enter an accessory name');
+          nameInput.focus();
+          return;
         }
         
-        // Check if the form is valid
-        if (form.checkValidity() && !nameError.classList.contains('block') && 
-            !priceError.classList.contains('block') && !weightError.classList.contains('block') &&
-            !referenceNumberError.classList.contains('block')) {
-          
-          // Show loading state
-          submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Creating...';
-          submitBtn.disabled = true;
-          
-          form.submit();
-        } else {
-          // Trigger browser's built-in validation
-          const invalidFields = form.querySelectorAll(':invalid');
-          if (invalidFields.length > 0) {
-            invalidFields[0].focus();
-            invalidFields[0].classList.add('border-red-500', 'ring', 'ring-red-200');
-            setTimeout(() => {
-              invalidFields[0].classList.remove('border-red-500', 'ring', 'ring-red-200');
-            }, 2000);
-          }
+        if (!refValue) {
+          alert('Please enter a reference number');
+          referenceNumberInput.focus();
+          return;
         }
+        
+        if (!priceValue || priceValue <= 0) {
+          alert('Please enter a valid price');
+          priceInput.focus();
+          return;
+        }
+        
+        if (!unitValue) {
+          alert('Please select a unit type');
+          unitSelect.focus();
+          return;
+        }
+        
+        // Check custom unit if selected
+        if (unitValue === 'custom' && !customUnitInput.value.trim()) {
+          alert('Please enter a custom unit');
+          customUnitInput.focus();
+          return;
+        }
+        
+        // Debug: Log form data before submission
+        const formData = new FormData(form);
+        console.log('📝 Form data being submitted:');
+        for (let [key, value] of formData.entries()) {
+          console.log(key + ':', value);
+        }
+        
+        // Specifically check the image input
+        const imageFile = imageInput.files[0];
+        console.log('🖼️ Image input status:', {
+          hasFiles: imageInput.files.length > 0,
+          fileName: imageFile ? imageFile.name : 'No file',
+          fileSize: imageFile ? imageFile.size : 0,
+          inputValue: imageInput.value
+        });
+        
+        // Show loading state
+        submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Creating...';
+        submitBtn.disabled = true;
+        
+        // Submit the form
+        console.log('Submitting form...');
+        form.submit();
       });
       
       function validateName() {

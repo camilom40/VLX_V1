@@ -8,11 +8,7 @@ const accessorySchema = new Schema({
   },
   referenceNumber: {
     type: String,
-    required: true,
-    default: function() {
-      // Generate a default reference number based on name if not provided
-      return 'REF-' + this.name.substring(0, 4).toUpperCase() + '-' + Date.now().toString().substring(6);
-    }
+    required: true
   },
   providerName: {
     type: String,
@@ -21,7 +17,12 @@ const accessorySchema = new Schema({
   },
   price: { type: Number, required: true },
   weight: { type: Number, required: false },
-  unit: { type: String, required: true }
+  unit: { type: String, required: true },
+  image: { 
+    type: String, 
+    required: false,
+    default: ''
+  }
 });
 
 module.exports = mongoose.model('Accessory', accessorySchema);
