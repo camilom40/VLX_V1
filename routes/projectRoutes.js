@@ -4,6 +4,7 @@ const router = express.Router();
 const Project = require('../models/Project'); // Adjust path
 const WindowItem = require('../models/WindowItem');
 const { isAuthenticated } = require('./middleware/authMiddleware'); // Adjust path
+const { convertToCOP, getExchangeRate } = require('../utils/currencyConverter');
 
 // Route to display the "Create New Project" form
 router.get('/projects/new', isAuthenticated, (req, res) => {
@@ -246,6 +247,7 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
       allAccessories,
       allGlasses,
       costSettings: costSettings || {},
+      exchangeRate: await getExchangeRate(),
       existingWindow: null, // No existing window for new configuration
       isEdit: false        // This is not edit mode
     });
@@ -304,6 +306,9 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       CostSettings.findOne()
     ]);
 
+    // Get exchange rate for currency conversion
+    const exchangeRate = await getExchangeRate();
+
     // Calculate pricing
     const windowWidth = parseFloat(width);
     const windowHeight = parseFloat(height);
@@ -311,39 +316,48 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     
     // Glass cost calculation
     const areaInches = windowWidth * windowHeight;
-    const areaSquareMeters = areaInches / 1550; // Convert to square meters
-    const glassCost = selectedGlass.pricePerSquareMeter * areaSquareMeters;
+    const areaSquareMeters = areaInches / 1550;
+    const glassCostCOP = convertToCOP(selectedGlass.pricePerSquareMeter, selectedGlass.currency || 'COP', exchangeRate);
+    const glassCost = glassCostCOP * areaSquareMeters;
 
     // Profile costs calculation (include both user-configurable and auto-managed)
-    let profilesCost = 0;
+    let profileCostTotal = 0;
+    const profileCosts = [];
     
-    // Process all profiles from the window system
-    windowSystem.profiles.forEach(profileItem => {
-      const profile = allProfiles.find(p => p._id.toString() === profileItem.profile.toString());
-      if (profile) {
-        const perimeterInches = 2 * (windowWidth + windowHeight);
-        const perimeterMeters = perimeterInches * 0.0254;
-        
-        // Use user input for configurable profiles, defaults for auto-managed
-        let quantity = profileItem.quantity;
-        let lengthDiscount = profileItem.lengthDiscount;
-        
-        if (profileItem.showToUser && profiles && Array.isArray(profiles)) {
-          // Find user input for this profile
-          const userProfile = profiles.find(p => p.profileId === profileItem.profile.toString());
-          if (userProfile) {
-            quantity = parseInt(userProfile.quantity) || profileItem.quantity;
-            lengthDiscount = parseFloat(userProfile.lengthDiscount) || profileItem.lengthDiscount;
-          }
-        }
-        
-        const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
-        profilesCost += profile.pricePerMeter * adjustedLength * quantity;
-      }
-    });
+    // Calculate perimeter for profile cost calculation
+    const perimeterInches = 2 * (windowWidth + windowHeight);
+    const perimeterMeters = perimeterInches / 39.37;
+    
+    // Define user-configurable and auto-managed profiles
+    const userConfigurableProfiles = windowSystem.profiles.filter(p => p.showToUser);
+    
+    // Add user-configurable profile costs
+    for (const profile of userConfigurableProfiles) {
+      const profileCostCOP = convertToCOP(profile.pricePerMeter, profile.currency || 'COP', exchangeRate);
+      const profileCost = profileCostCOP * perimeterMeters;
+      profileCostTotal += profileCost;
+      profileCosts.push({
+        name: profile.name,
+        cost: profileCost,
+        isUserConfigurable: true
+      });
+    }
+    
+    // Add auto-managed profile costs
+    for (const profile of windowSystem.profiles.filter(p => !p.showToUser)) {
+      const profileCostCOP = convertToCOP(profile.pricePerMeter, profile.currency || 'COP', exchangeRate);
+      const profileCost = profileCostCOP * perimeterMeters;
+      profileCostTotal += profileCost;
+      profileCosts.push({
+        name: profile.name,
+        cost: profileCost,
+        isUserConfigurable: false
+      });
+    }
 
     // Accessories cost calculation (include both user-configurable and auto-managed)
-    let accessoriesCost = 0;
+    let accessoryCostTotal = 0;
+    const accessoryCosts = [];
     
     // Process choice group accessories first (from radio buttons/checkboxes)
     const choiceGroupAccessories = [];
@@ -359,15 +373,17 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
           if (req.body[quantityKey] && req.body[priceKey]) {
             const quantity = parseInt(req.body[quantityKey]) || 1;
             const price = parseFloat(req.body[priceKey]) || 0;
-            console.log(`Choice Group - ${groupName}: Accessory ${accessoryId}, Qty: ${quantity}, Price: ${price}`);
-            choiceGroupAccessories.push({ accessoryId, quantity, price });
-            accessoriesCost += price * quantity;
+            
+            // Find the accessory to get its currency
+            const accessory = allAccessories.find(a => a._id.toString() === accessoryId);
+            const priceCOP = convertToCOP(price, accessory?.currency || 'COP', exchangeRate);
+            
+            choiceGroupAccessories.push({ accessoryId, quantity, price: priceCOP });
+            accessoryCostTotal += priceCOP * quantity;
           }
         });
       }
     });
-    
-    console.log(`Total choice group accessories cost: ${accessoriesCost}`);
     
     // Process traditional individual accessories and auto-managed accessories
     windowSystem.accessories.forEach(accessoryItem => {
@@ -390,26 +406,40 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
           }
         }
         
-        accessoriesCost += accessory.price * quantity;
+        const accessoryCostCOP = convertToCOP(accessory.price, accessory.currency || 'COP', exchangeRate);
+        accessoryCostTotal += accessoryCostCOP * quantity;
       }
     });
 
-    // Apply cost settings
-    const baseCost = glassCost + profilesCost + accessoriesCost;
+    // Apply cost settings with proper validation
+    const baseCost = isNaN(glassCost) ? 0 : glassCost + (isNaN(profileCostTotal) ? 0 : profileCostTotal) + (isNaN(accessoryCostTotal) ? 0 : accessoryCostTotal);
+    
+    console.log('=== PRICING DEBUG ===');
+    console.log('glassCost:', glassCost);
+    console.log('profileCostTotal:', profileCostTotal);
+    console.log('accessoryCostTotal:', accessoryCostTotal);
+    console.log('baseCost:', baseCost);
+    console.log('costSettings:', costSettings ? 'exists' : 'null');
+    
     const additionalCosts = costSettings ? baseCost * (
-      (costSettings.seaFreight / 100) +
-      (costSettings.landFreight / 100) +
-      (costSettings.packaging / 100) +
-      (costSettings.labor / 100) +
-      (costSettings.indirectCosts / 100) +
-      (costSettings.administrativeExpenses / 100)
+      (parseFloat(costSettings.seaFreight) || 0) / 100 +
+      (parseFloat(costSettings.landFreight) || 0) / 100 +
+      (parseFloat(costSettings.packaging) || 0) / 100 +
+      (parseFloat(costSettings.labor) || 0) / 100 +
+      (parseFloat(costSettings.indirectCosts) || 0) / 100 +
+      (parseFloat(costSettings.administrativeExpenses) || 0) / 100
     ) : 0;
 
-    const totalCost = baseCost + additionalCosts;
-    const finalPrice = totalCost * windowQuantity;
+    const totalCost = (isNaN(baseCost) ? 0 : baseCost) + (isNaN(additionalCosts) ? 0 : additionalCosts);
+    const finalPrice = (isNaN(totalCost) ? 0 : totalCost) * (isNaN(windowQuantity) ? 1 : windowQuantity);
+    
+    console.log('additionalCosts:', additionalCosts);
+    console.log('totalCost:', totalCost);
+    console.log('windowQuantity:', windowQuantity);
+    console.log('finalPrice:', finalPrice);
+    console.log('=== END DEBUG ===');
 
     // Create detailed description
-    const userConfigurableProfiles = windowSystem.profiles.filter(p => p.showToUser);
     const userConfigurableAccessories = windowSystem.accessories.filter(a => a.showToUser);
     const autoManagedProfiles = windowSystem.profiles.filter(p => !p.showToUser);
     const autoManagedAccessories = windowSystem.accessories.filter(a => !a.showToUser);
@@ -424,14 +454,30 @@ Auto-Managed Accessories: ${autoManagedAccessories.length}
 ${notes ? `Notes: ${notes}` : ''}
     `.trim();
 
-    // Create window item
+    // Calculate unit price with validation
+    const unitPrice = isNaN(finalPrice) || isNaN(windowQuantity) || windowQuantity === 0 
+      ? 0 
+      : parseFloat((finalPrice / windowQuantity).toFixed(2));
+    
+    console.log('Final calculations before save:');
+    console.log('unitPrice:', unitPrice);
+    console.log('finalPrice:', finalPrice);
+    
+    // Validate all numeric fields before creating WindowItem
+    if (isNaN(unitPrice) || isNaN(finalPrice)) {
+      console.error('Invalid pricing calculation - cannot save window item');
+      console.error('unitPrice:', unitPrice, 'finalPrice:', finalPrice);
+      throw new Error('Pricing calculation failed - invalid numeric values');
+    }
+
+    // Create window item (totalPrice will be calculated automatically by the model)
     const newWindowItem = new WindowItem({
       projectId,
       itemName: `${windowRef} - ${windowSystem.type}`,
-      width: windowWidth,
-      height: windowHeight,
-      quantity: windowQuantity,
-      unitPrice: parseFloat((finalPrice / windowQuantity).toFixed(2)),
+      width: isNaN(windowWidth) ? 0 : windowWidth,
+      height: isNaN(windowHeight) ? 0 : windowHeight,
+      quantity: isNaN(windowQuantity) ? 1 : windowQuantity,
+      unitPrice: unitPrice,
       material: 'Aluminum/Glass',
       color: 'Various',
       style: windowSystem.type,
@@ -536,6 +582,7 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       allAccessories,
       allGlasses,
       costSettings: costSettings || {},
+      exchangeRate: await getExchangeRate(),
       existingWindow, // Pass existing window data for pre-filling form
       isEdit: true    // Flag to indicate this is edit mode
     });
@@ -605,37 +652,54 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     const windowHeight = parseFloat(height);
     const windowQuantity = parseInt(quantity);
     
-    // Glass cost calculation
-    const areaInches = windowWidth * windowHeight;
-    const areaSquareMeters = areaInches / 1550;
-    const glassCost = selectedGlass.pricePerSquareMeter * areaSquareMeters;
+    // Get exchange rate for currency conversion
+    const exchangeRate = await getExchangeRate();
 
-    // Profile costs calculation
-    let profilesCost = 0;
-    windowSystem.profiles.forEach(profileItem => {
-      const profile = allProfiles.find(p => p._id.toString() === profileItem.profile.toString());
-      if (profile) {
-        const perimeterInches = 2 * (windowWidth + windowHeight);
-        const perimeterMeters = perimeterInches * 0.0254;
-        
-        let quantity = profileItem.quantity;
-        let lengthDiscount = profileItem.lengthDiscount;
-        
-        if (profileItem.showToUser && profiles && Array.isArray(profiles)) {
-          const userProfile = profiles.find(p => p.profileId === profileItem.profile.toString());
-          if (userProfile) {
-            quantity = parseInt(userProfile.quantity) || profileItem.quantity;
-            lengthDiscount = parseFloat(userProfile.lengthDiscount) || profileItem.lengthDiscount;
-          }
-        }
-        
-        const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
-        profilesCost += profile.pricePerMeter * adjustedLength * quantity;
-      }
-    });
+    // Glass cost calculation with validation
+    const areaInches = (isNaN(windowWidth) ? 0 : windowWidth) * (isNaN(windowHeight) ? 0 : windowHeight);
+    const areaSquareMeters = areaInches / 1550;
+    const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
+    const glassCostCOP = convertToCOP(glassPricePerSqM, selectedGlass.currency || 'COP', exchangeRate);
+    const glassCost = (isNaN(glassCostCOP) ? 0 : glassCostCOP) * areaSquareMeters;
+
+    // Profile costs calculation (include both user-configurable and auto-managed)
+    let profileCostTotal = 0;
+    const profileCosts = [];
+    
+    // Calculate perimeter for profile cost calculation
+    const perimeterInches = 2 * (windowWidth + windowHeight);
+    const perimeterMeters = perimeterInches / 39.37;
+    
+    // Define user-configurable profiles first
+    const userConfigurableProfiles = windowSystem.profiles.filter(p => p.showToUser);
+    
+    // Add user-configurable profile costs
+    for (const profile of userConfigurableProfiles) {
+      const profileCostCOP = convertToCOP(profile.pricePerMeter, profile.currency || 'COP', exchangeRate);
+      const profileCost = profileCostCOP * perimeterMeters;
+      profileCostTotal += profileCost;
+      profileCosts.push({
+        name: profile.name,
+        cost: profileCost,
+        isUserConfigurable: true
+      });
+    }
+    
+    // Add auto-managed profile costs
+    for (const profile of windowSystem.profiles.filter(p => !p.showToUser)) {
+      const profileCostCOP = convertToCOP(profile.pricePerMeter, profile.currency || 'COP', exchangeRate);
+      const profileCost = profileCostCOP * perimeterMeters;
+      profileCostTotal += profileCost;
+      profileCosts.push({
+        name: profile.name,
+        cost: profileCost,
+        isUserConfigurable: false
+      });
+    }
 
     // Accessories cost calculation
-    let accessoriesCost = 0;
+    let accessoryCostTotal = 0;
+    const accessoryCosts = [];
     
     // Process choice group accessories first (from radio buttons/checkboxes)
     const choiceGroupAccessories = [];
@@ -651,15 +715,17 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
           if (req.body[quantityKey] && req.body[priceKey]) {
             const quantity = parseInt(req.body[quantityKey]) || 1;
             const price = parseFloat(req.body[priceKey]) || 0;
-            console.log(`Choice Group UPDATE - ${groupName}: Accessory ${accessoryId}, Qty: ${quantity}, Price: ${price}`);
-            choiceGroupAccessories.push({ accessoryId, quantity, price });
-            accessoriesCost += price * quantity;
+            
+            // Find the accessory to get its currency
+            const accessory = allAccessories.find(a => a._id.toString() === accessoryId);
+            const priceCOP = convertToCOP(price, accessory?.currency || 'COP', exchangeRate);
+            
+            choiceGroupAccessories.push({ accessoryId, quantity, price: priceCOP });
+            accessoryCostTotal += priceCOP * quantity;
           }
         });
       }
     });
-    
-    console.log(`Total choice group accessories cost (UPDATE): ${accessoriesCost}`);
     
     // Process traditional individual accessories and auto-managed accessories
     windowSystem.accessories.forEach(accessoryItem => {
@@ -680,23 +746,33 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
           }
         }
         
-        accessoriesCost += accessory.price * quantity;
+        const accessoryCostCOP = convertToCOP(accessory.price, accessory.currency || 'COP', exchangeRate);
+        accessoryCostTotal += accessoryCostCOP * quantity;
       }
     });
 
-    // Apply cost settings (only per-window costs: packaging, labor, indirect)
-    const baseCost = glassCost + profilesCost + accessoriesCost;
+    // Apply cost settings with validation (only per-window costs: packaging, labor, indirect)
+    const baseCost = (isNaN(glassCost) ? 0 : glassCost) + (isNaN(profileCostTotal) ? 0 : profileCostTotal) + (isNaN(accessoryCostTotal) ? 0 : accessoryCostTotal);
+    
+    console.log('=== UPDATE PRICING DEBUG ===');
+    console.log('glassCost:', glassCost);
+    console.log('profileCostTotal:', profileCostTotal);
+    console.log('accessoryCostTotal:', accessoryCostTotal);
+    console.log('baseCost:', baseCost);
+    
     const additionalCosts = costSettings ? baseCost * (
-      (costSettings.packaging / 100) +
-      (costSettings.labor / 100) +
-      (costSettings.indirectCosts / 100)
+      (parseFloat(costSettings.packaging) || 0) / 100 +
+      (parseFloat(costSettings.labor) || 0) / 100 +
+      (parseFloat(costSettings.indirectCosts) || 0) / 100
     ) : 0;
 
-    const totalCost = baseCost + additionalCosts;
-    const finalPrice = totalCost * windowQuantity;
+    const totalCost = (isNaN(baseCost) ? 0 : baseCost) + (isNaN(additionalCosts) ? 0 : additionalCosts);
+    const finalPrice = (isNaN(totalCost) ? 0 : totalCost) * (isNaN(windowQuantity) ? 1 : windowQuantity);
+    
+    console.log('finalPrice:', finalPrice, 'windowQuantity:', windowQuantity);
+    console.log('=== END UPDATE DEBUG ===');
 
     // Create updated description
-    const userConfigurableProfiles = windowSystem.profiles.filter(p => p.showToUser);
     const userConfigurableAccessories = windowSystem.accessories.filter(a => a.showToUser);
     const autoManagedProfiles = windowSystem.profiles.filter(p => !p.showToUser);
     const autoManagedAccessories = windowSystem.accessories.filter(a => !a.showToUser);
@@ -711,13 +787,29 @@ Auto-Managed Accessories: ${autoManagedAccessories.length}
 ${notes ? `Notes: ${notes}` : ''}
     `.trim();
 
+    // Calculate unit price with validation
+    const unitPrice = isNaN(finalPrice) || isNaN(windowQuantity) || windowQuantity === 0 
+      ? 0 
+      : parseFloat((finalPrice / windowQuantity).toFixed(2));
+    
+    console.log('Update calculations before save:');
+    console.log('unitPrice:', unitPrice);
+    console.log('finalPrice:', finalPrice);
+    
+    // Validate all numeric fields before updating
+    if (isNaN(unitPrice)) {
+      console.error('Invalid pricing calculation - cannot update window item');
+      console.error('unitPrice:', unitPrice, 'finalPrice:', finalPrice);
+      throw new Error('Pricing calculation failed - invalid numeric values');
+    }
+
     // Update the existing window item
     await WindowItem.findByIdAndUpdate(windowId, {
       itemName: `${windowRef} - ${windowSystem.type}`,
-      width: windowWidth,
-      height: windowHeight,
-      quantity: windowQuantity,
-      unitPrice: parseFloat((finalPrice / windowQuantity).toFixed(2)),
+      width: isNaN(windowWidth) ? 0 : windowWidth,
+      height: isNaN(windowHeight) ? 0 : windowHeight,
+      quantity: isNaN(windowQuantity) ? 1 : windowQuantity,
+      unitPrice: unitPrice,
       material: 'Aluminum/Glass',
       color: 'Various',
       style: windowSystem.type,

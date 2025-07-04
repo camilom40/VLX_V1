@@ -264,21 +264,25 @@
                 </svg>
                 <label for="pricePerMeter" class="label-text section-price required">Price Per Meter</label>
               </div>
-              <div class="flex items-center">
-                <input type="text" 
-                      id="pricePerMeter" 
-                      name="pricePerMeter" 
-                      required 
-                      class="input-field rounded-r-none" 
-                      placeholder="Enter price per meter"
-                      inputmode="numeric"
-                      pattern="[0-9,.]+"
-                      title="Please enter a valid number">
-                <span class="input-group-text">
-                  COP
-                </span>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="flex items-center">
+                  <input type="number" 
+                        id="pricePerMeter" 
+                        name="pricePerMeter" 
+                        required 
+                        class="input-field" 
+                        placeholder="Enter price per meter"
+                        step="0.01"
+                        min="0">
+                </div>
+                <div class="flex items-center">
+                  <select id="currency" name="currency" required class="input-field">
+                    <option value="COP">COP (Colombian Peso)</option>
+                    <option value="USD">USD (US Dollar)</option>
+                  </select>
+                </div>
               </div>
-              <p class="mt-1 text-sm text-gray-500">Price per meter in Colombian Pesos</p>
+              <p class="mt-1 text-sm text-gray-500">Enter the price per meter and select the currency</p>
             </div>
             
             <!-- Weight Section -->

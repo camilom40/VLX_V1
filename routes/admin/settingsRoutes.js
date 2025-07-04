@@ -1,37 +1,45 @@
 const express = require('express');
 const router = express.Router();
-const axios = require('axios');
 const fs = require('fs');
 const multer = require('multer');
 const ExcelJS = require('exceljs');
 const CostSettings = require('../../models/CostSettings');
+const { getExchangeRate } = require('../../utils/currencyConverter');
 
 // Middleware to handle file uploads
 const upload = multer({ dest: 'uploads/' });
 
-// Variable to store the exchange rate
-let usdToCopRate = null;
-
-// Fetch exchange rate
-const fetchExchangeRate = async () => {
-  try {
-    const response = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
-    usdToCopRate = response.data.rates.COP;
-  } catch (error) {
-    console.error('Error fetching exchange rate:', error);
-  }
-};
-
-// Initial fetch of the exchange rate
-fetchExchangeRate();
-// Refresh exchange rate every hour
-setInterval(fetchExchangeRate, 60 * 60 * 1000);
-
 // Render settings page
 router.get('/settings', async (req, res) => {
   try {
-    const settings = await CostSettings.findOne();
-    res.render('admin/settings', { settings, usdToCopRate });
+    // Get the latest exchange rate from the utility
+    const currentExchangeRate = await getExchangeRate();
+    
+    let costSettings = await CostSettings.findOne();
+    if (!costSettings) {
+      // Create default settings if none exist
+      costSettings = new CostSettings({
+        currency: 'COP',
+        exchangeRate: currentExchangeRate,
+        seaFreight: 0,
+        landFreight: 0,
+        packaging: 0,
+        labor: 0,
+        indirectCosts: 0,
+        administrativeExpenses: 0
+      });
+      await costSettings.save();
+    } else {
+      // Update exchange rate with latest from API
+      costSettings.exchangeRate = currentExchangeRate;
+      await costSettings.save();
+    }
+    
+    res.render('admin/settings', { 
+      costSettings, 
+      currentExchangeRate,
+      success: req.query.success === 'true'
+    });
   } catch (error) {
     console.error('Error fetching settings:', error);
     res.status(500).send('Server Error');
@@ -41,23 +49,80 @@ router.get('/settings', async (req, res) => {
 // Save settings
 router.post('/settings', async (req, res) => {
   try {
-    let settings = await CostSettings.findOne();
-    if (settings) {
-      settings.seaFreight = req.body.seaFreight;
-      settings.landFreight = req.body.landFreight;
-      settings.packaging = req.body.packaging;
-      settings.labor = req.body.labor;
-      settings.indirectCosts = req.body.indirectCosts; // Add the new field
-      settings.administrativeExpenses = req.body.administrativeExpenses;
-      await settings.save();
-    } else {
-      settings = new CostSettings(req.body);
-      await settings.save();
+    const {
+      currency,
+      seaFreight,
+      landFreight,
+      packaging,
+      labor,
+      indirectCosts,
+      administrativeExpenses
+    } = req.body;
+
+    console.log('Received form data:', req.body); // Debug log
+
+    // Validate required fields - check for empty strings and undefined
+    const requiredFields = { currency, seaFreight, landFreight, packaging, labor, indirectCosts, administrativeExpenses };
+    const missingFields = [];
+    
+    for (const [key, value] of Object.entries(requiredFields)) {
+      if (value === undefined || value === null || value === '') {
+        missingFields.push(key);
+      }
     }
-    res.redirect('/admin/settings');
+
+    if (missingFields.length > 0) {
+      console.error('Missing required fields:', missingFields);
+      return res.status(400).render('admin/settings', {
+        costSettings: req.body,
+        currentExchangeRate: await getExchangeRate(),
+        error: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Get the latest exchange rate
+    const currentExchangeRate = await getExchangeRate();
+
+    // Find existing settings or create new one
+    let costSettings = await CostSettings.findOne();
+    
+    if (costSettings) {
+      // Update existing settings
+      costSettings.currency = currency;
+      costSettings.exchangeRate = currentExchangeRate;
+      costSettings.seaFreight = parseFloat(seaFreight) || 0;
+      costSettings.landFreight = parseFloat(landFreight) || 0;
+      costSettings.packaging = parseFloat(packaging) || 0;
+      costSettings.labor = parseFloat(labor) || 0;
+      costSettings.indirectCosts = parseFloat(indirectCosts) || 0;
+      costSettings.administrativeExpenses = parseFloat(administrativeExpenses) || 0;
+      
+      await costSettings.save();
+    } else {
+      // Create new settings
+      costSettings = new CostSettings({
+        currency,
+        exchangeRate: currentExchangeRate,
+        seaFreight: parseFloat(seaFreight) || 0,
+        landFreight: parseFloat(landFreight) || 0,
+        packaging: parseFloat(packaging) || 0,
+        labor: parseFloat(labor) || 0,
+        indirectCosts: parseFloat(indirectCosts) || 0,
+        administrativeExpenses: parseFloat(administrativeExpenses) || 0
+      });
+      
+      await costSettings.save();
+    }
+    
+    console.log('Settings saved successfully:', costSettings); // Debug log
+    res.redirect('/admin/settings?success=true');
   } catch (error) {
     console.error('Error saving settings:', error);
-    res.status(500).send('Server Error');
+    res.status(500).render('admin/settings', {
+      costSettings: req.body,
+      currentExchangeRate: await getExchangeRate(),
+      error: 'Server error while saving settings'
+    });
   }
 });
 

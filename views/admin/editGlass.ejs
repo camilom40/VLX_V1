@@ -309,22 +309,26 @@
                 </svg>
                 <label for="pricePerSquareMeter" class="label-text section-title section-price required">Price Per Square Meter</label>
               </div>
-              <div class="flex items-center">
-                <input type="text" 
-                      id="pricePerSquareMeter" 
-                      name="pricePerSquareMeter" 
-                      value="<%= glass.pricePerSquareMeter.toLocaleString('es-CO') %>" 
-                      required 
-                      class="input-field rounded-r-none" 
-                      placeholder="Enter price per square meter"
-                      inputmode="numeric"
-                      pattern="[0-9,.]+"
-                      title="Please enter a whole number without decimals">
-                <span class="input-group-text">
-                  COP
-                </span>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <input type="number" 
+                        id="pricePerSquareMeter" 
+                        name="pricePerSquareMeter" 
+                        value="<%= glass.pricePerSquareMeter %>" 
+                        step="0.01"
+                        min="0"
+                        required 
+                        class="input-field" 
+                        placeholder="Enter price per square meter">
+                </div>
+                <div>
+                  <select id="currency" name="currency" required class="input-field">
+                    <option value="COP" <%= (glass.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP</option>
+                    <option value="USD" <%= (glass.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD</option>
+                  </select>
+                </div>
               </div>
-              <p class="mt-1 text-sm text-gray-500">Enter the price per square meter in Colombian Pesos (whole number)</p>
+              <p class="mt-1 text-sm text-gray-500">Enter the price per square meter and select the currency</p>
             </div>
             
             <!-- Weight Section -->
@@ -389,7 +393,11 @@
             
             <div class="flex flex-col">
               <span class="detail-label text-emerald-600">Price</span>
-              <span class="detail-value"><%= glass.pricePerSquareMeter.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) %> per m²</span>
+              <% 
+                const currency = glass.currency || 'COP';
+                const locale = currency === 'USD' ? 'en-US' : 'es-CO';
+              %>
+              <span class="detail-value"><%= glass.pricePerSquareMeter.toLocaleString(locale, { style: 'currency', currency: currency, maximumFractionDigits: currency === 'USD' ? 2 : 0 }) %> per m²</span>
             </div>
             
             <div class="flex flex-col">
@@ -410,26 +418,7 @@
   <%- include('../partials/_footer.ejs') %>
   
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Format price input as Colombian currency (whole numbers only)
-      const priceInput = document.getElementById('pricePerSquareMeter');
-      if (priceInput) {
-        priceInput.addEventListener('input', function(e) {
-          // Remove non-numeric characters
-          let value = this.value.replace(/\D/g, '');
-          
-          // Format with thousand separators if value exists
-          if (value) {
-            this.value = parseInt(value, 10).toLocaleString('es-CO');
-          }
-        });
-        
-        // Before form submission, convert formatted number back to plain number
-        priceInput.form.addEventListener('submit', function() {
-          priceInput.value = priceInput.value.replace(/\D/g, '');
-        });
-      }
-    });
+    // No JavaScript formatting needed for number inputs
   </script>
 </body>
 </html>

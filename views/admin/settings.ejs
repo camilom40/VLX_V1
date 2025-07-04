@@ -41,6 +41,7 @@
     .input-group {
       position: relative;
     }
+
     .input-group::before {
       content: '$';
       position: absolute;
@@ -49,15 +50,7 @@
       transform: translateY(-50%);
       color: #6b7280;
     }
-    .input-group::after {
-      content: 'COP';
-      position: absolute;
-      right: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #6b7280;
-      font-size: 0.875rem;
-    }
+
     .input-group input {
       padding-left: 2rem;
       padding-right: 3rem;
@@ -82,21 +75,100 @@
     }
   </style>
   <script>
-    function updateTime() {
-      const now = new Date();
-      const formattedTime = now.toLocaleString();
-      document.getElementById('current-time').textContent = formattedTime;
+    // Server data passed to client
+    var currentExchangeRateValue = <%= currentExchangeRate || 4000 %>;
+    var currentCurrencyValue = '<%= costSettings.currency || "COP" %>';
+    
+    // Simple currency update function
+    function updateCurrencyLabels() {
+      console.log('=== updateCurrencyLabels called ===');
+      var currencySelect = document.getElementById('currency');
+      if (!currencySelect) {
+        console.log('Currency select not found!');
+        return;
+      }
+      
+      var currency = currencySelect.value;
+      var example = currency === 'USD' ? '1234.56' : '1234567';
+      var exchangeRate = currentExchangeRateValue;
+      var previousCurrency = window.lastSelectedCurrency || currentCurrencyValue;
+      
+      console.log('Currency:', currency, 'Example:', example, 'Previous:', previousCurrency);
+      
+      // Update labels
+      var fields = ['seaFreight', 'landFreight', 'packaging', 'labor', 'indirectCosts', 'administrativeExpenses'];
+      
+      for (var i = 0; i < fields.length; i++) {
+        var fieldId = fields[i];
+        var input = document.getElementById(fieldId);
+        var label = document.getElementById(fieldId + '-currency');
+        
+        console.log('Field:', fieldId, 'Input found:', !!input, 'Label found:', !!label);
+        
+        if (label) {
+          var newText = 'Enter amount in ' + currency;
+          label.textContent = newText;
+          console.log('Updated label for', fieldId, 'to:', newText);
+        } else {
+          console.log('Label not found for:', fieldId + '-currency');
+        }
+        
+        // Convert values if currency changed
+        if (input && input.value && previousCurrency !== currency) {
+          var currentValue = parseFloat(input.value.replace(/[^0-9.-]/g, ''));
+          console.log('Converting value for', fieldId, ':', input.value, 'parsed:', currentValue);
+          if (!isNaN(currentValue) && currentValue > 0) {
+            var convertedValue;
+            
+            if (previousCurrency === 'COP' && currency === 'USD') {
+              convertedValue = currentValue / exchangeRate;
+              console.log('COP to USD:', currentValue, '/', exchangeRate, '=', convertedValue);
+            } else if (previousCurrency === 'USD' && currency === 'COP') {
+              convertedValue = currentValue * exchangeRate;
+              console.log('USD to COP:', currentValue, '*', exchangeRate, '=', convertedValue);
+            } else {
+              convertedValue = currentValue;
+            }
+            
+            if (currency === 'USD') {
+              input.value = convertedValue.toFixed(2);
+            } else {
+              input.value = Math.round(convertedValue).toString();
+            }
+            console.log('New value for', fieldId, ':', input.value);
+          }
+        }
+      }
+      
+      // Show notification
+      if (previousCurrency !== currency) {
+        var notification = document.createElement('div');
+        notification.style.cssText = 'position:fixed;top:20px;right:20px;background:#2563eb;color:white;padding:12px;border-radius:8px;z-index:1000;';
+        notification.textContent = 'Currency changed to ' + currency;
+        document.body.appendChild(notification);
+        
+        setTimeout(function() {
+          if (notification.parentNode) {
+            document.body.removeChild(notification);
+          }
+        }, 3000);
+      }
+      
+      window.lastSelectedCurrency = currency;
+      console.log('=== updateCurrencyLabels finished ===');
     }
 
-    async function updateExchangeRate() {
-      try {
-        const response = await fetch('/admin/api/exchange-rate');
-        const data = await response.json();
-        document.getElementById('exchange-rate').textContent = `$${data.usdToCopRate} COP`;
-      } catch (error) {
-        console.error('Failed to update exchange rate:', error);
+    // Update time display
+    function updateTime() {
+      const now = new Date();
+      const timeElement = document.getElementById('current-time');
+      if (timeElement) {
+        timeElement.textContent = now.toLocaleString();
       }
     }
+    
+    // Initialize displays only after DOM is loaded
+    // updateTime and setInterval are now called in DOMContentLoaded event
 
     function formatCurrency(value) {
       const number = parseFloat(value.replace(/[^0-9.-]+/g, "")).toFixed(2);
@@ -124,21 +196,22 @@
       });
     }
 
-    document.addEventListener('DOMContentLoaded', (event) => {
+    document.addEventListener('DOMContentLoaded', function() {
+      var currencySelect = document.getElementById('currency');
+      if (!currencySelect) return;
+      
+      // Initialize
+      window.lastSelectedCurrency = currencySelect.value;
+      updateCurrencyLabels();
+      
+      // Add event listener
+      currencySelect.addEventListener('change', function() {
+        updateCurrencyLabels();
+      });
+      
+      // Initialize time display
       updateTime();
       setInterval(updateTime, 1000);
-
-      updateExchangeRate();
-      setInterval(updateExchangeRate, 10000);
-
-      const fields = ['seaFreight', 'landFreight', 'packaging', 'labor', 'indirectCosts', 'administrativeExpenses'];
-      fields.forEach(field => {
-        const input = document.getElementById(field);
-        if (input) {
-          input.value = formatCurrency(input.value);
-          input.addEventListener('blur', formatInput);
-        }
-      });
     });
 
     async function handleImportFormSubmit(event) {
@@ -210,7 +283,7 @@
           </h1>
           <div class="flex items-center space-x-4">
             <span class="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-md text-sm font-medium">
-              USD to COP: <span id="exchange-rate" class="font-bold">$<%= usdToCopRate %></span>
+              USD to COP: <span id="exchange-rate" class="font-bold">$<%= currentExchangeRate %></span>
             </span>
             <span class="text-sm text-gray-500" id="current-time"></span>
           </div>
@@ -249,85 +322,155 @@
     <div class="bg-white rounded-xl shadow-sm p-6">
       <div class="mb-6">
         <h2 class="section-header">Cost Settings</h2>
-        <p class="section-subheader">All costs are in Colombian Pesos (COP)</p>
+        <p class="section-subheader">Select currency and enter all costs in the chosen currency</p>
       </div>
 
-      <form action="/admin/settings" method="post" onsubmit="cleanFormValues()" class="space-y-6">
-        <!-- Transportation Costs Section -->
-        <div class="mb-8">
-          <h3 class="text-base font-semibold text-gray-700 mb-4">Transportation Costs</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label for="seaFreight" class="label label-transport">Sea Freight Per Container</label>
-              <div class="input-group">
-                <input type="text" id="seaFreight" name="seaFreight" value="<%= settings ? settings.seaFreight : '' %>" required class="input-field" placeholder="Enter amount">
-              </div>
-              <p class="field-description">Cost of shipping one container by sea</p>
-            </div>
-            
-            <div>
-              <label for="landFreight" class="label label-transport">Land Freight Per Container</label>
-              <div class="input-group">
-                <input type="text" id="landFreight" name="landFreight" value="<%= settings ? settings.landFreight : '' %>" required class="input-field" placeholder="Enter amount">
-              </div>
-              <p class="field-description">Cost of transporting one container by land</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Manufacturing Costs Section -->
-        <div class="mb-8">
-          <h3 class="text-base font-semibold text-gray-700 mb-4">Manufacturing Costs</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label for="packaging" class="label label-manufacturing">Packaging Cost Per Window</label>
-              <div class="input-group">
-                <input type="text" id="packaging" name="packaging" value="<%= settings ? settings.packaging : '' %>" required class="input-field" placeholder="Enter amount">
-              </div>
-              <p class="field-description">Cost of packaging materials per window unit</p>
-            </div>
-            
-            <div>
-              <label for="labor" class="label label-manufacturing">Labor MOF Per Window</label>
-              <div class="input-group">
-                <input type="text" id="labor" name="labor" value="<%= settings ? settings.labor : '' %>" required class="input-field" placeholder="Enter amount">
-              </div>
-              <p class="field-description">Manufacturing labor cost per window unit</p>
-            </div>
-            
-            <div>
-              <label for="indirectCosts" class="label label-manufacturing">Indirect Costs of Fabrication CIF Per Window</label>
-              <div class="input-group">
-                <input type="text" id="indirectCosts" name="indirectCosts" value="<%= settings ? settings.indirectCosts : '' %>" required class="input-field" placeholder="Enter amount">
-              </div>
-              <p class="field-description">Additional fabrication costs per window unit</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Administrative Costs Section -->
-        <div class="mb-8">
-          <h3 class="text-base font-semibold text-gray-700 mb-4">Administrative Costs</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label for="administrativeExpenses" class="label label-administrative">Administrative Expenses Per Container</label>
-              <div class="input-group">
-                <input type="text" id="administrativeExpenses" name="administrativeExpenses" value="<%= settings ? settings.administrativeExpenses : '' %>" required class="input-field" placeholder="Enter amount">
-              </div>
-              <p class="field-description">Administrative and overhead costs per container</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-end space-x-4 pt-4">
-          <button type="submit" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-lg flex items-center transition-colors duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      <div class="bg-white shadow-lg rounded-lg p-6">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800">Global Cost Settings</h2>
+        
+        <!-- Success/Error Messages -->
+        <% if (typeof success !== 'undefined' && success) { %>
+          <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
-            Save Settings
-          </button>
-        </div>
-      </form>
+            <span>Settings saved successfully!</span>
+          </div>
+        <% } %>
+        
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            <span><%= error %></span>
+          </div>
+        <% } %>
+        
+        <form method="POST" action="/admin/settings" class="space-y-6">
+          <!-- Currency Settings -->
+          <div class="form-section">
+            <h3 class="form-section-title">Currency Settings</h3>
+            <div class="grid grid-cols-1 gap-4">
+              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
+                <label for="currency" class="form-label">
+                  <span class="text-blue-700 font-bold text-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                    Currency Selection
+                  </span>
+                  <span class="required-field text-red-500 text-lg">*</span>
+                </label>
+                <select id="currency" name="currency" required class="w-full px-4 py-3 text-lg font-semibold border-2 border-blue-400 rounded-lg bg-white shadow-lg focus:border-blue-600 focus:ring-2 focus:ring-blue-200 hover:border-blue-500 transition-all duration-200">
+                  <option value="COP" <%= (costSettings.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP - Colombian Peso</option>
+                  <option value="USD" <%= (costSettings.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD - US Dollar</option>
+                </select>
+                <p class="text-sm text-blue-600 mt-2 font-medium">
+                  ⚡ Changing currency will automatically convert all existing values
+                </p>
+              </div>
+              
+              <!-- Automatic Exchange Rate Display -->
+              <div>
+                <label class="form-label">
+                  <span class="text-green-600 font-semibold">Current Exchange Rate (USD to COP)</span>
+                  <span class="text-sm text-gray-500 ml-2">Automatically updated from live API</span>
+                </label>
+                <div class="bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-700">
+                  <span class="font-semibold text-lg">$1 USD = $<%= (currentExchangeRate || costSettings.exchangeRate || 4000).toLocaleString() %> COP</span>
+                  <p class="text-sm text-gray-500 mt-1">Last updated: <%= new Date().toLocaleString() %></p>
+                </div>
+              </div>
+              
+              <p class="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <i class="fas fa-info-circle mr-2"></i>
+                Select your preferred currency and all costs will be calculated accordingly. The exchange rate is automatically updated from live market data.
+              </p>
+            </div>
+          </div>
+          <!-- Transportation Costs Section -->
+          <div class="mb-8">
+            <h3 class="text-base font-semibold text-gray-700 mb-4">Transportation Costs</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="seaFreight" class="label label-transport">Sea Freight Per Container</label>
+                <div class="input-group">
+                  <input type="text" id="seaFreight" name="seaFreight" value="<%= costSettings ? costSettings.seaFreight : '' %>" required class="input-field">
+                </div>
+                <p class="field-description">Cost of shipping one container by sea</p>
+                <p id="seaFreight-currency" class="text-sm text-blue-600 font-medium mt-1">Enter amount in COP</p>
+              </div>
+              
+              <div>
+                <label for="landFreight" class="label label-transport">Land Freight Per Container</label>
+                <div class="input-group">
+                  <input type="text" id="landFreight" name="landFreight" value="<%= costSettings ? costSettings.landFreight : '' %>" required class="input-field">
+                </div>
+                <p class="field-description">Cost of transporting one container by land</p>
+                <p id="landFreight-currency" class="text-sm text-blue-600 font-medium mt-1">Enter amount in COP</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manufacturing Costs Section -->
+          <div class="mb-8">
+            <h3 class="text-base font-semibold text-gray-700 mb-4">Manufacturing Costs</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="packaging" class="label label-manufacturing">Packaging Cost Per Window</label>
+                <div class="input-group">
+                  <input type="text" id="packaging" name="packaging" value="<%= costSettings ? costSettings.packaging : '' %>" required class="input-field">
+                </div>
+                <p class="field-description">Cost of packaging materials per window unit</p>
+                <p id="packaging-currency" class="text-sm text-blue-600 font-medium mt-1">Enter amount in COP</p>
+              </div>
+              
+              <div>
+                <label for="labor" class="label label-manufacturing">Labor MOF Per Window</label>
+                <div class="input-group">
+                  <input type="text" id="labor" name="labor" value="<%= costSettings ? costSettings.labor : '' %>" required class="input-field">
+                </div>
+                <p class="field-description">Manufacturing labor cost per window unit</p>
+                <p id="labor-currency" class="text-sm text-blue-600 font-medium mt-1">Enter amount in COP</p>
+              </div>
+              
+              <div>
+                <label for="indirectCosts" class="label label-manufacturing">Indirect Costs of Fabrication CIF Per Window</label>
+                <div class="input-group">
+                  <input type="text" id="indirectCosts" name="indirectCosts" value="<%= costSettings ? costSettings.indirectCosts : '' %>" required class="input-field">
+                </div>
+                <p class="field-description">Additional fabrication costs per window unit</p>
+                <p id="indirectCosts-currency" class="text-sm text-blue-600 font-medium mt-1">Enter amount in COP</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Administrative Costs Section -->
+          <div class="mb-8">
+            <h3 class="text-base font-semibold text-gray-700 mb-4">Administrative Costs</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="administrativeExpenses" class="label label-administrative">Administrative Expenses Per Container</label>
+                <div class="input-group">
+                  <input type="text" id="administrativeExpenses" name="administrativeExpenses" value="<%= costSettings ? costSettings.administrativeExpenses : '' %>" required class="input-field">
+                </div>
+                <p class="field-description">Administrative and overhead costs per container</p>
+                <p id="administrativeExpenses-currency" class="text-sm text-blue-600 font-medium mt-1">Enter amount in COP</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-4 pt-4">
+            <button type="submit" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-lg flex items-center transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Save Settings
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </main>
   

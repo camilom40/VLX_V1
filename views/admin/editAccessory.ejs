@@ -377,19 +377,26 @@
                 <!-- Price field -->
                 <div class="form-section">
                     <label for="price" class="form-label">
-                        <span class="text-emerald-600 font-semibold">Price Per Unit (COP)</span>
+                        <span class="text-emerald-600 font-semibold">Price Per Unit</span>
                         <span class="required-field">*</span>
                     </label>
-                    <div class="input-with-icon">
-                        <div class="input-icon">
-                            <span class="text-blue-500 font-medium">$</span>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="input-with-icon">
+                            <div class="input-icon">
+                                <span class="text-blue-500 font-medium">$</span>
+                            </div>
+                            <input type="number" id="price" name="price" step="0.01" min="0" value="<%= accessory.price %>" required 
+                                class="form-input w-full pl-10" placeholder="0">
                         </div>
-                        <input type="number" id="price" name="price" step="1" min="0" value="<%= accessory.price %>" required 
-                            class="form-input w-full pl-10 pr-16" placeholder="0">
-                        <div class="input-group-text">COP</div>
+                        <div>
+                            <select id="currency" name="currency" required class="form-input w-full">
+                                <option value="COP" <%= (accessory.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP</option>
+                                <option value="USD" <%= (accessory.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD</option>
+                            </select>
+                        </div>
                     </div>
                     <div id="priceError" class="error-message">Price must be a positive number.</div>
-                    <p class="form-help-text">Enter whole numbers only, without decimal places or commas</p>
+                    <p class="form-help-text">Enter the price and select the currency</p>
                 </div>
                 
                 <!-- Weight field -->
@@ -535,7 +542,12 @@
                         <li><span class="font-medium text-blue-600">Name:</span> <%= accessory.name %></li>
                         <li><span class="font-medium text-purple-600">Provider:</span> <%= accessory.providerName || 'Not specified' %></li>
                         <li><span class="font-medium text-sky-600">Unit:</span> <%= accessory.unit %></li>
-                        <li><span class="font-medium text-emerald-600">Price:</span> <%= accessory.price.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) %></li>
+                        <li><span class="font-medium text-emerald-600">Price:</span> 
+                            <% 
+                                const currency = accessory.currency || 'COP';
+                                const locale = currency === 'USD' ? 'en-US' : 'es-CO';
+                            %>
+                            <%= accessory.price.toLocaleString(locale, { style: 'currency', currency: currency, maximumFractionDigits: currency === 'USD' ? 2 : 0 }) %></li>
                         <li><span class="font-medium text-amber-600">Weight:</span> <%= accessory.weight ? accessory.weight.toFixed(2) + ' kg' : 'Not specified' %></li>
                     </ul>
                 </div>

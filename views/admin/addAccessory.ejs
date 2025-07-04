@@ -378,21 +378,28 @@
           <!-- Price field -->
           <div class="form-section">
             <label for="price" class="form-label">
-              <span class="text-emerald-600 font-semibold">Price Per Unit (COP)</span>
+              <span class="text-emerald-600 font-semibold">Price Per Unit</span>
               <span class="required-field">*</span>
             </label>
-            <div class="flex items-center">
-              <div class="input-with-icon w-full">
-                <div class="input-icon">
-                  <span class="text-blue-500 font-medium">$</span>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex items-center">
+                <div class="input-with-icon w-full">
+                  <div class="input-icon">
+                    <span class="text-blue-500 font-medium">$</span>
+                  </div>
+                  <input type="number" id="price" name="price" step="0.01" min="0" required 
+                      class="form-input w-full" placeholder="0.00">
                 </div>
-                <input type="number" id="price" name="price" step="1" min="0" required 
-                    class="form-input w-full pr-16" placeholder="0">
-                <div class="input-group-text">COP</div>
+              </div>
+              <div class="flex items-center">
+                <select id="currency" name="currency" required class="form-input w-full">
+                  <option value="COP">COP (Colombian Peso)</option>
+                  <option value="USD">USD (US Dollar)</option>
+                </select>
               </div>
             </div>
             <div id="priceError" class="error-message">Price must be a positive number.</div>
-            <p class="form-help-text">Enter whole numbers only, without decimal places or commas</p>
+            <p class="form-help-text">Enter the price and select the currency</p>
           </div>
           
           <!-- Weight field -->

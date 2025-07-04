@@ -16,11 +16,19 @@ const logger = require('../../utils/logger');
 // Route to list all profiles
 router.get('/', isAdmin, async (req, res) => {
   try {
-    const profiles = await Profile.find({});
-    res.render('admin/listProfiles', { profiles });
+    const CostSettings = require('../../models/CostSettings');
+    const [profiles, costSettings] = await Promise.all([
+      Profile.find().sort({ name: 1 }),
+      CostSettings.findOne()
+    ]);
+    
+    res.render('admin/listProfiles', { 
+      profiles,
+      exchangeRate: costSettings?.exchangeRate || 4000
+    });
   } catch (error) {
-    logger.error('Failed to fetch profiles:', error);
-    res.status(500).send('Failed to fetch profiles');
+    console.error('Error listing profiles:', error);
+    res.status(500).send('An error occurred while listing profiles');
   }
 });
 
@@ -31,16 +39,14 @@ router.get('/add', isAdmin, (req, res) => {
 
 router.post('/add', isAdmin, async (req, res) => {
   try {
-    const { name, color, colorCode, pricePerMeter, weight, ammaCertification } = req.body;
-    
-    // Convert price to a number (remove any formatting)
-    const cleanedPrice = pricePerMeter.toString().replace(/\D/g, '');
+    const { name, color, colorCode, pricePerMeter, currency, weight, ammaCertification } = req.body;
     
     const newProfile = new Profile({
       name,
       color,
       colorCode,
-      pricePerMeter: Number(cleanedPrice),
+      pricePerMeter: Number(pricePerMeter),
+      currency,
       weight: Number(weight),
       ammaCertification
     });
@@ -72,16 +78,14 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 router.post('/update/:id', isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, color, colorCode, pricePerMeter, weight, ammaCertification } = req.body;
-    
-    // Convert price to a number (remove any formatting)
-    const cleanedPrice = pricePerMeter.toString().replace(/\D/g, '');
+    const { name, color, colorCode, pricePerMeter, currency, weight, ammaCertification } = req.body;
     
     await Profile.findByIdAndUpdate(id, {
       name,
       color,
       colorCode,
-      pricePerMeter: Number(cleanedPrice),
+      pricePerMeter: Number(pricePerMeter),
+      currency,
       weight: Number(weight),
       ammaCertification
     });

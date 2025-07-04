@@ -466,14 +466,16 @@
   <%- include('../partials/_footer.ejs') %>
 
   <script>
-    const costSettings = <%- JSON.stringify({
-      seaFreight: (costSettings && costSettings.seaFreight) || 0,
-      landFreight: (costSettings && costSettings.landFreight) || 0,
-      packaging: (costSettings && costSettings.packaging) || 0,
-      labor: (costSettings && costSettings.labor) || 0,
-      indirectCosts: (costSettings && costSettings.indirectCosts) || 0,
-      administrativeExpenses: (costSettings && costSettings.administrativeExpenses) || 0
-    }) %>;
+    // Initialize variables from server data
+    const costSettings = <%- JSON.stringify(costSettings) %>;
+    const exchangeRateValue = <%= exchangeRate || 4000 %>;
+
+    // Currency conversion function
+    function convertToCOP(price, currency, exchangeRate) {
+      if (currency === 'COP') return price;
+      if (currency === 'USD') return price * exchangeRate;
+      return price; // fallback
+    }
 
     // Format numbers with commas
     function formatCurrency(amount) {
@@ -484,96 +486,6 @@
         maximumFractionDigits: 2
       }).format(amount);
     }
-
-    // Handle choice selection for grouped accessories
-    function selectChoice(element) {
-      const checkbox = element.querySelector('input[type="radio"], input[type="checkbox"]');
-      
-      // Don't interfere if the click was directly on the checkbox or quantity input
-      if (event.target === checkbox || event.target.type === 'number') {
-        return;
-      }
-      
-      // Let the checkbox handle the change naturally
-      checkbox.click();
-    }
-    
-    // Handle choice group selection changes
-    function handleChoiceGroupChange(inputElement) {
-      const choiceCard = inputElement.closest('.choice-option');
-      const group = choiceCard.getAttribute('data-group');
-      const selectionType = choiceCard.getAttribute('data-selection-type');
-      
-      if (selectionType === 'single') {
-        // For radio buttons, update styling for all options in the group
-        const allOptionsInGroup = document.querySelectorAll(`[data-group="${group}"].choice-option`);
-        allOptionsInGroup.forEach(option => {
-          const radio = option.querySelector('input[type="radio"]');
-          updateChoiceCardStyling(option, radio.checked);
-        });
-      } else {
-        // For checkboxes, just update this option
-        updateChoiceCardStyling(choiceCard, inputElement.checked);
-      }
-      
-      // Recalculate pricing
-      calculatePricing();
-    }
-    
-    // Update visual styling for choice cards
-    function updateChoiceCardStyling(cardElement, isSelected) {
-      if (isSelected) {
-        cardElement.classList.remove('border-gray-300');
-        cardElement.classList.add('border-blue-400', 'bg-blue-50');
-      } else {
-        cardElement.classList.remove('border-blue-400', 'bg-blue-50');
-        cardElement.classList.add('border-gray-300');
-      }
-    }
-    
-    // Update accessory preview information
-    function updateAccessoryInfo(selectElement) {
-      const index = selectElement.getAttribute('data-index');
-      const selectedOption = selectElement.options[selectElement.selectedIndex];
-      
-      if (!selectedOption || !index) return;
-      
-      const previewDiv = document.getElementById(`accessoryPreview_${index}`);
-      const imageElement = document.getElementById(`accessoryImage_${index}`);
-      const detailsElement = document.getElementById(`accessoryDetails_${index}`);
-      
-      if (!previewDiv || !imageElement || !detailsElement) return;
-      
-      const imageSrc = selectedOption.getAttribute('data-image');
-      const reference = selectedOption.getAttribute('data-reference');
-      const provider = selectedOption.getAttribute('data-provider');
-      const price = selectedOption.getAttribute('data-price');
-      const unit = selectedOption.getAttribute('data-unit');
-      
-      if (imageSrc && imageSrc.trim() !== '') {
-        imageElement.src = `/uploads/accessories/${imageSrc}`;
-        imageElement.style.display = 'block';
-        
-        // Build details text
-        let details = [];
-        if (reference) details.push(`Ref: ${reference}`);
-        if (provider) details.push(`Provider: ${provider}`);
-        if (price && unit) details.push(`$${parseFloat(price).toFixed(2)}/${unit}`);
-        
-        detailsElement.innerHTML = details.join('<br>');
-        previewDiv.classList.remove('hidden');
-      } else {
-        previewDiv.classList.add('hidden');
-      }
-    }
-    
-    // Initialize accessory previews on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      const accessorySelects = document.querySelectorAll('.accessory-select');
-      accessorySelects.forEach(select => {
-        updateAccessoryInfo(select);
-      });
-    });
 
     function calculatePricing() {
       const width = parseFloat(document.getElementById('width').value) || 0;
@@ -590,7 +502,9 @@
       const glassSelect = document.getElementById('glassType');
       const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
       const glassPrice = parseFloat(selectedGlass?.getAttribute('data-price')) || 0;
-      const glassCost = glassPrice * areaSquareMeters;
+      const glassCurrency = selectedGlass?.getAttribute('data-currency') || 'COP';
+      const glassPriceCOP = convertToCOP(glassPrice, glassCurrency, exchangeRateValue);
+      const glassCost = glassPriceCOP * areaSquareMeters;
       totalCost += glassCost;
       
       // Profile costs
@@ -599,6 +513,8 @@
       profileSelects.forEach((select, index) => {
         const selectedProfile = select.options[select.selectedIndex];
         const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
+        const profileCurrency = selectedProfile?.getAttribute('data-currency') || 'COP';
+        const pricePerMeterCOP = convertToCOP(pricePerMeter, profileCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
         const lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
         
@@ -607,7 +523,7 @@
         const perimeterMeters = perimeterInches * 0.0254; // Convert inches to meters
         const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
         
-        profilesCost += pricePerMeter * adjustedLength * qty;
+        profilesCost += pricePerMeterCOP * adjustedLength * qty;
       });
       totalCost += profilesCost;
       
@@ -619,13 +535,14 @@
       accessorySelects.forEach(select => {
         const selectedAccessory = select.options[select.selectedIndex];
         const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
+        const accessoryCurrency = selectedAccessory?.getAttribute('data-currency') || 'COP';
+        const priceCOP = convertToCOP(price, accessoryCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        accessoriesCost += price * qty;
+        accessoriesCost += priceCOP * qty;
       });
       
       // Choice group accessories (radio buttons and checkboxes)
       const checkedChoices = document.querySelectorAll('input[name^="choiceGroup_"]:checked');
-      console.log(`Found ${checkedChoices.length} checked choice group items`);
       
       checkedChoices.forEach(choice => {
         const accessoryId = choice.value;
@@ -634,33 +551,29 @@
         // Find the corresponding price and quantity inputs
         const priceInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_price"]`;
         const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
+        const currencyInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_currency"]`;
         const priceInput = document.querySelector(priceInputSelector);
         const quantityInput = document.querySelector(quantityInputSelector);
+        const currencyInput = document.querySelector(currencyInputSelector);
         
         if (priceInput && quantityInput) {
           const price = parseFloat(priceInput.value) || 0;
+          const accessoryCurrency = currencyInput?.value || 'COP';
+          const priceCOP = convertToCOP(price, accessoryCurrency, exchangeRateValue);
           const qty = parseInt(quantityInput.value) || 1;
-          console.log(`Choice Group - ${groupName}: ${accessoryId}, Price: $${price}, Qty: ${qty}, Subtotal: $${price * qty}`);
-          accessoriesCost += price * qty;
-        } else {
-          console.warn(`Missing price or quantity inputs for choice group ${groupName}, accessory ${accessoryId}`);
+          accessoriesCost += priceCOP * qty;
         }
       });
       
       totalCost += accessoriesCost;
-      console.log(`Total accessories cost: $${accessoriesCost}`);
       
       // Apply per-window cost settings (as percentages)
-      // Only packaging, indirect costs, and labor are applied per window
       const baseCost = totalCost;
       const additionalCosts = baseCost * (
         (costSettings.packaging / 100) +
         (costSettings.labor / 100) +
         (costSettings.indirectCosts / 100)
       );
-      
-      // Note: Sea freight, land freight, and administrative expenses 
-      // will be applied at quotation level with user checkboxes
       
       totalCost += additionalCosts;
       const finalTotal = totalCost * quantity;
@@ -897,6 +810,54 @@
         document.getElementById('currentUnit').value = 'inches';
       }
     });
+
+    // Choice group functions
+    function selectChoice(choiceCard) {
+      const input = choiceCard.querySelector('input[type="radio"], input[type="checkbox"]');
+      if (input) {
+        if (input.type === 'radio') {
+          input.checked = true;
+          handleChoiceGroupChange(input);
+        } else if (input.type === 'checkbox') {
+          input.checked = !input.checked;
+          handleChoiceGroupChange(input);
+        }
+      }
+    }
+
+    function handleChoiceGroupChange(input) {
+      const choiceCard = input.closest('.choice-option');
+      const group = input.name.replace('choiceGroup_', '');
+      
+      // Update card styling
+      updateChoiceCardStyling(choiceCard, input.checked);
+      
+      // For radio buttons, uncheck others in the same group
+      if (input.type === 'radio') {
+        const otherRadios = document.querySelectorAll(`input[name="${input.name}"]`);
+        otherRadios.forEach(radio => {
+          if (radio !== input) {
+            const otherCard = radio.closest('.choice-option');
+            updateChoiceCardStyling(otherCard, false);
+          }
+        });
+      }
+      
+      // Recalculate pricing
+      calculatePricing();
+    }
+
+    function updateChoiceCardStyling(choiceCard, isSelected) {
+      if (!choiceCard) return;
+      
+      if (isSelected) {
+        choiceCard.classList.add('border-blue-500', 'bg-blue-50');
+        choiceCard.classList.remove('border-gray-300', 'hover:border-blue-400', 'hover:bg-blue-50');
+      } else {
+        choiceCard.classList.remove('border-blue-500', 'bg-blue-50');
+        choiceCard.classList.add('border-gray-300', 'hover:border-blue-400', 'hover:bg-blue-50');
+      }
+    }
 
     // Initialize choice group visual states
     function initializeChoiceGroups() {

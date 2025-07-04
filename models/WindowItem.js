@@ -57,7 +57,9 @@ const windowItemSchema = new Schema({
   totalPrice: {
     type: Number,
     default: function() {
-      return this.unitPrice * this.quantity;
+      const unitPrice = isNaN(this.unitPrice) ? 0 : this.unitPrice;
+      const quantity = isNaN(this.quantity) ? 1 : this.quantity;
+      return unitPrice * quantity;
     }
   }
 }, {
@@ -66,7 +68,23 @@ const windowItemSchema = new Schema({
 
 // Update total price when quantity or unit price changes
 windowItemSchema.pre('save', function(next) {
-  this.totalPrice = this.unitPrice * this.quantity;
+  // Validate unitPrice and quantity before calculation
+  const unitPrice = isNaN(this.unitPrice) ? 0 : this.unitPrice;
+  const quantity = isNaN(this.quantity) ? 1 : this.quantity;
+  
+  this.totalPrice = unitPrice * quantity;
+  
+  // Ensure no NaN values are saved
+  if (isNaN(this.totalPrice)) {
+    this.totalPrice = 0;
+  }
+  if (isNaN(this.unitPrice)) {
+    this.unitPrice = 0;
+  }
+  if (isNaN(this.quantity)) {
+    this.quantity = 1;
+  }
+  
   next();
 });
 

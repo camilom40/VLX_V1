@@ -15,3 +15,6 @@
 -remove low e form glass
 -add low e option to the quotation form. 
 -psswd 12345
+
+
+Muy importante revisar que la tasa de cambio se actualcie automaticamnete cada que la pagian se abra y asi mismo todos los precios y costos 

@@ -16,6 +16,12 @@ const accessorySchema = new Schema({
     default: ''
   },
   price: { type: Number, required: true },
+  currency: { 
+    type: String, 
+    required: true,
+    enum: ['COP', 'USD'],
+    default: 'COP'
+  },
   weight: { type: Number, required: false },
   unit: { type: String, required: true },
   image: { 

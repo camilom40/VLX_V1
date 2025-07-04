@@ -226,22 +226,26 @@
                 </svg>
                 <label for="pricePerMeter" class="label-text section-title section-price required">Price Per Meter</label>
               </div>
-              <div class="flex items-center">
-                <input type="text" 
-                      id="pricePerMeter" 
-                      name="pricePerMeter" 
-                      value="<%= profile.pricePerMeter.toLocaleString('es-CO') %>" 
-                      required 
-                      class="input-field rounded-r-none" 
-                      placeholder="Enter price per meter"
-                      inputmode="numeric"
-                      pattern="[0-9,.]+"
-                      title="Please enter a valid number">
-                <span class="input-group-text">
-                  COP
-                </span>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <input type="number" 
+                        id="pricePerMeter" 
+                        name="pricePerMeter" 
+                        value="<%= profile.pricePerMeter %>" 
+                        step="0.01"
+                        min="0"
+                        required 
+                        class="input-field" 
+                        placeholder="Enter price per meter">
+                </div>
+                <div>
+                  <select id="currency" name="currency" required class="input-field">
+                    <option value="COP" <%= (profile.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP</option>
+                    <option value="USD" <%= (profile.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD</option>
+                  </select>
+                </div>
               </div>
-              <p class="mt-1 text-sm text-gray-500">Price per meter in Colombian Pesos</p>
+              <p class="mt-1 text-sm text-gray-500">Enter the price per meter and select the currency</p>
             </div>
             
             <!-- Weight Section -->
@@ -311,7 +315,11 @@
             
             <div class="flex flex-col">
               <span class="detail-label text-emerald-600">Price</span>
-              <span class="detail-value"><%= profile.pricePerMeter.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) %> per meter</span>
+              <% 
+                const currency = profile.currency || 'COP';
+                const locale = currency === 'USD' ? 'en-US' : 'es-CO';
+              %>
+              <span class="detail-value"><%= profile.pricePerMeter.toLocaleString(locale, { style: 'currency', currency: currency, maximumFractionDigits: currency === 'USD' ? 2 : 0 }) %> per meter</span>
             </div>
             
             <div class="flex flex-col">
@@ -327,26 +335,7 @@
   <%- include('../partials/_footer.ejs') %>
   
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Format price input as Colombian currency
-      const priceInput = document.getElementById('pricePerMeter');
-      if (priceInput) {
-        priceInput.addEventListener('input', function(e) {
-          // Remove non-numeric characters
-          let value = this.value.replace(/\D/g, '');
-          
-          // Format with thousand separators if value exists
-          if (value) {
-            this.value = parseInt(value, 10).toLocaleString('es-CO');
-          }
-        });
-        
-        // Before form submission, convert formatted number back to plain number
-        priceInput.form.addEventListener('submit', function() {
-          priceInput.value = priceInput.value.replace(/\D/g, '');
-        });
-      }
-    });
+    // No JavaScript formatting needed for number inputs
   </script>
 </body>
 </html>

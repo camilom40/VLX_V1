@@ -41,8 +41,16 @@ const logger = require('../../utils/logger');
 // Route to list all accessories
 router.get('/', isAdmin, async (req, res) => {
   try {
-    const accessories = await Accessory.find({});
-    res.render('admin/listAccessories', { accessories });
+    const CostSettings = require('../../models/CostSettings');
+    const [accessories, costSettings] = await Promise.all([
+      Accessory.find({}),
+      CostSettings.findOne()
+    ]);
+    
+    res.render('admin/listAccessories', { 
+      accessories,
+      exchangeRate: costSettings?.exchangeRate || 4000
+    });
   } catch (error) {
     logger.error('Failed to fetch accessories:', error);
     res.status(500).send('Failed to fetch accessories');
@@ -67,14 +75,15 @@ router.post('/add', isAdmin, accessoryImageUpload.single('image'), async (req, r
     console.log('req.file:', req.file ? req.file.filename : 'No file uploaded');
     console.log('======================================');
     
-    const { name, price, weight, unit, referenceNumber, providerName, customUnit } = req.body;
+    const { name, price, currency, weight, unit, referenceNumber, providerName, customUnit } = req.body;
     const imageFilename = req.file ? req.file.filename : '';
     
     // Validate required fields before proceeding
-    if (!name || !price || !unit || !referenceNumber) {
+    if (!name || !price || !unit || !referenceNumber || !currency) {
       const missingFields = [];
       if (!name) missingFields.push('name');
       if (!price) missingFields.push('price');
+      if (!currency) missingFields.push('currency');
       if (!unit) missingFields.push('unit');
       if (!referenceNumber) missingFields.push('referenceNumber');
       
@@ -116,6 +125,7 @@ router.post('/add', isAdmin, accessoryImageUpload.single('image'), async (req, r
     const newAccessory = new Accessory({ 
       name, 
       price, 
+      currency,
       weight, 
       unit: finalUnit, 
       referenceNumber, 
@@ -153,7 +163,7 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 // Route to update an accessory
 router.post('/update/:id', isAdmin, accessoryImageUpload.single('image'), async (req, res) => {
   try {
-    const { name, price, weight, unit, referenceNumber, providerName, removeImage } = req.body;
+    const { name, price, currency, weight, unit, referenceNumber, providerName, removeImage } = req.body;
     
     // Debug logging
     console.log('=== UPDATING ACCESSORY ===');
@@ -165,6 +175,7 @@ router.post('/update/:id', isAdmin, accessoryImageUpload.single('image'), async 
     const updateFields = { 
       name, 
       price, 
+      currency,
       weight, 
       unit, 
       referenceNumber, 

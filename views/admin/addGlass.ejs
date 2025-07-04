@@ -161,21 +161,25 @@
                 </svg>
                 <label for="pricePerSquareMeter" class="label-text section-title section-price required">Price Per Square Meter</label>
               </div>
-              <div class="flex items-center">
-                <input type="text" 
-                      id="pricePerSquareMeter" 
-                      name="pricePerSquareMeter" 
-                      required 
-                      class="input-field rounded-r-none" 
-                      placeholder="Enter price per square meter"
-                      inputmode="numeric"
-                      pattern="[0-9]+"
-                      title="Please enter a whole number without decimals">
-                <span class="input-group-text">
-                  COP
-                </span>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="flex items-center">
+                  <input type="number" 
+                        id="pricePerSquareMeter" 
+                        name="pricePerSquareMeter" 
+                        required 
+                        class="input-field" 
+                        placeholder="Enter price per square meter"
+                        step="0.01"
+                        min="0">
+                </div>
+                <div class="flex items-center">
+                  <select id="currency" name="currency" required class="input-field">
+                    <option value="COP">COP (Colombian Peso)</option>
+                    <option value="USD">USD (US Dollar)</option>
+                  </select>
+                </div>
               </div>
-              <p class="mt-1 text-sm text-gray-500">Enter the price per square meter in Colombian Pesos (whole number)</p>
+              <p class="mt-1 text-sm text-gray-500">Enter the price per square meter and select the currency</p>
             </div>
             
             <!-- Weight Section -->

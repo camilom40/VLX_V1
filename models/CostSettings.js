@@ -23,7 +23,20 @@ const costSettingsSchema = new mongoose.Schema({
   },
   administrativeExpenses: {
     type: Number,
-    required: true
+    required: true,
+    default: 0
+  },
+  exchangeRate: {
+    type: Number,
+    required: true,
+    default: 4000, // Default USD to COP rate
+    min: 0
+  },
+  currency: { 
+    type: String, 
+    required: true,
+    enum: ['COP', 'USD'],
+    default: 'COP'
   }
 });
 

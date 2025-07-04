@@ -18,6 +18,12 @@ const glassSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  currency: { 
+    type: String, 
+    required: true,
+    enum: ['COP', 'USD'],
+    default: 'COP'
+  },
   weight: {
     type: Number,
     required: true

@@ -15,8 +15,16 @@ const logger = require('../../utils/logger');
 // Route to list all glasses
 router.get('/', isAdmin, async (req, res) => {
   try {
-    const glasses = await Glass.find({});
-    res.render('admin/listGlasses', { glasses });
+    const CostSettings = require('../../models/CostSettings');
+    const [glasses, costSettings] = await Promise.all([
+      Glass.find({}),
+      CostSettings.findOne()
+    ]);
+    
+    res.render('admin/listGlasses', { 
+      glasses,
+      exchangeRate: costSettings?.exchangeRate || 4000
+    });
   } catch (error) {
     logger.error('Failed to fetch glasses:', error);
     res.status(500).send('Failed to fetch glasses');
@@ -30,8 +38,8 @@ router.get('/add', isAdmin, (req, res) => {
 
 router.post('/add', isAdmin, async (req, res) => {
   try {
-    const { glass_type, description, missile_type, pricePerSquareMeter, weight } = req.body;
-    const newGlass = new Glass({ glass_type, description, missile_type, pricePerSquareMeter, weight });
+    const { glass_type, description, missile_type, pricePerSquareMeter, currency, weight } = req.body;
+    const newGlass = new Glass({ glass_type, description, missile_type, pricePerSquareMeter, currency, weight });
     await newGlass.save();
     res.redirect('/admin/glasses');
   } catch (error) {
@@ -61,8 +69,8 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 // Route to update a glass
 router.post('/update/:id', isAdmin, async (req, res) => {
   try {
-    const { glass_type, description, missile_type, pricePerSquareMeter, weight } = req.body;
-    await Glass.findByIdAndUpdate(req.params.id, { glass_type, description, missile_type, pricePerSquareMeter, weight });
+    const { glass_type, description, missile_type, pricePerSquareMeter, currency, weight } = req.body;
+    await Glass.findByIdAndUpdate(req.params.id, { glass_type, description, missile_type, pricePerSquareMeter, currency, weight });
     logger.info(`Glass with ID: ${req.params.id} updated successfully.`);
     res.redirect('/admin/glasses');
   } catch (error) {

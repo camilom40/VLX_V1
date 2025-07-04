@@ -163,31 +163,35 @@
 <body class="bg-gray-100 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
   <div class="container mx-auto px-4 pt-8 pb-12 flex-grow">
-    <!-- Header with Search -->
-    <div class="bg-white shadow-md rounded-xl p-4 mb-6">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 class="text-3xl font-bold text-gray-800 bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-          Glass Management
-        </h1>
-        <div class="relative">
-          <input type="text" id="searchInput" placeholder="Search glasses..." 
-                class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+    <!-- Header with Currency Toggle -->
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold text-gray-800">Glass Management</h1>
+        <div class="flex items-center space-x-4">
+          <!-- Currency Toggle Section -->
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-600">Display Currency:</span>
+            <div class="flex bg-gray-100 rounded-lg p-1">
+              <button id="copBtn" class="currency-btn active px-3 py-1 text-sm font-medium rounded-md transition-colors bg-blue-600 text-white">
+                COP
+              </button>
+              <button id="usdBtn" class="currency-btn px-3 py-1 text-sm font-medium rounded-md transition-colors text-gray-600 hover:text-gray-800">
+                USD
+              </button>
+            </div>
+          </div>
+          <a href="/admin/glasses/add" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add New Glass
+          </a>
         </div>
       </div>
     </div>
     
     <!-- Action Buttons -->
     <div class="flex flex-wrap gap-3 justify-start items-center mb-6">
-      <a href="/admin/glasses/add" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add New Glass
-      </a>
-      
       <a href="/admin/glasses/export-glasses" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -253,8 +257,10 @@
                     </span>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                      <%= glass.pricePerSquareMeter.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) %>
+                    <span class="price-display font-semibold text-green-600" 
+                          data-price="<%= glass.pricePerSquareMeter %>" 
+                          data-currency="<%= glass.currency || 'COP' %>">
+                      <!-- Price will be populated by JavaScript -->
                     </span>
                   </td>
                   <td class="px-6 py-4">
@@ -304,5 +310,75 @@
     <% } %>
   </div>
   <%- include('../partials/_footer.ejs') %>
+  <script>
+    // Exchange rate from server
+    const exchangeRateValue = <%= exchangeRate || 4000 %>;
+    let currentDisplayCurrency = 'COP';
+
+    // Currency conversion functions
+    function convertPrice(price, fromCurrency, toCurrency) {
+      if (fromCurrency === toCurrency) return price;
+      
+      if (fromCurrency === 'USD' && toCurrency === 'COP') {
+        return price * exchangeRateValue;
+      } else if (fromCurrency === 'COP' && toCurrency === 'USD') {
+        return price / exchangeRateValue;
+      }
+      return price;
+    }
+
+    // Format price based on currency
+    function formatPrice(price, currency) {
+      const locale = currency === 'USD' ? 'en-US' : 'es-CO';
+      const maximumFractionDigits = currency === 'USD' ? 2 : 0;
+      
+      return new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currency,
+        maximumFractionDigits: maximumFractionDigits
+      }).format(price);
+    }
+
+    // Update all price displays
+    function updatePriceDisplays() {
+      const priceElements = document.querySelectorAll('.price-display');
+      
+      priceElements.forEach(element => {
+        const originalPrice = parseFloat(element.dataset.price);
+        const originalCurrency = element.dataset.currency || 'COP';
+        
+        const convertedPrice = convertPrice(originalPrice, originalCurrency, currentDisplayCurrency);
+        element.textContent = formatPrice(convertedPrice, currentDisplayCurrency);
+      });
+    }
+
+    // Handle currency toggle
+    function switchCurrency(currency) {
+      currentDisplayCurrency = currency;
+      
+      // Update button states
+      document.getElementById('copBtn').classList.toggle('active', currency === 'COP');
+      document.getElementById('usdBtn').classList.toggle('active', currency === 'USD');
+      
+      // Update button styles
+      const activeBtn = currency === 'COP' ? document.getElementById('copBtn') : document.getElementById('usdBtn');
+      const inactiveBtn = currency === 'COP' ? document.getElementById('usdBtn') : document.getElementById('copBtn');
+      
+      activeBtn.className = 'currency-btn active px-3 py-1 text-sm font-medium rounded-md transition-colors bg-blue-600 text-white';
+      inactiveBtn.className = 'currency-btn px-3 py-1 text-sm font-medium rounded-md transition-colors text-gray-600 hover:text-gray-800';
+      
+      // Update all prices
+      updatePriceDisplays();
+    }
+
+    // Initialize event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('copBtn').addEventListener('click', () => switchCurrency('COP'));
+      document.getElementById('usdBtn').addEventListener('click', () => switchCurrency('USD'));
+      
+      // Initial price display
+      updatePriceDisplays();
+    });
+  </script>
 </body>
 </html>
