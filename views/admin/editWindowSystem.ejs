@@ -10,10 +10,43 @@
   <div class="container mx-auto py-8">
     <h1 class="text-3xl font-bold mb-6 text-center">Edit Window System</h1>
     <div class="bg-white shadow-md rounded-lg p-6">
-      <form id="window-form" action="/admin/edit/<%= windowSystem._id %>" method="POST">
-        <div class="mb-4">
-          <label for="type" class="block text-gray-700 font-bold mb-2">Window Type:</label>
-          <input type="text" id="type" name="type" value="<%= windowSystem.type %>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+      <form id="window-form" action="/admin/edit/<%= windowSystem._id %>" method="POST" enctype="multipart/form-data">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label for="type" class="block text-gray-700 font-bold mb-2">Window Type:</label>
+            <input type="text" id="type" name="type" value="<%= windowSystem.type %>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          </div>
+          
+          <!-- Window System Image -->
+          <div>
+            <label class="block text-gray-700 font-bold mb-2">Window System Image:</label>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+              <% if (windowSystem.image) { %>
+                <div class="mb-4">
+                  <img src="<%= windowSystem.image %>" 
+                       alt="<%= windowSystem.type %>" 
+                       class="max-w-full h-32 object-contain mx-auto rounded border">
+                </div>
+                <p class="text-sm text-gray-600 mb-2">Current image</p>
+                <button type="button" onclick="removeCurrentImage()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                  Remove Image
+                </button>
+              <% } else { %>
+                <div id="imagePreview" class="hidden mb-4">
+                  <img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded border">
+                </div>
+                <div id="uploadArea" class="cursor-pointer">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <p class="mt-1 text-sm text-gray-600">Click to upload or drag and drop</p>
+                  <p class="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                </div>
+                <input type="file" id="windowImage" name="windowImage" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
+              <% } %>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">This image will be used consistently across all quotes for this window system.</p>
+          </div>
         </div>
 
         <!-- Profiles Section -->
@@ -186,6 +219,86 @@
         <!-- Thicker Dark Blue Divider -->
         <hr class="my-10 border-t-4 border-blue-800">
 
+        <!-- Muntin Configuration Section -->
+        <div class="mb-8">
+          <h2 class="text-lg font-bold text-gray-700 mb-4">Muntin Configuration</h2>
+          <div class="bg-blue-50 p-4 rounded-lg mb-6">
+            <p class="text-sm text-blue-800">
+              <i class="fas fa-info-circle mr-2"></i>
+              Configure ornamental muntins for this window system. Muntins are decorative dividers that create multiple panes within a single glass unit.
+            </p>
+          </div>
+          
+          <div class="p-6 bg-gray-50 rounded-lg shadow-sm mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="muntin-enabled" class="block text-gray-700 font-medium mb-2">Enable Muntins:</label>
+                <div class="flex items-center">
+                  <input type="checkbox" id="muntin-enabled" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="toggleMuntinConfiguration()">
+                  <label for="muntin-enabled" class="ml-2 text-sm text-gray-700">Include muntins in this window system</label>
+                </div>
+              </div>
+              
+              <div id="muntin-config" style="display: none;">
+                <label for="muntin-profile" class="block text-gray-700 font-medium mb-2">Muntin Profile:</label>
+                <select id="muntin-profile" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <option value="">Select Muntin Profile</option>
+                  <% profiles.forEach(profile => { %>
+                    <% if (profile.isMuntin) { %>
+                      <option value="<%= profile._id %>" data-type="<%= profile.muntinType %>" data-pattern="<%= profile.muntinPattern %>">
+                        <%= profile.name %> - <%= profile.muntinType.charAt(0).toUpperCase() + profile.muntinType.slice(1) %>
+                      </option>
+                    <% } %>
+                  <% }); %>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Select the muntin profile from available options</p>
+              </div>
+            </div>
+            
+            <div id="muntin-details" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6" style="display: none;">
+              <div>
+                <label for="muntin-type" class="block text-gray-700 font-medium mb-2">Muntin Type:</label>
+                <select id="muntin-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <option value="colonial">Colonial</option>
+                  <option value="geometric">Geometric</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Style of muntin pattern</p>
+              </div>
+              
+
+              
+
+              
+
+              
+              <div>
+                <label for="muntin-show-to-user" class="block text-gray-700 font-medium mb-2">User Configurable:</label>
+                <div class="flex items-center">
+                  <input type="checkbox" id="muntin-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                  <label for="muntin-show-to-user" class="ml-2 text-sm text-gray-700">Allow users to modify muntin settings</label>
+                </div>
+              </div>
+              
+            </div>
+            
+            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              <strong>Note:</strong> Users will be able to configure the number of horizontal/vertical divisions and spacing when quoting windows with this system.
+            </div>
+            
+            <div id="muntin-preview" class="mt-6 p-4 bg-white border border-gray-200 rounded-lg" style="display: none;">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">Muntin Preview:</h4>
+              <div id="muntin-preview-grid" class="w-32 h-32 border-2 border-gray-300 mx-auto bg-blue-50 relative">
+                <!-- Preview grid will be generated here -->
+              </div>
+              <p class="text-xs text-gray-500 mt-2 text-center" id="muntin-preview-text">1x1 Colonial Grid</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thicker Dark Blue Divider -->
+        <hr class="my-10 border-t-4 border-blue-800">
+
         <!-- Glass Restrictions Section -->
         <div class="mb-8">
           <h2 class="text-lg font-bold text-gray-700 mb-4">Glass Restrictions</h2>
@@ -274,6 +387,14 @@
       positivePressure: glass.positivePressure,
       negativePressure: glass.negativePressure,
     }));
+
+    // Initialize muntin configuration
+    let muntinConfiguration = {
+      enabled: windowSystemData.muntinConfiguration ? windowSystemData.muntinConfiguration.enabled : false,
+      muntinProfile: windowSystemData.muntinConfiguration ? windowSystemData.muntinConfiguration.muntinProfile : null,
+      muntinType: windowSystemData.muntinConfiguration ? windowSystemData.muntinConfiguration.muntinType : 'colonial',
+      showToUser: windowSystemData.muntinConfiguration ? windowSystemData.muntinConfiguration.showToUser : true,
+    };
 
     function addProfileEntry() {
       const profileSelect = document.getElementById('profile-id');
@@ -571,6 +692,119 @@
       glassRestrictionsInput.name = 'glassRestrictions';
       glassRestrictionsInput.value = JSON.stringify(glassRestrictions);
       form.appendChild(glassRestrictionsInput);
+
+      const muntinConfigurationInput = document.createElement('input');
+      muntinConfigurationInput.type = 'hidden';
+      muntinConfigurationInput.name = 'muntinConfiguration';
+      muntinConfigurationInput.value = JSON.stringify(muntinConfiguration);
+      form.appendChild(muntinConfigurationInput);
+    });
+
+    // Muntin Configuration Functions
+    function toggleMuntinConfiguration() {
+      const enabled = document.getElementById('muntin-enabled').checked;
+      const configDiv = document.getElementById('muntin-config');
+      const detailsDiv = document.getElementById('muntin-details');
+      const previewDiv = document.getElementById('muntin-preview');
+      
+      muntinConfiguration.enabled = enabled;
+      
+      if (enabled) {
+        configDiv.style.display = 'block';
+        detailsDiv.style.display = 'grid';
+        previewDiv.style.display = 'block';
+        updateMuntinPreview();
+      } else {
+        configDiv.style.display = 'none';
+        detailsDiv.style.display = 'none';
+        previewDiv.style.display = 'none';
+      }
+    }
+
+    function updateMuntinPreview() {
+      const horizontal = document.getElementById('muntin-horizontal').value;
+      const vertical = document.getElementById('muntin-vertical').value;
+      const type = document.getElementById('muntin-type').value;
+      const previewGrid = document.getElementById('muntin-preview-grid');
+      const previewText = document.getElementById('muntin-preview-text');
+      
+      // Update configuration
+      muntinConfiguration.muntinType = type;
+      
+      // Generate a simple preview grid (1x1 as default)
+      previewGrid.innerHTML = '';
+      const cell = document.createElement('div');
+      cell.style.position = 'absolute';
+      cell.style.left = '0%';
+      cell.style.top = '0%';
+      cell.style.width = '100%';
+      cell.style.height = '100%';
+      cell.style.border = '1px solid #6b7280';
+      cell.style.backgroundColor = '#e5e7eb';
+      previewGrid.appendChild(cell);
+      
+      // Update preview text
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+      previewText.textContent = `1x1 ${typeLabel} Grid (User configurable)`;
+    }
+
+    function updateMuntinConfiguration() {
+      const type = document.getElementById('muntin-type').value;
+      const showToUser = document.getElementById('muntin-show-to-user').checked;
+      
+      muntinConfiguration.muntinType = type;
+      muntinConfiguration.showToUser = showToUser;
+    }
+
+    // Initialize muntin configuration on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set initial values
+      if (muntinConfiguration.enabled) {
+        document.getElementById('muntin-enabled').checked = true;
+        toggleMuntinConfiguration();
+        
+        // Set form values
+        if (muntinConfiguration.muntinProfile) {
+          document.getElementById('muntin-profile').value = muntinConfiguration.muntinProfile;
+        }
+        document.getElementById('muntin-type').value = muntinConfiguration.muntinType;
+        document.getElementById('muntin-show-to-user').checked = muntinConfiguration.showToUser;
+        
+        updateMuntinPreview();
+      }
+      
+      // Add event listeners for muntin configuration
+      const muntinTypeField = document.getElementById('muntin-type');
+      if (muntinTypeField) {
+        muntinTypeField.addEventListener('change', function() {
+          updateMuntinConfiguration();
+          updateMuntinPreview();
+        });
+      }
+      
+      // Muntin checkbox
+      const muntinShowToUser = document.getElementById('muntin-show-to-user');
+      if (muntinShowToUser) {
+        muntinShowToUser.addEventListener('change', function() {
+          muntinConfiguration.showToUser = this.checked;
+        });
+      }
+      
+      // Muntin profile selection
+      const muntinProfileSelect = document.getElementById('muntin-profile');
+      if (muntinProfileSelect) {
+        muntinProfileSelect.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          if (selectedOption && selectedOption.value) {
+            muntinConfiguration.muntinProfile = selectedOption.value;
+            const muntinType = selectedOption.getAttribute('data-type');
+            if (muntinType) {
+              document.getElementById('muntin-type').value = muntinType;
+              muntinConfiguration.muntinType = muntinType;
+            }
+          }
+        });
+      }
     });
 
     // Initial render of the tables with pre-loaded data
@@ -590,6 +824,128 @@
     } else {
       document.getElementById('accessories-empty-state').style.display = 'none';
     }
+
+    // Image Upload Functions
+    function setupImageUpload() {
+      const uploadArea = document.getElementById('uploadArea');
+      const fileInput = document.getElementById('windowImage');
+      
+      if (!uploadArea || !fileInput) return;
+      
+      // Drag and drop functionality
+      uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('border-blue-400', 'bg-blue-50');
+      });
+      
+      uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+      });
+      
+      uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          fileInput.files = files;
+          handleImageUpload(fileInput);
+        }
+      });
+      
+      // Click to upload
+      uploadArea.addEventListener('click', function() {
+        fileInput.click();
+      });
+    }
+    
+    function handleImageUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB.');
+        return;
+      }
+      
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const uploadArea = document.getElementById('uploadArea');
+        
+        previewImg.src = e.target.result;
+        preview.style.display = 'block';
+        uploadArea.style.display = 'none';
+        
+        // Add remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm mt-2';
+        removeBtn.textContent = 'Remove Image';
+        removeBtn.onclick = removeImage;
+        preview.appendChild(removeBtn);
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function removeImage() {
+      const fileInput = document.getElementById('windowImage');
+      const preview = document.getElementById('imagePreview');
+      const uploadArea = document.getElementById('uploadArea');
+      
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
+      if (preview) {
+        preview.style.display = 'none';
+        preview.innerHTML = '<img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded border">';
+      }
+      
+      if (uploadArea) {
+        uploadArea.style.display = 'block';
+      }
+    }
+    
+    async function removeCurrentImage() {
+      if (confirm('Are you sure you want to remove the current image?')) {
+        try {
+          const response = await fetch(`/admin/remove-image/<%= windowSystem._id %>`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok) {
+            // Reload the page to show the updated state
+            location.reload();
+          } else {
+            alert('Error: ' + result.error);
+          }
+        } catch (error) {
+          console.error('Error removing image:', error);
+          alert('Failed to remove image');
+        }
+      }
+    }
+    
+    // Initialize image upload functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      setupImageUpload();
+    });
   </script>
 </body>
 </html>

@@ -235,6 +235,8 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
       }
     });
 
+
+
     res.render('projects/configureWindow', {
       project,
       windowRef,
@@ -411,13 +413,43 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       }
     });
 
+    // Muntin cost calculation
+    let muntinCost = 0;
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+      const muntinType = req.body.muntinType;
+      const muntinHorizontal = parseInt(req.body.muntinHorizontal) || 1;
+      const muntinVertical = parseInt(req.body.muntinVertical) || 1;
+      const muntinSpacing = parseFloat(req.body.muntinSpacing) || 0;
+      
+      // Calculate muntin cost if muntin profile is selected
+      if (windowSystem.muntinConfiguration.muntinProfile) {
+        const muntinProfile = allProfiles.find(p => p._id.toString() === windowSystem.muntinConfiguration.muntinProfile.toString());
+        if (muntinProfile) {
+          const muntinPricePerMeter = parseFloat(muntinProfile.pricePerMeter) || 0;
+          const muntinCurrency = muntinProfile.currency || 'COP';
+          const muntinPricePerMeterCOP = convertToCOP(muntinPricePerMeter, muntinCurrency, exchangeRate);
+          
+          // Calculate total muntin length based on divisions
+          const horizontalMuntins = muntinHorizontal - 1; // Number of horizontal bars
+          const verticalMuntins = muntinVertical - 1; // Number of vertical bars
+          
+          const horizontalLength = horizontalMuntins * windowWidth * 0.0254; // Convert to meters
+          const verticalLength = verticalMuntins * windowHeight * 0.0254; // Convert to meters
+          
+          const totalMuntinLength = horizontalLength + verticalLength;
+          muntinCost = muntinPricePerMeterCOP * totalMuntinLength;
+        }
+      }
+    }
+    
     // Apply cost settings with proper validation
-    const baseCost = isNaN(glassCost) ? 0 : glassCost + (isNaN(profileCostTotal) ? 0 : profileCostTotal) + (isNaN(accessoryCostTotal) ? 0 : accessoryCostTotal);
+    const baseCost = isNaN(glassCost) ? 0 : glassCost + (isNaN(profileCostTotal) ? 0 : profileCostTotal) + (isNaN(accessoryCostTotal) ? 0 : accessoryCostTotal) + (isNaN(muntinCost) ? 0 : muntinCost);
     
     console.log('=== PRICING DEBUG ===');
     console.log('glassCost:', glassCost);
     console.log('profileCostTotal:', profileCostTotal);
     console.log('accessoryCostTotal:', accessoryCostTotal);
+    console.log('muntinCost:', muntinCost);
     console.log('baseCost:', baseCost);
     console.log('costSettings:', costSettings ? 'exists' : 'null');
     
@@ -444,6 +476,15 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     const autoManagedProfiles = windowSystem.profiles.filter(p => !p.showToUser);
     const autoManagedAccessories = windowSystem.accessories.filter(a => !a.showToUser);
     
+    // Add muntin information to description
+    let muntinInfo = '';
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+      const muntinType = req.body.muntinType || windowSystem.muntinConfiguration.muntinType;
+      const muntinHorizontal = parseInt(req.body.muntinHorizontal) || windowSystem.muntinConfiguration.horizontalDivisions;
+      const muntinVertical = parseInt(req.body.muntinVertical) || windowSystem.muntinConfiguration.verticalDivisions;
+      muntinInfo = `Muntins: ${muntinHorizontal}x${muntinVertical} ${muntinType.charAt(0).toUpperCase() + muntinType.slice(1)} Grid`;
+    }
+    
     const description = `
 Window System: ${windowSystem.type}
 Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}
@@ -451,7 +492,7 @@ User-Configured Profiles: ${userConfigurableProfiles.length}
 Auto-Managed Profiles: ${autoManagedProfiles.length}
 User-Configured Accessories: ${userConfigurableAccessories.length}
 Auto-Managed Accessories: ${autoManagedAccessories.length}
-${notes ? `Notes: ${notes}` : ''}
+${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     `.trim();
 
     // Calculate unit price with validation
@@ -751,13 +792,43 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       }
     });
 
+    // Muntin cost calculation
+    let muntinCost = 0;
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+      const muntinType = req.body.muntinType;
+      const muntinHorizontal = parseInt(req.body.muntinHorizontal) || 1;
+      const muntinVertical = parseInt(req.body.muntinVertical) || 1;
+      const muntinSpacing = parseFloat(req.body.muntinSpacing) || 0;
+      
+      // Calculate muntin cost if muntin profile is selected
+      if (windowSystem.muntinConfiguration.muntinProfile) {
+        const muntinProfile = allProfiles.find(p => p._id.toString() === windowSystem.muntinConfiguration.muntinProfile.toString());
+        if (muntinProfile) {
+          const muntinPricePerMeter = parseFloat(muntinProfile.pricePerMeter) || 0;
+          const muntinCurrency = muntinProfile.currency || 'COP';
+          const muntinPricePerMeterCOP = convertToCOP(muntinPricePerMeter, muntinCurrency, exchangeRate);
+          
+          // Calculate total muntin length based on divisions
+          const horizontalMuntins = muntinHorizontal - 1; // Number of horizontal bars
+          const verticalMuntins = muntinVertical - 1; // Number of vertical bars
+          
+          const horizontalLength = horizontalMuntins * windowWidth * 0.0254; // Convert to meters
+          const verticalLength = verticalMuntins * windowHeight * 0.0254; // Convert to meters
+          
+          const totalMuntinLength = horizontalLength + verticalLength;
+          muntinCost = muntinPricePerMeterCOP * totalMuntinLength;
+        }
+      }
+    }
+    
     // Apply cost settings with validation (only per-window costs: packaging, labor, indirect)
-    const baseCost = (isNaN(glassCost) ? 0 : glassCost) + (isNaN(profileCostTotal) ? 0 : profileCostTotal) + (isNaN(accessoryCostTotal) ? 0 : accessoryCostTotal);
+    const baseCost = (isNaN(glassCost) ? 0 : glassCost) + (isNaN(profileCostTotal) ? 0 : profileCostTotal) + (isNaN(accessoryCostTotal) ? 0 : accessoryCostTotal) + (isNaN(muntinCost) ? 0 : muntinCost);
     
     console.log('=== UPDATE PRICING DEBUG ===');
     console.log('glassCost:', glassCost);
     console.log('profileCostTotal:', profileCostTotal);
     console.log('accessoryCostTotal:', accessoryCostTotal);
+    console.log('muntinCost:', muntinCost);
     console.log('baseCost:', baseCost);
     
     const additionalCosts = costSettings ? baseCost * (
@@ -777,6 +848,15 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     const autoManagedProfiles = windowSystem.profiles.filter(p => !p.showToUser);
     const autoManagedAccessories = windowSystem.accessories.filter(a => !a.showToUser);
     
+    // Add muntin information to description
+    let muntinInfo = '';
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+      const muntinType = req.body.muntinType || windowSystem.muntinConfiguration.muntinType;
+      const muntinHorizontal = parseInt(req.body.muntinHorizontal) || windowSystem.muntinConfiguration.horizontalDivisions;
+      const muntinVertical = parseInt(req.body.muntinVertical) || windowSystem.muntinConfiguration.verticalDivisions;
+      muntinInfo = `Muntins: ${muntinHorizontal}x${muntinVertical} ${muntinType.charAt(0).toUpperCase() + muntinType.slice(1)} Grid`;
+    }
+    
     const description = `
 Window System: ${windowSystem.type}
 Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}
@@ -784,7 +864,7 @@ User-Configured Profiles: ${userConfigurableProfiles.length}
 Auto-Managed Profiles: ${autoManagedProfiles.length}
 User-Configured Accessories: ${userConfigurableAccessories.length}
 Auto-Managed Accessories: ${autoManagedAccessories.length}
-${notes ? `Notes: ${notes}` : ''}
+${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     `.trim();
 
     // Calculate unit price with validation

@@ -45,7 +45,7 @@ app.set("view engine", "ejs");
 // Serve static files
 app.use(express.static("public"));
 // Serve uploaded files
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static("public/uploads"));
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Change to memory storage for processing

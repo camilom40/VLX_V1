@@ -9,8 +9,20 @@ const glassRestrictionSchema = new Schema({
   negativePressure: { type: Number, required: true }  // EXT
 });
 
+const muntinConfigurationSchema = new Schema({
+  enabled: { type: Boolean, default: false },
+  muntinProfile: { type: Schema.Types.ObjectId, ref: 'Profile' },
+  muntinType: { type: String, enum: ['colonial', 'geometric', 'custom', 'none'], default: 'colonial' },
+  horizontalDivisions: { type: Number, default: 1 }, // Number of horizontal divisions
+  verticalDivisions: { type: Number, default: 1 },   // Number of vertical divisions
+  spacing: { type: Number, default: 0 }, // Spacing in inches
+  showToUser: { type: Boolean, default: false }, // Whether users can configure muntins
+  isDefault: { type: Boolean, default: false }, // Default muntin configuration
+});
+
 const windowSchema = new Schema({
   type: { type: String, required: true },
+  image: { type: String, default: null }, // Path to window system image
   profiles: [{
     profile: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
     quantity: { type: Number, required: true },
@@ -30,7 +42,8 @@ const windowSchema = new Schema({
     selectionType: { type: String, enum: ['single', 'multiple', 'quantity'], default: 'quantity' }, // How users can select this component
     isDefault: { type: Boolean, default: false } // Whether this is the default choice in a single-selection group
   }],
-  glassRestrictions: [glassRestrictionSchema] // Embedded glass restrictions
+  glassRestrictions: [glassRestrictionSchema], // Embedded glass restrictions
+  muntinConfiguration: muntinConfigurationSchema // Muntin configuration
 });
 
 module.exports = mongoose.model('Window', windowSchema);

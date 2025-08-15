@@ -6,7 +6,7 @@ const Accessory = require('../../models/Accessory');
 const WindowSystem = require('../../models/Window');
 const { isAdmin } = require('../middleware/adminMiddleware');
 const ExcelJS = require('exceljs');
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ storage: multer.memoryStorage() });
 const fs = require('fs');
 const User = require('../../models/User'); // Adjust the path based on your project structure
 const Project = require('../../models/Project'); // Added for project aggregation
@@ -223,13 +223,99 @@ router.get('/users', async (req, res) => {
 });
 
 // Route to handle the composition of a new window
-router.post('/compose-window/compose', isAdmin, async (req, res) => {
+router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), async (req, res) => {
   try {
-    const profiles = JSON.parse(req.body.profiles || '[]');
-    const accessories = JSON.parse(req.body.accessories || '[]');
-    const glassRestrictions = JSON.parse(req.body.glassRestrictions || '[]');
+    console.log('Compose window request received');
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file ? 'File uploaded' : 'No file');
+    
+    // Parse JSON arrays with error handling
+    let profiles, accessories, glassRestrictions;
+    
+    try {
+      profiles = JSON.parse(req.body.profiles || '[]');
+    } catch (e) {
+      console.error('Error parsing profiles:', e);
+      profiles = [];
+    }
+    
+    try {
+      accessories = JSON.parse(req.body.accessories || '[]');
+    } catch (e) {
+      console.error('Error parsing accessories:', e);
+      accessories = [];
+    }
+    
+    try {
+      glassRestrictions = JSON.parse(req.body.glassRestrictions || '[]');
+    } catch (e) {
+      console.error('Error parsing glassRestrictions:', e);
+      glassRestrictions = [];
+    }
+    
+    let muntinConfiguration;
+    try {
+      muntinConfiguration = JSON.parse(req.body.muntinConfiguration || '{}');
+    } catch (e) {
+      console.error('Error parsing muntinConfiguration:', e);
+      muntinConfiguration = { enabled: false };
+    }
 
     const { type } = req.body;
+    
+    // Validate required fields
+    if (!type || type.trim() === '') {
+      console.error('Window type is required');
+      return res.status(400).json({ error: 'Window type is required' });
+    }
+    
+    if (profiles.length === 0) {
+      console.error('At least one profile is required');
+      return res.status(400).json({ error: 'At least one profile is required' });
+    }
+    
+    if (glassRestrictions.length === 0) {
+      console.error('At least one glass restriction is required');
+      return res.status(400).json({ error: 'At least one glass restriction is required' });
+    }
+    
+    let imagePath = null;
+
+    // Handle image upload (optional)
+    if (req.file) {
+      try {
+        const sharp = require('sharp');
+        const path = require('path');
+        
+        // Create uploads directory if it doesn't exist
+        const uploadDir = path.join(__dirname, '../../public/uploads/window-systems');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        // Generate unique filename
+        const timestamp = Date.now();
+        const originalName = req.file.originalname;
+        const extension = path.extname(originalName);
+        const filename = `window-system-${timestamp}${extension}`;
+        const filepath = path.join(uploadDir, filename);
+        
+        // Process and save image
+        await sharp(req.file.buffer)
+          .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 80 })
+          .toFile(filepath);
+        
+        imagePath = `/uploads/window-systems/${filename}`;
+        console.log('Image processed and saved:', imagePath);
+      } catch (imageError) {
+        console.error('Error processing image:', imageError);
+        // Continue without image if processing fails
+        imagePath = null;
+      }
+    } else {
+      console.log('No image uploaded - continuing without image');
+    }
 
     const profileEntries = profiles.map(profile => ({
       profile: profile.profileId,
@@ -257,17 +343,34 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       negativePressure: parseFloat(glass.negativePressure),
     }));
 
+    console.log('Creating window system with data:', {
+      type,
+      imagePath,
+      profileCount: profileEntries.length,
+      accessoryCount: accessoryEntries.length,
+      glassRestrictionCount: glassRestrictionEntries.length
+    });
+
     const newWindow = new WindowSystem({
       type,
+      image: imagePath,
       profiles: profileEntries,
       accessories: accessoryEntries,
       glassRestrictions: glassRestrictionEntries,
+      muntinConfiguration: {
+        enabled: Boolean(muntinConfiguration.enabled),
+        muntinProfile: muntinConfiguration.muntinProfile || null,
+        muntinType: muntinConfiguration.muntinType || 'colonial',
+        showToUser: Boolean(muntinConfiguration.showToUser),
+      },
     });
 
     await newWindow.save();
+    console.log('Window system saved successfully');
     res.redirect('/admin/list-window-systems');
   } catch (error) {
-    console.error('Failed to compose window:', error.message);
+    console.error('Failed to compose window:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -301,9 +404,44 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 });
 
 // Route to handle the update of a window system
-router.post('/edit/:id', isAdmin, async (req, res) => {
+router.post('/edit/:id', isAdmin, upload.single('windowImage'), async (req, res) => {
   try {
     const { type, profiles = [], accessories = [], glassRestrictions = [] } = req.body;
+    let imagePath = null;
+
+    // Handle image upload
+    if (req.file) {
+      try {
+        const sharp = require('sharp');
+        const path = require('path');
+        
+        // Create uploads directory if it doesn't exist
+        const uploadDir = path.join(__dirname, '../../public/uploads/window-systems');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        // Generate unique filename
+        const timestamp = Date.now();
+        const originalName = req.file.originalname;
+        const extension = path.extname(originalName);
+        const filename = `window-system-${timestamp}${extension}`;
+        const filepath = path.join(uploadDir, filename);
+        
+        // Process and save image
+        await sharp(req.file.buffer)
+          .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 80 })
+          .toFile(filepath);
+        
+        imagePath = `/uploads/window-systems/${filename}`;
+        console.log('Image processed and saved:', imagePath);
+      } catch (imageError) {
+        console.error('Error processing image:', imageError);
+        // Continue without image if processing fails
+        imagePath = null;
+      }
+    }
 
     const profileEntries = JSON.parse(profiles).map(profile => ({
       profile: profile.profileId,
@@ -331,12 +469,35 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       negativePressure: parseFloat(glass.negativePressure),
     }));
 
-    await WindowSystem.findByIdAndUpdate(req.params.id, {
+    // Parse muntin configuration
+    let muntinConfigurationData = {};
+    try {
+      muntinConfigurationData = JSON.parse(req.body.muntinConfiguration || '{}');
+    } catch (e) {
+      console.error('Error parsing muntinConfiguration:', e);
+      muntinConfigurationData = { enabled: false };
+    }
+
+    // Prepare update object
+    const updateData = {
       type,
       profiles: profileEntries,
       accessories: accessoryEntries,
       glassRestrictions: glassRestrictionEntries,
-    });
+      muntinConfiguration: {
+        enabled: Boolean(muntinConfigurationData.enabled),
+        muntinProfile: muntinConfigurationData.muntinProfile || null,
+        muntinType: muntinConfigurationData.muntinType || 'colonial',
+        showToUser: Boolean(muntinConfigurationData.showToUser),
+      },
+    };
+
+    // Only update image if a new one was uploaded
+    if (imagePath) {
+      updateData.image = imagePath;
+    }
+
+    await WindowSystem.findByIdAndUpdate(req.params.id, updateData);
 
     res.redirect('/admin/list-window-systems');
   } catch (error) {
@@ -345,6 +506,25 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
   }
 });
 
+
+// Route to remove image from window system
+router.post('/remove-image/:id', isAdmin, async (req, res) => {
+  try {
+    const windowSystem = await WindowSystem.findById(req.params.id);
+    if (!windowSystem) {
+      return res.status(404).json({ error: 'Window system not found' });
+    }
+
+    // Remove image field
+    windowSystem.image = null;
+    await windowSystem.save();
+
+    res.json({ message: 'Image removed successfully!' });
+  } catch (error) {
+    console.error('Failed to remove image:', error.message);
+    res.status(500).json({ error: 'Failed to remove image' });
+  }
+});
 
 // Route to delete a window system
 router.delete('/delete/:id', isAdmin, async (req, res) => {

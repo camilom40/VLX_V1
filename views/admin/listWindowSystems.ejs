@@ -95,15 +95,36 @@
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Window Type</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profiles</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accessories</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Muntins</th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody id="windowSystemsTableBody" class="bg-white divide-y divide-gray-200">
               <% windowSystems.forEach(function(windowSystem) { %>
                 <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <% if (windowSystem.image) { %>
+                      <div class="flex items-center">
+                        <img src="<%= windowSystem.image %>" 
+                             alt="<%= windowSystem.type %>" 
+                             class="w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:opacity-75 transition-opacity"
+                             title="Click to view full size"
+                             onclick="viewImage('<%= windowSystem.image %>', '<%= windowSystem.type %>')">
+                      </div>
+                    <% } else { %>
+                      <div class="flex items-center">
+                        <div class="w-16 h-16 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
+                          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                          </svg>
+                        </div>
+                      </div>
+                    <% } %>
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900"><%= windowSystem.type %></div>
                   </td>
@@ -151,6 +172,31 @@
                       <% }); %>
                     </div>
                   </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="space-y-2">
+                      <% if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) { %>
+                        <div class="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-200">
+                          <div>
+                            <span class="font-semibold text-blue-800">
+                              <%= windowSystem.muntinConfiguration.muntinType.charAt(0).toUpperCase() + windowSystem.muntinConfiguration.muntinType.slice(1) %> Muntins
+                            </span>
+                            <br>                            <span class="text-xs text-blue-600">
+                              User configurable grid and spacing
+                            </span>
+                          </div>
+                          <% if (windowSystem.muntinConfiguration.showToUser) { %>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>
+                          <% } else { %>
+                            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>
+                          <% } %>
+                        </div>
+                      <% } else { %>
+                        <div class="text-center py-2 text-gray-400 italic">
+                          No muntins
+                        </div>
+                      <% } %>
+                    </div>
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
                     <a href="/admin/edit/<%= windowSystem._id %>" class="text-indigo-600 hover:text-indigo-900">Edit</a>
                     <button type="button" class="text-red-600 hover:text-red-900 ml-4" onclick="return deleteWindowSystem('<%= windowSystem._id %>')">Delete</button>
@@ -168,6 +214,49 @@
       <a href="/admin" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">Back to Admin Console</a>
     </div>
   </div>
+
+  <!-- Image Viewer Modal -->
+  <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center">
+    <div class="relative max-w-4xl max-h-full p-4">
+      <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white text-2xl font-bold hover:text-gray-300 z-10">
+        &times;
+      </button>
+      <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain">
+      <div id="modalTitle" class="text-white text-center mt-4 text-lg font-semibold"></div>
+    </div>
+  </div>
+
+  <script>
+    function viewImage(imageSrc, title) {
+      const modal = document.getElementById('imageModal');
+      const modalImage = document.getElementById('modalImage');
+      const modalTitle = document.getElementById('modalTitle');
+      
+      modalImage.src = imageSrc;
+      modalTitle.textContent = title;
+      modal.classList.remove('hidden');
+      
+      // Close modal when clicking outside the image
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          closeImageModal();
+        }
+      });
+      
+      // Close modal with Escape key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          closeImageModal();
+        }
+      });
+    }
+    
+    function closeImageModal() {
+      const modal = document.getElementById('imageModal');
+      modal.classList.add('hidden');
+    }
+  </script>
+
   <%- include('../partials/_footer.ejs') %>
 </body>
 </html>

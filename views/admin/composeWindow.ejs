@@ -6,12 +6,42 @@
   <title>Create Window System</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  
   <style>
     .step-active { background-color: #3b82f6; color: white; }
     .step-complete { background-color: #10b981; color: white; }
     .step-inactive { background-color: #e5e7eb; color: #6b7280; }
     .form-section { display: none; }
     .form-section.active { display: block; }
+    
+
+    
+    /* Step styling */
+    .form-section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background-color: white;
+      position: relative;
+    }
+    
+
+    
+    .form-section.active {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Current step styling */
+    .form-section.active:not(.completed) {
+      background-color: white;
+      border: 2px solid #3b82f6;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
     .help-tooltip { position: relative; display: inline-block; }
     .help-tooltip .tooltip-text {
       visibility: hidden;
@@ -33,6 +63,24 @@
       visibility: visible;
       opacity: 1;
     }
+    
+    /* Simple drag and drop styles */
+    #uploadArea {
+      transition: all 0.2s ease-in-out;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    
+    /* Prevent text selection during drag */
+    #uploadArea * {
+      pointer-events: none;
+    }
+    
+    #uploadArea {
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -42,42 +90,78 @@
     
     <!-- Step Indicator -->
     <div class="flex mb-8 justify-center">
-      <div id="step1-indicator" class="step-active rounded-l-lg py-2 px-4 flex items-center">
+      <div id="step1-indicator" class="step-indicator step-active rounded-l-lg py-2 px-4 flex items-center">
         <span class="mr-2 font-bold">1</span> Window Type
       </div>
-      <div id="step2-indicator" class="step-inactive py-2 px-4 flex items-center">
+      <div id="step2-indicator" class="step-indicator step-inactive py-2 px-4 flex items-center">
         <span class="mr-2 font-bold">2</span> Profiles
       </div>
-      <div id="step3-indicator" class="step-inactive py-2 px-4 flex items-center">
+      <div id="step3-indicator" class="step-indicator step-inactive py-2 px-4 flex items-center">
         <span class="mr-2 font-bold">3</span> Accessories
       </div>
-      <div id="step4-indicator" class="step-inactive rounded-r-lg py-2 px-4 flex items-center">
-        <span class="mr-2 font-bold">4</span> Glass Restrictions
+      <div id="step4-indicator" class="step-indicator step-inactive py-2 px-4 flex items-center">
+        <span class="mr-2 font-bold">4</span> Muntins
+      </div>
+      <div id="step5-indicator" class="step-indicator step-inactive rounded-r-lg py-2 px-4 flex items-center">
+        <span class="mr-2 font-bold">5</span> Glass Restrictions
       </div>
     </div>
     
     <div class="bg-white shadow-md rounded-lg p-6">
-      <form id="window-form" action="/admin/compose-window/compose" method="POST">
+      <form id="window-form" action="/admin/compose-window/compose" method="POST" enctype="multipart/form-data">
         
         <!-- Step 1: Window Type -->
         <div id="step1-section" class="form-section active">
           <h2 class="text-xl font-bold mb-4 text-blue-700">Step 1: Basic Information</h2>
-          <div class="mb-4">
-            <label for="type" class="block text-gray-700 font-bold mb-2">
-              Window Type:
-              <span class="help-tooltip ml-1">
-                <i class="fas fa-question-circle text-blue-500"></i>
-                <span class="tooltip-text">Enter the type of window system you are creating</span>
-              </span>
-            </label>
-            <input type="text" id="type" name="type" class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" required>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Window Type -->
+            <div class="mb-4">
+              <label for="type" class="block text-gray-700 font-bold mb-2">
+                Window Type:
+                <span class="help-tooltip ml-1">
+                  <i class="fas fa-question-circle text-blue-500"></i>
+                  <span class="tooltip-text">Enter the type of window system you are creating</span>
+                </span>
+              </label>
+              <input type="text" id="type" name="type" class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" required>
+            </div>
+            
+            <!-- Window System Image -->
+            <div class="mb-4">
+              <label for="windowImage" class="block text-gray-700 font-bold mb-2">
+                Window System Image:
+                <span class="help-tooltip ml-1">
+                  <i class="fas fa-question-circle text-blue-500"></i>
+                  <span class="tooltip-text">Upload an image that represents this window system. This will be used in quotes and previews.</span>
+                </span>
+              </label>
+              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <div id="imagePreview" class="hidden mb-4">
+                  <img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded border">
+                </div>
+                <div id="uploadArea" class="cursor-pointer transition-all duration-200">
+                  <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                  <p class="text-gray-600 mb-2">Click to upload or drag and drop</p>
+                  <p class="text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                  <div class="mt-2 text-xs text-blue-500">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Drag an image file here or click to browse
+                  </div>
+                </div>
+                <input type="file" id="windowImage" name="windowImage" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
+                
+
+              </div>
+              <p class="text-xs text-gray-500 mt-2">This image will be used consistently across all quotes for this window system.</p>
+            </div>
           </div>
           
           <div class="mt-8 flex justify-between">
             <a href="/admin" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
               <i class="fas fa-arrow-left mr-2"></i>Back
             </a>
-            <button type="button" id="to-step2-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition duration-200">
+            <button type="button" id="to-step2-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-2 rounded transition duration-200">
               Next<i class="fas fa-arrow-right ml-2"></i>
             </button>
           </div>
@@ -302,14 +386,113 @@
           </div>
         </div>
         
-        <!-- Step 4: Glass Restrictions -->
+        <!-- Step 4: Muntin Configuration -->
         <div id="step4-section" class="form-section">
-          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 4: Glass Restrictions</h2>
+          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 4: Muntin Configuration</h2>
+          
+          <div class="bg-blue-50 p-4 rounded-lg mb-6">
+            <p class="text-sm text-blue-800">
+              <i class="fas fa-info-circle mr-2"></i>
+              Configure ornamental muntins for this window system. Muntins are decorative dividers that create multiple panes within a single glass unit.
+            </p>
+          </div>
+
+          <div class="mb-8">
+            <div class="p-6 bg-gray-50 rounded-lg shadow-sm mb-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label for="muntin-enabled" class="block text-gray-700 font-medium mb-2">Enable Muntins:</label>
+                  <div class="flex items-center">
+                    <input type="checkbox" id="muntin-enabled" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="toggleMuntinConfiguration()">
+                    <label for="muntin-enabled" class="ml-2 text-sm text-gray-700">Include muntins in this window system</label>
+                  </div>
+                </div>
+                
+                <div id="muntin-config" style="display: none;">
+                  <label for="muntin-profile" class="block text-gray-700 font-medium mb-2">Muntin Profile:</label>
+                  <select id="muntin-profile" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <option value="">Select Muntin Profile</option>
+                    <% if (profiles.filter(p => p.isMuntin).length > 0) { %>
+                      <% profiles.forEach(profile => { %>
+                        <% if (profile.isMuntin) { %>
+                          <option value="<%= profile._id %>" data-type="<%= profile.muntinType %>" data-pattern="<%= profile.muntinPattern %>">
+                            <%= profile.name %> - <%= profile.muntinType.charAt(0).toUpperCase() + profile.muntinType.slice(1) %>
+                          </option>
+                        <% } %>
+                      <% }); %>
+                    <% } else { %>
+                      <!-- Fallback: Show all profiles if no muntin profiles exist -->
+                      <% profiles.forEach(profile => { %>
+                        <option value="<%= profile._id %>" data-type="colonial" data-pattern="">
+                          <%= profile.name %> - (Can be used as muntin)
+                        </option>
+                      <% }); %>
+                    <% } %>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">Select the muntin profile from available options</p>
+
+                </div>
+              </div>
+              
+              <div id="muntin-details" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6" style="display: none;">
+                <div>
+                  <label for="muntin-type" class="block text-gray-700 font-medium mb-2">Muntin Type:</label>
+                  <select id="muntin-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                    <option value="colonial">Colonial</option>
+                    <option value="geometric">Geometric</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">Style of muntin pattern</p>
+                </div>
+                
+                <div>
+                  <label for="muntin-show-to-user" class="block text-gray-700 font-medium mb-2">User Configurable:</label>
+                  <div class="flex items-center">
+                    <input type="checkbox" id="muntin-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="muntin-show-to-user" class="ml-2 text-sm text-gray-700">Allow users to configure muntin details when quoting</label>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Users can set divisions and spacing when quoting</p>
+                </div>
+              </div>
+              
+              <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                <strong>Note:</strong> Users will be able to configure the number of horizontal/vertical divisions and spacing when quoting windows with this system.
+              </div>
+              
+              <div id="muntin-preview" class="mt-6 p-4 bg-white border border-gray-200 rounded-lg" style="display: none;">
+                <h4 class="text-sm font-medium text-gray-700 mb-2">Muntin Preview:</h4>
+                <div id="muntin-preview-grid" class="w-32 h-32 border-2 border-gray-300 mx-auto bg-blue-50 relative">
+                  <!-- Preview grid will be generated here -->
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center" id="muntin-preview-text">1x1 Colonial Grid</p>
+              </div>
+              
+
+            </div>
+          </div>
+          
+          <div class="flex justify-between">
+            <button type="button" id="back-to-step3-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
+              <i class="fas fa-arrow-left mr-2"></i>Previous
+            </button>
+            <button type="button" id="to-step5-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition duration-200">
+              Next<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Step 5: Glass Restrictions -->
+        <div id="step5-section" class="form-section">
+          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 5: Glass Restrictions</h2>
           
           <div class="bg-blue-50 p-4 rounded-lg mb-6">
             <p class="text-sm text-blue-800">
               <i class="fas fa-info-circle mr-2"></i>
               Define the glass restrictions for this window system. Specify glass type, dimensions, and pressure ratings.
+            </p>
+            <p class="text-sm text-green-700 mt-2 font-medium">
+              <i class="fas fa-check-circle mr-2"></i>
+              This is the final step. Complete this section and click "Create Window System" to finish.
             </p>
           </div>
 
@@ -402,7 +585,7 @@
           </div>
 
           <div class="mt-8 flex justify-between">
-            <button type="button" id="back-to-step3-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
+            <button type="button" id="back-to-step4-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
               <i class="fas fa-arrow-left mr-2"></i>Previous
             </button>
             <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition duration-200">
@@ -429,30 +612,197 @@
     
     // Initialize the page
     document.addEventListener('DOMContentLoaded', function() {
-      updateEmptyStates();
-      setupStepNavigation();
-      setupAdvancedConfigToggle();
+      try {
+        updateEmptyStates();
+        setupStepNavigation();
+        setupAdvancedConfigToggle();
+        setupImageUpload();
+        
+        // Initialize first step - ensure only step 1 is visible
+        document.getElementById('step1-section').style.display = 'block';
+        document.getElementById('step2-section').style.display = 'none';
+        document.getElementById('step3-section').style.display = 'none';
+        document.getElementById('step4-section').style.display = 'none';
+        document.getElementById('step5-section').style.display = 'none';
+        
+        // Call goToStep to set up indicators
+        goToStep(1);
+        
+
+      } catch (error) {
+        console.error('Error during page initialization:', error);
+
+      }
     });
+    
+    // Setup image upload functionality
+    function setupImageUpload() {
+      const uploadArea = document.getElementById('uploadArea');
+      const fileInput = document.getElementById('windowImage');
+      
+      if (!uploadArea || !fileInput) {
+        console.error('Image upload elements not found');
+        return;
+      }
+      
+      // Click to upload
+      uploadArea.addEventListener('click', () => {
+        fileInput.click();
+      });
+      
+      // Simple and direct drag and drop approach
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#3b82f6';
+        uploadArea.style.backgroundColor = '#eff6ff';
+      });
+      
+      uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#d1d5db';
+        uploadArea.style.backgroundColor = 'transparent';
+      });
+      
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#d1d5db';
+        uploadArea.style.backgroundColor = 'transparent';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          fileInput.files = files;
+          handleImageUpload(fileInput);
+        }
+      });
+      
+      // Simple document-level prevention
+      document.addEventListener('dragover', (e) => {
+        e.preventDefault();
+      });
+      
+      document.addEventListener('drop', (e) => {
+        e.preventDefault();
+      });
+    }
+    
+
+    
+    // Handle image upload and preview
+    function handleImageUpload(input) {
+      console.log('handleImageUpload called with:', input);
+      
+      const file = input.files[0];
+      if (!file) {
+        console.log('No file selected');
+        return;
+      }
+      
+      console.log('File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        console.error('Invalid file type:', file.type);
+        showAlert('Please select a valid image file.');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        console.error('File too large:', file.size);
+        showAlert('Image size must be less than 5MB.');
+        return;
+      }
+      
+      console.log('File validation passed, creating preview...');
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        console.log('File read successfully');
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const uploadArea = document.getElementById('uploadArea');
+        
+        if (!preview || !previewImg || !uploadArea) {
+          console.error('Preview elements not found');
+          return;
+        }
+        
+        previewImg.src = e.target.result;
+        preview.classList.remove('hidden');
+        uploadArea.classList.add('hidden');
+        
+        // Add remove button
+        if (!document.getElementById('removeImageBtn')) {
+          const removeBtn = document.createElement('button');
+          removeBtn.id = 'removeImageBtn';
+          removeBtn.type = 'button';
+          removeBtn.className = 'mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200';
+          removeBtn.innerHTML = '<i class="fas fa-trash mr-1"></i>Remove Image';
+          removeBtn.onclick = removeImage;
+          preview.appendChild(removeBtn);
+        }
+        
+        console.log('Image preview created successfully');
+      };
+      
+      reader.onerror = function(error) {
+        console.error('Error reading file:', error);
+        showAlert('Error reading the image file.');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+    
+    // Remove uploaded image
+    function removeImage() {
+      const fileInput = document.getElementById('windowImage');
+      const preview = document.getElementById('imagePreview');
+      const uploadArea = document.getElementById('uploadArea');
+      const removeBtn = document.getElementById('removeImageBtn');
+      
+      fileInput.value = '';
+      preview.classList.add('hidden');
+      uploadArea.classList.remove('hidden');
+      
+      if (removeBtn) {
+        removeBtn.remove();
+      }
+    }
     
     // Setup advanced configuration toggle
     function setupAdvancedConfigToggle() {
-      const showToUserCheckbox = document.getElementById('accessory-show-to-user');
-      const advancedConfig = document.getElementById('accessory-advanced-config');
-      
-      showToUserCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-          advancedConfig.style.display = 'grid';
-        } else {
-          advancedConfig.style.display = 'none';
-          // Reset advanced config fields when hiding
-          document.getElementById('accessory-component-group-select').value = '';
-          document.getElementById('accessory-component-group-custom').style.display = 'none';
-          document.getElementById('accessory-component-group-custom').value = '';
-          document.getElementById('accessory-component-group').value = '';
-          document.getElementById('accessory-selection-type').value = 'quantity';
-          document.getElementById('accessory-is-default').checked = false;
+      try {
+        const showToUserCheckbox = document.getElementById('accessory-show-to-user');
+        const advancedConfig = document.getElementById('accessory-advanced-config');
+        
+        if (showToUserCheckbox && advancedConfig) {
+          showToUserCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+              advancedConfig.style.display = 'grid';
+            } else {
+              advancedConfig.style.display = 'none';
+              // Reset advanced config fields when hiding
+              const componentGroupSelect = document.getElementById('accessory-component-group-select');
+              const componentGroupCustom = document.getElementById('accessory-component-group-custom');
+              const componentGroup = document.getElementById('accessory-component-group');
+              const selectionType = document.getElementById('accessory-selection-type');
+              const isDefault = document.getElementById('accessory-is-default');
+              
+              if (componentGroupSelect) componentGroupSelect.value = '';
+              if (componentGroupCustom) {
+                componentGroupCustom.style.display = 'none';
+                componentGroupCustom.value = '';
+              }
+              if (componentGroup) componentGroup.value = '';
+              if (selectionType) selectionType.value = 'quantity';
+              if (isDefault) isDefault.checked = false;
+            }
+          });
         }
-      });
+      } catch (error) {
+        console.error('Error in setupAdvancedConfigToggle:', error);
+      }
     }
     
     // Toggle between dropdown and custom input for component groups
@@ -482,78 +832,178 @@
       });
     });
     
+    // Muntin Configuration
+    let muntinConfiguration = {
+      enabled: false,
+      muntinProfile: null,
+      muntinType: 'colonial',
+      showToUser: true
+    };
+
+    function toggleMuntinConfiguration() {
+      const enabled = document.getElementById('muntin-enabled').checked;
+      const configDiv = document.getElementById('muntin-config');
+      const detailsDiv = document.getElementById('muntin-details');
+      
+      muntinConfiguration.enabled = enabled;
+      
+      if (enabled) {
+        configDiv.style.display = 'block';
+        detailsDiv.style.display = 'grid';
+      } else {
+        configDiv.style.display = 'none';
+        detailsDiv.style.display = 'none';
+      }
+    }
+
+    function updateMuntinPreview() {
+      const type = document.getElementById('muntin-type').value;
+      const previewGrid = document.getElementById('muntin-preview-grid');
+      const previewText = document.getElementById('muntin-preview-text');
+      
+      // Update configuration
+      muntinConfiguration.muntinType = type;
+      
+      // Generate a simple preview grid (1x1 as default)
+      previewGrid.innerHTML = '';
+      const cell = document.createElement('div');
+      cell.style.position = 'absolute';
+      cell.style.left = '0%';
+      cell.style.top = '0%';
+      cell.style.width = '100%';
+      cell.style.height = '100%';
+      cell.style.border = '1px solid #6b7280';
+      cell.style.backgroundColor = '#e5e7eb';
+      previewGrid.appendChild(cell);
+      
+      // Update preview text
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+      previewText.textContent = `1x1 ${typeLabel} Grid (User configurable)`;
+    }
+
     // Step navigation
     function setupStepNavigation() {
-      // Step 1 to Step 2
-      document.getElementById('to-step2-btn').addEventListener('click', function() {
-        const windowType = document.getElementById('type').value;
-        if (!windowType) {
-          showAlert('Please enter a window type before proceeding.');
-          return;
+      try {
+        // Step 1 to Step 2
+        const toStep2Btn = document.getElementById('to-step2-btn');
+        if (toStep2Btn) {
+          toStep2Btn.addEventListener('click', function() {
+            console.log('Step 2 button clicked');
+            const windowType = document.getElementById('type').value;
+            console.log('Window type value:', windowType);
+            if (!windowType) {
+              showAlert('Please enter a window type before proceeding.');
+              return;
+            }
+            console.log('Calling goToStep(2)');
+            goToStep(2);
+          });
         }
-        goToStep(2);
-      });
-      
-      // Step 2 to Step 1
-      document.getElementById('back-to-step1-btn').addEventListener('click', function() {
-        goToStep(1);
-      });
-      
-      // Step 2 to Step 3
-      document.getElementById('to-step3-btn').addEventListener('click', function() {
-        if (profiles.length === 0) {
-          showAlert('Please add at least one profile before proceeding.');
-          return;
+        
+        // Step 2 to Step 1
+        const backToStep1Btn = document.getElementById('back-to-step1-btn');
+        if (backToStep1Btn) {
+          backToStep1Btn.addEventListener('click', function() {
+            goToStep(1);
+          });
         }
-        goToStep(3);
-      });
-      
-      // Step 3 to Step 2
-      document.getElementById('back-to-step2-btn').addEventListener('click', function() {
-        goToStep(2);
-      });
-      
-      // Step 3 to Step 4
-      document.getElementById('to-step4-btn').addEventListener('click', function() {
-        goToStep(4);
-      });
-      
-      // Step 4 to Step 3
-      document.getElementById('back-to-step3-btn').addEventListener('click', function() {
-        goToStep(3);
-      });
+        
+        // Step 2 to Step 3
+        const toStep3Btn = document.getElementById('to-step3-btn');
+        if (toStep3Btn) {
+          toStep3Btn.addEventListener('click', function() {
+            if (profiles.length === 0) {
+              showAlert('Please add at least one profile before proceeding.');
+              return;
+            }
+            goToStep(3);
+          });
+        }
+        
+        // Step 3 to Step 2
+        const backToStep2Btn = document.getElementById('back-to-step2-btn');
+        if (backToStep2Btn) {
+          backToStep2Btn.addEventListener('click', function() {
+            goToStep(2);
+          });
+        }
+        
+        // Step 3 to Step 4
+        const toStep4Btn = document.getElementById('to-step4-btn');
+        if (toStep4Btn) {
+          toStep4Btn.addEventListener('click', function() {
+            goToStep(4);
+          });
+        }
+        
+        // Step 4 to Step 3
+        const backToStep3Btn = document.getElementById('back-to-step3-btn');
+        if (backToStep3Btn) {
+          backToStep3Btn.addEventListener('click', function() {
+            goToStep(3);
+          });
+        }
+        
+        // Step 4 to Step 5
+        const toStep5Btn = document.getElementById('to-step5-btn');
+        if (toStep5Btn) {
+          toStep5Btn.addEventListener('click', function() {
+            goToStep(5);
+          });
+        }
+        
+        // Step 5 to Step 4
+        const backToStep4Btn = document.getElementById('back-to-step4-btn');
+        if (backToStep4Btn) {
+          backToStep4Btn.addEventListener('click', function() {
+            goToStep(4);
+          });
+        }
+      } catch (error) {
+        console.error('Error in setupStepNavigation:', error);
+      }
     }
     
     function goToStep(step) {
-      // Hide all sections
-      document.querySelectorAll('.form-section').forEach(section => {
-        section.classList.remove('active');
-      });
+      console.log('goToStep called with step:', step);
       
-      // Reset all step indicators
-      document.querySelectorAll('[id^="step"]').forEach(indicator => {
-        if (indicator.id.includes('-indicator')) {
-          indicator.classList.remove('step-active', 'step-complete', 'step-inactive');
-          indicator.classList.add('step-inactive');
-        }
-      });
+      // Simple approach: hide all, show only current
+      document.getElementById('step1-section').style.display = 'none';
+      document.getElementById('step2-section').style.display = 'none';
+      document.getElementById('step3-section').style.display = 'none';
+      document.getElementById('step4-section').style.display = 'none';
+      document.getElementById('step5-section').style.display = 'none';
       
-      // Show current section
-      document.getElementById(`step${step}-section`).classList.add('active');
+      // Show only the current step
+      const currentSection = document.getElementById(`step${step}-section`);
+      if (currentSection) {
+        console.log(`Showing step ${step}`);
+        currentSection.style.display = 'block';
+      }
       
       // Update step indicators
-      for (let i = 1; i <= 4; i++) {
+      for (let i = 1; i <= 5; i++) {
         const indicator = document.getElementById(`step${i}-indicator`);
-        if (i < step) {
-          indicator.classList.remove('step-inactive');
-          indicator.classList.add('step-complete');
-        } else if (i === step) {
-          indicator.classList.remove('step-inactive');
-          indicator.classList.add('step-active');
+        if (indicator) {
+          if (i < step) {
+            indicator.classList.remove('step-inactive', 'step-active');
+            indicator.classList.add('step-complete');
+          } else if (i === step) {
+            indicator.classList.remove('step-inactive', 'step-complete');
+            indicator.classList.add('step-active');
+          } else {
+            indicator.classList.remove('step-active', 'step-complete');
+            indicator.classList.add('step-inactive');
+          }
         }
       }
       
       currentStep = step;
+      
+      // Scroll to the current step
+      if (currentSection) {
+        currentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
     
     // Show alert message
@@ -570,28 +1020,38 @@
     
     // Update empty state messages
     function updateEmptyStates() {
-      // Profiles
-      const profilesEmpty = document.getElementById('profiles-empty-state');
-      if (profiles.length > 0) {
-        profilesEmpty.style.display = 'none';
-      } else {
-        profilesEmpty.style.display = 'block';
-      }
-      
-      // Accessories
-      const accessoriesEmpty = document.getElementById('accessories-empty-state');
-      if (accessories.length > 0) {
-        accessoriesEmpty.style.display = 'none';
-      } else {
-        accessoriesEmpty.style.display = 'block';
-      }
-      
-      // Glass Restrictions
-      const glassEmpty = document.getElementById('glass-restrictions-empty-state');
-      if (glassRestrictions.length > 0) {
-        glassEmpty.style.display = 'none';
-      } else {
-        glassEmpty.style.display = 'block';
+      try {
+        // Profiles
+        const profilesEmpty = document.getElementById('profiles-empty-state');
+        if (profilesEmpty) {
+          if (profiles.length > 0) {
+            profilesEmpty.style.display = 'none';
+          } else {
+            profilesEmpty.style.display = 'block';
+          }
+        }
+        
+        // Accessories
+        const accessoriesEmpty = document.getElementById('accessories-empty-state');
+        if (accessoriesEmpty) {
+          if (accessories.length > 0) {
+            accessoriesEmpty.style.display = 'none';
+          } else {
+            accessoriesEmpty.style.display = 'block';
+          }
+        }
+        
+        // Glass Restrictions
+        const glassEmpty = document.getElementById('glass-restrictions-empty-state');
+        if (glassEmpty) {
+          if (glassRestrictions.length > 0) {
+            glassEmpty.style.display = 'none';
+          } else {
+            glassEmpty.style.display = 'block';
+          }
+        }
+      } catch (error) {
+        console.error('Error in updateEmptyStates:', error);
       }
     }
 
@@ -859,6 +1319,50 @@
       }
     });
 
+    // Add event listeners for muntin configuration
+    document.addEventListener('DOMContentLoaded', function() {
+      // Muntin profile selection
+      const muntinProfileSelect = document.getElementById('muntin-profile');
+      if (muntinProfileSelect) {
+        muntinProfileSelect.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          if (selectedOption && selectedOption.value) {
+            muntinConfiguration.muntinProfile = selectedOption.value;
+            const muntinType = selectedOption.getAttribute('data-type');
+            if (muntinType) {
+              document.getElementById('muntin-type').value = muntinType;
+              muntinConfiguration.muntinType = muntinType;
+            }
+          }
+        });
+      }
+      
+      // Muntin configuration change listeners
+      const muntinTypeField = document.getElementById('muntin-type');
+      if (muntinTypeField) {
+        muntinTypeField.addEventListener('change', function() {
+          updateMuntinConfiguration();
+          updateMuntinPreview();
+        });
+      }
+      
+      // Muntin checkbox
+      const muntinShowToUser = document.getElementById('muntin-show-to-user');
+      if (muntinShowToUser) {
+        muntinShowToUser.addEventListener('change', function() {
+          muntinConfiguration.showToUser = this.checked;
+        });
+      }
+    });
+
+    function updateMuntinConfiguration() {
+      const type = document.getElementById('muntin-type').value;
+      const showToUser = document.getElementById('muntin-show-to-user').checked;
+      
+      muntinConfiguration.muntinType = type;
+      muntinConfiguration.showToUser = showToUser;
+    }
+
     document.getElementById('window-form').addEventListener('submit', function(event) {
       event.preventDefault();
       
@@ -878,9 +1382,12 @@
       
       if (glassRestrictions.length === 0) {
         showAlert('Please add at least one glass restriction');
-        goToStep(4);
+        goToStep(5);
         return;
       }
+      
+      // Update muntin configuration before submission
+      updateMuntinConfiguration();
       
       // Add hidden fields
       const form = event.target;
@@ -888,7 +1395,7 @@
       // Clear existing hidden inputs if any
       const existingInputs = form.querySelectorAll('input[type="hidden"]');
       existingInputs.forEach(input => {
-        if (['profiles', 'accessories', 'glassRestrictions'].includes(input.name)) {
+        if (['profiles', 'accessories', 'glassRestrictions', 'muntinConfiguration'].includes(input.name)) {
           input.remove();
         }
       });
@@ -911,9 +1418,17 @@
       glassRestrictionsInput.value = JSON.stringify(glassRestrictions);
       form.appendChild(glassRestrictionsInput);
       
+      const muntinConfigurationInput = document.createElement('input');
+      muntinConfigurationInput.type = 'hidden';
+      muntinConfigurationInput.name = 'muntinConfiguration';
+      muntinConfigurationInput.value = JSON.stringify(muntinConfiguration);
+      form.appendChild(muntinConfigurationInput);
+      
       // Submit the form
       form.submit();
     });
+
+
   </script>
 </body>
 </html>

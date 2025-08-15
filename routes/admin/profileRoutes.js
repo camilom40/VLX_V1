@@ -39,7 +39,7 @@ router.get('/add', isAdmin, (req, res) => {
 
 router.post('/add', isAdmin, async (req, res) => {
   try {
-    const { name, color, colorCode, pricePerMeter, currency, weight, ammaCertification } = req.body;
+    const { name, color, colorCode, pricePerMeter, currency, weight, ammaCertification, isMuntin, muntinType, muntinPattern, muntinSpacing } = req.body;
     
     const newProfile = new Profile({
       name,
@@ -48,7 +48,11 @@ router.post('/add', isAdmin, async (req, res) => {
       pricePerMeter: Number(pricePerMeter),
       currency,
       weight: Number(weight),
-      ammaCertification
+      ammaCertification,
+      isMuntin: Boolean(isMuntin),
+      muntinType: isMuntin ? muntinType : 'none',
+      muntinPattern: isMuntin ? muntinPattern : null,
+      muntinSpacing: isMuntin ? Number(muntinSpacing) : null
     });
     
     await newProfile.save();
@@ -78,7 +82,7 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 router.post('/update/:id', isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, color, colorCode, pricePerMeter, currency, weight, ammaCertification } = req.body;
+    const { name, color, colorCode, pricePerMeter, currency, weight, ammaCertification, isMuntin, muntinType, muntinPattern, muntinSpacing } = req.body;
     
     await Profile.findByIdAndUpdate(id, {
       name,
@@ -87,7 +91,11 @@ router.post('/update/:id', isAdmin, async (req, res) => {
       pricePerMeter: Number(pricePerMeter),
       currency,
       weight: Number(weight),
-      ammaCertification
+      ammaCertification,
+      isMuntin: Boolean(isMuntin),
+      muntinType: isMuntin ? muntinType : 'none',
+      muntinPattern: isMuntin ? muntinPattern : null,
+      muntinSpacing: isMuntin ? Number(muntinSpacing) : null
     });
     
     res.redirect('/admin/profiles');

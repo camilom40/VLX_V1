@@ -30,6 +30,42 @@
       color: #374151;
       background-color: #e5e7eb;
     }
+    
+    /* Window Preview Styles */
+    #windowPreview {
+      position: relative;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border: 3px solid #475569;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .preset-btn {
+      transition: all 0.2s ease;
+    }
+    
+    .preset-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .preset-btn:active {
+      transform: translateY(0);
+    }
+    
+    /* Dimension label styles */
+    #widthLabel, #heightLabel {
+      font-weight: 500;
+      z-index: 10;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      #windowPreview {
+        max-width: 200px;
+        max-height: 150px;
+      }
+    }
   </style>
 </head>
 
@@ -109,14 +145,14 @@
                   <input type="number" id="width" name="width" step="0.01" min="0" required 
                          class="form-input w-full" placeholder="0.00" 
                          value="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow.width : '' %>"
-                         onchange="calculatePricing()">
+                         onchange="calculatePricing(); updateWindowPreview()">
                 </div>
                 <div>
                   <label for="height" class="form-label">Height (<span id="heightUnit">in</span>) *</label>
                   <input type="number" id="height" name="height" step="0.01" min="0" required 
                          class="form-input w-full" placeholder="0.00" 
                          value="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow.height : '' %>"
-                         onchange="calculatePricing()">
+                         onchange="calculatePricing(); updateWindowPreview()">
                 </div>
               </div>
               
@@ -190,6 +226,93 @@
                 <% }) %>
               </div>
             <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Window Visual Preview -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Window Visual Preview</h3>
+        
+        <div class="flex flex-col items-center">
+          <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200 min-h-[300px] w-full max-w-md">
+
+            <% if (selectedWindowSystem.image) { %>
+              <div class="relative">
+                <img src="<%= selectedWindowSystem.image %>" 
+                     alt="<%= selectedWindowSystem.type %> Window System" 
+                     class="max-w-full h-auto rounded-lg shadow-lg mx-auto my-4 transition-all duration-300 ease-in-out"
+                     style="max-height: 250px; object-fit: contain;">
+                <div id="dimensionOverlay" class="absolute inset-0 pointer-events-none">
+                  <!-- Dimension Labels -->
+                  <div id="widthLabel" class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded border shadow-sm">
+                    Width: <span id="widthValue">0</span> <span id="widthUnitLabel">in</span>
+                  </div>
+                  <div id="heightLabel" class="absolute -right-8 top-1/2 transform -translate-y-1/2 text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded border rotate-90 shadow-sm">
+                    Height: <span id="heightValue">0</span> <span id="heightUnitLabel">in</span>
+                  </div>
+                </div>
+              </div>
+            <% } else { %>
+              <!-- Fallback Window Frame (generic preview) -->
+              <div id="windowPreview" class="relative bg-white border-4 border-gray-300 rounded-lg shadow-lg mx-auto my-4 transition-all duration-300 ease-in-out" style="width: 200px; height: 150px;">
+                <!-- Window Sash -->
+                <div class="absolute inset-2 bg-blue-50 border-2 border-blue-200 rounded"></div>
+                <!-- Glass Panels -->
+                <div class="absolute inset-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded opacity-80"></div>
+                <!-- Muntins (if applicable) -->
+                <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-400 transform -translate-y-1/2"></div>
+                <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-400 transform -translate-x-1/2"></div>
+                
+                <!-- Dimension Labels -->
+                <div id="widthLabel" class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded border shadow-sm">
+                  Width: <span id="widthValue">0</span> <span id="widthUnitLabel">in</span>
+                </div>
+                <div id="heightLabel" class="absolute -right-8 top-1/2 transform -translate-y-1/2 text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded border rotate-90 shadow-sm">
+                  Height: <span id="heightValue">0</span> <span id="heightUnitLabel">in</span>
+                </div>
+              </div>
+            <% } %>
+            
+            <!-- Scale Indicator -->
+            <div class="text-center text-sm text-gray-600 mt-4">
+              <% if (selectedWindowSystem.image) { %>
+                <i class="fas fa-image mr-1"></i> Actual Window System Image
+              <% } else { %>
+                <i class="fas fa-drafting-compass mr-1"></i> Generic Preview (Scale: 1:10)
+              <% } %>
+            </div>
+          </div>
+          
+          <!-- Dimensions and Calculations -->
+          <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-md">
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="text-lg font-bold text-gray-800" id="areaDisplay">0.00</div>
+              <div class="text-xs text-gray-600">Area (sq ft)</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="text-lg font-bold text-gray-800" id="perimeterDisplay">0.00</div>
+              <div class="text-xs text-gray-600">Perimeter (ft)</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="text-lg font-bold text-gray-800" id="aspectRatioDisplay">0.00</div>
+              <div class="text-xs text-gray-600">Aspect Ratio</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+              <div class="text-lg font-bold text-gray-800" id="glassAreaDisplay">0.00</div>
+              <div class="text-xs text-gray-600">Glass Area (sq ft)</div>
+            </div>
+          </div>
+          
+          <!-- Quick Size Presets -->
+          <div class="mt-4">
+            <h5 class="text-sm font-medium text-gray-700 mb-2">Quick Size Presets:</h5>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="preset-btn bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded text-sm" onclick="setPresetSize(36, 60)">36" × 60"</button>
+              <button type="button" class="preset-btn bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded text-sm" onclick="setPresetSize(48, 72)">48" × 72"</button>
+              <button type="button" class="preset-btn bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded text-sm" onclick="setPresetSize(60, 84)">60" × 84"</button>
+              <button type="button" class="preset-btn bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded text-sm" onclick="setPresetSize(72, 96)">72" × 96"</button>
+            </div>
           </div>
         </div>
       </div>
@@ -400,6 +523,88 @@
         </div>
       </div>
 
+      <!-- Muntin Configuration Section -->
+      <% if (selectedWindowSystem.muntinConfiguration && selectedWindowSystem.muntinConfiguration.enabled) { %>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <h3 class="text-xl font-semibold text-gray-800 mb-4">Muntin Configuration</h3>
+          
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p class="text-blue-800 text-sm">
+              <i class="fas fa-info-circle mr-2"></i>
+              Configure ornamental muntins for this window. Muntins are decorative dividers that create multiple panes within a single glass unit.
+            </p>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Muntin Type -->
+            <div>
+              <label class="form-label">Muntin Type</label>
+              <select name="muntinType" id="muntinType" class="form-input w-full" onchange="updateMuntinPreview()">
+                <option value="colonial" <%= selectedWindowSystem.muntinConfiguration.muntinType === 'colonial' ? 'selected' : '' %>>Colonial</option>
+                <option value="geometric" <%= selectedWindowSystem.muntinConfiguration.muntinType === 'geometric' ? 'selected' : '' %>>Geometric</option>
+                <option value="custom" <%= selectedWindowSystem.muntinConfiguration.muntinType === 'custom' ? 'selected' : '' %>>Custom</option>
+              </select>
+            </div>
+            
+            <!-- Horizontal Divisions -->
+            <div>
+              <label class="form-label">Horizontal Divisions</label>
+              <input type="number" name="muntinHorizontal" id="muntinHorizontal" 
+                     value="<%= selectedWindowSystem.muntinConfiguration.horizontalDivisions %>" 
+                     min="1" max="10" class="form-input w-full" onchange="updateMuntinPreview()">
+            </div>
+            
+            <!-- Vertical Divisions -->
+            <div>
+              <label class="form-label">Vertical Divisions</label>
+              <input type="number" name="muntinVertical" id="muntinVertical" 
+                     value="<%= selectedWindowSystem.muntinConfiguration.verticalDivisions %>" 
+                     min="1" max="10" class="form-input w-full" onchange="updateMuntinPreview()">
+            </div>
+            
+            <!-- Spacing -->
+            <div>
+              <label class="form-label">Spacing (inches)</label>
+              <input type="number" name="muntinSpacing" id="muntinSpacing" 
+                     value="<%= selectedWindowSystem.muntinConfiguration.spacing %>" 
+                     min="0" step="0.1" class="form-input w-full" onchange="updateMuntinPreview()">
+            </div>
+            
+            <!-- Muntin Profile (if available) -->
+            <% if (selectedWindowSystem.muntinConfiguration.muntinProfile) { %>
+              <div>
+                <label class="form-label">Muntin Profile</label>
+                <select name="muntinProfile" id="muntinProfile" class="form-input w-full">
+                  <% allProfiles.forEach(profile => { %>
+                    <% if (profile.isMuntin) { %>
+                      <option value="<%= profile._id %>" 
+                              data-price="<%= profile.pricePerMeter %>"
+                              <%= selectedWindowSystem.muntinConfiguration.muntinProfile && selectedWindowSystem.muntinConfiguration.muntinProfile.toString() === profile._id.toString() ? 'selected' : '' %>>
+                        <%= profile.name %> - <%= profile.muntinType.charAt(0).toUpperCase() + profile.muntinType.slice(1) %>
+                      </option>
+                    <% } %>
+                  <% }) %>
+                </select>
+              </div>
+            <% } %>
+          </div>
+          
+          <!-- Muntin Preview -->
+          <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h4 class="text-sm font-medium text-gray-700 mb-3">Muntin Preview:</h4>
+            <div class="flex items-center justify-center">
+              <div id="muntinPreviewGrid" class="w-48 h-48 border-2 border-gray-300 bg-blue-50 relative rounded">
+                <!-- Preview grid will be generated here -->
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2 text-center" id="muntinPreviewText">
+              <%= selectedWindowSystem.muntinConfiguration.horizontalDivisions %>x<%= selectedWindowSystem.muntinConfiguration.verticalDivisions %> 
+              <%= selectedWindowSystem.muntinConfiguration.muntinType.charAt(0).toUpperCase() + selectedWindowSystem.muntinConfiguration.muntinType.slice(1) %> Grid
+            </p>
+          </div>
+        </div>
+      <% } %>
+
       <!-- Pricing Summary -->
       <div class="bg-white rounded-lg shadow-sm p-6">
         <h3 class="text-xl font-semibold text-gray-800 mb-4">Pricing Summary</h3>
@@ -419,6 +624,10 @@
               <div class="flex justify-between">
                 <span class="text-gray-600">Accessories:</span>
                 <span class="font-medium" id="accessoriesCost">$0.00</span>
+              </div>
+              <div class="flex justify-between" id="muntinCostRow" style="display: none;">
+                <span class="text-gray-600">Muntins:</span>
+                <span class="font-medium" id="muntinCost">$0.00</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Additional Costs:</span>
@@ -567,6 +776,33 @@
       
       totalCost += accessoriesCost;
       
+      // Muntin costs
+      let muntinCost = 0;
+      const muntinProfileSelect = document.getElementById('muntinProfile');
+      if (muntinProfileSelect) {
+        const selectedMuntinProfile = muntinProfileSelect.options[muntinProfileSelect.selectedIndex];
+        const muntinPricePerMeter = parseFloat(selectedMuntinProfile?.getAttribute('data-price')) || 0;
+        const muntinCurrency = selectedMuntinProfile?.getAttribute('data-currency') || 'COP';
+        const muntinPricePerMeterCOP = convertToCOP(muntinPricePerMeter, muntinCurrency, exchangeRateValue);
+        
+        // Calculate muntin length based on divisions
+        const horizontalDivisions = parseInt(document.getElementById('muntinHorizontal')?.value) || 0;
+        const verticalDivisions = parseInt(document.getElementById('muntinVertical')?.value) || 0;
+        
+        if (horizontalDivisions > 0 && verticalDivisions > 0) {
+          // Calculate total muntin length
+          const horizontalMuntins = horizontalDivisions - 1; // Number of horizontal bars
+          const verticalMuntins = verticalDivisions - 1; // Number of vertical bars
+          
+          const horizontalLength = horizontalMuntins * width * 0.0254; // Convert to meters
+          const verticalLength = verticalMuntins * height * 0.0254; // Convert to meters
+          
+          const totalMuntinLength = horizontalLength + verticalLength;
+          muntinCost = muntinPricePerMeterCOP * totalMuntinLength;
+        }
+      }
+      totalCost += muntinCost;
+      
       // Apply per-window cost settings (as percentages)
       const baseCost = totalCost;
       const additionalCosts = baseCost * (
@@ -583,6 +819,18 @@
       document.getElementById('baseMaterialsCost').textContent = formatCurrency(profilesCost);
       document.getElementById('glassCost').textContent = formatCurrency(glassCost);
       document.getElementById('accessoriesCost').textContent = formatCurrency(accessoriesCost);
+      
+      // Show/hide muntin cost row and update value
+      const muntinCostRow = document.getElementById('muntinCostRow');
+      if (muntinCostRow) {
+        if (muntinCost > 0) {
+          muntinCostRow.style.display = 'flex';
+          document.getElementById('muntinCost').textContent = formatCurrency(muntinCost);
+        } else {
+          muntinCostRow.style.display = 'none';
+        }
+      }
+      
       document.getElementById('additionalCosts').textContent = formatCurrency(additionalCosts);
       document.getElementById('finalTotalPrice').textContent = formatCurrency(finalTotal);
     }
@@ -868,10 +1116,152 @@
       });
     }
 
+    // Window Preview Functions
+    function updateWindowPreview() {
+      const width = parseFloat(document.getElementById('width').value) || 0;
+      const height = parseFloat(document.getElementById('height').value) || 0;
+      const currentUnit = document.getElementById('currentUnit').value;
+      
+      // Update dimension labels
+      const widthLabels = document.querySelectorAll('#widthValue');
+      const heightLabels = document.querySelectorAll('#heightValue');
+      const widthUnitLabels = document.querySelectorAll('#widthUnitLabel');
+      const heightUnitLabels = document.querySelectorAll('#heightUnitLabel');
+      
+      widthLabels.forEach(label => {
+        label.textContent = width.toFixed(2);
+      });
+      
+      heightLabels.forEach(label => {
+        label.textContent = height.toFixed(2);
+      });
+      
+      widthUnitLabels.forEach(label => {
+        label.textContent = currentUnit === 'mm' ? 'mm' : 'in';
+      });
+      
+      heightUnitLabels.forEach(label => {
+        label.textContent = currentUnit === 'mm' ? 'mm' : 'in';
+      });
+      
+      // Update generic preview if no image
+      const windowPreview = document.getElementById('windowPreview');
+      if (windowPreview) {
+        const maxWidth = 300;
+        const maxHeight = 200;
+        const scale = Math.min(maxWidth / width, maxHeight / height, 1);
+        
+        const displayWidth = Math.max(100, width * scale);
+        const displayHeight = Math.max(75, height * scale);
+        
+        windowPreview.style.width = displayWidth + 'px';
+        windowPreview.style.height = displayHeight + 'px';
+      }
+      
+      // Update calculations
+      updateCalculations(width, height, currentUnit);
+    }
+    
+    function updateCalculations(width, height, unit) {
+      let widthInches = width;
+      let heightInches = height;
+      
+      if (unit === 'mm') {
+        widthInches = mmToInches(width);
+        heightInches = mmToInches(height);
+      }
+      
+      // Calculate area in square feet
+      const areaSqFt = (widthInches * heightInches) / 144;
+      
+      // Calculate perimeter in feet
+      const perimeterFt = (2 * (widthInches + heightInches)) / 12;
+      
+      // Calculate aspect ratio
+      const aspectRatio = widthInches > 0 ? heightInches / widthInches : 0;
+      
+      // Calculate glass area (assuming 90% of total area)
+      const glassAreaSqFt = areaSqFt * 0.9;
+      
+      // Update displays
+      document.getElementById('areaDisplay').textContent = areaSqFt.toFixed(2);
+      document.getElementById('perimeterDisplay').textContent = perimeterFt.toFixed(2);
+      document.getElementById('aspectRatioDisplay').textContent = aspectRatio.toFixed(2);
+      document.getElementById('glassAreaDisplay').textContent = glassAreaSqFt.toFixed(2);
+    }
+    
+    function setPresetSize(width, height) {
+      document.getElementById('width').value = width;
+      document.getElementById('height').value = height;
+      updateWindowPreview();
+      calculatePricing();
+    }
+    
+    // Override the original calculatePricing function to also update preview
+    const originalCalculatePricing = window.calculatePricing;
+    window.calculatePricing = function() {
+      if (originalCalculatePricing) {
+        originalCalculatePricing();
+      }
+      updateWindowPreview();
+    };
+    
+    // Override the switchUnits function to also update preview
+    const originalSwitchUnits = window.switchUnits;
+    window.switchUnits = function(unit) {
+      if (originalSwitchUnits) {
+        originalSwitchUnits(unit);
+      }
+      updateWindowPreview();
+    };
+
+    // Muntin Preview Function
+    function updateMuntinPreview() {
+      const horizontal = parseInt(document.getElementById('muntinHorizontal')?.value) || 1;
+      const vertical = parseInt(document.getElementById('muntinVertical')?.value) || 1;
+      const type = document.getElementById('muntinType')?.value || 'colonial';
+      const previewGrid = document.getElementById('muntinPreviewGrid');
+      const previewText = document.getElementById('muntinPreviewText');
+      
+      if (!previewGrid || !previewText) return;
+      
+      // Generate preview grid
+      previewGrid.innerHTML = '';
+      const cellWidth = 100 / horizontal;
+      const cellHeight = 100 / vertical;
+      
+      for (let i = 0; i < horizontal; i++) {
+        for (let j = 0; j < vertical; j++) {
+          const cell = document.createElement('div');
+          cell.style.position = 'absolute';
+          cell.style.left = (i * cellWidth) + '%';
+          cell.style.top = (j * cellHeight) + '%';
+          cell.style.width = cellWidth + '%';
+          cell.style.height = cellHeight + '%';
+          cell.style.border = '1px solid #6b7280';
+          cell.style.backgroundColor = '#e5e7eb';
+          previewGrid.appendChild(cell);
+        }
+      }
+      
+      // Update preview text
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+      previewText.textContent = `${horizontal}x${vertical} ${typeLabel} Grid`;
+      
+      // Update pricing when muntin settings change
+      calculatePricing();
+    }
+    
     // Initialize calculations
     document.addEventListener('DOMContentLoaded', function() {
       initializeChoiceGroups();
       calculatePricing();
+      updateWindowPreview(); // Initialize preview
+      
+      // Initialize muntin preview if muntin configuration exists
+      if (document.getElementById('muntinPreviewGrid')) {
+        updateMuntinPreview();
+      }
     });
   </script>
 </body>

@@ -280,6 +280,7 @@
                 <th class="px-6 py-4 text-white font-semibold text-sm">AMMA</th>
                 <th class="px-6 py-4 text-white font-semibold text-sm">PRICE</th>
                 <th class="px-6 py-4 text-white font-semibold text-sm">WEIGHT (kg/m)</th>
+                <th class="px-6 py-4 text-white font-semibold text-sm">MUNTIN</th>
                 <th class="px-6 py-4 text-white font-semibold text-sm rounded-tr-lg">ACTIONS</th>
               </tr>
             </thead>
@@ -317,6 +318,27 @@
                     <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-md text-xs font-medium whitespace-nowrap">
                       <%= profile.weight.toFixed(2) %> kg/m
                     </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <% if (profile.isMuntin) { %>
+                      <div class="space-y-1">
+                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
+                          <%= profile.muntinType.charAt(0).toUpperCase() + profile.muntinType.slice(1) %>
+                        </span>
+                        <% if (profile.muntinPattern) { %>
+                          <div class="text-xs text-gray-600">
+                            <%= profile.muntinPattern %>
+                          </div>
+                        <% } %>
+                        <% if (profile.muntinSpacing) { %>
+                          <div class="text-xs text-gray-500">
+                            Spacing: <%= profile.muntinSpacing %>"
+                          </div>
+                        <% } %>
+                      </div>
+                    <% } else { %>
+                      <span class="text-gray-400 text-sm italic">N/A</span>
+                    <% } %>
                   </td>
                   <td class="px-6 py-4 <%= index === profiles.length-1 ? 'rounded-br-lg' : '' %>">
                     <div class="flex space-x-4">

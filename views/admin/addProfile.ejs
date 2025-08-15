@@ -308,6 +308,53 @@
               <p class="mt-1 text-sm text-gray-500">Weight in kilograms per meter</p>
             </div>
             
+            <!-- Muntin Configuration Section -->
+            <div class="mb-6">
+              <div class="flex items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <label class="label-text" style="background-image: linear-gradient(to right, #10B981, #22C55E); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent; font-weight: 700; font-size: 1.125rem;">Muntin Configuration</label>
+              </div>
+              
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="mb-4">
+                  <div class="flex items-center">
+                    <input type="checkbox" id="isMuntin" name="isMuntin" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                    <label for="isMuntin" class="ml-2 text-sm font-medium text-green-800">This profile can be used as a muntin</label>
+                  </div>
+                  <p class="text-xs text-green-600 mt-1">Check this if this profile is designed for ornamental muntin bars</p>
+                </div>
+                
+                <div id="muntinFields" class="space-y-4" style="display: none;">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label for="muntinType" class="block text-sm font-medium text-green-700 mb-1">Muntin Type</label>
+                      <select id="muntinType" name="muntinType" class="input-field">
+                        <option value="colonial">Colonial</option>
+                        <option value="geometric">Geometric</option>
+                        <option value="custom">Custom</option>
+                        <option value="none">None</option>
+                      </select>
+                      <p class="text-xs text-green-600 mt-1">Style of muntin pattern</p>
+                    </div>
+                    
+                    <div>
+                      <label for="muntinSpacing" class="block text-sm font-medium text-green-700 mb-1">Spacing (inches)</label>
+                      <input type="number" id="muntinSpacing" name="muntinSpacing" step="0.1" min="0" class="input-field" placeholder="0.25">
+                      <p class="text-xs text-green-600 mt-1">Spacing between muntin bars</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label for="muntinPattern" class="block text-sm font-medium text-green-700 mb-1">Pattern Description</label>
+                    <input type="text" id="muntinPattern" name="muntinPattern" class="input-field" placeholder="e.g., Traditional colonial grid, Modern geometric pattern">
+                    <p class="text-xs text-green-600 mt-1">Description of the muntin pattern</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <!-- Divider -->
             <div class="border-t border-gray-200 my-8"></div>
             
@@ -344,6 +391,27 @@
           // Format with thousand separators if value exists
           if (value) {
             this.value = parseInt(value, 10).toLocaleString('es-CO');
+          }
+        });
+      }
+      
+      // Handle muntin fields toggle
+      const isMuntinCheckbox = document.getElementById('isMuntin');
+      const muntinFields = document.getElementById('muntinFields');
+      
+      if (isMuntinCheckbox && muntinFields) {
+        isMuntinCheckbox.addEventListener('change', function() {
+          if (this.checked) {
+            muntinFields.style.display = 'block';
+            // Set default values
+            document.getElementById('muntinType').value = 'colonial';
+            document.getElementById('muntinSpacing').value = '0.25';
+          } else {
+            muntinFields.style.display = 'none';
+            // Reset values
+            document.getElementById('muntinType').value = 'none';
+            document.getElementById('muntinSpacing').value = '';
+            document.getElementById('muntinPattern').value = '';
           }
         });
       }
