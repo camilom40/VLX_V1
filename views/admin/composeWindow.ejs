@@ -9,173 +9,504 @@
 
   
   <style>
-    .step-active { background-color: #3b82f6; color: white; }
-    .step-complete { background-color: #10b981; color: white; }
-    .step-inactive { background-color: #e5e7eb; color: #6b7280; }
-    .form-section { display: none; }
-    .form-section.active { display: block; }
-    
-
-    
-    /* Step styling */
-    .form-section {
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      border: 2px solid #e5e7eb;
-      border-radius: 0.5rem;
-      background-color: white;
-      position: relative;
+    /* Enhanced Step Indicators */
+    .step-active { 
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
+      color: white; 
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+      transform: scale(1.05);
+      transition: all 0.3s ease;
+    }
+    .step-complete { 
+      background: linear-gradient(135deg, #10b981, #059669); 
+      color: white; 
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      transition: all 0.3s ease;
+    }
+    .step-inactive { 
+      background: linear-gradient(135deg, #f3f4f6, #e5e7eb); 
+      color: #6b7280; 
+      border: 1px solid #d1d5db;
+      transition: all 0.3s ease;
     }
     
-
+    /* Enhanced Form Sections */
+    .form-section { 
+      display: none; 
+      animation: fadeInUp 0.5s ease-out;
+    }
+    .form-section.active { 
+      display: block; 
+    }
+    
+    /* Ensure hidden class works properly */
+    .hidden {
+      display: none !important;
+    }
+    
+    .form-section {
+      margin-bottom: 2rem;
+      padding: 2rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, #ffffff, #f8fafc);
+      position: relative;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
     
     .form-section.active {
       border-color: #3b82f6;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+      transform: translateY(-2px);
     }
     
-    /* Current step styling */
-    .form-section.active:not(.completed) {
-      background-color: white;
-      border: 2px solid #3b82f6;
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    /* Enhanced Form Controls */
+    .form-control {
+      transition: all 0.3s ease;
+      border: 2px solid #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      background: white;
     }
-    .help-tooltip { position: relative; display: inline-block; }
+    
+    .form-control:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      outline: none;
+      transform: translateY(-1px);
+    }
+    
+    /* Enhanced Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      border: none;
+      padding: 0.875rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6b7280, #4b5563);
+      color: white;
+      border: none;
+      padding: 0.875rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, #4b5563, #374151);
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      border: none;
+      padding: 0.875rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+    
+    /* Enhanced Upload Area */
+    #uploadArea {
+      transition: all 0.3s ease;
+      user-select: none;
+      border: 3px dashed #d1d5db;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      cursor: pointer;
+    }
+    
+    #uploadArea:hover {
+      border-color: #3b82f6;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+    }
+    
+    /* Enhanced Info Boxes */
+    .info-box {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 1px solid #bfdbfe;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .info-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    }
+    
+    /* Enhanced Tables */
+    .enhanced-table {
+      background: white;
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+    
+    .enhanced-table th {
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      padding: 1rem;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .enhanced-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #f3f4f6;
+      transition: background-color 0.2s ease;
+    }
+    
+    .enhanced-table tr:hover td {
+      background-color: #f8fafc;
+    }
+    
+    /* Enhanced Help Tooltips */
+    .help-tooltip { 
+      position: relative; 
+      display: inline-block; 
+    }
+    
     .help-tooltip .tooltip-text {
       visibility: hidden;
-      width: 200px;
-      background-color: #333;
+      width: 250px;
+      background: linear-gradient(135deg, #1f2937, #374151);
       color: #fff;
       text-align: center;
-      border-radius: 6px;
-      padding: 5px;
+      border-radius: 0.75rem;
+      padding: 0.75rem;
       position: absolute;
-      z-index: 1;
+      z-index: 1000;
       bottom: 125%;
       left: 50%;
-      margin-left: -100px;
+      margin-left: -125px;
       opacity: 0;
-      transition: opacity 0.3s;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      font-size: 0.875rem;
+      line-height: 1.4;
     }
+    
     .help-tooltip:hover .tooltip-text {
       visibility: visible;
       opacity: 1;
+      transform: translateY(-5px);
     }
     
-    /* Simple drag and drop styles */
-    #uploadArea {
-      transition: all 0.2s ease-in-out;
-      user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
     
-    /* Prevent text selection during drag */
-    #uploadArea * {
-      pointer-events: none;
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
     }
     
-    #uploadArea {
-      pointer-events: auto;
+    /* Enhanced Step Progress */
+    .step-progress {
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .step-progress h3 {
+      color: #1f2937;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    
+    /* Enhanced Form Labels */
+    .form-label {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+      display: block;
+      font-size: 0.95rem;
+    }
+    
+    /* Enhanced Section Headers */
+    .section-header {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 1rem 1rem 0 0;
+      margin: -2rem -2rem 2rem -2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .section-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100px;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      transform: translate(30px, -30px);
+    }
+    
+    .section-header h2 {
+      margin: 0;
+      font-weight: 700;
+      font-size: 1.5rem;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .form-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .section-header {
+        padding: 1rem;
+        margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+      }
+      
+      .section-header h2 {
+        font-size: 1.25rem;
+      }
+    }
+    
+    /* Enhanced Visual Effects */
+    .step-indicator {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    
+    .step-indicator:hover {
+      transform: translateY(-2px);
+    }
+    
+    /* Enhanced Form Section Transitions */
+    .form-section {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Enhanced Button Interactions */
+    .btn-primary:active,
+    .btn-secondary:active,
+    .btn-success:active {
+      transform: translateY(0);
+    }
+    
+    /* Enhanced Upload Area States */
+    #uploadArea.dragover {
+      border-color: #3b82f6 !important;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe) !important;
+      transform: scale(1.02);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+    }
+    
+    /* Ensure upload area is visible when not hidden */
+    #uploadArea:not(.hidden) {
+      display: flex !important;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Ensure preview is properly styled */
+    #imagePreview {
+      text-align: center;
+    }
+    
+    #imagePreview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Enhanced Table Row Interactions */
+    .enhanced-table tr {
+      transition: all 0.2s ease;
+    }
+    
+    .enhanced-table tr:hover {
+      transform: translateX(2px);
+    }
+    
+    /* Enhanced Section Header Animation */
+    .section-header::before {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translate(30px, -30px);
+      }
+      50% {
+        transform: translate(20px, -20px);
+      }
     }
   </style>
 </head>
 <body class="bg-gray-50">
   <%- include('../partials/_header.ejs') %>
   <div class="container mx-auto py-8 px-4">
-    <h1 class="text-3xl font-bold mb-6 text-center text-blue-800">Create New Window System</h1>
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
+        Create New Window System
+      </h1>
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        Build a comprehensive window system by configuring profiles, accessories, muntins, and glass specifications
+      </p>
+    </div>
     
-    <!-- Step Indicator -->
-    <div class="flex mb-8 justify-center">
-      <div id="step1-indicator" class="step-indicator step-active rounded-l-lg py-2 px-4 flex items-center">
-        <span class="mr-2 font-bold">1</span> Window Type
-      </div>
-      <div id="step2-indicator" class="step-indicator step-inactive py-2 px-4 flex items-center">
-        <span class="mr-2 font-bold">2</span> Profiles
-      </div>
-      <div id="step3-indicator" class="step-indicator step-inactive py-2 px-4 flex items-center">
-        <span class="mr-2 font-bold">3</span> Accessories
-      </div>
-      <div id="step4-indicator" class="step-indicator step-inactive py-2 px-4 flex items-center">
-        <span class="mr-2 font-bold">4</span> Muntins
-      </div>
-      <div id="step5-indicator" class="step-indicator step-inactive rounded-r-lg py-2 px-4 flex items-center">
-        <span class="mr-2 font-bold">5</span> Glass Restrictions
+    <!-- Enhanced Step Indicator -->
+    <div class="step-progress">
+      <h3 class="text-lg font-semibold text-gray-700 mb-6">Progress</h3>
+      <div class="flex justify-center space-x-2">
+        <div id="step1-indicator" class="step-indicator step-active rounded-xl py-3 px-6 flex items-center font-medium">
+          <span class="mr-3 text-lg font-bold">1</span> Window Type
+        </div>
+        <div id="step2-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
+          <span class="mr-3 text-lg font-bold">2</span> Profiles
+        </div>
+        <div id="step3-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
+          <span class="mr-3 text-lg font-bold">3</span> Accessories
+        </div>
+        <div id="step4-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
+          <span class="mr-3 text-lg font-bold">4</span> Muntins
+        </div>
+        <div id="step5-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
+          <span class="mr-3 text-lg font-bold">5</span> Glass Restrictions
+        </div>
       </div>
     </div>
     
-    <div class="bg-white shadow-md rounded-lg p-6">
+    <div class="bg-gradient-to-br from-white to-gray-50 shadow-2xl rounded-3xl p-8 border border-gray-100">
       <form id="window-form" action="/admin/compose-window/compose" method="POST" enctype="multipart/form-data">
         
         <!-- Step 1: Window Type -->
         <div id="step1-section" class="form-section active">
-          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 1: Basic Information</h2>
+          <div class="section-header">
+            <h2>Step 1: Basic Information</h2>
+          </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Window Type -->
-            <div class="mb-4">
-              <label for="type" class="block text-gray-700 font-bold mb-2">
-                Window Type:
-                <span class="help-tooltip ml-1">
+            <div class="mb-6">
+              <label for="type" class="form-label">
+                Window Type
+                <span class="help-tooltip ml-2">
                   <i class="fas fa-question-circle text-blue-500"></i>
-                  <span class="tooltip-text">Enter the type of window system you are creating</span>
+                  <span class="tooltip-text">Enter the type of window system you are creating (e.g., Fixed Window, Casement, Double-Hung)</span>
                 </span>
               </label>
-              <input type="text" id="type" name="type" class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" required>
+              <input type="text" id="type" name="type" class="form-control w-full" placeholder="e.g., Fixed Window" required>
             </div>
             
             <!-- Window System Image -->
-            <div class="mb-4">
-              <label for="windowImage" class="block text-gray-700 font-bold mb-2">
-                Window System Image:
-                <span class="help-tooltip ml-1">
+            <div class="mb-6">
+              <label for="windowImage" class="form-label">
+                Window System Image
+                <span class="help-tooltip ml-2">
                   <i class="fas fa-question-circle text-blue-500"></i>
                   <span class="tooltip-text">Upload an image that represents this window system. This will be used in quotes and previews.</span>
                 </span>
               </label>
-              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                <div id="imagePreview" class="hidden mb-4">
-                  <img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded border">
-                </div>
-                <div id="uploadArea" class="cursor-pointer transition-all duration-200">
-                  <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-                  <p class="text-gray-600 mb-2">Click to upload or drag and drop</p>
-                  <p class="text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
-                  <div class="mt-2 text-xs text-blue-500">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Drag an image file here or click to browse
+              
+              <!-- Image Preview (shown when image is uploaded) -->
+              <div id="imagePreview" class="hidden mb-4 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl text-center">
+                <img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded-lg border-2 border-gray-200 mb-3">
+                <div class="text-sm text-blue-700 font-medium">Image uploaded successfully!</div>
+              </div>
+              
+              <!-- Upload Area (hidden when image is uploaded) -->
+              <div id="uploadArea" class="cursor-pointer p-8 text-center">
+                <div class="upload-content">
+                  <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                  <h3 class="text-lg font-semibold text-gray-700 mb-2">Upload Window System Image</h3>
+                  <p class="text-gray-600 mb-3">Click to upload or drag and drop your image here</p>
+                  <p class="text-sm text-gray-500 mb-4">Supports PNG, JPG, GIF up to 5MB</p>
+                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    This image will be used consistently across all quotes for this window system
                   </div>
                 </div>
                 <input type="file" id="windowImage" name="windowImage" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
                 
 
               </div>
-              <p class="text-xs text-gray-500 mt-2">This image will be used consistently across all quotes for this window system.</p>
             </div>
           </div>
           
-          <div class="mt-8 flex justify-between">
-            <a href="/admin" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
-              <i class="fas fa-arrow-left mr-2"></i>Back
+          <div class="mt-8 flex justify-between items-center">
+            <a href="/admin" class="btn-secondary px-6 py-3">
+              <i class="fas fa-arrow-left mr-2"></i>Back to Admin
             </a>
-            <button type="button" id="to-step2-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-2 rounded transition duration-200">
-              Next<i class="fas fa-arrow-right ml-2"></i>
+            <button type="button" id="to-step2-btn" class="btn-primary px-6 py-3">
+              Next Step<i class="fas fa-arrow-right ml-2"></i>
             </button>
           </div>
         </div>
         
         <!-- Step 2: Profiles -->
         <div id="step2-section" class="form-section">
-          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 2: Profiles</h2>
+          <div class="section-header">
+            <h2>Step 2: Profiles</h2>
+          </div>
           
-          <div class="bg-blue-50 p-4 rounded-lg mb-6">
-            <p class="text-sm text-blue-800">
-              <i class="fas fa-info-circle mr-2"></i>
-              Add profiles that compose this window system. Select profile type, specify quantity, orientation, and any length discount needed.
-            </p>
+          <div class="info-box">
+            <div class="flex items-start">
+              <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
+              <div>
+                <h4 class="font-semibold text-blue-800 mb-1">Profile Configuration</h4>
+                <p class="text-blue-700">
+                  Add profiles that compose this window system. Select profile type, specify quantity, orientation, and any length discount needed.
+                </p>
+              </div>
+            </div>
           </div>
 
           <!-- Profiles Section -->
@@ -183,8 +514,8 @@
             <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
               <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <div class="md:col-span-2">
-                  <label for="profile-id" class="block text-gray-700 font-medium mb-1">Profile Type:</label>
-                  <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <label for="profile-id" class="form-label">Profile Type</label>
+                  <select id="profile-id" class="form-control w-full">
                     <option value="">Select Profile</option>
                     <% profiles.forEach(profile => { %>
                       <option value="<%= profile._id %>"><%= profile.name %></option>
@@ -193,13 +524,13 @@
                 </div>
                 
                 <div>
-                  <label for="profile-quantity" class="block text-gray-700 font-medium mb-1">Quantity:</label>
-                  <input type="number" id="profile-quantity" placeholder="Qty" min="1" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <label for="profile-quantity" class="form-label">Quantity</label>
+                  <input type="number" id="profile-quantity" placeholder="Qty" min="1" class="form-control w-full">
                 </div>
                 
                 <div>
-                  <label for="profile-orientation" class="block text-gray-700 font-medium mb-1">Orientation:</label>
-                  <select id="profile-orientation" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <label for="profile-orientation" class="form-label">Orientation</label>
+                  <select id="profile-orientation" class="form-control w-full">
                     <option value="" disabled selected>Select</option>
                     <option value="horizontal">Horizontal</option>
                     <option value="vertical">Vertical</option>
@@ -207,15 +538,15 @@
                 </div>
                 
                 <div>
-                  <label for="profile-length-discount" class="block text-gray-700 font-medium mb-1">Length Discount:</label>
+                  <label for="profile-length-discount" class="form-label">Length Discount</label>
                   <div class="flex items-center">
-                    <input type="number" id="profile-length-discount" placeholder="0.0" step="0.01" min="0" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
-                    <span class="ml-2 text-gray-600">in.</span>
+                    <input type="number" id="profile-length-discount" placeholder="0.0" step="0.01" min="0" class="form-control w-full">
+                    <span class="ml-2 text-gray-600 font-medium">in.</span>
                   </div>
                 </div>
                 
                 <div>
-                  <label for="profile-show-to-user" class="block text-gray-700 font-medium mb-1">User Configurable:</label>
+                  <label for="profile-show-to-user" class="form-label">User Configurable</label>
                   <div class="flex items-center mt-2">
                     <input type="checkbox" id="profile-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                     <label for="profile-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
@@ -225,7 +556,7 @@
               </div>
               
               <div class="mt-4 text-right">
-                <button type="button" onclick="addProfileEntry()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200">
+                <button type="button" onclick="addProfileEntry()" class="btn-success px-6 py-3">
                   <i class="fas fa-plus mr-2"></i>Add Profile
                 </button>
               </div>
@@ -234,15 +565,15 @@
             <!-- Table to display added profiles -->
             <div class="mt-6 overflow-x-auto">
               <h3 class="text-lg font-medium text-gray-700 mb-3">Added Profiles</h3>
-              <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+              <table class="enhanced-table min-w-full">
                 <thead>
                   <tr>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Profile</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Orientation</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Length Discount</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">User Config</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
+                    <th>Profile</th>
+                    <th>Quantity</th>
+                    <th>Orientation</th>
+                    <th>Length Discount</th>
+                    <th>User Config</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="profiles-table-body">
@@ -255,33 +586,40 @@
             </div>
           </div>
 
-          <div class="mt-8 flex justify-between">
-            <button type="button" id="back-to-step1-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
-              <i class="fas fa-arrow-left mr-2"></i>Previous
+          <div class="mt-8 flex justify-between items-center">
+            <button type="button" id="back-to-step1-btn" class="btn-secondary px-6 py-3">
+              <i class="fas fa-arrow-left mr-2"></i>Previous Step
             </button>
-            <button type="button" id="to-step3-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition duration-200">
-              Next<i class="fas fa-arrow-right ml-2"></i>
+            <button type="button" id="to-step3-btn" class="btn-primary px-6 py-3">
+              Next Step<i class="fas fa-arrow-right ml-2"></i>
             </button>
           </div>
         </div>
         
         <!-- Step 3: Accessories -->
         <div id="step3-section" class="form-section">
-          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 3: Accessories</h2>
+          <div class="section-header">
+            <h2>Step 3: Accessories</h2>
+          </div>
           
-          <div class="bg-blue-50 p-4 rounded-lg mb-6">
-            <p class="text-sm text-blue-800">
-              <i class="fas fa-info-circle mr-2"></i>
-              Add any accessories needed for this window system. The unit will be automatically set based on the selected accessory.
-            </p>
+          <div class="info-box">
+            <div class="flex items-start">
+              <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
+              <div>
+                <h4 class="font-semibold text-blue-800 mb-1">Accessory Configuration</h4>
+                <p class="text-blue-700">
+                  Add any accessories needed for this window system. The unit will be automatically set based on the selected accessory.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div id="accessories-section" class="mb-8">
             <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
               <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div class="md:col-span-2">
-                  <label for="accessory-id" class="block text-gray-700 font-medium mb-1">Accessory Type:</label>
-                  <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <label for="accessory-id" class="form-label">Accessory Type</label>
+                  <select id="accessory-id" class="form-control w-full">
                     <option value="">Select Accessory</option>
                     <% accessories.forEach(accessory => { %>
                       <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
@@ -290,17 +628,17 @@
                 </div>
                 
                 <div>
-                  <label for="accessory-quantity" class="block text-gray-700 font-medium mb-1">Quantity:</label>
-                  <input type="number" id="accessory-quantity" placeholder="Qty" min="1" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <label for="accessory-quantity" class="form-label">Quantity</label>
+                  <input type="number" id="accessory-quantity" placeholder="Qty" min="1" class="form-control w-full">
                 </div>
                 
                 <div>
-                  <label for="accessory-unit" class="block text-gray-700 font-medium mb-1">Unit:</label>
-                  <input type="text" id="accessory-unit" placeholder="Unit" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none" readonly>
+                  <label for="accessory-unit" class="form-label">Unit</label>
+                  <input type="text" id="accessory-unit" placeholder="Unit" class="form-control w-full bg-gray-50" readonly>
                 </div>
                 
                 <div>
-                  <label for="accessory-show-to-user" class="block text-gray-700 font-medium mb-1">User Configurable:</label>
+                  <label for="accessory-show-to-user" class="form-label">User Configurable</label>
                   <div class="flex items-center mt-2">
                     <input type="checkbox" id="accessory-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                     <label for="accessory-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
@@ -346,7 +684,7 @@
               </div>
               
               <div class="mt-4 text-right">
-                <button type="button" onclick="addAccessoryEntry()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200">
+                <button type="button" onclick="addAccessoryEntry()" class="btn-success px-6 py-3">
                   <i class="fas fa-plus mr-2"></i>Add Accessory
                 </button>
               </div>
@@ -355,15 +693,15 @@
             <!-- Table to display added accessories -->
             <div class="mt-6 overflow-x-auto">
               <h3 class="text-lg font-medium text-gray-700 mb-3">Added Accessories</h3>
-              <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+              <table class="enhanced-table min-w-full">
                 <thead>
                   <tr>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Accessory</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Unit</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">User Config</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Choice Group</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
+                    <th>Accessory</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>User Config</th>
+                    <th>Choice Group</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="accessories-table-body">
@@ -376,32 +714,39 @@
             </div>
           </div>
 
-          <div class="mt-8 flex justify-between">
-            <button type="button" id="back-to-step2-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
-              <i class="fas fa-arrow-left mr-2"></i>Previous
+          <div class="mt-8 flex justify-between items-center">
+            <button type="button" id="back-to-step2-btn" class="btn-secondary px-6 py-3">
+              <i class="fas fa-arrow-left mr-2"></i>Previous Step
             </button>
-            <button type="button" id="to-step4-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition duration-200">
-              Next<i class="fas fa-arrow-right ml-2"></i>
+            <button type="button" id="to-step4-btn" class="btn-primary px-6 py-3">
+              Next Step<i class="fas fa-arrow-right ml-2"></i>
             </button>
           </div>
         </div>
         
         <!-- Step 4: Muntin Configuration -->
         <div id="step4-section" class="form-section">
-          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 4: Muntin Configuration</h2>
+          <div class="section-header">
+            <h2>Step 4: Muntin Configuration</h2>
+          </div>
           
-          <div class="bg-blue-50 p-4 rounded-lg mb-6">
-            <p class="text-sm text-blue-800">
-              <i class="fas fa-info-circle mr-2"></i>
-              Configure ornamental muntins for this window system. Muntins are decorative dividers that create multiple panes within a single glass unit.
-            </p>
+          <div class="info-box">
+            <div class="flex items-start">
+              <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
+              <div>
+                <h4 class="font-semibold text-blue-800 mb-1">Muntin Configuration</h4>
+                <p class="text-blue-700">
+                  Configure ornamental muntins for this window system. Muntins are decorative dividers that create multiple panes within a single glass unit.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="mb-8">
             <div class="p-6 bg-gray-50 rounded-lg shadow-sm mb-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label for="muntin-enabled" class="block text-gray-700 font-medium mb-2">Enable Muntins:</label>
+                  <label for="muntin-enabled" class="form-label">Enable Muntins</label>
                   <div class="flex items-center">
                     <input type="checkbox" id="muntin-enabled" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="toggleMuntinConfiguration()">
                     <label for="muntin-enabled" class="ml-2 text-sm text-gray-700">Include muntins in this window system</label>
@@ -409,8 +754,8 @@
                 </div>
                 
                 <div id="muntin-config" style="display: none;">
-                  <label for="muntin-profile" class="block text-gray-700 font-medium mb-2">Muntin Profile:</label>
-                  <select id="muntin-profile" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <label for="muntin-profile" class="form-label">Muntin Profile</label>
+                  <select id="muntin-profile" class="form-control w-full">
                     <option value="">Select Muntin Profile</option>
                     <% if (profiles.filter(p => p.isMuntin).length > 0) { %>
                       <% profiles.forEach(profile => { %>
@@ -430,14 +775,13 @@
                     <% } %>
                   </select>
                   <p class="text-xs text-gray-500 mt-1">Select the muntin profile from available options</p>
-
                 </div>
               </div>
               
               <div id="muntin-details" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6" style="display: none;">
                 <div>
-                  <label for="muntin-type" class="block text-gray-700 font-medium mb-2">Muntin Type:</label>
-                  <select id="muntin-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <label for="muntin-type" class="form-label">Muntin Type</label>
+                  <select id="muntin-type" class="form-control w-full">
                     <option value="colonial">Colonial</option>
                     <option value="geometric">Geometric</option>
                     <option value="custom">Custom</option>
@@ -455,53 +799,77 @@
                 </div>
               </div>
               
-              <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                <strong>Note:</strong> Users will be able to configure the number of horizontal/vertical divisions and spacing when quoting windows with this system.
+              <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                <div class="flex items-start">
+                  <i class="fas fa-lightbulb text-blue-500 text-lg mr-3 mt-0.5"></i>
+                  <div>
+                    <p class="text-sm text-blue-700 font-medium">
+                      <strong>Note:</strong> Users will be able to configure the number of horizontal/vertical divisions and spacing when quoting windows with this system.
+                    </p>
+                  </div>
+                </div>
               </div>
               
-              <div id="muntin-preview" class="mt-6 p-4 bg-white border border-gray-200 rounded-lg" style="display: none;">
-                <h4 class="text-sm font-medium text-gray-700 mb-2">Muntin Preview:</h4>
-                <div id="muntin-preview-grid" class="w-32 h-32 border-2 border-gray-300 mx-auto bg-blue-50 relative">
-                  <!-- Preview grid will be generated here -->
+              <div id="muntin-preview" class="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl" style="display: none;">
+                <h4 class="text-lg font-semibold text-blue-800 mb-4 text-center">Muntin Preview</h4>
+                <div class="flex justify-center mb-4">
+                  <div id="muntin-preview-grid" class="w-40 h-40 border-2 border-blue-300 mx-auto bg-white rounded-lg shadow-lg relative overflow-hidden">
+                    <!-- Preview grid will be generated here -->
+                  </div>
                 </div>
-                <p class="text-xs text-gray-500 mt-2 text-center" id="muntin-preview-text">1x1 Colonial Grid</p>
+                <p class="text-sm text-blue-700 text-center font-medium" id="muntin-preview-text">1x1 Colonial Grid</p>
+                <div class="mt-3 text-center">
+                  <div class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                    <i class="fas fa-eye mr-1"></i>
+                    Preview
+                  </div>
+                </div>
               </div>
               
 
             </div>
           </div>
           
-          <div class="flex justify-between">
-            <button type="button" id="back-to-step3-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
-              <i class="fas fa-arrow-left mr-2"></i>Previous
+          <div class="mt-8 flex justify-between items-center">
+            <button type="button" id="back-to-step3-btn" class="btn-secondary px-6 py-3">
+              <i class="fas fa-arrow-left mr-2"></i>Previous Step
             </button>
-            <button type="button" id="to-step5-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition duration-200">
-              Next<i class="fas fa-arrow-right ml-2"></i>
+            <button type="button" id="to-step5-btn" class="btn-primary px-6 py-3">
+              Next Step<i class="fas fa-arrow-right ml-2"></i>
             </button>
           </div>
         </div>
         
         <!-- Step 5: Glass Restrictions -->
         <div id="step5-section" class="form-section">
-          <h2 class="text-xl font-bold mb-4 text-blue-700">Step 5: Glass Restrictions</h2>
+          <div class="section-header">
+            <h2>Step 5: Glass Restrictions</h2>
+          </div>
           
-          <div class="bg-blue-50 p-4 rounded-lg mb-6">
-            <p class="text-sm text-blue-800">
-              <i class="fas fa-info-circle mr-2"></i>
-              Define the glass restrictions for this window system. Specify glass type, dimensions, and pressure ratings.
-            </p>
-            <p class="text-sm text-green-700 mt-2 font-medium">
-              <i class="fas fa-check-circle mr-2"></i>
-              This is the final step. Complete this section and click "Create Window System" to finish.
-            </p>
+          <div class="info-box">
+            <div class="flex items-start">
+              <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
+              <div>
+                <h4 class="font-semibold text-blue-800 mb-1">Glass Restrictions</h4>
+                <p class="text-blue-700">
+                  Define the glass restrictions for this window system. Specify glass type, dimensions, and pressure ratings.
+                </p>
+                <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p class="text-sm text-green-700 font-medium">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    This is the final step. Complete this section and click "Create Window System" to finish.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="mb-8">
             <div class="p-6 bg-gray-50 rounded-lg shadow-sm mb-4">
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label for="glass-type" class="block text-gray-700 font-medium mb-2">Glass Type:</label>
-                  <select id="glass-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <label for="glass-type" class="form-label">Glass Type</label>
+                  <select id="glass-type" class="form-control w-full">
                     <option value="">Select Type</option>
                     <option value="A">A</option>
                     <option value="B">B</option>
@@ -513,48 +881,48 @@
                 </div>
                 
                 <div>
-                  <label for="glass-width" class="block text-gray-700 font-medium mb-2">Width:</label>
+                  <label for="glass-width" class="form-label">Width</label>
                   <div class="flex items-center">
-                    <input type="number" id="glass-width" min="0" step="0.01" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
-                    <span class="ml-2 text-gray-600">inches</span>
+                    <input type="number" id="glass-width" min="0" step="0.01" class="form-control w-full">
+                    <span class="ml-2 text-gray-600 font-medium">inches</span>
                   </div>
                   <p class="text-xs text-gray-500 mt-1">Maximum width allowed</p>
                 </div>
                 
                 <div>
-                  <label for="glass-height" class="block text-gray-700 font-medium mb-2">Height:</label>
+                  <label for="glass-height" class="form-label">Height</label>
                   <div class="flex items-center">
-                    <input type="number" id="glass-height" min="0" step="0.01" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
-                    <span class="ml-2 text-gray-600">inches</span>
+                    <input type="number" id="glass-height" min="0" step="0.01" class="form-control w-full">
+                    <span class="ml-2 text-gray-600 font-medium">inches</span>
                   </div>
                   <p class="text-xs text-gray-500 mt-1">Maximum height allowed</p>
                 </div>
                 
                 <div>
-                  <label for="glass-positive-pressure" class="block text-gray-700 font-medium mb-2">
-                    Positive Pressure (EXT+):
-                    <span class="help-tooltip ml-1">
+                  <label for="glass-positive-pressure" class="form-label">
+                    Positive Pressure (EXT+)
+                    <span class="help-tooltip ml-2">
                       <i class="fas fa-question-circle text-blue-500"></i>
                       <span class="tooltip-text">Maximum positive pressure rating</span>
                     </span>
                   </label>
-                  <input type="number" id="glass-positive-pressure" min="0" step="0.01" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <input type="number" id="glass-positive-pressure" min="0" step="0.01" class="form-control w-full">
                 </div>
                 
                 <div>
-                  <label for="glass-negative-pressure" class="block text-gray-700 font-medium mb-2">
-                    Negative Pressure (EXT):
-                    <span class="help-tooltip ml-1">
+                  <label for="glass-negative-pressure" class="form-label">
+                    Negative Pressure (EXT)
+                    <span class="help-tooltip ml-2">
                       <i class="fas fa-question-circle text-blue-500"></i>
                       <span class="tooltip-text">Maximum negative pressure rating</span>
                     </span>
                   </label>
-                  <input type="number" id="glass-negative-pressure" min="0" step="0.01" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                  <input type="number" id="glass-negative-pressure" min="0" step="0.01" class="form-control w-full">
                 </div>
               </div>
               
               <div class="mt-6 text-right">
-                <button type="button" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200" onclick="addGlassRestriction()">
+                <button type="button" class="btn-success px-6 py-3" onclick="addGlassRestriction()">
                   <i class="fas fa-plus mr-2"></i>Add Glass Restriction
                 </button>
               </div>
@@ -563,15 +931,15 @@
             <!-- Table to display added glass restrictions -->
             <div class="mt-6 overflow-x-auto">
               <h3 class="text-lg font-medium text-gray-700 mb-3">Added Glass Restrictions</h3>
-              <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+              <table class="enhanced-table min-w-full">
                 <thead>
                   <tr>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Type</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Width (inches)</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Height (inches)</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Positive Pressure</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Negative Pressure</th>
-                    <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
+                    <th>Type</th>
+                    <th>Width (inches)</th>
+                    <th>Height (inches)</th>
+                    <th>Positive Pressure</th>
+                    <th>Negative Pressure</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="glass-restrictions-table-body">
@@ -584,20 +952,20 @@
             </div>
           </div>
 
-          <div class="mt-8 flex justify-between">
-            <button type="button" id="back-to-step4-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition duration-200">
-              <i class="fas fa-arrow-left mr-2"></i>Previous
+          <div class="mt-8 flex justify-between items-center">
+            <button type="button" id="back-to-step4-btn" class="btn-secondary px-6 py-3">
+              <i class="fas fa-arrow-left mr-2"></i>Previous Step
             </button>
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition duration-200">
+            <button type="submit" class="btn-success px-8 py-3 text-lg font-bold">
               <i class="fas fa-check mr-2"></i>Create Window System
             </button>
           </div>
         </div>
       </form>
       
-      <div class="mt-6 text-center">
-        <a href="/admin" class="text-blue-600 hover:text-blue-800 transition duration-200">
-          <i class="fas fa-arrow-circle-left mr-1"></i>Back to Admin Console
+      <div class="mt-8 text-center">
+        <a href="/admin" class="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition duration-200 font-medium">
+          <i class="fas fa-arrow-circle-left mr-2"></i>Back to Admin Console
         </a>
       </div>
     </div>
@@ -650,32 +1018,51 @@
         fileInput.click();
       });
       
-      // Simple and direct drag and drop approach
+      // Enhanced drag and drop with better visual feedback
       uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
+        e.stopPropagation();
+        uploadArea.classList.add('dragover');
         uploadArea.style.borderColor = '#3b82f6';
         uploadArea.style.backgroundColor = '#eff6ff';
       });
       
+      uploadArea.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadArea.classList.add('dragover');
+      });
+      
       uploadArea.addEventListener('dragleave', (e) => {
         e.preventDefault();
-        uploadArea.style.borderColor = '#d1d5db';
-        uploadArea.style.backgroundColor = 'transparent';
+        e.stopPropagation();
+        
+        // Only remove dragover class if we're actually leaving the upload area
+        if (!uploadArea.contains(e.relatedTarget)) {
+          uploadArea.classList.remove('dragover');
+          uploadArea.style.borderColor = '#d1d5db';
+          uploadArea.style.backgroundColor = 'transparent';
+        }
       });
       
       uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
+        e.stopPropagation();
+        
+        // Remove dragover styling
+        uploadArea.classList.remove('dragover');
         uploadArea.style.borderColor = '#d1d5db';
         uploadArea.style.backgroundColor = 'transparent';
         
         const files = e.dataTransfer.files;
         if (files.length > 0) {
+          console.log('Files dropped:', files.length);
           fileInput.files = files;
           handleImageUpload(fileInput);
         }
       });
       
-      // Simple document-level prevention
+      // Prevent default drag behaviors on document
       document.addEventListener('dragover', (e) => {
         e.preventDefault();
       });
@@ -683,6 +1070,11 @@
       document.addEventListener('drop', (e) => {
         e.preventDefault();
       });
+      
+      // Add some debugging
+      console.log('Image upload setup completed');
+      console.log('Upload area:', uploadArea);
+      console.log('File input:', fileInput);
     }
     
 
@@ -719,26 +1111,54 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         console.log('File read successfully');
+        console.log('File result:', e.target.result);
+        
         const preview = document.getElementById('imagePreview');
         const previewImg = document.getElementById('previewImg');
         const uploadArea = document.getElementById('uploadArea');
+        
+        console.log('Preview element:', preview);
+        console.log('PreviewImg element:', previewImg);
+        console.log('UploadArea element:', uploadArea);
         
         if (!preview || !previewImg || !uploadArea) {
           console.error('Preview elements not found');
           return;
         }
         
+        // Set the image source
+        console.log('Setting image source...');
         previewImg.src = e.target.result;
+        
+        previewImg.onload = function() {
+          console.log('Image loaded successfully');
+          console.log('Image dimensions:', this.naturalWidth, 'x', this.naturalHeight);
+        };
+        
+        previewImg.onerror = function() {
+          console.error('Error loading image preview');
+          showAlert('Error loading image preview.');
+        };
+        
+        // Show preview and hide upload area
+        console.log('Showing preview, hiding upload area...');
+        preview.style.display = 'block';
         preview.classList.remove('hidden');
+        uploadArea.style.display = 'none';
         uploadArea.classList.add('hidden');
         
-        // Add remove button
+        console.log('Preview display style:', preview.style.display);
+        console.log('Upload area display style:', uploadArea.style.display);
+        console.log('Preview classes after change:', preview.className);
+        console.log('Upload area classes after change:', uploadArea.className);
+        
+        // Add remove button if it doesn't exist
         if (!document.getElementById('removeImageBtn')) {
           const removeBtn = document.createElement('button');
           removeBtn.id = 'removeImageBtn';
           removeBtn.type = 'button';
-          removeBtn.className = 'mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200';
-          removeBtn.innerHTML = '<i class="fas fa-trash mr-1"></i>Remove Image';
+          removeBtn.className = 'btn-secondary mt-3 px-4 py-2 text-sm';
+          removeBtn.innerHTML = '<i class="fas fa-trash mr-2"></i>Remove Image';
           removeBtn.onclick = removeImage;
           preview.appendChild(removeBtn);
         }
@@ -761,14 +1181,39 @@
       const uploadArea = document.getElementById('uploadArea');
       const removeBtn = document.getElementById('removeImageBtn');
       
+      if (!fileInput || !preview || !uploadArea) {
+        console.error('Required elements not found for removeImage');
+        return;
+      }
+      
+      // Clear the file input
       fileInput.value = '';
+      
+      // Hide preview and show upload area
+      console.log('Hiding preview, showing upload area...');
+      preview.style.display = 'none';
       preview.classList.add('hidden');
+      uploadArea.style.display = 'block';
       uploadArea.classList.remove('hidden');
       
+      console.log('Preview display style:', preview.style.display);
+      console.log('Upload area display style:', uploadArea.style.display);
+      
+      // Remove the remove button
       if (removeBtn) {
         removeBtn.remove();
       }
+      
+      // Clear the preview image source
+      const previewImg = document.getElementById('previewImg');
+      if (previewImg) {
+        previewImg.src = '';
+      }
+      
+      console.log('Image removed successfully');
     }
+    
+
     
     // Setup advanced configuration toggle
     function setupAdvancedConfigToggle() {
