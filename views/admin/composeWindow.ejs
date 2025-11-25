@@ -418,9 +418,6 @@
         <div id="step4-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
           <span class="mr-3 text-lg font-bold">4</span> Muntins
         </div>
-        <div id="step5-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
-          <span class="mr-3 text-lg font-bold">5</span> Glass Restrictions
-        </div>
       </div>
     </div>
     
@@ -539,9 +536,12 @@
                 
                 <div>
                   <label for="profile-length-discount" class="form-label">Length Discount</label>
-                  <div class="flex items-center">
-                    <input type="number" id="profile-length-discount" placeholder="0.0" step="0.01" min="0" class="form-control w-full">
-                    <span class="ml-2 text-gray-600 font-medium">in.</span>
+                  <div class="flex items-center gap-2">
+                    <input type="number" id="profile-length-discount" placeholder="0.0" step="0.01" min="0" class="form-control" style="flex: 1; min-width: 80px;">
+                    <select id="profile-length-unit" style="padding: 0.875rem 0.5rem; border: 2px solid #e5e7eb; border-radius: 0.75rem; background-color: white; cursor: pointer; font-size: 1rem; min-width: 65px; appearance: auto; -webkit-appearance: menulist; -moz-appearance: menulist;">
+                      <option value="in">in.</option>
+                      <option value="mm">mm</option>
+                    </select>
                   </div>
                 </div>
                 
@@ -564,7 +564,12 @@
 
             <!-- Table to display added profiles -->
             <div class="mt-6 overflow-x-auto">
-              <h3 class="text-lg font-medium text-gray-700 mb-3">Added Profiles</h3>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-medium text-gray-700">Added Profiles</h3>
+                <span id="unit-lock-indicator" class="hidden text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                  <i class="fas fa-lock mr-1"></i>Unit locked to: <span id="locked-unit-display">in.</span>
+                </span>
+              </div>
               <table class="enhanced-table min-w-full">
                 <thead>
                   <tr>
@@ -738,6 +743,12 @@
                 <p class="text-blue-700">
                   Configure ornamental muntins for this window system. Muntins are decorative dividers that create multiple panes within a single glass unit.
                 </p>
+                <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p class="text-sm text-green-700 font-medium">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    This is the final step. Configure muntins (optional) and click "Create Window System" to finish.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -834,128 +845,6 @@
             <button type="button" id="back-to-step3-btn" class="btn-secondary px-6 py-3">
               <i class="fas fa-arrow-left mr-2"></i>Previous Step
             </button>
-            <button type="button" id="to-step5-btn" class="btn-primary px-6 py-3">
-              Next Step<i class="fas fa-arrow-right ml-2"></i>
-            </button>
-          </div>
-        </div>
-        
-        <!-- Step 5: Glass Restrictions -->
-        <div id="step5-section" class="form-section">
-          <div class="section-header">
-            <h2>Step 5: Glass Restrictions</h2>
-          </div>
-          
-          <div class="info-box">
-            <div class="flex items-start">
-              <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
-              <div>
-                <h4 class="font-semibold text-blue-800 mb-1">Glass Restrictions</h4>
-                <p class="text-blue-700">
-                  Define the glass restrictions for this window system. Specify glass type, dimensions, and pressure ratings.
-                </p>
-                <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p class="text-sm text-green-700 font-medium">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    This is the final step. Complete this section and click "Create Window System" to finish.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-8">
-            <div class="p-6 bg-gray-50 rounded-lg shadow-sm mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label for="glass-type" class="form-label">Glass Type</label>
-                  <select id="glass-type" class="form-control w-full">
-                    <option value="">Select Type</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                    <option value="Ai">Ai</option>
-                    <option value="Bi">Bi</option>
-                  </select>
-                  <p class="text-xs text-gray-500 mt-1">Select the appropriate glass type</p>
-                </div>
-                
-                <div>
-                  <label for="glass-width" class="form-label">Width</label>
-                  <div class="flex items-center">
-                    <input type="number" id="glass-width" min="0" step="0.01" class="form-control w-full">
-                    <span class="ml-2 text-gray-600 font-medium">inches</span>
-                  </div>
-                  <p class="text-xs text-gray-500 mt-1">Maximum width allowed</p>
-                </div>
-                
-                <div>
-                  <label for="glass-height" class="form-label">Height</label>
-                  <div class="flex items-center">
-                    <input type="number" id="glass-height" min="0" step="0.01" class="form-control w-full">
-                    <span class="ml-2 text-gray-600 font-medium">inches</span>
-                  </div>
-                  <p class="text-xs text-gray-500 mt-1">Maximum height allowed</p>
-                </div>
-                
-                <div>
-                  <label for="glass-positive-pressure" class="form-label">
-                    Positive Pressure (EXT+)
-                    <span class="help-tooltip ml-2">
-                      <i class="fas fa-question-circle text-blue-500"></i>
-                      <span class="tooltip-text">Maximum positive pressure rating</span>
-                    </span>
-                  </label>
-                  <input type="number" id="glass-positive-pressure" min="0" step="0.01" class="form-control w-full">
-                </div>
-                
-                <div>
-                  <label for="glass-negative-pressure" class="form-label">
-                    Negative Pressure (EXT)
-                    <span class="help-tooltip ml-2">
-                      <i class="fas fa-question-circle text-blue-500"></i>
-                      <span class="tooltip-text">Maximum negative pressure rating</span>
-                    </span>
-                  </label>
-                  <input type="number" id="glass-negative-pressure" min="0" step="0.01" class="form-control w-full">
-                </div>
-              </div>
-              
-              <div class="mt-6 text-right">
-                <button type="button" class="btn-success px-6 py-3" onclick="addGlassRestriction()">
-                  <i class="fas fa-plus mr-2"></i>Add Glass Restriction
-                </button>
-              </div>
-            </div>
-
-            <!-- Table to display added glass restrictions -->
-            <div class="mt-6 overflow-x-auto">
-              <h3 class="text-lg font-medium text-gray-700 mb-3">Added Glass Restrictions</h3>
-              <table class="enhanced-table min-w-full">
-                <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Width (inches)</th>
-                    <th>Height (inches)</th>
-                    <th>Positive Pressure</th>
-                    <th>Negative Pressure</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="glass-restrictions-table-body">
-                  <!-- Rows will be dynamically added here -->
-                </tbody>
-              </table>
-              <div id="glass-restrictions-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
-                No glass restrictions added yet. Add at least one restriction to continue.
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-8 flex justify-between items-center">
-            <button type="button" id="back-to-step4-btn" class="btn-secondary px-6 py-3">
-              <i class="fas fa-arrow-left mr-2"></i>Previous Step
-            </button>
             <button type="submit" class="btn-success px-8 py-3 text-lg font-bold">
               <i class="fas fa-check mr-2"></i>Create Window System
             </button>
@@ -975,8 +864,8 @@
   <script>
     let profiles = [];
     let accessories = [];
-    let glassRestrictions = [];
     let currentStep = 1;
+    let lockedLengthUnit = null; // Track the unit used for profiles (null = not set yet)
     
     // Initialize the page
     document.addEventListener('DOMContentLoaded', function() {
@@ -991,7 +880,6 @@
         document.getElementById('step2-section').style.display = 'none';
         document.getElementById('step3-section').style.display = 'none';
         document.getElementById('step4-section').style.display = 'none';
-        document.getElementById('step5-section').style.display = 'none';
         
         // Call goToStep to set up indicators
         goToStep(1);
@@ -1389,21 +1277,6 @@
           });
         }
         
-        // Step 4 to Step 5
-        const toStep5Btn = document.getElementById('to-step5-btn');
-        if (toStep5Btn) {
-          toStep5Btn.addEventListener('click', function() {
-            goToStep(5);
-          });
-        }
-        
-        // Step 5 to Step 4
-        const backToStep4Btn = document.getElementById('back-to-step4-btn');
-        if (backToStep4Btn) {
-          backToStep4Btn.addEventListener('click', function() {
-            goToStep(4);
-          });
-        }
       } catch (error) {
         console.error('Error in setupStepNavigation:', error);
       }
@@ -1417,7 +1290,6 @@
       document.getElementById('step2-section').style.display = 'none';
       document.getElementById('step3-section').style.display = 'none';
       document.getElementById('step4-section').style.display = 'none';
-      document.getElementById('step5-section').style.display = 'none';
       
       // Show only the current step
       const currentSection = document.getElementById(`step${step}-section`);
@@ -1426,8 +1298,8 @@
         currentSection.style.display = 'block';
       }
       
-      // Update step indicators
-      for (let i = 1; i <= 5; i++) {
+      // Update step indicators (now only 4 steps)
+      for (let i = 1; i <= 4; i++) {
         const indicator = document.getElementById(`step${i}-indicator`);
         if (indicator) {
           if (i < step) {
@@ -1485,16 +1357,6 @@
             accessoriesEmpty.style.display = 'block';
           }
         }
-        
-        // Glass Restrictions
-        const glassEmpty = document.getElementById('glass-restrictions-empty-state');
-        if (glassEmpty) {
-          if (glassRestrictions.length > 0) {
-            glassEmpty.style.display = 'none';
-          } else {
-            glassEmpty.style.display = 'block';
-          }
-        }
       } catch (error) {
         console.error('Error in updateEmptyStates:', error);
       }
@@ -1508,6 +1370,7 @@
       const quantity = document.getElementById('profile-quantity').value;
       const orientation = document.getElementById('profile-orientation').value;
       const lengthDiscount = document.getElementById('profile-length-discount').value;
+      const lengthUnit = document.getElementById('profile-length-unit').value;
       const showToUser = document.getElementById('profile-show-to-user').checked;
 
       if (!profileId) {
@@ -1530,17 +1393,74 @@
         return;
       }
 
-      profiles.push({ profileId, profileName, quantity, orientation, lengthDiscount, showToUser });
+      // Convert mm to inches for storage (backend uses inches)
+      let lengthDiscountInches = parseFloat(lengthDiscount);
+      if (lengthUnit === 'mm') {
+        lengthDiscountInches = lengthDiscountInches / 25.4; // Convert mm to inches
+      }
+
+      // Lock the unit after first profile is added
+      if (profiles.length === 0) {
+        lockedLengthUnit = lengthUnit;
+        lockUnitSelector(lengthUnit);
+      }
+
+      profiles.push({ 
+        profileId, 
+        profileName, 
+        quantity, 
+        orientation, 
+        lengthDiscount: lengthDiscountInches.toFixed(4), 
+        lengthDiscountDisplay: lengthDiscount, // Original value for display
+        lengthUnit, // Store the unit for display
+        showToUser 
+      });
       renderProfilesTable();
       
-      // Reset form inputs
+      // Reset form inputs (keep the locked unit)
       profileSelect.selectedIndex = 0;
       document.getElementById('profile-quantity').value = '';
       document.getElementById('profile-orientation').selectedIndex = 0;
       document.getElementById('profile-length-discount').value = '';
+      // Keep the unit selector at the locked value
+      document.getElementById('profile-length-unit').value = lockedLengthUnit || 'in';
       document.getElementById('profile-show-to-user').checked = false;
       
       updateEmptyStates();
+    }
+    
+    // Lock the unit selector to a specific value
+    function lockUnitSelector(unit) {
+      const unitSelect = document.getElementById('profile-length-unit');
+      unitSelect.value = unit;
+      unitSelect.disabled = true;
+      unitSelect.style.backgroundColor = '#f3f4f6';
+      unitSelect.style.cursor = 'not-allowed';
+      unitSelect.title = 'Unit is locked to ' + (unit === 'mm' ? 'millimeters' : 'inches') + ' for all profiles';
+      
+      // Show the lock indicator
+      const indicator = document.getElementById('unit-lock-indicator');
+      const displaySpan = document.getElementById('locked-unit-display');
+      if (indicator && displaySpan) {
+        displaySpan.textContent = unit === 'mm' ? 'mm' : 'inches';
+        indicator.classList.remove('hidden');
+      }
+    }
+    
+    // Unlock the unit selector
+    function unlockUnitSelector() {
+      const unitSelect = document.getElementById('profile-length-unit');
+      unitSelect.disabled = false;
+      unitSelect.style.backgroundColor = 'white';
+      unitSelect.style.cursor = 'pointer';
+      unitSelect.title = '';
+      lockedLengthUnit = null;
+      
+      // Hide the lock indicator
+      const indicator = document.getElementById('unit-lock-indicator');
+      if (indicator) {
+        indicator.classList.add('hidden');
+      }
     }
 
     function renderProfilesTable() {
@@ -1551,12 +1471,16 @@
           '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Configurable</span>' : 
           '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto-managed</span>';
         
+        // Display the original value with its unit
+        const displayValue = profile.lengthDiscountDisplay || profile.lengthDiscount;
+        const displayUnit = profile.lengthUnit || 'in';
+        
         const row = `
           <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
             <td class="py-3 px-4 border-b">${profile.profileName}</td>
             <td class="py-3 px-4 border-b">${profile.quantity}</td>
             <td class="py-3 px-4 border-b">${profile.orientation}</td>
-            <td class="py-3 px-4 border-b">${profile.lengthDiscount} in.</td>
+            <td class="py-3 px-4 border-b">${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}</td>
             <td class="py-3 px-4 border-b">${userConfigStatus}</td>
             <td class="py-3 px-4 border-b">
               <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${index})">
@@ -1573,6 +1497,11 @@
       profiles.splice(index, 1);
       renderProfilesTable();
       updateEmptyStates();
+      
+      // Unlock unit selector if all profiles are removed
+      if (profiles.length === 0) {
+        unlockUnitSelector();
+      }
     }
 
     // Accessory functions
@@ -1679,80 +1608,6 @@
       updateEmptyStates();
     }
 
-    // Glass restriction functions
-    function addGlassRestriction() {
-      const type = document.getElementById('glass-type').value;
-      const width = document.getElementById('glass-width').value;
-      const height = document.getElementById('glass-height').value;
-      const positivePressure = document.getElementById('glass-positive-pressure').value;
-      const negativePressure = document.getElementById('glass-negative-pressure').value;
-
-      if (!type) {
-        showAlert('Please select a glass type');
-        return;
-      }
-      
-      if (!width || width <= 0) {
-        showAlert('Please enter a valid width');
-        return;
-      }
-      
-      if (!height || height <= 0) {
-        showAlert('Please enter a valid height');
-        return;
-      }
-      
-      if (!positivePressure && positivePressure !== 0) {
-        showAlert('Please enter a positive pressure value');
-        return;
-      }
-      
-      if (!negativePressure && negativePressure !== 0) {
-        showAlert('Please enter a negative pressure value');
-        return;
-      }
-
-      glassRestrictions.push({ type, width, height, positivePressure, negativePressure });
-      renderGlassRestrictionsTable();
-      
-      // Reset form inputs
-      document.getElementById('glass-type').selectedIndex = 0;
-      document.getElementById('glass-width').value = '';
-      document.getElementById('glass-height').value = '';
-      document.getElementById('glass-positive-pressure').value = '';
-      document.getElementById('glass-negative-pressure').value = '';
-      
-      updateEmptyStates();
-    }
-
-    function renderGlassRestrictionsTable() {
-      const tableBody = document.getElementById('glass-restrictions-table-body');
-      tableBody.innerHTML = '';
-      glassRestrictions.forEach((glass, index) => {
-        const row = `
-          <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
-            <td class="py-3 px-4 border-b">${glass.type}</td>
-            <td class="py-3 px-4 border-b">${glass.width}</td>
-            <td class="py-3 px-4 border-b">${glass.height}</td>
-            <td class="py-3 px-4 border-b">${glass.positivePressure}</td>
-            <td class="py-3 px-4 border-b">${glass.negativePressure}</td>
-            <td class="py-3 px-4 border-b">
-              <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeGlassRestriction(${index})">
-                <i class="fas fa-trash mr-1"></i>Remove
-              </button>
-            </td>
-          </tr>
-        `;
-        tableBody.insertAdjacentHTML('beforeend', row);
-      });
-    }
-
-    function removeGlassRestriction(index) {
-      glassRestrictions.splice(index, 1);
-      renderGlassRestrictionsTable();
-      updateEmptyStates();
-    }
-
     // Attach event listeners and ensure correct data is sent on form submission
     document.getElementById('accessory-id').addEventListener('change', function() {
       const selectedOption = this.options[this.selectedIndex];
@@ -1825,12 +1680,6 @@
         return;
       }
       
-      if (glassRestrictions.length === 0) {
-        showAlert('Please add at least one glass restriction');
-        goToStep(5);
-        return;
-      }
-      
       // Update muntin configuration before submission
       updateMuntinConfiguration();
       
@@ -1840,7 +1689,7 @@
       // Clear existing hidden inputs if any
       const existingInputs = form.querySelectorAll('input[type="hidden"]');
       existingInputs.forEach(input => {
-        if (['profiles', 'accessories', 'glassRestrictions', 'muntinConfiguration'].includes(input.name)) {
+        if (['profiles', 'accessories', 'muntinConfiguration'].includes(input.name)) {
           input.remove();
         }
       });
@@ -1856,12 +1705,6 @@
       accessoriesInput.name = 'accessories';
       accessoriesInput.value = JSON.stringify(accessories);
       form.appendChild(accessoriesInput);
-
-      const glassRestrictionsInput = document.createElement('input');
-      glassRestrictionsInput.type = 'hidden';
-      glassRestrictionsInput.name = 'glassRestrictions';
-      glassRestrictionsInput.value = JSON.stringify(glassRestrictions);
-      form.appendChild(glassRestrictionsInput);
       
       const muntinConfigurationInput = document.createElement('input');
       muntinConfigurationInput.type = 'hidden';

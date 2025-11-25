@@ -230,7 +230,7 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
     console.log('Request file:', req.file ? 'File uploaded' : 'No file');
     
     // Parse JSON arrays with error handling
-    let profiles, accessories, glassRestrictions;
+    let profiles, accessories;
     
     try {
       profiles = JSON.parse(req.body.profiles || '[]');
@@ -244,13 +244,6 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
     } catch (e) {
       console.error('Error parsing accessories:', e);
       accessories = [];
-    }
-    
-    try {
-      glassRestrictions = JSON.parse(req.body.glassRestrictions || '[]');
-    } catch (e) {
-      console.error('Error parsing glassRestrictions:', e);
-      glassRestrictions = [];
     }
     
     let muntinConfiguration;
@@ -272,11 +265,6 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
     if (profiles.length === 0) {
       console.error('At least one profile is required');
       return res.status(400).json({ error: 'At least one profile is required' });
-    }
-    
-    if (glassRestrictions.length === 0) {
-      console.error('At least one glass restriction is required');
-      return res.status(400).json({ error: 'At least one glass restriction is required' });
     }
     
     let imagePath = null;
@@ -335,20 +323,11 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
       isDefault: Boolean(accessory.isDefault),
     }));
 
-    const glassRestrictionEntries = glassRestrictions.map(glass => ({
-      type: glass.type,
-      width: parseFloat(glass.width),
-      height: parseFloat(glass.height),
-      positivePressure: parseFloat(glass.positivePressure),
-      negativePressure: parseFloat(glass.negativePressure),
-    }));
-
     console.log('Creating window system with data:', {
       type,
       imagePath,
       profileCount: profileEntries.length,
-      accessoryCount: accessoryEntries.length,
-      glassRestrictionCount: glassRestrictionEntries.length
+      accessoryCount: accessoryEntries.length
     });
 
     const newWindow = new WindowSystem({
@@ -356,7 +335,7 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
       image: imagePath,
       profiles: profileEntries,
       accessories: accessoryEntries,
-      glassRestrictions: glassRestrictionEntries,
+      glassRestrictions: [], // Glass restrictions removed - validation happens at quote time
       muntinConfiguration: {
         enabled: Boolean(muntinConfiguration.enabled),
         muntinProfile: muntinConfiguration.muntinProfile || null,

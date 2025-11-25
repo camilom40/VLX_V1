@@ -51,17 +51,17 @@ app.use("/uploads", express.static("public/uploads"));
 const storage = multer.memoryStorage(); // Change to memory storage for processing
 
 const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    },
-    fileFilter: function (req, file, cb) {
-        // Accept only image files
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-            return cb(new Error('Only image files are allowed!'), false);
-        }
-        cb(null, true);
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Accept only image files
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+      return cb(new Error('Only image files are allowed!'), false);
     }
+    cb(null, true);
+  }
 });
 
 // Database connection
@@ -96,14 +96,14 @@ app.use((req, res, next) => {
   const sess = req.session;
   // Make session available to all views
   res.locals.session = sess;
-  
+
   // Add isAdmin flag to session for view rendering
   if (sess.role === 'admin') {
     res.locals.session.isAdmin = true;
   } else {
     res.locals.session.isAdmin = false;
   }
-  
+
   if (!sess.views) {
     sess.views = 1;
     console.log("Session created at: ", new Date().toISOString());
@@ -143,62 +143,62 @@ app.get('/admin', isAdmin, (req, res) => {
 });
 
 // Add the pricing tier update route
-app.post('/admin/users/update-pricing', isAdmin, (req, res) => {
+app.post('/admin/users/update-pricing', isAdmin, async (req, res) => {
   const { userId, pricingTier } = req.body;
-  
-  // Find user by ID and update pricing tier
-  User.findByIdAndUpdate(userId, { pricingTier }, (err) => {
-    if (err) {
-      console.error('Error updating user pricing tier:', err);
-      // Handle error with flash message if available
-    }
-    
+
+  try {
+    // Find user by ID and update pricing tier
+    await User.findByIdAndUpdate(userId, { pricingTier });
     // Redirect back to users page
     res.redirect('/admin/users');
-  });
+  } catch (err) {
+    console.error('Error updating user pricing tier:', err);
+    // Handle error with flash message if available
+    res.status(500).send('Error updating user pricing tier');
+  }
 });
 
 // Logo upload route
 app.post('/api/upload-logo', upload.single('logo'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: 'No file uploaded' });
-        }
-
-        // Create upload directory if it doesn't exist
-        const uploadDir = 'public/uploads/company';
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        // Generate unique filename
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const filename = 'company-logo-' + uniqueSuffix + '.png';
-        const filepath = path.join(uploadDir, filename);
-
-        // Process and save the image
-        await sharp(req.file.buffer)
-            .resize(200, 200, { // Set maximum dimensions
-                fit: 'contain', // Maintain aspect ratio
-                background: { r: 255, g: 255, b: 255, alpha: 0 } // Transparent background
-            })
-            .png({ quality: 90 }) // Convert to PNG with good quality
-            .toFile(filepath);
-
-        // Get the file path relative to public directory
-        const logoUrl = '/uploads/company/' + filename;
-
-        res.json({
-            success: true,
-            logoUrl: logoUrl
-        });
-    } catch (error) {
-        console.error('Logo upload error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error uploading logo'
-        });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
+
+    // Create upload directory if it doesn't exist
+    const uploadDir = 'public/uploads/company';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const filename = 'company-logo-' + uniqueSuffix + '.png';
+    const filepath = path.join(uploadDir, filename);
+
+    // Process and save the image
+    await sharp(req.file.buffer)
+      .resize(200, 200, { // Set maximum dimensions
+        fit: 'contain', // Maintain aspect ratio
+        background: { r: 255, g: 255, b: 255, alpha: 0 } // Transparent background
+      })
+      .png({ quality: 90 }) // Convert to PNG with good quality
+      .toFile(filepath);
+
+    // Get the file path relative to public directory
+    const logoUrl = '/uploads/company/' + filename;
+
+    res.json({
+      success: true,
+      logoUrl: logoUrl
+    });
+  } catch (error) {
+    console.error('Logo upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading logo'
+    });
+  }
 });
 
 // server.js
@@ -242,7 +242,7 @@ app.use((err, req, res, next) => {
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  
+
   // Start collecting system metrics every 5 minutes
   systemMonitor.startMetricsCollection(5);
   console.log('System metrics collection started');
