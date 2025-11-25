@@ -232,7 +232,22 @@
 
       <!-- Window Visual Preview -->
       <div class="bg-white rounded-lg shadow-sm p-6">
-        <h3 class="text-xl font-semibold text-gray-800 mb-4">Window Visual Preview</h3>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-gray-800">Window Visual Preview</h3>
+          
+          <!-- Unit Toggle for Preview -->
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-600">Units:</span>
+            <div class="flex bg-gray-100 rounded-lg p-1">
+              <button type="button" id="previewInchesBtn" class="unit-toggle active px-3 py-1.5 text-sm font-medium rounded-md transition-all" onclick="switchUnitsFromPreview('inches')">
+                <i class="fas fa-ruler-horizontal mr-1"></i> Imperial
+              </button>
+              <button type="button" id="previewMmBtn" class="unit-toggle px-3 py-1.5 text-sm font-medium rounded-md transition-all" onclick="switchUnitsFromPreview('mm')">
+                <i class="fas fa-ruler mr-1"></i> Metric
+              </button>
+            </div>
+          </div>
+        </div>
         
         <div class="flex flex-col items-center">
           <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200 min-h-[300px] w-full max-w-lg">
@@ -291,18 +306,18 @@
               </div>
               
               <!-- Dimension Labels -->
-              <div id="widthLabel" class="absolute -bottom-10 left-1/2 transform -translate-x-1/2 text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-full border shadow-sm">
+              <div id="widthLabel" class="absolute -bottom-10 left-1/2 transform -translate-x-1/2 text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-full border shadow-sm whitespace-nowrap">
                 <i class="fas fa-arrows-alt-h mr-1 text-blue-500"></i>
                 <span id="widthValue">0</span> <span id="widthUnitLabel">in</span>
               </div>
-              <div id="heightLabel" class="absolute -right-12 top-1/2 transform -translate-y-1/2 rotate-90 text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-full border shadow-sm">
+              <div id="heightLabel" class="absolute -right-16 top-1/2 transform -translate-y-1/2 rotate-90 text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-full border shadow-sm whitespace-nowrap">
                 <i class="fas fa-arrows-alt-v mr-1 text-blue-500"></i>
                 <span id="heightValue">0</span> <span id="heightUnitLabel">in</span>
               </div>
             </div>
             
             <!-- Window Type Label -->
-            <div class="text-center mt-8">
+            <div class="text-center mt-12">
               <span class="inline-block bg-indigo-100 text-indigo-800 px-4 py-2 rounded-full text-sm font-medium">
                 <i class="fas fa-window-maximize mr-2"></i>
                 <%= selectedWindowSystem.type %>
@@ -331,11 +346,11 @@
           <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-md">
             <div class="bg-gray-50 rounded-lg p-3 text-center">
               <div class="text-lg font-bold text-gray-800" id="areaDisplay">0.00</div>
-              <div class="text-xs text-gray-600">Area (sq ft)</div>
+              <div class="text-xs text-gray-600">Area (<span id="areaUnitLabel">sq ft</span>)</div>
             </div>
             <div class="bg-gray-50 rounded-lg p-3 text-center">
               <div class="text-lg font-bold text-gray-800" id="perimeterDisplay">0.00</div>
-              <div class="text-xs text-gray-600">Perimeter (ft)</div>
+              <div class="text-xs text-gray-600">Perimeter (<span id="perimeterUnitLabel">ft</span>)</div>
             </div>
             <div class="bg-gray-50 rounded-lg p-3 text-center">
               <div class="text-lg font-bold text-gray-800" id="aspectRatioDisplay">0.00</div>
@@ -343,7 +358,7 @@
             </div>
             <div class="bg-gray-50 rounded-lg p-3 text-center">
               <div class="text-lg font-bold text-gray-800" id="glassAreaDisplay">0.00</div>
-              <div class="text-xs text-gray-600">Glass Area (sq ft)</div>
+              <div class="text-xs text-gray-600">Glass Area (<span id="glassAreaUnitLabel">sq ft</span>)</div>
             </div>
           </div>
           
@@ -890,6 +905,21 @@
       return mm / 25.4;
     }
     
+    // Switch units from preview button (syncs with main toggle)
+    function switchUnitsFromPreview(newUnit) {
+      // Update preview buttons
+      const previewInchesBtn = document.getElementById('previewInchesBtn');
+      const previewMmBtn = document.getElementById('previewMmBtn');
+      
+      if (previewInchesBtn && previewMmBtn) {
+        previewInchesBtn.classList.toggle('active', newUnit === 'inches');
+        previewMmBtn.classList.toggle('active', newUnit === 'mm');
+      }
+      
+      // Call the main switch function
+      switchUnits(newUnit);
+    }
+    
     // Switch between units
     function switchUnits(newUnit) {
       const widthInput = document.getElementById('width');
@@ -954,9 +984,17 @@
         }
       });
       
-      // Update button states
+      // Update button states (main toggle)
       inchesBtn.classList.toggle('active', newUnit === 'inches');
       mmBtn.classList.toggle('active', newUnit === 'mm');
+      
+      // Sync preview toggle buttons
+      const previewInchesBtn = document.getElementById('previewInchesBtn');
+      const previewMmBtn = document.getElementById('previewMmBtn');
+      if (previewInchesBtn && previewMmBtn) {
+        previewInchesBtn.classList.toggle('active', newUnit === 'inches');
+        previewMmBtn.classList.toggle('active', newUnit === 'mm');
+      }
       
       // Update current unit
       currentUnit = newUnit;
@@ -1187,6 +1225,18 @@
         label.textContent = currentUnit === 'mm' ? 'mm' : 'in';
       });
       
+      // Adjust height label position based on unit (metric values are longer)
+      const heightLabel = document.getElementById('heightLabel');
+      if (heightLabel) {
+        if (currentUnit === 'mm') {
+          heightLabel.classList.remove('-right-16');
+          heightLabel.classList.add('-right-20');
+        } else {
+          heightLabel.classList.remove('-right-20');
+          heightLabel.classList.add('-right-16');
+        }
+      }
+      
       // Update dynamic preview dimensions proportionally
       const dynamicPreview = document.getElementById('dynamicWindowPreview');
       if (dynamicPreview && width > 0 && height > 0) {
@@ -1226,23 +1276,41 @@
         heightInches = mmToInches(height);
       }
       
-      // Calculate area in square feet
-      const areaSqFt = (widthInches * heightInches) / 144;
-      
-      // Calculate perimeter in feet
-      const perimeterFt = (2 * (widthInches + heightInches)) / 12;
-      
-      // Calculate aspect ratio
+      // Calculate aspect ratio (unitless)
       const aspectRatio = widthInches > 0 ? heightInches / widthInches : 0;
       
-      // Calculate glass area (assuming 90% of total area)
+      // Calculate values in imperial (sq ft and ft)
+      const areaSqFt = (widthInches * heightInches) / 144;
+      const perimeterFt = (2 * (widthInches + heightInches)) / 12;
       const glassAreaSqFt = areaSqFt * 0.9;
       
-      // Update displays
-      document.getElementById('areaDisplay').textContent = areaSqFt.toFixed(2);
-      document.getElementById('perimeterDisplay').textContent = perimeterFt.toFixed(2);
+      // Calculate values in metric (sq m and m)
+      // 1 inch = 0.0254 m, 1 sq ft = 0.092903 sq m
+      const areaSqM = areaSqFt * 0.092903;
+      const perimeterM = perimeterFt * 0.3048;
+      const glassAreaSqM = glassAreaSqFt * 0.092903;
+      
+      // Update displays based on current unit
+      if (unit === 'mm') {
+        // Display in metric (no decimals)
+        document.getElementById('areaDisplay').textContent = Math.round(areaSqM);
+        document.getElementById('perimeterDisplay').textContent = Math.round(perimeterM);
+        document.getElementById('glassAreaDisplay').textContent = Math.round(glassAreaSqM);
+        document.getElementById('areaUnitLabel').textContent = 'sq m';
+        document.getElementById('perimeterUnitLabel').textContent = 'm';
+        document.getElementById('glassAreaUnitLabel').textContent = 'sq m';
+      } else {
+        // Display in imperial (with 2 decimals)
+        document.getElementById('areaDisplay').textContent = areaSqFt.toFixed(2);
+        document.getElementById('perimeterDisplay').textContent = perimeterFt.toFixed(2);
+        document.getElementById('glassAreaDisplay').textContent = glassAreaSqFt.toFixed(2);
+        document.getElementById('areaUnitLabel').textContent = 'sq ft';
+        document.getElementById('perimeterUnitLabel').textContent = 'ft';
+        document.getElementById('glassAreaUnitLabel').textContent = 'sq ft';
+      }
+      
+      // Aspect ratio is always unitless
       document.getElementById('aspectRatioDisplay').textContent = aspectRatio.toFixed(2);
-      document.getElementById('glassAreaDisplay').textContent = glassAreaSqFt.toFixed(2);
     }
     
     function setPresetSize(width, height) {
