@@ -430,21 +430,83 @@
             <h2>Step 1: Basic Information</h2>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 gap-6">
             <!-- Window Type -->
-            <div class="mb-6">
+            <div class="mb-4">
               <label for="type" class="form-label">
-                Window Type
+                Window Type Name
                 <span class="help-tooltip ml-2">
                   <i class="fas fa-question-circle text-blue-500"></i>
-                  <span class="tooltip-text">Enter the type of window system you are creating (e.g., Fixed Window, Casement, Double-Hung)</span>
+                  <span class="tooltip-text">Enter the type of window system you are creating (e.g., OXXO Horizontal Roller, Fixed Window)</span>
                 </span>
               </label>
-              <input type="text" id="type" name="type" class="form-control w-full" placeholder="e.g., Fixed Window" required>
+              <input type="text" id="type" name="type" class="form-control w-full" placeholder="e.g., OXXO Horizontal Roller" required>
             </div>
             
-            <!-- Window System Image -->
-            <div class="mb-6">
+            <!-- Panel Configuration -->
+            <div class="mb-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl">
+              <h4 class="text-lg font-semibold text-indigo-800 mb-4">
+                <i class="fas fa-th-large mr-2"></i>Panel Configuration
+              </h4>
+              <p class="text-sm text-indigo-600 mb-4">Define the panel layout for dynamic window preview. Use O for Operable (sliding/opening) panels and X for Fixed panels.</p>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label for="operationType" class="form-label">Operation Type</label>
+                  <select id="operationType" class="form-control w-full">
+                    <option value="sliding">Sliding / Roller</option>
+                    <option value="casement">Casement</option>
+                    <option value="awning">Awning</option>
+                    <option value="hopper">Hopper</option>
+                    <option value="fixed">Fixed</option>
+                    <option value="single-hung">Single Hung</option>
+                    <option value="double-hung">Double Hung</option>
+                    <option value="tilt-turn">Tilt & Turn</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label for="panelOrientation" class="form-label">Panel Orientation</label>
+                  <select id="panelOrientation" class="form-control w-full">
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label for="panelCount" class="form-label">Number of Panels</label>
+                  <input type="number" id="panelCount" min="1" max="8" value="2" class="form-control w-full" onchange="updatePanelInputs()">
+                </div>
+              </div>
+              
+              <!-- Panel Layout Builder -->
+              <div class="mb-4">
+                <label class="form-label">Panel Layout (click to toggle O/X)</label>
+                <div id="panelLayoutBuilder" class="flex gap-2 flex-wrap">
+                  <!-- Panels will be generated here -->
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                  <span class="inline-block w-4 h-4 bg-green-500 rounded mr-1 align-middle"></span> O = Operable (opens/slides)
+                  <span class="inline-block w-4 h-4 bg-gray-400 rounded ml-3 mr-1 align-middle"></span> X = Fixed
+                </p>
+              </div>
+              
+              <!-- Live Preview -->
+              <div class="mt-4 p-4 bg-white rounded-lg border border-gray-200">
+                <label class="form-label text-center block mb-3">Live Preview</label>
+                <div id="panelPreviewContainer" class="flex justify-center items-center">
+                  <div id="panelPreview" class="border-4 border-gray-600 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex" style="min-width: 200px; min-height: 120px;">
+                    <!-- Preview will be generated here -->
+                  </div>
+                </div>
+                <p id="panelConfigLabel" class="text-center text-sm font-medium text-gray-700 mt-3">XX - 2 Panel Fixed</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 gap-6 mt-4">
+            <!-- Window System Image (Optional) -->
+            <div class="mb-4">
               <label for="windowImage" class="form-label">
                 Window System Image
                 <span class="help-tooltip ml-2">
@@ -866,6 +928,7 @@
     let accessories = [];
     let currentStep = 1;
     let lockedLengthUnit = null; // Track the unit used for profiles (null = not set yet)
+    let panelConfig = ['X', 'X']; // Default panel configuration
     
     // Initialize the page
     document.addEventListener('DOMContentLoaded', function() {
@@ -874,6 +937,7 @@
         setupStepNavigation();
         setupAdvancedConfigToggle();
         setupImageUpload();
+        initializePanelConfiguration();
         
         // Initialize first step - ensure only step 1 is visible
         document.getElementById('step1-section').style.display = 'block';
@@ -890,6 +954,130 @@
 
       }
     });
+    
+    // Panel Configuration Functions
+    function initializePanelConfiguration() {
+      updatePanelInputs();
+    }
+    
+    function updatePanelInputs() {
+      const count = parseInt(document.getElementById('panelCount').value) || 2;
+      const builder = document.getElementById('panelLayoutBuilder');
+      
+      // Adjust panel config array
+      while (panelConfig.length < count) {
+        panelConfig.push('X');
+      }
+      while (panelConfig.length > count) {
+        panelConfig.pop();
+      }
+      
+      // Build panel buttons
+      builder.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const isOperable = panelConfig[i] === 'O';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `panel-toggle w-16 h-20 rounded-lg border-2 flex flex-col items-center justify-center font-bold text-lg transition-all ${
+          isOperable 
+            ? 'bg-green-500 border-green-600 text-white shadow-lg' 
+            : 'bg-gray-200 border-gray-400 text-gray-700'
+        }`;
+        button.innerHTML = `
+          <span class="text-2xl">${panelConfig[i]}</span>
+          <span class="text-xs mt-1">${isOperable ? 'Operable' : 'Fixed'}</span>
+        `;
+        button.onclick = () => togglePanel(i);
+        builder.appendChild(button);
+      }
+      
+      updatePanelPreview();
+    }
+    
+    function togglePanel(index) {
+      panelConfig[index] = panelConfig[index] === 'O' ? 'X' : 'O';
+      updatePanelInputs();
+    }
+    
+    function updatePanelPreview() {
+      const preview = document.getElementById('panelPreview');
+      const label = document.getElementById('panelConfigLabel');
+      const orientation = document.getElementById('panelOrientation').value;
+      const operationType = document.getElementById('operationType').value;
+      
+      // Set flex direction based on orientation
+      preview.style.flexDirection = orientation === 'horizontal' ? 'row' : 'column';
+      
+      // Build preview panels
+      preview.innerHTML = '';
+      panelConfig.forEach((type, index) => {
+        const isOperable = type === 'O';
+        const panel = document.createElement('div');
+        panel.className = 'relative flex-1 min-w-[60px] min-h-[60px] border-2 border-gray-500 flex items-center justify-center';
+        panel.style.background = isOperable 
+          ? 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)' 
+          : 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)';
+        
+        // Add panel content
+        panel.innerHTML = `
+          <div class="absolute inset-2 border border-gray-400 rounded-sm ${isOperable ? 'bg-green-200/50' : 'bg-blue-200/50'}"></div>
+          <span class="relative z-10 text-xl font-bold ${isOperable ? 'text-green-800' : 'text-gray-600'}">${type}</span>
+          ${isOperable ? getOperationIndicator(operationType, orientation) : ''}
+        `;
+        
+        // Add mullion (divider) between panels except for last
+        if (index < panelConfig.length - 1) {
+          const mullion = document.createElement('div');
+          mullion.className = orientation === 'horizontal' 
+            ? 'w-1 bg-gray-600 self-stretch' 
+            : 'h-1 bg-gray-600 w-full';
+          preview.appendChild(panel);
+          preview.appendChild(mullion);
+        } else {
+          preview.appendChild(panel);
+        }
+      });
+      
+      // Update label
+      const configString = panelConfig.join('');
+      const operationLabel = {
+        'sliding': 'Sliding',
+        'casement': 'Casement',
+        'awning': 'Awning',
+        'hopper': 'Hopper',
+        'fixed': 'Fixed',
+        'single-hung': 'Single Hung',
+        'double-hung': 'Double Hung',
+        'tilt-turn': 'Tilt & Turn'
+      }[operationType] || operationType;
+      
+      label.textContent = `${configString} - ${panelConfig.length} Panel ${operationLabel}`;
+    }
+    
+    function getOperationIndicator(type, orientation) {
+      // Add visual indicators for different operation types
+      switch(type) {
+        case 'sliding':
+          return orientation === 'horizontal' 
+            ? '<div class="absolute bottom-1 left-1/2 transform -translate-x-1/2"><i class="fas fa-arrows-alt-h text-green-700 text-xs"></i></div>'
+            : '<div class="absolute right-1 top-1/2 transform -translate-y-1/2"><i class="fas fa-arrows-alt-v text-green-700 text-xs"></i></div>';
+        case 'casement':
+          return '<div class="absolute top-1 right-1"><i class="fas fa-door-open text-green-700 text-xs"></i></div>';
+        case 'awning':
+          return '<div class="absolute top-1 left-1/2 transform -translate-x-1/2"><i class="fas fa-caret-up text-green-700"></i></div>';
+        case 'hopper':
+          return '<div class="absolute bottom-1 left-1/2 transform -translate-x-1/2"><i class="fas fa-caret-down text-green-700"></i></div>';
+        case 'single-hung':
+        case 'double-hung':
+          return '<div class="absolute right-1 top-1/2 transform -translate-y-1/2"><i class="fas fa-arrows-alt-v text-green-700 text-xs"></i></div>';
+        default:
+          return '';
+      }
+    }
+    
+    // Add event listeners for panel configuration changes
+    document.getElementById('panelOrientation')?.addEventListener('change', updatePanelPreview);
+    document.getElementById('operationType')?.addEventListener('change', updatePanelPreview);
     
     // Setup image upload functionality
     function setupImageUpload() {
@@ -1711,6 +1899,21 @@
       muntinConfigurationInput.name = 'muntinConfiguration';
       muntinConfigurationInput.value = JSON.stringify(muntinConfiguration);
       form.appendChild(muntinConfigurationInput);
+      
+      // Add panel configuration
+      const panelConfiguration = {
+        panels: panelConfig,
+        orientation: document.getElementById('panelOrientation').value,
+        operationType: document.getElementById('operationType').value,
+        hasMullion: true,
+        mullionWidth: 2
+      };
+      
+      const panelConfigurationInput = document.createElement('input');
+      panelConfigurationInput.type = 'hidden';
+      panelConfigurationInput.name = 'panelConfiguration';
+      panelConfigurationInput.value = JSON.stringify(panelConfiguration);
+      form.appendChild(panelConfigurationInput);
       
       // Submit the form
       form.submit();

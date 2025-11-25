@@ -253,6 +253,14 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
       console.error('Error parsing muntinConfiguration:', e);
       muntinConfiguration = { enabled: false };
     }
+    
+    let panelConfiguration;
+    try {
+      panelConfiguration = JSON.parse(req.body.panelConfiguration || '{}');
+    } catch (e) {
+      console.error('Error parsing panelConfiguration:', e);
+      panelConfiguration = { panels: ['X', 'X'], orientation: 'horizontal', operationType: 'fixed' };
+    }
 
     const { type } = req.body;
     
@@ -341,6 +349,13 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
         muntinProfile: muntinConfiguration.muntinProfile || null,
         muntinType: muntinConfiguration.muntinType || 'colonial',
         showToUser: Boolean(muntinConfiguration.showToUser),
+      },
+      panelConfiguration: {
+        panels: panelConfiguration.panels || ['X', 'X'],
+        orientation: panelConfiguration.orientation || 'horizontal',
+        operationType: panelConfiguration.operationType || 'fixed',
+        hasMullion: panelConfiguration.hasMullion !== false,
+        mullionWidth: panelConfiguration.mullionWidth || 2,
       },
     });
 
@@ -456,6 +471,15 @@ router.post('/edit/:id', isAdmin, upload.single('windowImage'), async (req, res)
       console.error('Error parsing muntinConfiguration:', e);
       muntinConfigurationData = { enabled: false };
     }
+    
+    // Parse panel configuration
+    let panelConfigurationData = {};
+    try {
+      panelConfigurationData = JSON.parse(req.body.panelConfiguration || '{}');
+    } catch (e) {
+      console.error('Error parsing panelConfiguration:', e);
+      panelConfigurationData = { panels: ['X', 'X'], orientation: 'horizontal', operationType: 'fixed' };
+    }
 
     // Prepare update object
     const updateData = {
@@ -468,6 +492,13 @@ router.post('/edit/:id', isAdmin, upload.single('windowImage'), async (req, res)
         muntinProfile: muntinConfigurationData.muntinProfile || null,
         muntinType: muntinConfigurationData.muntinType || 'colonial',
         showToUser: Boolean(muntinConfigurationData.showToUser),
+      },
+      panelConfiguration: {
+        panels: panelConfigurationData.panels || ['X', 'X'],
+        orientation: panelConfigurationData.orientation || 'horizontal',
+        operationType: panelConfigurationData.operationType || 'fixed',
+        hasMullion: panelConfigurationData.hasMullion !== false,
+        mullionWidth: panelConfigurationData.mullionWidth || 2,
       },
     };
 

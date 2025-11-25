@@ -235,52 +235,95 @@
         <h3 class="text-xl font-semibold text-gray-800 mb-4">Window Visual Preview</h3>
         
         <div class="flex flex-col items-center">
-          <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200 min-h-[300px] w-full max-w-md">
-
-            <% if (selectedWindowSystem.image) { %>
-              <div class="relative">
-                <img src="<%= selectedWindowSystem.image %>" 
-                     alt="<%= selectedWindowSystem.type %> Window System" 
-                     class="max-w-full h-auto rounded-lg shadow-lg mx-auto my-4 transition-all duration-300 ease-in-out"
-                     style="max-height: 250px; object-fit: contain;">
-                <div id="dimensionOverlay" class="absolute inset-0 pointer-events-none">
-                  <!-- Dimension Labels -->
-                  <div id="widthLabel" class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded border shadow-sm">
-                    Width: <span id="widthValue">0</span> <span id="widthUnitLabel">in</span>
-                  </div>
-                  <div id="heightLabel" class="absolute -right-8 top-1/2 transform -translate-y-1/2 text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded border rotate-90 shadow-sm">
-                    Height: <span id="heightValue">0</span> <span id="heightUnitLabel">in</span>
-                  </div>
-                </div>
-              </div>
-            <% } else { %>
-              <!-- Fallback Window Frame (generic preview) -->
-              <div id="windowPreview" class="relative bg-white border-4 border-gray-300 rounded-lg shadow-lg mx-auto my-4 transition-all duration-300 ease-in-out" style="width: 200px; height: 150px;">
-                <!-- Window Sash -->
-                <div class="absolute inset-2 bg-blue-50 border-2 border-blue-200 rounded"></div>
-                <!-- Glass Panels -->
-                <div class="absolute inset-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded opacity-80"></div>
-                <!-- Muntins (if applicable) -->
-                <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-400 transform -translate-y-1/2"></div>
-                <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-400 transform -translate-x-1/2"></div>
-                
-                <!-- Dimension Labels -->
-                <div id="widthLabel" class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded border shadow-sm">
-                  Width: <span id="widthValue">0</span> <span id="widthUnitLabel">in</span>
-                </div>
-                <div id="heightLabel" class="absolute -right-8 top-1/2 transform -translate-y-1/2 text-sm font-medium text-gray-700 bg-white px-2 py-1 rounded border rotate-90 shadow-sm">
-                  Height: <span id="heightValue">0</span> <span id="heightUnitLabel">in</span>
-                </div>
-              </div>
-            <% } %>
+          <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200 min-h-[300px] w-full max-w-lg">
             
-            <!-- Scale Indicator -->
-            <div class="text-center text-sm text-gray-600 mt-4">
-              <% if (selectedWindowSystem.image) { %>
-                <i class="fas fa-image mr-1"></i> Actual Window System Image
-              <% } else { %>
-                <i class="fas fa-drafting-compass mr-1"></i> Generic Preview (Scale: 1:10)
-              <% } %>
+            <!-- Dynamic Panel Preview -->
+            <div id="dynamicWindowPreview" class="relative mx-auto my-4 transition-all duration-300 ease-in-out" style="width: 280px; height: 200px;">
+              <!-- Window Frame -->
+              <div class="absolute inset-0 border-4 border-gray-600 rounded-lg bg-gray-700 shadow-xl">
+                <!-- Inner Frame -->
+                <div class="absolute inset-1 border-2 border-gray-500 rounded bg-gray-600">
+                  <!-- Panel Container -->
+                  <div id="panelContainer" class="absolute inset-1 flex rounded overflow-hidden" 
+                       style="flex-direction: <%= selectedWindowSystem.panelConfiguration?.orientation === 'vertical' ? 'column' : 'row' %>;">
+                    <% 
+                      const panels = selectedWindowSystem.panelConfiguration?.panels || ['X', 'X'];
+                      const orientation = selectedWindowSystem.panelConfiguration?.orientation || 'horizontal';
+                      const operationType = selectedWindowSystem.panelConfiguration?.operationType || 'fixed';
+                    %>
+                    <% panels.forEach((panel, index) => { %>
+                      <% const isOperable = panel === 'O'; %>
+                      <div class="panel-section flex-1 relative border border-gray-400 <%= isOperable ? 'bg-gradient-to-br from-green-100 to-green-200' : 'bg-gradient-to-br from-blue-100 to-sky-200' %>">
+                        <!-- Glass effect -->
+                        <div class="absolute inset-1 rounded-sm <%= isOperable ? 'bg-green-50/60' : 'bg-blue-50/60' %> border border-gray-300"></div>
+                        <!-- Panel indicator -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                          <span class="text-2xl font-bold <%= isOperable ? 'text-green-700' : 'text-blue-700' %> opacity-60"><%= panel %></span>
+                        </div>
+                        <% if (isOperable) { %>
+                          <!-- Operation indicator -->
+                          <% if (operationType === 'sliding') { %>
+                            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+                              <i class="fas fa-arrows-alt-<%= orientation === 'horizontal' ? 'h' : 'v' %> text-green-600 text-sm"></i>
+                            </div>
+                          <% } else if (operationType === 'casement') { %>
+                            <div class="absolute top-2 right-2">
+                              <i class="fas fa-door-open text-green-600 text-sm"></i>
+                            </div>
+                          <% } else if (operationType === 'awning') { %>
+                            <div class="absolute top-2 left-1/2 transform -translate-x-1/2">
+                              <i class="fas fa-caret-up text-green-600"></i>
+                            </div>
+                          <% } else if (operationType === 'hopper') { %>
+                            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+                              <i class="fas fa-caret-down text-green-600"></i>
+                            </div>
+                          <% } %>
+                        <% } %>
+                      </div>
+                      <% if (index < panels.length - 1) { %>
+                        <!-- Mullion -->
+                        <div class="<%= orientation === 'horizontal' ? 'w-1' : 'h-1' %> bg-gray-500 flex-shrink-0"></div>
+                      <% } %>
+                    <% }) %>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Dimension Labels -->
+              <div id="widthLabel" class="absolute -bottom-10 left-1/2 transform -translate-x-1/2 text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-full border shadow-sm">
+                <i class="fas fa-arrows-alt-h mr-1 text-blue-500"></i>
+                <span id="widthValue">0</span> <span id="widthUnitLabel">in</span>
+              </div>
+              <div id="heightLabel" class="absolute -right-12 top-1/2 transform -translate-y-1/2 rotate-90 text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-full border shadow-sm">
+                <i class="fas fa-arrows-alt-v mr-1 text-blue-500"></i>
+                <span id="heightValue">0</span> <span id="heightUnitLabel">in</span>
+              </div>
+            </div>
+            
+            <!-- Window Type Label -->
+            <div class="text-center mt-8">
+              <span class="inline-block bg-indigo-100 text-indigo-800 px-4 py-2 rounded-full text-sm font-medium">
+                <i class="fas fa-window-maximize mr-2"></i>
+                <%= selectedWindowSystem.type %>
+              </span>
+              <p class="text-xs text-gray-500 mt-2">
+                <% const panelString = (selectedWindowSystem.panelConfiguration?.panels || ['X','X']).join(''); %>
+                <%= panelString %> Configuration • 
+                <%= (selectedWindowSystem.panelConfiguration?.operationType || 'fixed').charAt(0).toUpperCase() + (selectedWindowSystem.panelConfiguration?.operationType || 'fixed').slice(1).replace('-', ' ') %>
+              </p>
+            </div>
+            
+            <!-- Legend -->
+            <div class="flex justify-center gap-6 mt-4 text-xs">
+              <div class="flex items-center">
+                <div class="w-4 h-4 bg-gradient-to-br from-green-100 to-green-200 border border-green-400 rounded mr-2"></div>
+                <span class="text-gray-600">O = Operable</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-4 h-4 bg-gradient-to-br from-blue-100 to-sky-200 border border-blue-400 rounded mr-2"></div>
+                <span class="text-gray-600">X = Fixed</span>
+              </div>
             </div>
           </div>
           
@@ -1144,18 +1187,30 @@
         label.textContent = currentUnit === 'mm' ? 'mm' : 'in';
       });
       
-      // Update generic preview if no image
-      const windowPreview = document.getElementById('windowPreview');
-      if (windowPreview) {
-        const maxWidth = 300;
-        const maxHeight = 200;
-        const scale = Math.min(maxWidth / width, maxHeight / height, 1);
+      // Update dynamic preview dimensions proportionally
+      const dynamicPreview = document.getElementById('dynamicWindowPreview');
+      if (dynamicPreview && width > 0 && height > 0) {
+        const maxWidth = 320;
+        const maxHeight = 240;
+        const aspectRatio = width / height;
         
-        const displayWidth = Math.max(100, width * scale);
-        const displayHeight = Math.max(75, height * scale);
+        let displayWidth, displayHeight;
+        if (aspectRatio > maxWidth / maxHeight) {
+          // Width constrained
+          displayWidth = maxWidth;
+          displayHeight = maxWidth / aspectRatio;
+        } else {
+          // Height constrained
+          displayHeight = maxHeight;
+          displayWidth = maxHeight * aspectRatio;
+        }
         
-        windowPreview.style.width = displayWidth + 'px';
-        windowPreview.style.height = displayHeight + 'px';
+        // Ensure minimum dimensions
+        displayWidth = Math.max(150, displayWidth);
+        displayHeight = Math.max(100, displayHeight);
+        
+        dynamicPreview.style.width = displayWidth + 'px';
+        dynamicPreview.style.height = displayHeight + 'px';
       }
       
       // Update calculations

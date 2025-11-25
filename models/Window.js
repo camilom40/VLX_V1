@@ -20,6 +20,27 @@ const muntinConfigurationSchema = new Schema({
   isDefault: { type: Boolean, default: false }, // Default muntin configuration
 });
 
+// Panel configuration for dynamic preview (e.g., OXXO, OX, XOX)
+const panelConfigurationSchema = new Schema({
+  panels: [{ 
+    type: String, 
+    enum: ['O', 'X', 'F'], // O = Operable/Operating, X = Fixed, F = Fixed (alternative)
+    default: 'X'
+  }],
+  orientation: { 
+    type: String, 
+    enum: ['horizontal', 'vertical'], 
+    default: 'horizontal' 
+  },
+  operationType: { 
+    type: String, 
+    enum: ['sliding', 'casement', 'awning', 'hopper', 'fixed', 'single-hung', 'double-hung', 'tilt-turn'],
+    default: 'sliding'
+  },
+  hasMullion: { type: Boolean, default: true }, // Whether panels have mullions between them
+  mullionWidth: { type: Number, default: 2 }, // Mullion width in inches
+});
+
 const windowSchema = new Schema({
   type: { type: String, required: true },
   image: { type: String, default: null }, // Path to window system image
@@ -43,7 +64,8 @@ const windowSchema = new Schema({
     isDefault: { type: Boolean, default: false } // Whether this is the default choice in a single-selection group
   }],
   glassRestrictions: [glassRestrictionSchema], // Embedded glass restrictions
-  muntinConfiguration: muntinConfigurationSchema // Muntin configuration
+  muntinConfiguration: muntinConfigurationSchema, // Muntin configuration
+  panelConfiguration: panelConfigurationSchema // Panel layout for dynamic preview
 });
 
 module.exports = mongoose.model('Window', windowSchema);
