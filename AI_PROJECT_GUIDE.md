@@ -191,13 +191,28 @@ The configure window page features a dynamic preview that:
 ```javascript
 {
   name: String,
-  code: String,
-  price: Number,
-  weight: Number,
   color: String,
-  type: String,        // 'frame', 'sash', 'muntin', etc.
+  colorCode: String,   // Reference code
+  pricePerMeter: Number,
+  currency: String,    // 'COP' or 'USD'
+  weight: Number,      // Optional (kg/m²)
+  ammaCertification: String,  // '2603', '2604', '2605', or 'No Certification'
   isMuntin: Boolean,
-  amaCertified: Boolean
+  muntinType: String,   // 'none' or specific type
+  muntinPattern: String,
+  muntinSpacing: Number  // Optional, null if not a muntin
+}
+```
+
+### Glass
+```javascript
+{
+  name: String,
+  type: String,
+  price: Number,
+  weight: Number,      // Optional (kg/m²)
+  missileType: String,
+  // ... other fields
 }
 ```
 
@@ -233,6 +248,16 @@ The configure window page features a dynamic preview that:
 ---
 
 ## 🎨 UI/UX Details
+
+### Modern Design System
+The admin interface uses a consistent modern design system:
+- **Font**: DM Sans (Google Fonts) applied across all admin pages
+- **Color Scheme**: Gradient backgrounds (blue to indigo) with color-coded section icons
+- **Layout**: Card-based design with shadows, rounded corners, and hover effects
+- **Icons**: Gradient icon boxes for each section (amber/orange for accessories, cyan/blue for glasses, indigo/purple for profiles)
+- **Buttons**: Modern button styling with icons, hover states, and consistent spacing
+- **Forms**: 2-column responsive grid layout for better space utilization
+- **Tables**: Modern table design with gradient headers, row hover effects, and badge styling
 
 ### Compose Window Form (Admin)
 Multi-step wizard with 4 steps:
@@ -281,6 +306,137 @@ Multi-step wizard with 4 steps:
 ---
 
 ## 📝 Development Log
+
+### November 27, 2025 - Admin Pages Modernization & Profile Management
+
+#### What We Worked On
+
+1. **Modern Design System Applied Across Admin Pages**
+   - **DM Sans Font**: Applied consistently across all admin pages
+   - **Gradient Backgrounds**: Modern gradient backgrounds (blue to indigo) for headers and cards
+   - **Card-Based Layout**: All pages now use modern card designs with shadows and rounded corners
+   - **Color-Coded Section Icons**: Each section has a unique gradient icon (amber/orange for accessories, cyan/blue for glasses, indigo/purple for profiles)
+   - **Consistent Button Styling**: Modern buttons with hover effects and icons
+
+2. **Edit Pages Redesign** (`editAccessory.ejs`, `editGlass.ejs`, `editProfile.ejs`)
+   - **Clean Header Design**: White background with gradient icon box
+   - **2-Column Responsive Layout**: Better use of space on larger screens
+   - **Section Icons**: Visual icons for each section (Basic Info, Pricing, etc.)
+   - **Modern Input Styling**: Clean input fields with focus states
+   - **Required Badges**: Clear "Required" badges for mandatory fields
+   - **Help Text**: Contextual help text below inputs
+   - **Error Validation**: Improved error message display
+   - **Delete Button**: Prominent delete button with confirmation dialog
+   - **Weight Field Handling**: Displays "N/A" when weight is null/undefined
+
+3. **List Pages Redesign** (`listAccessories.ejs`, `listGlasses.ejs`, `listProfiles.ejs`)
+   - **Modern Header**: Gradient icon box with title and subtitle
+   - **Stats Cards**: Visual stat cards showing key metrics:
+     - Accessories: Total Accessories, Providers
+     - Glasses: Total Glass Types, Missile Types, With Weight Data
+     - Profiles: Total Profiles, AMMA Certifications, With Weight Data
+   - **Search Bar**: Real-time search with match counter
+   - **Currency Toggle**: Toggle between COP and USD for price display
+   - **Bulk Actions**: 
+     - Checkbox selection for multiple items
+     - Bulk delete with confirmation
+     - Import from Excel button
+     - Export to Excel button
+   - **Modern Table Design**:
+     - Gradient table header
+     - Row hover effects
+     - Badge styling for different data types
+     - Action buttons with hover states
+     - Image thumbnails (for accessories)
+   - **Empty State**: Centered empty state with icon and call-to-action
+   - **Null Value Handling**: Displays "N/A" for null weight values in both display and export
+
+4. **Add Pages Redesign** (`addAccessory.ejs`, `addGlass.ejs`, `addProfile.ejs`)
+   - **Clean Header**: White background with gradient icon box
+   - **2-Column Layout**: Responsive grid layout
+   - **Section Icons**: Color-coded icons for each section
+   - **Modern Card Design**: Consistent card styling
+   - **Required Badges**: Clear indication of required fields
+   - **Help Text**: Contextual guidance for users
+   - **Muntin Configuration Simplified**: 
+     - Removed irrelevant fields (spacing, pattern type, pattern description)
+     - Now only a toggle switch to indicate if profile is a muntin
+   - **AMMA Certification**: Added "No Certification" option to dropdown
+
+5. **Profile Management Enhancements**
+   - **Profile Search/Filter**: 
+     - Search box to quickly find profiles by name or code
+     - Match counter showing number of results
+     - Auto-select on Enter when only one result matches
+     - Search by color functionality
+   - **Profile Type Icons**: Visual icons distinguish profile types (Frame 🔲, Sash 🪟, Mullion ┃, Rail ═, etc.)
+   - **Component Categories**: Organize added profiles by category (Frame, Fixed Vent, Operable Vent, Other)
+   - **Centered Table Columns**: Information centered in columns (except Profile name which remains left-aligned)
+   - **Removed Profile Info Display**: Removed the "Profile Info Display" that showed detected type and color badge
+   - **Removed Magnifying Glass**: Removed magnifying glass icon from search input
+
+6. **Data Model Updates**
+   - **Weight Field Made Optional**: 
+     - `Glass` model: `weight` field changed from `required: true` to `required: false`
+     - `Profile` model: `weight` field changed from `required: true` to `required: false`
+     - Backend routes handle empty string weight values by converting to `undefined`
+     - Frontend displays "N/A" when weight is null/undefined
+   - **Muntin Spacing Fix**: Fixed `NaN` error when `muntinSpacing` is empty or invalid
+     - Added validation: `!isNaN(Number(muntinSpacing))` before conversion
+     - Empty/invalid values set to `null` instead of `NaN`
+
+7. **Excel Import/Export**
+   - **Export to Excel**: All list pages support exporting data to Excel format (.xlsx)
+   - **Import from Excel**: Import functionality for bulk data entry
+   - **Proper Data Handling**: Export correctly handles null values and currency conversion
+
+8. **Window System Management Improvements**
+   - **List Window Systems Page**: 
+     - Removed "Image" column (replaced with dynamic mini-preview)
+     - Removed "Muntins", "Accessories", and "Profiles" columns
+     - Removed "Auto/User Config" badges
+     - Modern card-based grid layout
+     - Dynamic mini-preview based on panel configuration
+   - **Edit Window System Page**:
+     - Step-based layout matching compose window
+     - Removed image upload section
+     - Simplified muntin section
+     - Added live preview for panel configuration
+     - Profile search/filter and component categories
+     - Length discount units (in/mm) correctly displayed and changeable
+     - "Save & Exit" button for quick saving
+     - All operation types available in dropdown
+     - All changes properly saved to database
+
+#### Key Files Modified
+- `views/admin/editAccessory.ejs` - Modern redesign
+- `views/admin/editGlass.ejs` - Modern redesign matching editAccessory
+- `views/admin/editProfile.ejs` - Modern redesign matching editAccessory
+- `views/admin/listAccessories.ejs` - Modern redesign with search, stats, bulk actions
+- `views/admin/listGlasses.ejs` - Modern redesign matching listAccessories
+- `views/admin/listProfiles.ejs` - Modern redesign matching listAccessories
+- `views/admin/addAccessory.ejs` - Modern redesign
+- `views/admin/addGlass.ejs` - Modern redesign matching addAccessory
+- `views/admin/addProfile.ejs` - Modern redesign matching addAccessory, simplified muntin config
+- `views/admin/listWindowSystems.ejs` - Card-based layout, dynamic preview
+- `views/admin/editWindowSystem.ejs` - Step-based layout, live preview, profile search
+- `views/admin/composeWindow.ejs` - Profile search/filter, component categories, window name validation
+- `routes/admin/profileRoutes.js` - Fixed muntinSpacing NaN error, weight optional handling
+- `routes/admin/glassRoutes.js` - Weight optional handling
+- `models/Profile.js` - Weight field made optional
+- `models/Glass.js` - Weight field made optional
+
+#### Technical Notes
+- **Modern Design System**: Consistent use of DM Sans font, gradient backgrounds, card layouts, and modern button styles
+- **Null Value Handling**: All pages properly handle null/undefined weight values, displaying "N/A" in UI and exporting empty strings in Excel
+- **Excel Export**: Uses SheetJS (XLSX) library for client-side Excel file generation
+- **Currency Conversion**: Real-time conversion between COP and USD using exchange rate from CostSettings
+- **Bulk Operations**: Checkbox selection system with visual feedback and confirmation dialogs
+- **Search Functionality**: Real-time filtering with match counting and keyboard shortcuts (Enter to select)
+- **Component Categories**: Profiles organized by Frame, Fixed Vent, Operable Vent, or Other categories
+- **Profile Type Detection**: Icons automatically assigned based on profile name patterns
+
+---
 
 ### November 27, 2025 - Compose Window Enhancements
 
@@ -470,5 +626,5 @@ npm run dev
 
 ---
 
-*Last Updated: November 27, 2025*
+*Last Updated: November 27, 2025 - Admin Pages Modernization*
 
