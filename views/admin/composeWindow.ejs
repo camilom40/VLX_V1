@@ -51,6 +51,45 @@
       padding: 8px 12px;
     }
     
+    /* Component Category Buttons */
+    .component-cat-btn {
+      padding: 0.5rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background: white;
+      color: #6b7280;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .component-cat-btn:hover {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+    .component-cat-btn.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
+    }
+    #cat-frame.active { background: #2563eb; border-color: #2563eb; }
+    #cat-fixed.active { background: #7c3aed; border-color: #7c3aed; }
+    #cat-operable.active { background: #059669; border-color: #059669; }
+    #cat-other.active { background: #6b7280; border-color: #6b7280; }
+    
+    /* Profile Category Headers */
+    .profile-category-header {
+      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #d1d5db;
+    }
+    .profile-category-header.frame { border-left: 4px solid #2563eb; }
+    .profile-category-header.fixed-vent { border-left: 4px solid #7c3aed; }
+    .profile-category-header.operable-vent { border-left: 4px solid #059669; }
+    .profile-category-header.other { border-left: 4px solid #6b7280; }
+    
     /* Ensure hidden class works properly */
     .hidden {
       display: none !important;
@@ -658,6 +697,26 @@
           <!-- Profiles Section -->
           <div id="profiles-section" class="mb-8">
             <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
+              <!-- Component Category Selector -->
+              <div class="mb-4">
+                <label class="form-label">Component Category</label>
+                <div class="flex gap-2 flex-wrap">
+                  <button type="button" id="cat-frame" class="component-cat-btn active" onclick="selectProfileCategory('frame')">
+                    <i class="fas fa-border-all mr-2"></i>Frame
+                  </button>
+                  <button type="button" id="cat-fixed" class="component-cat-btn" onclick="selectProfileCategory('fixed-vent')">
+                    <i class="fas fa-square mr-2"></i>Fixed Vent
+                  </button>
+                  <button type="button" id="cat-operable" class="component-cat-btn" onclick="selectProfileCategory('operable-vent')">
+                    <i class="fas fa-window-maximize mr-2"></i>Operable Vent
+                  </button>
+                  <button type="button" id="cat-other" class="component-cat-btn" onclick="selectProfileCategory('other')">
+                    <i class="fas fa-ellipsis-h mr-2"></i>Other
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Select which part of the window this profile belongs to</p>
+              </div>
+              
               <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <div class="md:col-span-2">
                   <label for="profile-search" class="form-label">Profile Type</label>
@@ -732,15 +791,15 @@
                   <i class="fas fa-lock mr-1"></i>Unit locked to: <span id="locked-unit-display">in.</span>
                 </span>
               </div>
-              <table class="enhanced-table min-w-full">
+              <table class="enhanced-table min-w-full text-center">
                 <thead>
                   <tr>
-                    <th>Profile</th>
-                    <th>Quantity</th>
-                    <th>Orientation</th>
-                    <th>Length Discount</th>
-                    <th>User Config</th>
-                    <th>Action</th>
+                    <th class="text-left">Profile</th>
+                    <th class="text-center">Quantity</th>
+                    <th class="text-center">Orientation</th>
+                    <th class="text-center">Length Discount</th>
+                    <th class="text-center">User Config</th>
+                    <th class="text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody id="profiles-table-body">
@@ -1029,6 +1088,38 @@
     let currentStep = 1;
     let lockedLengthUnit = null; // Track the unit used for profiles (null = not set yet)
     let panelConfig = ['O', 'O']; // Default panel configuration (O = Fixed)
+    let selectedProfileCategory = 'frame'; // Default category for profiles
+    
+    // Profile category selection
+    function selectProfileCategory(category) {
+      selectedProfileCategory = category;
+      
+      // Update button states
+      document.querySelectorAll('.component-cat-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById(`cat-${category.replace('-vent', '')}`).classList.add('active');
+    }
+    
+    function getCategoryLabel(category) {
+      switch(category) {
+        case 'frame': return 'Frame';
+        case 'fixed-vent': return 'Fixed Vent';
+        case 'operable-vent': return 'Operable Vent';
+        case 'other': return 'Other';
+        default: return category;
+      }
+    }
+    
+    function getCategoryIcon(category) {
+      switch(category) {
+        case 'frame': return '<i class="fas fa-border-all text-blue-600"></i>';
+        case 'fixed-vent': return '<i class="fas fa-square text-purple-600"></i>';
+        case 'operable-vent': return '<i class="fas fa-window-maximize text-green-600"></i>';
+        case 'other': return '<i class="fas fa-ellipsis-h text-gray-600"></i>';
+        default: return '<i class="fas fa-square text-gray-500"></i>';
+      }
+    }
     
     // Initialize the page
     document.addEventListener('DOMContentLoaded', function() {
@@ -2833,7 +2924,8 @@
         lengthDiscount: lengthDiscountInches.toFixed(4), 
         lengthDiscountDisplay: lengthDiscount, // Original value for display
         lengthUnit, // Store the unit for display
-        showToUser 
+        showToUser,
+        category: selectedProfileCategory // Store which component this profile belongs to 
       });
       renderProfilesTable();
       
@@ -2886,38 +2978,65 @@
     function renderProfilesTable() {
       const tableBody = document.getElementById('profiles-table-body');
       tableBody.innerHTML = '';
-      profiles.forEach((profile, index) => {
-        const userConfigStatus = profile.showToUser ? 
-          '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Configurable</span>' : 
-          '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto-managed</span>';
+      
+      // Group profiles by category
+      const categories = ['frame', 'fixed-vent', 'operable-vent', 'other'];
+      const groupedProfiles = {};
+      
+      categories.forEach(cat => {
+        groupedProfiles[cat] = profiles
+          .map((profile, index) => ({ ...profile, originalIndex: index }))
+          .filter(p => (p.category || 'frame') === cat);
+      });
+      
+      // Render each category
+      categories.forEach(category => {
+        const categoryProfiles = groupedProfiles[category];
+        if (categoryProfiles.length === 0) return;
         
-        // Display the original value with its unit
-        const displayValue = profile.lengthDiscountDisplay || profile.lengthDiscount;
-        const displayUnit = profile.lengthUnit || 'in';
-        
-        // Get profile type icon
-        const icon = getProfileTypeIcon(profile.profileName);
-        
-        const row = `
-          <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
-            <td class="py-3 px-4 border-b">
-              <div class="flex items-center gap-2">
-                <span class="text-lg" title="${icon.type}">${icon.symbol}</span>
-                <span>${profile.profileName}</span>
-              </div>
-            </td>
-            <td class="py-3 px-4 border-b">${profile.quantity}</td>
-            <td class="py-3 px-4 border-b">${profile.orientation}</td>
-            <td class="py-3 px-4 border-b">${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}</td>
-            <td class="py-3 px-4 border-b">${userConfigStatus}</td>
-            <td class="py-3 px-4 border-b">
-              <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${index})">
-                <i class="fas fa-trash mr-1"></i>Remove
-              </button>
+        // Category header
+        const headerRow = `
+          <tr>
+            <td colspan="6" class="profile-category-header ${category}">
+              ${getCategoryIcon(category)}
+              <span class="ml-2">${getCategoryLabel(category)}</span>
+              <span class="ml-2 text-sm font-normal text-gray-500">(${categoryProfiles.length} profile${categoryProfiles.length > 1 ? 's' : ''})</span>
             </td>
           </tr>
         `;
-        tableBody.insertAdjacentHTML('beforeend', row);
+        tableBody.insertAdjacentHTML('beforeend', headerRow);
+        
+        // Profile rows for this category
+        categoryProfiles.forEach((profile, idx) => {
+          const userConfigStatus = profile.showToUser ? 
+            '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Configurable</span>' : 
+            '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto-managed</span>';
+          
+          const displayValue = profile.lengthDiscountDisplay || profile.lengthDiscount;
+          const displayUnit = profile.lengthUnit || 'in';
+          const icon = getProfileTypeIcon(profile.profileName);
+          
+          const row = `
+            <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+              <td class="py-3 px-4 border-b text-left">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg" title="${icon.type}">${icon.symbol}</span>
+                  <span>${profile.profileName}</span>
+                </div>
+              </td>
+              <td class="py-3 px-4 border-b text-center">${profile.quantity}</td>
+              <td class="py-3 px-4 border-b text-center">${profile.orientation}</td>
+              <td class="py-3 px-4 border-b text-center">${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}</td>
+              <td class="py-3 px-4 border-b text-center">${userConfigStatus}</td>
+              <td class="py-3 px-4 border-b text-center">
+                <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${profile.originalIndex})">
+                  <i class="fas fa-trash mr-1"></i>Remove
+                </button>
+              </td>
+            </tr>
+          `;
+          tableBody.insertAdjacentHTML('beforeend', row);
+        });
       });
     }
 

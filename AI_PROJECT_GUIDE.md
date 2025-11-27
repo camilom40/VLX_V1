@@ -245,10 +245,11 @@ Multi-step wizard with 4 steps:
    - Resizable preview area
    - VITRALUX logo toggle
 2. **Profiles** - Add frame profiles with quantities and length discounts (supports inches/mm)
+   - **Component Categories**: Organize profiles by Frame, Fixed Vent, or Operable Vent
    - **Search/Filter**: Type to search profiles by name or color, shows match count
    - **Profile Type Icons**: Visual icons identify profile types (Frame 🔲, Sash 🪟, Mullion ┃, Rail ═, etc.)
    - **Enter to Select**: Press Enter to auto-select when only one result matches
-   - **Icons in Table**: Added profiles show type icons in the list
+   - **Grouped Table**: Added profiles are organized by component category with visual headers
 3. **Accessories** - Add hardware and accessories
 4. **Muntins** - Configure decorative grid patterns
 
