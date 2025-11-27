@@ -291,6 +291,15 @@
                         </div>
                     </div>
                     
+                    <!-- Weight Unit Toggle -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">Weight:</span>
+                        <div class="currency-toggle">
+                            <button id="kgBtn" class="currency-btn active">kg</button>
+                            <button id="lbsBtn" class="currency-btn">lbs</button>
+                        </div>
+                    </div>
+                    
                     <!-- Bulk Delete (hidden by default) -->
                     <button id="bulkDeleteBtn" class="btn-danger hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -385,7 +394,9 @@
                                     </td>
                                     <td>
                                         <% if (accessory.weight) { %>
-                                            <span class="badge badge-amber"><%= accessory.weight.toFixed(2) %> kg</span>
+                                            <span class="badge badge-amber weight-display" data-weight="<%= accessory.weight %>">
+                                                <%= accessory.weight.toFixed(2) %> kg
+                                            </span>
                                         <% } else { %>
                                             <span class="text-gray-400 text-sm">—</span>
                                         <% } %>
@@ -480,6 +491,40 @@
             document.getElementById('copBtn').classList.toggle('active', currency === 'COP');
             document.getElementById('usdBtn').classList.toggle('active', currency === 'USD');
             updatePrices();
+        }
+        
+        // Weight unit conversion
+        // For accessories: kg to lbs (1 kg = 2.20462 lbs)
+        const KG_TO_LBS = 2.20462;
+        let currentWeightUnit = 'kg'; // 'kg' or 'lbs'
+        
+        // Update all weight displays
+        function updateWeightDisplays() {
+            const weightElements = document.querySelectorAll('.weight-display');
+            
+            weightElements.forEach(element => {
+                const kgValue = parseFloat(element.dataset.weight);
+                if (!isNaN(kgValue)) {
+                    if (currentWeightUnit === 'kg') {
+                        element.textContent = kgValue.toFixed(2) + ' kg';
+                    } else {
+                        const lbsValue = kgValue * KG_TO_LBS;
+                        element.textContent = lbsValue.toFixed(2) + ' lbs';
+                    }
+                }
+            });
+        }
+        
+        // Handle weight unit toggle
+        function switchWeightUnit(unit) {
+            currentWeightUnit = unit;
+            
+            // Update button states
+            document.getElementById('kgBtn').classList.toggle('active', unit === 'kg');
+            document.getElementById('lbsBtn').classList.toggle('active', unit === 'lbs');
+            
+            // Update all weights
+            updateWeightDisplays();
         }
         
         // Search functionality
@@ -643,6 +688,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('copBtn').addEventListener('click', () => switchCurrency('COP'));
             document.getElementById('usdBtn').addEventListener('click', () => switchCurrency('USD'));
+            
+            // Weight unit toggle event listeners
+            document.getElementById('kgBtn').addEventListener('click', () => switchWeightUnit('kg'));
+            document.getElementById('lbsBtn').addEventListener('click', () => switchWeightUnit('lbs'));
             updatePrices();
         });
     </script>

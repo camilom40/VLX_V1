@@ -248,6 +248,15 @@
                         </div>
                     </div>
                     
+                    <!-- Weight Unit Toggle -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">Weight:</span>
+                        <div class="currency-toggle">
+                            <button id="kgBtn" class="currency-btn active">kg</button>
+                            <button id="lbsBtn" class="currency-btn">lbs</button>
+                        </div>
+                    </div>
+                    
                     <!-- Bulk Delete (hidden by default) -->
                     <button id="bulkDeleteBtn" class="btn-danger hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -331,7 +340,9 @@
                                     </td>
                                     <td>
                                         <% if (profile.weight != null && profile.weight !== undefined) { %>
-                                            <span class="badge badge-amber"><%= profile.weight.toFixed(2) %> kg/m</span>
+                                            <span class="badge badge-amber weight-display" data-weight="<%= profile.weight %>">
+                                                <%= profile.weight.toFixed(2) %> kg/m
+                                            </span>
                                         <% } else { %>
                                             <span class="text-gray-400 text-sm">—</span>
                                         <% } %>
@@ -448,6 +459,41 @@
             // Update all prices
             updatePriceDisplays();
         }
+        
+        // Weight unit conversion
+        // For profiles: kg/m to lbs/ft (1 kg/m = 0.671969 lbs/ft)
+        const KG_PER_M_TO_LBS_PER_FT = 0.671969;
+        const LBS_PER_FT_TO_KG_PER_M = 1.48816; // inverse
+        let currentWeightUnit = 'kg'; // 'kg' or 'lbs'
+        
+        // Update all weight displays
+        function updateWeightDisplays() {
+            const weightElements = document.querySelectorAll('.weight-display');
+            
+            weightElements.forEach(element => {
+                const kgPerMValue = parseFloat(element.dataset.weight);
+                if (!isNaN(kgPerMValue)) {
+                    if (currentWeightUnit === 'kg') {
+                        element.textContent = kgPerMValue.toFixed(2) + ' kg/m';
+                    } else {
+                        const lbsPerFtValue = kgPerMValue * KG_PER_M_TO_LBS_PER_FT;
+                        element.textContent = lbsPerFtValue.toFixed(2) + ' lbs/ft';
+                    }
+                }
+            });
+        }
+        
+        // Handle weight unit toggle
+        function switchWeightUnit(unit) {
+            currentWeightUnit = unit;
+            
+            // Update button states
+            document.getElementById('kgBtn').classList.toggle('active', unit === 'kg');
+            document.getElementById('lbsBtn').classList.toggle('active', unit === 'lbs');
+            
+            // Update all weights
+            updateWeightDisplays();
+        }
 
         // Export to Excel - make globally accessible
         window.exportToExcel = function() {
@@ -466,7 +512,8 @@
                     const price = priceEl?.dataset.price || '';
                     const currency = priceEl?.dataset.currency || 'COP';
                     const weightText = tds[6]?.textContent.trim() || '';
-                    const weight = weightText === '—' ? '' : weightText.replace(' kg/m', '').trim();
+                    // Extract weight value (remove unit)
+                    const weight = weightText === '—' ? '' : weightText.replace(/ (kg\/m|lbs\/ft)/, '').trim();
                     const isMuntin = tds[7]?.textContent.includes('Yes') ? 'Yes' : 'No';
 
                     profiles.push([name, color, colorCode, amma, price, currency, weight, isMuntin]);
@@ -667,6 +714,10 @@
             // Initialize event listeners
             document.getElementById('copBtn').addEventListener('click', () => switchCurrency('COP'));
             document.getElementById('usdBtn').addEventListener('click', () => switchCurrency('USD'));
+            
+            // Weight unit toggle event listeners
+            document.getElementById('kgBtn').addEventListener('click', () => switchWeightUnit('kg'));
+            document.getElementById('lbsBtn').addEventListener('click', () => switchWeightUnit('lbs'));
             
             // Initial price display
             updatePriceDisplays();

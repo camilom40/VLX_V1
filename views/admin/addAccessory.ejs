@@ -316,14 +316,25 @@
                   <span class="text-gray-400 text-xs ml-1.5">Optional</span>
                 </div>
               </div>
-              <div class="input-with-icon">
-                <div class="input-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                  </svg>
+              <div class="flex gap-2">
+                <div class="flex-1 input-with-icon">
+                  <div class="input-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                    </svg>
+                  </div>
+                  <input type="number" id="weight" name="weight" step="0.01" min="0" class="form-input !pr-14" placeholder="0.00">
+                  <div class="input-suffix" id="weightUnit">kg</div>
                 </div>
-                <input type="number" id="weight" name="weight" step="0.01" min="0" class="form-input !pr-14" placeholder="0.00">
-                <div class="input-suffix">kg</div>
+                <div class="flex items-center gap-2 bg-gray-50 rounded-lg px-3 border border-gray-200">
+                  <button type="button" id="weightUnitToggle" class="text-xs font-semibold text-gray-600 hover:text-gray-800 transition-colors">
+                    <span id="weightUnitLabel">kg</span>
+                  </button>
+                  <div class="w-px h-4 bg-gray-300"></div>
+                  <button type="button" id="weightUnitToggleLbs" class="text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors">
+                    <span>lbs</span>
+                  </button>
+                </div>
               </div>
               <div id="weightError" class="error-message">
                 <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
@@ -514,6 +525,59 @@
       priceInput.addEventListener('input', validatePrice);
       weightInput.addEventListener('input', validateWeight);
       
+      // Weight unit conversion
+      // For accessories: kg to lbs (1 kg = 2.20462 lbs)
+      const KG_TO_LBS = 2.20462;
+      const LBS_TO_KG = 0.453592; // inverse
+      let weightUnit = 'kg'; // 'kg' or 'lbs'
+      
+      const weightUnitLabel = document.getElementById('weightUnitLabel');
+      const weightUnitSuffix = document.getElementById('weightUnit');
+      const weightUnitToggle = document.getElementById('weightUnitToggle');
+      const weightUnitToggleLbs = document.getElementById('weightUnitToggleLbs');
+      
+      function updateWeightUnitDisplay() {
+        if (weightUnit === 'kg') {
+          weightUnitSuffix.textContent = 'kg';
+          weightUnitToggle.classList.remove('text-gray-400');
+          weightUnitToggle.classList.add('text-gray-600');
+          weightUnitToggleLbs.classList.remove('text-gray-600');
+          weightUnitToggleLbs.classList.add('text-gray-400');
+        } else {
+          weightUnitSuffix.textContent = 'lbs';
+          weightUnitToggle.classList.remove('text-gray-600');
+          weightUnitToggle.classList.add('text-gray-400');
+          weightUnitToggleLbs.classList.remove('text-gray-400');
+          weightUnitToggleLbs.classList.add('text-gray-600');
+        }
+      }
+      
+      weightUnitToggle.addEventListener('click', function() {
+        if (weightUnit === 'lbs') {
+          // Convert from lbs to kg
+          const currentValue = parseFloat(weightInput.value);
+          if (!isNaN(currentValue) && currentValue > 0) {
+            weightInput.value = (currentValue * LBS_TO_KG).toFixed(2);
+          }
+          weightUnit = 'kg';
+          updateWeightUnitDisplay();
+        }
+      });
+      
+      weightUnitToggleLbs.addEventListener('click', function() {
+        if (weightUnit === 'kg') {
+          // Convert from kg to lbs
+          const currentValue = parseFloat(weightInput.value);
+          if (!isNaN(currentValue) && currentValue > 0) {
+            weightInput.value = (currentValue * KG_TO_LBS).toFixed(2);
+          }
+          weightUnit = 'lbs';
+          updateWeightUnitDisplay();
+        }
+      });
+      
+      updateWeightUnitDisplay();
+      
       // Image upload handling
       imageUploadArea.addEventListener('click', () => imageInput.click());
       
@@ -574,6 +638,14 @@
       // Form submission
       submitBtn.addEventListener('click', function(e) {
         e.preventDefault();
+        
+        // Convert weight to kg before submission if in lbs
+        if (weightInput && weightUnit === 'lbs') {
+          const lbsValue = parseFloat(weightInput.value);
+          if (!isNaN(lbsValue) && lbsValue > 0) {
+            weightInput.value = (lbsValue * LBS_TO_KG).toFixed(2);
+          }
+        }
         
         const nameValue = nameInput.value.trim();
         const refValue = referenceNumberInput.value.trim();

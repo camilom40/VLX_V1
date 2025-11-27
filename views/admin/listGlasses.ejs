@@ -248,6 +248,15 @@
                         </div>
                     </div>
                     
+                    <!-- Weight Unit Toggle -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">Weight:</span>
+                        <div class="currency-toggle">
+                            <button id="kgBtn" class="currency-btn active">kg</button>
+                            <button id="lbsBtn" class="currency-btn">lbs</button>
+                        </div>
+                    </div>
+                    
                     <!-- Bulk Delete (hidden by default) -->
                     <button id="bulkDeleteBtn" class="btn-danger hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -322,7 +331,9 @@
                                     </td>
                                     <td>
                                         <% if (glass.weight != null && glass.weight !== undefined) { %>
-                                            <span class="badge badge-amber"><%= glass.weight.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %> kg/m²</span>
+                                            <span class="badge badge-amber weight-display" data-weight="<%= glass.weight %>">
+                                                <%= glass.weight.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %> kg/m²
+                                            </span>
                                         <% } else { %>
                                             <span class="text-gray-400 text-sm">—</span>
                                         <% } %>
@@ -416,6 +427,40 @@
             document.getElementById('copBtn').classList.toggle('active', currency === 'COP');
             document.getElementById('usdBtn').classList.toggle('active', currency === 'USD');
             updatePrices();
+        }
+        
+        // Weight unit conversion
+        // For glass: kg/m² to lbs/ft² (1 kg/m² = 0.204816 lbs/ft²)
+        const KG_PER_M2_TO_LBS_PER_FT2 = 0.204816;
+        let currentWeightUnit = 'kg'; // 'kg' or 'lbs'
+        
+        // Update all weight displays
+        function updateWeightDisplays() {
+            const weightElements = document.querySelectorAll('.weight-display');
+            
+            weightElements.forEach(element => {
+                const kgPerM2Value = parseFloat(element.dataset.weight);
+                if (!isNaN(kgPerM2Value)) {
+                    if (currentWeightUnit === 'kg') {
+                        element.textContent = kgPerM2Value.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg/m²';
+                    } else {
+                        const lbsPerFt2Value = kgPerM2Value * KG_PER_M2_TO_LBS_PER_FT2;
+                        element.textContent = lbsPerFt2Value.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' lbs/ft²';
+                    }
+                }
+            });
+        }
+        
+        // Handle weight unit toggle
+        function switchWeightUnit(unit) {
+            currentWeightUnit = unit;
+            
+            // Update button states
+            document.getElementById('kgBtn').classList.toggle('active', unit === 'kg');
+            document.getElementById('lbsBtn').classList.toggle('active', unit === 'lbs');
+            
+            // Update all weights
+            updateWeightDisplays();
         }
         
         // Search functionality
@@ -521,7 +566,8 @@
                     const cells = row.querySelectorAll('td');
                     const priceEl = cells[4].querySelector('.price-display');
                     const weightText = cells[5].textContent.trim();
-                    const weight = weightText === '—' ? '' : weightText.replace(' kg/m²', '').trim();
+                    // Extract weight value (remove unit)
+                    const weight = weightText === '—' ? '' : weightText.replace(/ (kg\/m²|lbs\/ft²)/, '').trim();
                     data.push([
                         cells[1].textContent.trim(),
                         cells[2].textContent.trim(),
@@ -570,6 +616,10 @@
         // Currency toggle
         document.getElementById('copBtn').addEventListener('click', () => switchCurrency('COP'));
         document.getElementById('usdBtn').addEventListener('click', () => switchCurrency('USD'));
+        
+        // Weight unit toggle event listeners
+        document.getElementById('kgBtn').addEventListener('click', () => switchWeightUnit('kg'));
+        document.getElementById('lbsBtn').addEventListener('click', () => switchWeightUnit('lbs'));
         
         // Initial price display
         updatePrices();
