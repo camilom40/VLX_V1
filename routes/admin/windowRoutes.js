@@ -258,7 +258,7 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       panelConfiguration = JSON.parse(req.body.panelConfiguration || '{}');
     } catch (e) {
       console.error('Error parsing panelConfiguration:', e);
-      panelConfiguration = { panels: ['O', 'O'], orientation: 'horizontal', operationType: 'fixed' };
+      panelConfiguration = { panels: ['O', 'O'], orientation: 'horizontal', operationType: 'sliding' };
     }
 
     const { type } = req.body;
@@ -402,7 +402,7 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       panelConfigurationData = JSON.parse(req.body.panelConfiguration || '{}');
     } catch (e) {
       console.error('Error parsing panelConfiguration:', e);
-      panelConfigurationData = { panels: ['O', 'O'], orientation: 'horizontal', operationType: 'fixed' };
+      panelConfigurationData = { panels: ['O', 'O'], orientation: 'horizontal', operationType: 'sliding' };
     }
 
     // Prepare update object
@@ -418,7 +418,7 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
         showToUser: Boolean(muntinConfigurationData.showToUser),
       },
       panelConfiguration: {
-        panels: panelConfigurationData.panels || ['O', 'O'],
+        panels: panelConfigurationData.panels || ['O'],
         orientation: panelConfigurationData.orientation || 'horizontal',
         operationType: panelConfigurationData.operationType || 'fixed',
         hasMullion: panelConfigurationData.hasMullion !== false,

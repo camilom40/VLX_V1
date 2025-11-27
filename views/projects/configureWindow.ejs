@@ -262,7 +262,7 @@
                   <div id="panelContainer" class="absolute inset-1 flex rounded overflow-hidden" 
                        style="flex-direction: <%= selectedWindowSystem.panelConfiguration?.orientation === 'vertical' ? 'column' : 'row' %>;">
                     <% 
-                      const panels = selectedWindowSystem.panelConfiguration?.panels || ['X', 'X'];
+                      const panels = selectedWindowSystem.panelConfiguration?.panels || ['O', 'O'];
                       const orientation = selectedWindowSystem.panelConfiguration?.orientation || 'horizontal';
                       const operationType = selectedWindowSystem.panelConfiguration?.operationType || 'fixed';
                     %>
@@ -323,7 +323,7 @@
                 <%= selectedWindowSystem.type %>
               </span>
               <p class="text-xs text-gray-500 mt-2">
-                <% const panelString = (selectedWindowSystem.panelConfiguration?.panels || ['X','X']).join(''); %>
+                <% const panelString = (selectedWindowSystem.panelConfiguration?.panels || ['O', 'O']).join(''); %>
                 <%= panelString %> Configuration • 
                 <%= (selectedWindowSystem.panelConfiguration?.operationType || 'fixed').charAt(0).toUpperCase() + (selectedWindowSystem.panelConfiguration?.operationType || 'fixed').slice(1).replace('-', ' ') %>
               </p>

@@ -430,7 +430,7 @@
                 
                 <div>
                   <label for="panelCount" class="form-label">Number of Panels</label>
-                  <input type="number" id="panelCount" min="1" max="8" value="2" class="form-control w-full" onchange="updatePanelInputs()">
+                  <input type="number" id="panelCount" min="1" max="8" value="2" class="form-control w-full" onchange="validateAndUpdatePanels()">
                 </div>
               </div>
               
@@ -447,14 +447,14 @@
               </div>
               
               <!-- Live Preview -->
-              <div class="mt-4 p-4 bg-white rounded-lg border border-gray-200">
-                <label class="form-label text-center block mb-3">Live Preview</label>
+              <div class="mt-4 p-6 bg-white rounded-lg border border-gray-200">
+                <label class="form-label text-center block mb-4 text-lg">Live Preview</label>
                 <div id="panelPreviewContainer" class="flex justify-center items-center">
-                  <div id="panelPreview" class="border-4 border-gray-600 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex" style="min-width: 200px; min-height: 120px;">
+                  <div id="panelPreview" class="border-4 border-gray-600 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex" style="min-width: 320px; min-height: 200px;">
                     <!-- Preview will be generated here -->
                   </div>
                 </div>
-                <p id="panelConfigLabel" class="text-center text-sm font-medium text-gray-700 mt-3">OO - 2 Panel Fixed</p>
+                <p id="panelConfigLabel" class="text-center text-sm font-medium text-gray-700 mt-3">OO - 2 Panel Sliding</p>
               </div>
             </div>
           </div>
@@ -878,6 +878,33 @@
       updatePanelInputs();
     }
     
+    // Validate panel count before updating
+    function validateAndUpdatePanels() {
+      const operationType = document.getElementById('operationType').value;
+      const panelCountInput = document.getElementById('panelCount');
+      const minPanels = getMinPanelsForOperationType(operationType);
+      
+      if (parseInt(panelCountInput.value) < minPanels) {
+        panelCountInput.value = minPanels;
+        const typeNames = { 'sliding': 'Sliding', 'single-hung': 'Single Hung', 'double-hung': 'Double Hung' };
+        showAlert(`${typeNames[operationType] || operationType} windows require at least ${minPanels} panels.`);
+      }
+      
+      updatePanelInputs();
+    }
+    
+    // Get minimum panels required for operation type
+    function getMinPanelsForOperationType(operationType) {
+      switch(operationType) {
+        case 'sliding':
+        case 'single-hung':
+        case 'double-hung':
+          return 2; // These window types need at least 2 panels
+        default:
+          return 1;
+      }
+    }
+    
     function updatePanelInputs() {
       const count = parseInt(document.getElementById('panelCount').value) || 2;
       const builder = document.getElementById('panelLayoutBuilder');
@@ -896,7 +923,7 @@
         const isOperable = panelConfig[i] === 'X'; // X = Operable, O = Fixed
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = `panel-toggle w-16 h-20 rounded-lg border-2 flex flex-col items-center justify-center font-bold text-lg transition-all ${
+        button.className = `panel-toggle w-20 h-24 rounded-lg border-2 flex flex-col items-center justify-center font-bold text-lg transition-all ${
           isOperable 
             ? 'bg-green-500 border-green-600 text-white shadow-lg' 
             : 'bg-gray-200 border-gray-400 text-gray-700'
@@ -913,6 +940,14 @@
     }
     
     function togglePanel(index) {
+      const operationType = document.getElementById('operationType').value;
+      
+      // Fixed operation type cannot have operable panels
+      if (operationType === 'fixed') {
+        showAlert('Fixed windows cannot have operable panels. All panels must be fixed.');
+        return;
+      }
+      
       panelConfig[index] = panelConfig[index] === 'X' ? 'O' : 'X'; // Toggle between X (Operable) and O (Fixed)
       updatePanelInputs();
     }
@@ -931,7 +966,7 @@
       panelConfig.forEach((type, index) => {
         const isOperable = type === 'X'; // X = Operable, O = Fixed
         const panel = document.createElement('div');
-        panel.className = 'relative flex-1 min-w-[60px] min-h-[60px] border-2 border-gray-500 flex items-center justify-center';
+        panel.className = 'relative flex-1 min-w-[80px] min-h-[80px] border-2 border-gray-500 flex items-center justify-center';
         panel.style.background = isOperable 
           ? 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)' 
           : 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)';
@@ -993,9 +1028,68 @@
       }
     }
     
+    // Enforce minimum panels and orientation when operation type changes
+    function enforceMinimumPanels() {
+      const operationType = document.getElementById('operationType').value;
+      const panelCountInput = document.getElementById('panelCount');
+      const panelOrientationSelect = document.getElementById('panelOrientation');
+      const minPanels = getMinPanelsForOperationType(operationType);
+      
+      // Update minimum attribute
+      panelCountInput.min = minPanels;
+      
+      // Enforce orientation based on operation type
+      if (operationType === 'sliding') {
+        // Sliding/Roller can only be horizontal
+        panelOrientationSelect.value = 'horizontal';
+        panelOrientationSelect.disabled = true;
+        panelOrientationSelect.title = 'Sliding/Roller windows are always horizontal';
+        panelOrientationSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+      } else if (operationType === 'single-hung') {
+        // Single Hung can only be vertical
+        panelOrientationSelect.value = 'vertical';
+        panelOrientationSelect.disabled = true;
+        panelOrientationSelect.title = 'Single Hung windows are always vertical';
+        panelOrientationSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+      } else if (operationType === 'double-hung') {
+        // Double Hung defaults to vertical but can be changed
+        panelOrientationSelect.value = 'vertical';
+        panelOrientationSelect.disabled = false;
+        panelOrientationSelect.title = '';
+        panelOrientationSelect.classList.remove('bg-gray-100', 'cursor-not-allowed');
+      } else if (operationType === 'fixed') {
+        // Fixed windows: all panels must be fixed (O)
+        panelOrientationSelect.disabled = false;
+        panelOrientationSelect.title = '';
+        panelOrientationSelect.classList.remove('bg-gray-100', 'cursor-not-allowed');
+        
+        // Set all panels to fixed (O)
+        for (let i = 0; i < panelConfig.length; i++) {
+          panelConfig[i] = 'O';
+        }
+        updatePanelInputs();
+      } else {
+        // Other types: enable orientation selection
+        panelOrientationSelect.disabled = false;
+        panelOrientationSelect.title = '';
+        panelOrientationSelect.classList.remove('bg-gray-100', 'cursor-not-allowed');
+      }
+      
+      // If current count is less than minimum, update it
+      if (parseInt(panelCountInput.value) < minPanels) {
+        panelCountInput.value = minPanels;
+        updatePanelInputs();
+        const typeNames = { 'sliding': 'Sliding', 'single-hung': 'Single Hung', 'double-hung': 'Double Hung' };
+        showAlert(`${typeNames[operationType] || operationType} windows require at least ${minPanels} panels.`);
+      }
+    }
+    
     // Add event listeners for panel configuration changes
     document.getElementById('panelOrientation')?.addEventListener('change', updatePanelPreview);
-    document.getElementById('operationType')?.addEventListener('change', updatePanelPreview);
+    document.getElementById('operationType')?.addEventListener('change', function() {
+      enforceMinimumPanels();
+      updatePanelPreview();
+    });
     
     // Setup advanced configuration toggle
     function setupAdvancedConfigToggle() {
