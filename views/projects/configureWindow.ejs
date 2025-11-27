@@ -1235,6 +1235,18 @@
         return;
       }
       
+      // Check if this is a Casement
+      if (operationType === 'casement') {
+        renderCasementPreview(container, ratioLabel);
+        return;
+      }
+      
+      // Check if this is Sliding/Roller
+      if (operationType === 'sliding') {
+        renderSlidingPreview(container, ratioLabel);
+        return;
+      }
+      
       // Calculate total ratio
       const totalRatio = panelRatios.reduce((a, b) => a + b, 0);
       
@@ -1509,6 +1521,193 @@
           extras.push(transomOverDoorOnly ? 'Transom (Over Door)' : 'Transom');
         }
         ratioLabel.textContent = `${doorDesc} French Door${extras.length > 0 ? ' + ' + extras.join(' + ') : ''}`;
+      }
+    }
+    
+    // Render Casement window preview with hinges and handles
+    function renderCasementPreview(container, ratioLabel) {
+      container.style.flexDirection = orientation === 'vertical' ? 'column' : 'row';
+      
+      // Calculate total ratio
+      const totalRatio = panelRatios.reduce((a, b) => a + b, 0);
+      
+      panelConfig.forEach((type, index) => {
+        const isOperable = type === 'X';
+        const ratio = panelRatios[index] || 1;
+        const panel = document.createElement('div');
+        panel.className = `relative flex items-center justify-center panel-glass ${isOperable ? 'operable-glass' : 'fixed-glass'}`;
+        panel.style.flex = `${ratio} 0 0%`;
+        panel.style.minWidth = orientation === 'horizontal' ? '40px' : 'auto';
+        panel.style.minHeight = orientation === 'vertical' ? '40px' : 'auto';
+        
+        // Determine hinge and handle positions for casement
+        // Alternate hinge sides for multi-panel casements
+        const hingeOnLeft = index % 2 === 0;
+        
+        let casementHardware = '';
+        if (isOperable) {
+          if (orientation === 'horizontal') {
+            // Horizontal layout - hinges on left or right side
+            casementHardware = `
+              <!-- Hinges (3 hinges on the hinge side) -->
+              <div class="absolute ${hingeOnLeft ? 'left-0.5' : 'right-0.5'} top-2 w-1 h-2 rounded-sm" style="background: linear-gradient(90deg, #707070, #a0a0a0, #707070); box-shadow: 0 1px 2px rgba(0,0,0,0.3);"></div>
+              <div class="absolute ${hingeOnLeft ? 'left-0.5' : 'right-0.5'} top-1/2 transform -translate-y-1/2 w-1 h-2 rounded-sm" style="background: linear-gradient(90deg, #707070, #a0a0a0, #707070); box-shadow: 0 1px 2px rgba(0,0,0,0.3);"></div>
+              <div class="absolute ${hingeOnLeft ? 'left-0.5' : 'right-0.5'} bottom-2 w-1 h-2 rounded-sm" style="background: linear-gradient(90deg, #707070, #a0a0a0, #707070); box-shadow: 0 1px 2px rgba(0,0,0,0.3);"></div>
+              
+              <!-- Handle/Crank on opposite side -->
+              <div class="absolute ${hingeOnLeft ? 'right-2' : 'left-2'} top-1/2 transform -translate-y-1/2 flex flex-col items-center">
+                <div class="w-1 h-5 rounded-full" style="background: linear-gradient(90deg, #909090, #c0c0c0, #909090); box-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></div>
+                <div class="w-2.5 h-1 rounded-full mt-0.5" style="background: linear-gradient(180deg, #909090, #c0c0c0, #909090); box-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></div>
+              </div>
+              
+              <!-- Swing direction indicator -->
+              <div class="absolute ${hingeOnLeft ? 'right-0' : 'left-0'} top-1 ${hingeOnLeft ? 'border-r-2' : 'border-l-2'} border-green-500/40 h-2 w-2" style="border-radius: ${hingeOnLeft ? '0 100% 100% 0' : '100% 0 0 100%'};"></div>
+              <div class="absolute ${hingeOnLeft ? 'right-0' : 'left-0'} bottom-1 ${hingeOnLeft ? 'border-r-2' : 'border-l-2'} border-green-500/40 h-2 w-2" style="border-radius: ${hingeOnLeft ? '0 100% 100% 0' : '100% 0 0 100%'};"></div>
+            `;
+          } else {
+            // Vertical layout - hinges on top or bottom
+            const hingeOnTop = index % 2 === 0;
+            casementHardware = `
+              <!-- Hinges (3 hinges on the hinge side) -->
+              <div class="absolute ${hingeOnTop ? 'top-0.5' : 'bottom-0.5'} left-2 h-1 w-2 rounded-sm" style="background: linear-gradient(180deg, #707070, #a0a0a0, #707070); box-shadow: 0 1px 2px rgba(0,0,0,0.3);"></div>
+              <div class="absolute ${hingeOnTop ? 'top-0.5' : 'bottom-0.5'} left-1/2 transform -translate-x-1/2 h-1 w-2 rounded-sm" style="background: linear-gradient(180deg, #707070, #a0a0a0, #707070); box-shadow: 0 1px 2px rgba(0,0,0,0.3);"></div>
+              <div class="absolute ${hingeOnTop ? 'top-0.5' : 'bottom-0.5'} right-2 h-1 w-2 rounded-sm" style="background: linear-gradient(180deg, #707070, #a0a0a0, #707070); box-shadow: 0 1px 2px rgba(0,0,0,0.3);"></div>
+              
+              <!-- Handle on opposite side -->
+              <div class="absolute ${hingeOnTop ? 'bottom-2' : 'top-2'} left-1/2 transform -translate-x-1/2 flex items-center">
+                <div class="h-1 w-5 rounded-full" style="background: linear-gradient(180deg, #909090, #c0c0c0, #909090); box-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></div>
+              </div>
+              
+              <!-- Swing direction indicator -->
+              <div class="absolute ${hingeOnTop ? 'bottom-0' : 'top-0'} left-1 ${hingeOnTop ? 'border-b-2' : 'border-t-2'} border-green-500/40 h-2 w-2" style="border-radius: ${hingeOnTop ? '0 0 100% 100%' : '100% 100% 0 0'};"></div>
+              <div class="absolute ${hingeOnTop ? 'bottom-0' : 'top-0'} right-1 ${hingeOnTop ? 'border-b-2' : 'border-t-2'} border-green-500/40 h-2 w-2" style="border-radius: ${hingeOnTop ? '0 0 100% 100%' : '100% 100% 0 0'};"></div>
+            `;
+          }
+        }
+        
+        panel.innerHTML = `
+          <div class="absolute inset-0 glass-effect"></div>
+          ${isOperable ? casementHardware : ''}
+          ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35); letter-spacing: 0.5px;">VITRALUX</div>' : ''}
+          <div class="relative z-10 flex flex-col items-center">
+            <span class="text-xl font-bold drop-shadow-sm" style="color: ${isOperable ? 'rgba(22,101,52,0.7)' : 'rgba(30,64,175,0.7)'};">${type}</span>
+          </div>
+        `;
+        
+        container.appendChild(panel);
+        
+        // Add mullion between panels
+        if (index < panelConfig.length - 1) {
+          const mullion = document.createElement('div');
+          mullion.className = 'aluminum-mullion flex-shrink-0';
+          if (orientation === 'horizontal') {
+            mullion.style.width = '6px';
+            mullion.style.alignSelf = 'stretch';
+          } else {
+            mullion.style.height = '6px';
+            mullion.style.width = '100%';
+          }
+          container.appendChild(mullion);
+        }
+      });
+      
+      // Update ratio label
+      if (ratioLabel) {
+        const percentages = panelRatios.map(r => Math.round((r / totalRatio) * 100));
+        const configString = panelConfig.join('');
+        const operableCount = panelConfig.filter(p => p === 'X').length;
+        ratioLabel.textContent = `${configString} Casement (${operableCount} Operable) - ${percentages.join('% | ')}%`;
+      }
+    }
+    
+    // Render Sliding/Roller window preview with handles
+    function renderSlidingPreview(container, ratioLabel) {
+      container.style.flexDirection = orientation === 'vertical' ? 'column' : 'row';
+      
+      // Calculate total ratio
+      const totalRatio = panelRatios.reduce((a, b) => a + b, 0);
+      
+      panelConfig.forEach((type, index) => {
+        const isOperable = type === 'X';
+        const ratio = panelRatios[index] || 1;
+        const panel = document.createElement('div');
+        panel.className = `relative flex items-center justify-center panel-glass ${isOperable ? 'operable-glass' : 'fixed-glass'}`;
+        panel.style.flex = `${ratio} 0 0%`;
+        panel.style.minWidth = orientation === 'horizontal' ? '40px' : 'auto';
+        panel.style.minHeight = orientation === 'vertical' ? '40px' : 'auto';
+        
+        // Determine handle position for sliding windows
+        let slidingHandle = '';
+        if (isOperable) {
+          if (orientation === 'horizontal') {
+            // Place handle on the outer edge (away from meeting rail)
+            const hasFixedOnLeft = index > 0 && panelConfig[index - 1] === 'O';
+            const hasFixedOnRight = index < panelConfig.length - 1 && panelConfig[index + 1] === 'O';
+            const handleOnRight = hasFixedOnLeft || (!hasFixedOnRight && index > 0);
+            
+            slidingHandle = `
+              <!-- Sliding handle (vertical bar) -->
+              <div class="absolute ${handleOnRight ? 'right-1.5' : 'left-1.5'} top-1/2 transform -translate-y-1/2">
+                <div class="w-1 h-8 rounded-full" style="background: linear-gradient(90deg, #808080, #d0d0d0, #808080); box-shadow: 1px 1px 3px rgba(0,0,0,0.3);"></div>
+              </div>
+              <!-- Rail indicators -->
+              <div class="absolute top-0.5 left-1 right-1 h-0.5 rounded-full" style="background: linear-gradient(90deg, #606060, #909090, #606060);"></div>
+              <div class="absolute bottom-0.5 left-1 right-1 h-0.5 rounded-full" style="background: linear-gradient(90deg, #606060, #909090, #606060);"></div>
+            `;
+          } else {
+            // Vertical sliding
+            slidingHandle = `
+              <!-- Sliding handle (horizontal bar) -->
+              <div class="absolute bottom-1.5 left-1/2 transform -translate-x-1/2">
+                <div class="h-1 w-8 rounded-full" style="background: linear-gradient(180deg, #808080, #d0d0d0, #808080); box-shadow: 1px 1px 3px rgba(0,0,0,0.3);"></div>
+              </div>
+              <!-- Rail indicators -->
+              <div class="absolute left-0.5 top-1 bottom-1 w-0.5 rounded-full" style="background: linear-gradient(180deg, #606060, #909090, #606060);"></div>
+              <div class="absolute right-0.5 top-1 bottom-1 w-0.5 rounded-full" style="background: linear-gradient(180deg, #606060, #909090, #606060);"></div>
+            `;
+          }
+        }
+        
+        // Sliding direction indicator
+        const slidingIndicator = isOperable ? (
+          orientation === 'horizontal' 
+            ? '<div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 text-green-600 opacity-70"><i class="fas fa-arrows-alt-h text-xs"></i></div>'
+            : '<div class="absolute right-1 top-1/2 transform -translate-y-1/2 text-green-600 opacity-70"><i class="fas fa-arrows-alt-v text-xs"></i></div>'
+        ) : '';
+        
+        panel.innerHTML = `
+          <div class="absolute inset-0 glass-effect"></div>
+          ${isOperable ? slidingHandle : ''}
+          ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35); letter-spacing: 0.5px;">VITRALUX</div>' : ''}
+          <div class="relative z-10 flex flex-col items-center">
+            <span class="text-xl font-bold drop-shadow-sm" style="color: ${isOperable ? 'rgba(22,101,52,0.7)' : 'rgba(30,64,175,0.7)'};">${type}</span>
+          </div>
+          ${slidingIndicator}
+        `;
+        
+        container.appendChild(panel);
+        
+        // Add mullion between panels
+        if (index < panelConfig.length - 1) {
+          const mullion = document.createElement('div');
+          mullion.className = 'aluminum-mullion flex-shrink-0';
+          if (orientation === 'horizontal') {
+            mullion.style.width = '6px';
+            mullion.style.alignSelf = 'stretch';
+          } else {
+            mullion.style.height = '6px';
+            mullion.style.width = '100%';
+          }
+          container.appendChild(mullion);
+        }
+      });
+      
+      // Update ratio label
+      if (ratioLabel) {
+        const percentages = panelRatios.map(r => Math.round((r / totalRatio) * 100));
+        const configString = panelConfig.join('');
+        const operableCount = panelConfig.filter(p => p === 'X').length;
+        ratioLabel.textContent = `${configString} Sliding (${operableCount} Operable) - ${percentages.join('% | ')}%`;
       }
     }
     

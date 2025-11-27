@@ -30,6 +30,7 @@ const frenchDoorConfigSchema = new Schema({
   showLogo: { type: Boolean, default: true }
 }, { _id: false });
 
+
 // Panel configuration for dynamic preview (e.g., OXXO, OX, XOX)
 const panelConfigurationSchema = new Schema({
   panels: [{ 

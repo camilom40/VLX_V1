@@ -301,6 +301,14 @@ Multi-step wizard with 4 steps:
    - Darker frame profiles with metallic gradient
    - Visual indicators for draggable dividers (grip dots, hover effects, pulsing animation)
    - VITRALUX logo watermark on glass panels (toggleable via checkbox)
+   - **Casement windows** now show realistic hardware:
+     - 3 hinges on the hinge side (alternating sides for multi-panel)
+     - Handle/crank on the opposite side
+     - Subtle swing direction indicators (curved lines)
+   - **Sliding/Roller windows** now show realistic hardware:
+     - Vertical pull handle on operable panels (auto-positioned near meeting rail)
+     - Rail indicators at top and bottom showing the sliding track
+     - Direction arrows indicating sliding motion
 
 4. **French Door Operation Type**
    - Added new `french-door` operation type
@@ -399,6 +407,8 @@ Multi-step wizard with 4 steps:
 - `frenchDoorConfig` object stores French door specific settings
 - `updatePanelPreview()` renders the live window preview
 - `renderFrenchDoorPreview()` handles French door specific rendering
+- `renderCasementPreview()` handles casement window rendering with hinges and handles
+- `renderSlidingPreview()` handles sliding window rendering with handles and rail indicators
 - Draggable dividers use mouse events (mousedown, mousemove, mouseup) for resizing
 - `createGlassPanel()`, `createDoorPanel()`, `createAluminumMullion()` helper functions for preview elements
 
@@ -406,6 +416,8 @@ Multi-step wizard with 4 steps:
 - `panelConfiguration` loaded from server via `<%- JSON.stringify(selectedWindowSystem.panelConfiguration) %>`
 - `renderWindowPreview()` renders panels based on stored configuration
 - `renderFrenchDoorPreview()` handles French door specific rendering (mirrors admin version)
+- `renderCasementPreview()` handles casement window rendering with hinges and handles
+- `renderSlidingPreview()` handles sliding window rendering with handles and rail indicators
 - `getOperationIndicator()` returns appropriate icon for each operation type
 - Helper functions create glass panels, door panels, and aluminum mullions
 - Preview initializes on DOMContentLoaded and updates with dimension changes
