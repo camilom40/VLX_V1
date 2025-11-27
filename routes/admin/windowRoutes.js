@@ -223,11 +223,10 @@ router.get('/users', async (req, res) => {
 });
 
 // Route to handle the composition of a new window
-router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), async (req, res) => {
+router.post('/compose-window/compose', isAdmin, async (req, res) => {
   try {
     console.log('Compose window request received');
     console.log('Request body:', req.body);
-    console.log('Request file:', req.file ? 'File uploaded' : 'No file');
     
     // Parse JSON arrays with error handling
     let profiles, accessories;
@@ -259,7 +258,7 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
       panelConfiguration = JSON.parse(req.body.panelConfiguration || '{}');
     } catch (e) {
       console.error('Error parsing panelConfiguration:', e);
-      panelConfiguration = { panels: ['X', 'X'], orientation: 'horizontal', operationType: 'fixed' };
+      panelConfiguration = { panels: ['O', 'O'], orientation: 'horizontal', operationType: 'fixed' };
     }
 
     const { type } = req.body;
@@ -273,44 +272,6 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
     if (profiles.length === 0) {
       console.error('At least one profile is required');
       return res.status(400).json({ error: 'At least one profile is required' });
-    }
-    
-    let imagePath = null;
-
-    // Handle image upload (optional)
-    if (req.file) {
-      try {
-        const sharp = require('sharp');
-        const path = require('path');
-        
-        // Create uploads directory if it doesn't exist
-        const uploadDir = path.join(__dirname, '../../public/uploads/window-systems');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        // Generate unique filename
-        const timestamp = Date.now();
-        const originalName = req.file.originalname;
-        const extension = path.extname(originalName);
-        const filename = `window-system-${timestamp}${extension}`;
-        const filepath = path.join(uploadDir, filename);
-        
-        // Process and save image
-        await sharp(req.file.buffer)
-          .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 80 })
-          .toFile(filepath);
-        
-        imagePath = `/uploads/window-systems/${filename}`;
-        console.log('Image processed and saved:', imagePath);
-      } catch (imageError) {
-        console.error('Error processing image:', imageError);
-        // Continue without image if processing fails
-        imagePath = null;
-      }
-    } else {
-      console.log('No image uploaded - continuing without image');
     }
 
     const profileEntries = profiles.map(profile => ({
@@ -333,14 +294,12 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
 
     console.log('Creating window system with data:', {
       type,
-      imagePath,
       profileCount: profileEntries.length,
       accessoryCount: accessoryEntries.length
     });
 
     const newWindow = new WindowSystem({
       type,
-      image: imagePath,
       profiles: profileEntries,
       accessories: accessoryEntries,
       glassRestrictions: [], // Glass restrictions removed - validation happens at quote time
@@ -351,7 +310,7 @@ router.post('/compose-window/compose', isAdmin, upload.single('windowImage'), as
         showToUser: Boolean(muntinConfiguration.showToUser),
       },
       panelConfiguration: {
-        panels: panelConfiguration.panels || ['X', 'X'],
+        panels: panelConfiguration.panels || ['O', 'O'],
         orientation: panelConfiguration.orientation || 'horizontal',
         operationType: panelConfiguration.operationType || 'fixed',
         hasMullion: panelConfiguration.hasMullion !== false,
@@ -398,44 +357,9 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 });
 
 // Route to handle the update of a window system
-router.post('/edit/:id', isAdmin, upload.single('windowImage'), async (req, res) => {
+router.post('/edit/:id', isAdmin, async (req, res) => {
   try {
     const { type, profiles = [], accessories = [], glassRestrictions = [] } = req.body;
-    let imagePath = null;
-
-    // Handle image upload
-    if (req.file) {
-      try {
-        const sharp = require('sharp');
-        const path = require('path');
-        
-        // Create uploads directory if it doesn't exist
-        const uploadDir = path.join(__dirname, '../../public/uploads/window-systems');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        // Generate unique filename
-        const timestamp = Date.now();
-        const originalName = req.file.originalname;
-        const extension = path.extname(originalName);
-        const filename = `window-system-${timestamp}${extension}`;
-        const filepath = path.join(uploadDir, filename);
-        
-        // Process and save image
-        await sharp(req.file.buffer)
-          .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 80 })
-          .toFile(filepath);
-        
-        imagePath = `/uploads/window-systems/${filename}`;
-        console.log('Image processed and saved:', imagePath);
-      } catch (imageError) {
-        console.error('Error processing image:', imageError);
-        // Continue without image if processing fails
-        imagePath = null;
-      }
-    }
 
     const profileEntries = JSON.parse(profiles).map(profile => ({
       profile: profile.profileId,
@@ -478,7 +402,7 @@ router.post('/edit/:id', isAdmin, upload.single('windowImage'), async (req, res)
       panelConfigurationData = JSON.parse(req.body.panelConfiguration || '{}');
     } catch (e) {
       console.error('Error parsing panelConfiguration:', e);
-      panelConfigurationData = { panels: ['X', 'X'], orientation: 'horizontal', operationType: 'fixed' };
+      panelConfigurationData = { panels: ['O', 'O'], orientation: 'horizontal', operationType: 'fixed' };
     }
 
     // Prepare update object
@@ -494,7 +418,7 @@ router.post('/edit/:id', isAdmin, upload.single('windowImage'), async (req, res)
         showToUser: Boolean(muntinConfigurationData.showToUser),
       },
       panelConfiguration: {
-        panels: panelConfigurationData.panels || ['X', 'X'],
+        panels: panelConfigurationData.panels || ['O', 'O'],
         orientation: panelConfigurationData.orientation || 'horizontal',
         operationType: panelConfigurationData.operationType || 'fixed',
         hasMullion: panelConfigurationData.hasMullion !== false,
@@ -502,37 +426,12 @@ router.post('/edit/:id', isAdmin, upload.single('windowImage'), async (req, res)
       },
     };
 
-    // Only update image if a new one was uploaded
-    if (imagePath) {
-      updateData.image = imagePath;
-    }
-
     await WindowSystem.findByIdAndUpdate(req.params.id, updateData);
 
     res.redirect('/admin/list-window-systems');
   } catch (error) {
     console.error('Failed to update window system:', error.message);
     res.status(500).json({ error: error.message });
-  }
-});
-
-
-// Route to remove image from window system
-router.post('/remove-image/:id', isAdmin, async (req, res) => {
-  try {
-    const windowSystem = await WindowSystem.findById(req.params.id);
-    if (!windowSystem) {
-      return res.status(404).json({ error: 'Window system not found' });
-    }
-
-    // Remove image field
-    windowSystem.image = null;
-    await windowSystem.save();
-
-    res.json({ message: 'Image removed successfully!' });
-  } catch (error) {
-    console.error('Failed to remove image:', error.message);
-    res.status(500).json({ error: 'Failed to remove image' });
   }
 });
 

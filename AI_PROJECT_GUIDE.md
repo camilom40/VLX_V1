@@ -96,10 +96,10 @@ Admin creates window system "templates" that define:
 - **Profiles**: Frame components with pricing, weight, length discounts
 - **Accessories**: Hardware, handles, locks, etc.
 - **Muntin Configuration**: Grid patterns for decorative glass divisions
-- **Panel Configuration**: Defines the window layout (e.g., OXXO for sliding)
+- **Panel Configuration**: Defines the window layout (e.g., OXXO for sliding - O=Fixed, X=Operable)
   - `operationType`: sliding, casement, awning, fixed, etc.
   - `orientation`: horizontal or vertical
-  - `panels`: Array of 'O' (Operable) and 'X' (Fixed) panels
+  - `panels`: Array of 'X' (Operable) and 'O' (Fixed) panels
   - `hasMullion`: Whether mullions exist between panels
   - `mullionWidth`: Width of mullions
 
@@ -142,7 +142,7 @@ The configure window page features a dynamic preview that:
   panelConfiguration: {
     operationType: String,  // 'sliding', 'casement', 'fixed', etc.
     orientation: String,    // 'horizontal' or 'vertical'
-    panels: [String],       // ['O', 'X', 'X', 'O'] for OXXO
+    panels: [String],       // ['O', 'X', 'X', 'O'] for OXXO (O=Fixed, X=Operable)
     hasMullion: Boolean,
     mullionWidth: Number
   }
@@ -248,7 +248,7 @@ Multi-step wizard with 4 steps:
 
 1. **Configure Window Page (`/projects/:projectId/windows/new`)**
    - Dynamic visual preview based on panel configuration
-   - Visual shows O (Operable) and X (Fixed) panels
+   - Visual shows X (Operable) and O (Fixed) panels
    - Sliding windows show direction arrows
    - Preview scales with dimension inputs
 

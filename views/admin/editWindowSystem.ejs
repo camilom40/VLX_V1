@@ -10,43 +10,10 @@
   <div class="container mx-auto py-8">
     <h1 class="text-3xl font-bold mb-6 text-center">Edit Window System</h1>
     <div class="bg-white shadow-md rounded-lg p-6">
-      <form id="window-form" action="/admin/edit/<%= windowSystem._id %>" method="POST" enctype="multipart/form-data">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <label for="type" class="block text-gray-700 font-bold mb-2">Window Type:</label>
-            <input type="text" id="type" name="type" value="<%= windowSystem.type %>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-          </div>
-          
-          <!-- Window System Image -->
-          <div>
-            <label class="block text-gray-700 font-bold mb-2">Window System Image:</label>
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-              <% if (windowSystem.image) { %>
-                <div class="mb-4">
-                  <img src="<%= windowSystem.image %>" 
-                       alt="<%= windowSystem.type %>" 
-                       class="max-w-full h-32 object-contain mx-auto rounded border">
-                </div>
-                <p class="text-sm text-gray-600 mb-2">Current image</p>
-                <button type="button" onclick="removeCurrentImage()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
-                  Remove Image
-                </button>
-              <% } else { %>
-                <div id="imagePreview" class="hidden mb-4">
-                  <img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded border">
-                </div>
-                <div id="uploadArea" class="cursor-pointer">
-                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <p class="mt-1 text-sm text-gray-600">Click to upload or drag and drop</p>
-                  <p class="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
-                </div>
-                <input type="file" id="windowImage" name="windowImage" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
-              <% } %>
-            </div>
-            <p class="text-xs text-gray-500 mt-2">This image will be used consistently across all quotes for this window system.</p>
-          </div>
+      <form id="window-form" action="/admin/edit/<%= windowSystem._id %>" method="POST">
+        <div class="mb-6">
+          <label for="type" class="block text-gray-700 font-bold mb-2">Window Type:</label>
+          <input type="text" id="type" name="type" value="<%= windowSystem.type %>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline max-w-md">
         </div>
 
         <!-- Profiles Section -->
@@ -825,127 +792,6 @@
       document.getElementById('accessories-empty-state').style.display = 'none';
     }
 
-    // Image Upload Functions
-    function setupImageUpload() {
-      const uploadArea = document.getElementById('uploadArea');
-      const fileInput = document.getElementById('windowImage');
-      
-      if (!uploadArea || !fileInput) return;
-      
-      // Drag and drop functionality
-      uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        uploadArea.classList.add('border-blue-400', 'bg-blue-50');
-      });
-      
-      uploadArea.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
-      });
-      
-      uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-          fileInput.files = files;
-          handleImageUpload(fileInput);
-        }
-      });
-      
-      // Click to upload
-      uploadArea.addEventListener('click', function() {
-        fileInput.click();
-      });
-    }
-    
-    function handleImageUpload(input) {
-      const file = input.files[0];
-      if (!file) return;
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file.');
-        return;
-      }
-      
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB.');
-        return;
-      }
-      
-      // Show preview
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const preview = document.getElementById('imagePreview');
-        const previewImg = document.getElementById('previewImg');
-        const uploadArea = document.getElementById('uploadArea');
-        
-        previewImg.src = e.target.result;
-        preview.style.display = 'block';
-        uploadArea.style.display = 'none';
-        
-        // Add remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm mt-2';
-        removeBtn.textContent = 'Remove Image';
-        removeBtn.onclick = removeImage;
-        preview.appendChild(removeBtn);
-      };
-      reader.readAsDataURL(file);
-    }
-    
-    function removeImage() {
-      const fileInput = document.getElementById('windowImage');
-      const preview = document.getElementById('imagePreview');
-      const uploadArea = document.getElementById('uploadArea');
-      
-      if (fileInput) {
-        fileInput.value = '';
-      }
-      
-      if (preview) {
-        preview.style.display = 'none';
-        preview.innerHTML = '<img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded border">';
-      }
-      
-      if (uploadArea) {
-        uploadArea.style.display = 'block';
-      }
-    }
-    
-    async function removeCurrentImage() {
-      if (confirm('Are you sure you want to remove the current image?')) {
-        try {
-          const response = await fetch(`/admin/remove-image/<%= windowSystem._id %>`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          const result = await response.json();
-          
-          if (response.ok) {
-            // Reload the page to show the updated state
-            location.reload();
-          } else {
-            alert('Error: ' + result.error);
-          }
-        } catch (error) {
-          console.error('Error removing image:', error);
-          alert('Failed to remove image');
-        }
-      }
-    }
-    
-    // Initialize image upload functionality
-    document.addEventListener('DOMContentLoaded', function() {
-      setupImageUpload();
-    });
-  </script>
+      </script>
 </body>
 </html>

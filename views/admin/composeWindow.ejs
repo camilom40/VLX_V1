@@ -127,23 +127,6 @@
       box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
     }
     
-    /* Enhanced Upload Area */
-    #uploadArea {
-      transition: all 0.3s ease;
-      user-select: none;
-      border: 3px dashed #d1d5db;
-      border-radius: 1rem;
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-      cursor: pointer;
-    }
-    
-    #uploadArea:hover {
-      border-color: #3b82f6;
-      background: linear-gradient(135deg, #eff6ff, #dbeafe);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
-    }
-    
     /* Enhanced Info Boxes */
     .info-box {
       background: linear-gradient(135deg, #eff6ff, #dbeafe);
@@ -338,34 +321,6 @@
       transform: translateY(0);
     }
     
-    /* Enhanced Upload Area States */
-    #uploadArea.dragover {
-      border-color: #3b82f6 !important;
-      background: linear-gradient(135deg, #eff6ff, #dbeafe) !important;
-      transform: scale(1.02);
-      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
-    }
-    
-    /* Ensure upload area is visible when not hidden */
-    #uploadArea:not(.hidden) {
-      display: flex !important;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    /* Ensure preview is properly styled */
-    #imagePreview {
-      text-align: center;
-    }
-    
-    #imagePreview img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 0.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
     /* Enhanced Table Row Interactions */
     .enhanced-table tr {
       transition: all 0.2s ease;
@@ -422,7 +377,7 @@
     </div>
     
     <div class="bg-gradient-to-br from-white to-gray-50 shadow-2xl rounded-3xl p-8 border border-gray-100">
-      <form id="window-form" action="/admin/compose-window/compose" method="POST" enctype="multipart/form-data">
+      <form id="window-form" action="/admin/compose-window/compose" method="POST">
         
         <!-- Step 1: Window Type -->
         <div id="step1-section" class="form-section active">
@@ -448,7 +403,7 @@
               <h4 class="text-lg font-semibold text-indigo-800 mb-4">
                 <i class="fas fa-th-large mr-2"></i>Panel Configuration
               </h4>
-              <p class="text-sm text-indigo-600 mb-4">Define the panel layout for dynamic window preview. Use O for Operable (sliding/opening) panels and X for Fixed panels.</p>
+              <p class="text-sm text-indigo-600 mb-4">Define the panel layout for dynamic window preview. Use X for Operable (sliding/opening) panels and O for Fixed panels.</p>
               
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
@@ -486,8 +441,8 @@
                   <!-- Panels will be generated here -->
                 </div>
                 <p class="text-xs text-gray-500 mt-2">
-                  <span class="inline-block w-4 h-4 bg-green-500 rounded mr-1 align-middle"></span> O = Operable (opens/slides)
-                  <span class="inline-block w-4 h-4 bg-gray-400 rounded ml-3 mr-1 align-middle"></span> X = Fixed
+                  <span class="inline-block w-4 h-4 bg-green-500 rounded mr-1 align-middle"></span> X = Operable (opens/slides)
+                  <span class="inline-block w-4 h-4 bg-gray-400 rounded ml-3 mr-1 align-middle"></span> O = Fixed
                 </p>
               </div>
               
@@ -499,43 +454,7 @@
                     <!-- Preview will be generated here -->
                   </div>
                 </div>
-                <p id="panelConfigLabel" class="text-center text-sm font-medium text-gray-700 mt-3">XX - 2 Panel Fixed</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-1 gap-6 mt-4">
-            <!-- Window System Image (Optional) -->
-            <div class="mb-4">
-              <label for="windowImage" class="form-label">
-                Window System Image
-                <span class="help-tooltip ml-2">
-                  <i class="fas fa-question-circle text-blue-500"></i>
-                  <span class="tooltip-text">Upload an image that represents this window system. This will be used in quotes and previews.</span>
-                </span>
-              </label>
-              
-              <!-- Image Preview (shown when image is uploaded) -->
-              <div id="imagePreview" class="hidden mb-4 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl text-center">
-                <img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded-lg border-2 border-gray-200 mb-3">
-                <div class="text-sm text-blue-700 font-medium">Image uploaded successfully!</div>
-              </div>
-              
-              <!-- Upload Area (hidden when image is uploaded) -->
-              <div id="uploadArea" class="cursor-pointer p-8 text-center">
-                <div class="upload-content">
-                  <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
-                  <h3 class="text-lg font-semibold text-gray-700 mb-2">Upload Window System Image</h3>
-                  <p class="text-gray-600 mb-3">Click to upload or drag and drop your image here</p>
-                  <p class="text-sm text-gray-500 mb-4">Supports PNG, JPG, GIF up to 5MB</p>
-                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    This image will be used consistently across all quotes for this window system
-                  </div>
-                </div>
-                <input type="file" id="windowImage" name="windowImage" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
-                
-
+                <p id="panelConfigLabel" class="text-center text-sm font-medium text-gray-700 mt-3">OO - 2 Panel Fixed</p>
               </div>
             </div>
           </div>
@@ -928,7 +847,7 @@
     let accessories = [];
     let currentStep = 1;
     let lockedLengthUnit = null; // Track the unit used for profiles (null = not set yet)
-    let panelConfig = ['X', 'X']; // Default panel configuration
+    let panelConfig = ['O', 'O']; // Default panel configuration (O = Fixed)
     
     // Initialize the page
     document.addEventListener('DOMContentLoaded', function() {
@@ -936,7 +855,6 @@
         updateEmptyStates();
         setupStepNavigation();
         setupAdvancedConfigToggle();
-        setupImageUpload();
         initializePanelConfiguration();
         
         // Initialize first step - ensure only step 1 is visible
@@ -966,7 +884,7 @@
       
       // Adjust panel config array
       while (panelConfig.length < count) {
-        panelConfig.push('X');
+        panelConfig.push('O'); // Default new panels to Fixed (O)
       }
       while (panelConfig.length > count) {
         panelConfig.pop();
@@ -975,7 +893,7 @@
       // Build panel buttons
       builder.innerHTML = '';
       for (let i = 0; i < count; i++) {
-        const isOperable = panelConfig[i] === 'O';
+        const isOperable = panelConfig[i] === 'X'; // X = Operable, O = Fixed
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `panel-toggle w-16 h-20 rounded-lg border-2 flex flex-col items-center justify-center font-bold text-lg transition-all ${
@@ -995,7 +913,7 @@
     }
     
     function togglePanel(index) {
-      panelConfig[index] = panelConfig[index] === 'O' ? 'X' : 'O';
+      panelConfig[index] = panelConfig[index] === 'X' ? 'O' : 'X'; // Toggle between X (Operable) and O (Fixed)
       updatePanelInputs();
     }
     
@@ -1011,7 +929,7 @@
       // Build preview panels
       preview.innerHTML = '';
       panelConfig.forEach((type, index) => {
-        const isOperable = type === 'O';
+        const isOperable = type === 'X'; // X = Operable, O = Fixed
         const panel = document.createElement('div');
         panel.className = 'relative flex-1 min-w-[60px] min-h-[60px] border-2 border-gray-500 flex items-center justify-center';
         panel.style.background = isOperable 
@@ -1078,218 +996,6 @@
     // Add event listeners for panel configuration changes
     document.getElementById('panelOrientation')?.addEventListener('change', updatePanelPreview);
     document.getElementById('operationType')?.addEventListener('change', updatePanelPreview);
-    
-    // Setup image upload functionality
-    function setupImageUpload() {
-      const uploadArea = document.getElementById('uploadArea');
-      const fileInput = document.getElementById('windowImage');
-      
-      if (!uploadArea || !fileInput) {
-        console.error('Image upload elements not found');
-        return;
-      }
-      
-      // Click to upload
-      uploadArea.addEventListener('click', () => {
-        fileInput.click();
-      });
-      
-      // Enhanced drag and drop with better visual feedback
-      uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        uploadArea.classList.add('dragover');
-        uploadArea.style.borderColor = '#3b82f6';
-        uploadArea.style.backgroundColor = '#eff6ff';
-      });
-      
-      uploadArea.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        uploadArea.classList.add('dragover');
-      });
-      
-      uploadArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Only remove dragover class if we're actually leaving the upload area
-        if (!uploadArea.contains(e.relatedTarget)) {
-          uploadArea.classList.remove('dragover');
-          uploadArea.style.borderColor = '#d1d5db';
-          uploadArea.style.backgroundColor = 'transparent';
-        }
-      });
-      
-      uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Remove dragover styling
-        uploadArea.classList.remove('dragover');
-        uploadArea.style.borderColor = '#d1d5db';
-        uploadArea.style.backgroundColor = 'transparent';
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-          console.log('Files dropped:', files.length);
-          fileInput.files = files;
-          handleImageUpload(fileInput);
-        }
-      });
-      
-      // Prevent default drag behaviors on document
-      document.addEventListener('dragover', (e) => {
-        e.preventDefault();
-      });
-      
-      document.addEventListener('drop', (e) => {
-        e.preventDefault();
-      });
-      
-      // Add some debugging
-      console.log('Image upload setup completed');
-      console.log('Upload area:', uploadArea);
-      console.log('File input:', fileInput);
-    }
-    
-
-    
-    // Handle image upload and preview
-    function handleImageUpload(input) {
-      console.log('handleImageUpload called with:', input);
-      
-      const file = input.files[0];
-      if (!file) {
-        console.log('No file selected');
-        return;
-      }
-      
-      console.log('File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        console.error('Invalid file type:', file.type);
-        showAlert('Please select a valid image file.');
-        return;
-      }
-      
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        console.error('File too large:', file.size);
-        showAlert('Image size must be less than 5MB.');
-        return;
-      }
-      
-      console.log('File validation passed, creating preview...');
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        console.log('File read successfully');
-        console.log('File result:', e.target.result);
-        
-        const preview = document.getElementById('imagePreview');
-        const previewImg = document.getElementById('previewImg');
-        const uploadArea = document.getElementById('uploadArea');
-        
-        console.log('Preview element:', preview);
-        console.log('PreviewImg element:', previewImg);
-        console.log('UploadArea element:', uploadArea);
-        
-        if (!preview || !previewImg || !uploadArea) {
-          console.error('Preview elements not found');
-          return;
-        }
-        
-        // Set the image source
-        console.log('Setting image source...');
-        previewImg.src = e.target.result;
-        
-        previewImg.onload = function() {
-          console.log('Image loaded successfully');
-          console.log('Image dimensions:', this.naturalWidth, 'x', this.naturalHeight);
-        };
-        
-        previewImg.onerror = function() {
-          console.error('Error loading image preview');
-          showAlert('Error loading image preview.');
-        };
-        
-        // Show preview and hide upload area
-        console.log('Showing preview, hiding upload area...');
-        preview.style.display = 'block';
-        preview.classList.remove('hidden');
-        uploadArea.style.display = 'none';
-        uploadArea.classList.add('hidden');
-        
-        console.log('Preview display style:', preview.style.display);
-        console.log('Upload area display style:', uploadArea.style.display);
-        console.log('Preview classes after change:', preview.className);
-        console.log('Upload area classes after change:', uploadArea.className);
-        
-        // Add remove button if it doesn't exist
-        if (!document.getElementById('removeImageBtn')) {
-          const removeBtn = document.createElement('button');
-          removeBtn.id = 'removeImageBtn';
-          removeBtn.type = 'button';
-          removeBtn.className = 'btn-secondary mt-3 px-4 py-2 text-sm';
-          removeBtn.innerHTML = '<i class="fas fa-trash mr-2"></i>Remove Image';
-          removeBtn.onclick = removeImage;
-          preview.appendChild(removeBtn);
-        }
-        
-        console.log('Image preview created successfully');
-      };
-      
-      reader.onerror = function(error) {
-        console.error('Error reading file:', error);
-        showAlert('Error reading the image file.');
-      };
-      
-      reader.readAsDataURL(file);
-    }
-    
-    // Remove uploaded image
-    function removeImage() {
-      const fileInput = document.getElementById('windowImage');
-      const preview = document.getElementById('imagePreview');
-      const uploadArea = document.getElementById('uploadArea');
-      const removeBtn = document.getElementById('removeImageBtn');
-      
-      if (!fileInput || !preview || !uploadArea) {
-        console.error('Required elements not found for removeImage');
-        return;
-      }
-      
-      // Clear the file input
-      fileInput.value = '';
-      
-      // Hide preview and show upload area
-      console.log('Hiding preview, showing upload area...');
-      preview.style.display = 'none';
-      preview.classList.add('hidden');
-      uploadArea.style.display = 'block';
-      uploadArea.classList.remove('hidden');
-      
-      console.log('Preview display style:', preview.style.display);
-      console.log('Upload area display style:', uploadArea.style.display);
-      
-      // Remove the remove button
-      if (removeBtn) {
-        removeBtn.remove();
-      }
-      
-      // Clear the preview image source
-      const previewImg = document.getElementById('previewImg');
-      if (previewImg) {
-        previewImg.src = '';
-      }
-      
-      console.log('Image removed successfully');
-    }
-    
-
     
     // Setup advanced configuration toggle
     function setupAdvancedConfigToggle() {
