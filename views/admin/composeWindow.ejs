@@ -1585,6 +1585,127 @@
       updateDragHint(true);
     }
     
+    // Render Single Hung window preview with proper sash appearance
+    function renderSingleHungPreview(preview, label) {
+      preview.innerHTML = '';
+      preview.style.flexDirection = 'column'; // Single hung is always vertical
+      
+      // Single hung always has 2 panels: top (usually fixed) and bottom (usually operable)
+      // The bottom sash slides up over the fixed top sash
+      
+      panelConfig.forEach((type, index) => {
+        const isOperable = type === 'X';
+        const isTopSash = index === 0;
+        const isBottomSash = index === panelConfig.length - 1;
+        
+        const panel = document.createElement('div');
+        panel.className = 'relative min-h-[60px] flex items-center justify-center overflow-hidden';
+        panel.dataset.panelIndex = index;
+        panel.style.flex = `${panelRatios[index]} 0 0%`;
+        
+        // Glass background
+        panel.style.background = isOperable 
+          ? 'linear-gradient(180deg, rgba(186,230,253,0.75) 0%, rgba(147,197,253,0.55) 50%, rgba(186,230,253,0.65) 100%)'
+          : 'linear-gradient(180deg, rgba(191,219,254,0.8) 0%, rgba(147,197,253,0.6) 50%, rgba(191,219,254,0.7) 100%)';
+        
+        let sashHardware = '';
+        
+        if (isOperable) {
+          // Operable sash (typically bottom) - has lift handles and can slide up
+          sashHardware = `
+            <!-- Lift handles at bottom of operable sash -->
+            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex items-center gap-6">
+              <!-- Left lift handle -->
+              <div class="w-8 h-1.5 rounded-full" style="background: linear-gradient(180deg, #808080 0%, #c0c0c0 30%, #e0e0e0 50%, #c0c0c0 70%, #808080 100%); box-shadow: 0 2px 3px rgba(0,0,0,0.3);"></div>
+              <!-- Right lift handle -->
+              <div class="w-8 h-1.5 rounded-full" style="background: linear-gradient(180deg, #808080 0%, #c0c0c0 30%, #e0e0e0 50%, #c0c0c0 70%, #808080 100%); box-shadow: 0 2px 3px rgba(0,0,0,0.3);"></div>
+            </div>
+            
+            <!-- Sash lock at top of operable panel (meeting rail) -->
+            <div class="absolute top-1 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
+              <div class="w-4 h-2 rounded-sm" style="background: linear-gradient(180deg, #909090, #c0c0c0, #909090); box-shadow: 0 1px 2px rgba(0,0,0,0.3);"></div>
+            </div>
+            
+            <!-- Up arrow indicator showing it slides up -->
+            <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center justify-center bg-white/70 text-green-700 rounded-full shadow-sm border border-green-300/50 w-5 h-5">
+              <i class="fas fa-arrow-up text-xs"></i>
+            </div>
+            
+            <!-- Rail grooves on sides -->
+            <div class="absolute left-0.5 top-1 bottom-1 w-0.5 rounded-full" style="background: linear-gradient(180deg, #505050, #707070, #505050);"></div>
+            <div class="absolute right-0.5 top-1 bottom-1 w-0.5 rounded-full" style="background: linear-gradient(180deg, #505050, #707070, #505050);"></div>
+          `;
+        } else {
+          // Fixed sash - just has rail grooves
+          sashHardware = `
+            <!-- Rail grooves on sides (fixed sash has track for operable sash) -->
+            <div class="absolute left-0.5 top-1 bottom-1 w-0.5 rounded-full" style="background: linear-gradient(180deg, #606060, #808080, #606060);"></div>
+            <div class="absolute right-0.5 top-1 bottom-1 w-0.5 rounded-full" style="background: linear-gradient(180deg, #606060, #808080, #606060);"></div>
+          `;
+        }
+        
+        panel.innerHTML = `
+          <!-- Glass effects -->
+          <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(180deg, rgba(96,165,250,0.25) 0%, rgba(147,197,253,0.15) 30%, transparent 60%);"></div>
+          <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 20%, transparent 40%);"></div>
+          <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 20px rgba(30,64,175,0.1);"></div>
+          
+          ${sashHardware}
+          
+          <!-- Vitralux logo -->
+          ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 7px; font-weight: 600; color: rgba(30,64,175,0.35); letter-spacing: 0.5px; font-family: Arial, sans-serif;">VITRALUX</div>' : ''}
+          
+          <!-- Panel label -->
+          <div class="relative z-10 flex flex-col items-center">
+            <span class="text-2xl font-bold drop-shadow-sm" style="color: ${isOperable ? 'rgba(22,101,52,0.8)' : 'rgba(30,64,175,0.7)'};">${type}</span>
+            <span class="text-xs mt-0.5 font-medium" style="color: ${isOperable ? 'rgba(22,101,52,0.7)' : 'rgba(30,64,175,0.6)'};">${isOperable ? 'Operable' : 'Fixed'}</span>
+          </div>
+        `;
+        
+        // Add meeting rail (mullion) between sashes - this is thicker and more prominent
+        if (index < panelConfig.length - 1) {
+          const meetingRail = document.createElement('div');
+          meetingRail.dataset.mullionIndex = index;
+          
+          // Draggable meeting rail
+          meetingRail.className = 'h-4 w-full flex-shrink-0 cursor-ns-resize transition-all duration-200 flex items-center justify-center draggable-mullion';
+          meetingRail.style.background = 'linear-gradient(180deg, #505050 0%, #707070 20%, #808080 50%, #707070 80%, #505050 100%)';
+          meetingRail.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)';
+          meetingRail.title = 'Drag to resize sashes';
+          
+          // Add grip dots
+          meetingRail.innerHTML = '<div class="flex gap-0.5 opacity-60"><div class="w-1 h-1 bg-white rounded-full"></div><div class="w-1 h-1 bg-white rounded-full"></div><div class="w-1 h-1 bg-white rounded-full"></div></div>';
+          
+          meetingRail.onmouseenter = () => { 
+            meetingRail.style.background = 'linear-gradient(180deg, #3b82f6 0%, #60a5fa 30%, #93c5fd 50%, #60a5fa 70%, #3b82f6 100%)';
+            meetingRail.style.transform = 'scaleY(1.3)';
+          };
+          meetingRail.onmouseleave = () => { 
+            if (!isDragging) {
+              meetingRail.style.background = 'linear-gradient(180deg, #505050 0%, #707070 20%, #808080 50%, #707070 80%, #505050 100%)';
+              meetingRail.style.transform = 'scale(1)';
+            }
+          };
+          
+          meetingRail.addEventListener('mousedown', (e) => startDrag(e, index, 'vertical'));
+          
+          preview.appendChild(panel);
+          preview.appendChild(meetingRail);
+        } else {
+          preview.appendChild(panel);
+        }
+      });
+      
+      // Update label
+      const configString = panelConfig.join('');
+      const operableCount = panelConfig.filter(p => p === 'X').length;
+      const fixedCount = panelConfig.filter(p => p === 'O').length;
+      label.textContent = `${configString} - Single Hung (${operableCount} Operable, ${fixedCount} Fixed)`;
+      
+      // Show drag hint
+      updateDragHint(true);
+    }
+    
     // Create a door panel that looks like a door
     function createDoorPanel(position) {
       const door = document.createElement('div');
@@ -1740,6 +1861,12 @@
       // Special handling for Sliding/Roller
       if (operationType === 'sliding') {
         renderSlidingPreview(preview, label, orientation);
+        return;
+      }
+      
+      // Special handling for Single Hung
+      if (operationType === 'single-hung') {
+        renderSingleHungPreview(preview, label);
         return;
       }
       

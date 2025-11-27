@@ -306,9 +306,15 @@ Multi-step wizard with 4 steps:
      - Handle/crank on the opposite side
      - Subtle swing direction indicators (curved lines)
    - **Sliding/Roller windows** now show realistic hardware:
-     - Vertical pull handle on operable panels (auto-positioned near meeting rail)
+     - Vertical pull handle on operable panels
      - Rail indicators at top and bottom showing the sliding track
      - Direction arrows indicating sliding motion
+   - **Single Hung windows** now show realistic hardware:
+     - Lift handles at bottom of operable sash
+     - Sash lock at the meeting rail
+     - Rail grooves on sides showing the track
+     - Up arrow indicator showing sliding direction
+     - Prominent meeting rail between sashes
 
 4. **French Door Operation Type**
    - Added new `french-door` operation type
@@ -409,6 +415,7 @@ Multi-step wizard with 4 steps:
 - `renderFrenchDoorPreview()` handles French door specific rendering
 - `renderCasementPreview()` handles casement window rendering with hinges and handles
 - `renderSlidingPreview()` handles sliding window rendering with handles and rail indicators
+- `renderSingleHungPreview()` handles single hung window rendering with lift handles and sash locks
 - Draggable dividers use mouse events (mousedown, mousemove, mouseup) for resizing
 - `createGlassPanel()`, `createDoorPanel()`, `createAluminumMullion()` helper functions for preview elements
 
@@ -418,6 +425,7 @@ Multi-step wizard with 4 steps:
 - `renderFrenchDoorPreview()` handles French door specific rendering (mirrors admin version)
 - `renderCasementPreview()` handles casement window rendering with hinges and handles
 - `renderSlidingPreview()` handles sliding window rendering with handles and rail indicators
+- `renderSingleHungPreview()` handles single hung window rendering with lift handles and sash locks
 - `getOperationIndicator()` returns appropriate icon for each operation type
 - Helper functions create glass panels, door panels, and aluminum mullions
 - Preview initializes on DOMContentLoaded and updates with dimension changes
