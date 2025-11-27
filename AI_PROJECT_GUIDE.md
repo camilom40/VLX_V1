@@ -92,16 +92,27 @@ VLX_V1/
 
 ### 2. Window System Templates (Admin)
 Admin creates window system "templates" that define:
-- **Name & Type**: e.g., "Horizontal Roller", "Casement"
+- **Name & Type**: e.g., "Horizontal Roller", "Casement", "French Door"
 - **Profiles**: Frame components with pricing, weight, length discounts
 - **Accessories**: Hardware, handles, locks, etc.
 - **Muntin Configuration**: Grid patterns for decorative glass divisions
-- **Panel Configuration**: Defines the window layout (e.g., OXXO for sliding - O=Fixed, X=Operable)
-  - `operationType`: sliding, casement, awning, fixed, etc.
+- **Panel Configuration**: Defines the window layout (e.g., OXXO for sliding - X=Operable, O=Fixed)
+  - `operationType`: sliding, casement, awning, fixed, single-hung, double-hung, french-door, etc.
   - `orientation`: horizontal or vertical
   - `panels`: Array of 'X' (Operable) and 'O' (Fixed) panels
+  - `panelRatios`: Array of ratios for unequal panel sizes
   - `hasMullion`: Whether mullions exist between panels
   - `mullionWidth`: Width of mullions
+  - `showLogo`: Whether to display VITRALUX logo on glass
+  - `frenchDoor`: Special configuration for French doors (see below)
+
+#### French Door Configuration
+French doors have special configuration options:
+- **Door Type**: Single or Double door
+- **Hinge Side**: Left or Right (for single doors - determines which way door opens)
+- **Left/Right Sidelites**: 0-4 sidelites on each side
+- **Transom**: None, Full Width, or Over Door Only
+- **Logo**: Show/hide VITRALUX logo on glass panels
 
 ### 3. Window Configuration (User)
 Users configure windows within their projects:
@@ -135,16 +146,26 @@ The configure window page features a dynamic preview that:
 ```javascript
 {
   name: String,
-  type: String, // e.g., 'horizontal-roller', 'casement'
+  type: String, // e.g., 'horizontal-roller', 'casement', 'french-door'
   profiles: [{ profile: ObjectId, quantity: Number, lengthDiscount: Number }],
   accessories: [{ accessory: ObjectId, quantity: Number, isOptional: Boolean }],
   muntinConfiguration: { type: String, horizontalBars: Number, verticalBars: Number, ... },
   panelConfiguration: {
-    operationType: String,  // 'sliding', 'casement', 'fixed', etc.
-    orientation: String,    // 'horizontal' or 'vertical'
-    panels: [String],       // ['O', 'X', 'X', 'O'] for OXXO (O=Fixed, X=Operable)
+    operationType: String,    // 'sliding', 'casement', 'fixed', 'french-door', etc.
+    orientation: String,      // 'horizontal' or 'vertical'
+    panels: [String],         // ['X', 'O', 'O', 'X'] for XOOX (X=Operable, O=Fixed)
+    panelRatios: [Number],    // [0.25, 0.5, 0.25] for unequal panel widths
     hasMullion: Boolean,
-    mullionWidth: Number
+    mullionWidth: Number,
+    showLogo: Boolean,        // Show VITRALUX logo on glass
+    frenchDoor: {             // Only for french-door operation type
+      doorType: String,       // 'single' or 'double'
+      hingeSide: String,      // 'left' or 'right' (for single doors)
+      leftSidelites: Number,  // 0-4
+      rightSidelites: Number, // 0-4
+      transom: String,        // 'none', 'full', 'over-door'
+      showLogo: Boolean
+    }
   }
 }
 ```
@@ -215,7 +236,13 @@ The configure window page features a dynamic preview that:
 
 ### Compose Window Form (Admin)
 Multi-step wizard with 4 steps:
-1. **Basic Info** - Name, type, panel configuration with visual preview
+1. **Basic Info** - Name, type, panel configuration with live visual preview
+   - Operation type selector (sliding, casement, french-door, etc.)
+   - Panel count and X/O toggle buttons
+   - Draggable dividers for unequal panel sizes
+   - French door special configuration (door type, sidelites, transom, hinge side)
+   - Resizable preview area
+   - VITRALUX logo toggle
 2. **Profiles** - Add frame profiles with quantities and length discounts (supports inches/mm)
 3. **Accessories** - Add hardware and accessories
 4. **Muntins** - Configure decorative grid patterns
@@ -241,6 +268,62 @@ Multi-step wizard with 4 steps:
 ---
 
 ## 📝 Development Log
+
+### November 27, 2025 - Compose Window Enhancements
+
+#### What We Worked On
+
+1. **Panel Configuration Improvements**
+   - Changed panel convention: `X` = Operable, `O` = Fixed (swapped from before)
+   - Default panel count now starts at 2
+   - Added validation for minimum panels (Single Hung: 2+, Double Hung: 2+, Sliding: 2+)
+   - Enforced default orientations: Sliding → horizontal, Single Hung → vertical
+   - Fixed operation type cannot have operable panels
+
+2. **Draggable Panel Dividers**
+   - Replaced slider with draggable dividers for unequal panel sizes
+   - Users can drag mullions between panels to resize them
+   - Panel ratios displayed as percentages (e.g., "25% | 50% | 25%")
+   - "Reset to equal sizes" button available
+   - Works for both Sliding and Single Hung window types
+
+3. **Enhanced Live Preview**
+   - Made preview resizable (drag corner to resize, 280×180 to 600×450)
+   - Realistic window appearance with aluminum frame and mullions
+   - Bluer glass with reflections and depth
+   - Darker frame profiles with metallic gradient
+   - Visual indicators for draggable dividers (grip dots, hover effects, pulsing animation)
+   - VITRALUX logo watermark on glass panels (toggleable via checkbox)
+
+4. **French Door Operation Type**
+   - Added new `french-door` operation type
+   - Configuration options:
+     - Door type: Single or Double
+     - Hinge side for single doors (Left/Right - determines opening direction)
+     - Left sidelites: 0-4 sidelites
+     - Right sidelites: 0-4 sidelites
+     - Transom: None, Full Width, Over Door Only
+   - Special preview rendering with door-like appearance:
+     - Door handles positioned based on hinge side
+     - Hinge indicators on door edges
+     - Sidelites extend full height when transom is "Over Door Only"
+   - VITRALUX logo toggle specific to French doors
+
+5. **Data Persistence**
+   - All preview configuration now saved to database
+   - Updated `Window.js` model with new fields:
+     - `panelRatios` array for unequal sizes
+     - `showLogo` boolean
+     - `frenchDoor` sub-schema with all French door options
+   - Updated `windowRoutes.js` to save/retrieve all new fields
+
+#### Key Files Modified
+- `views/admin/composeWindow.ejs` - Major UI enhancements
+- `routes/admin/windowRoutes.js` - Updated data handling
+- `models/Window.js` - Extended schema for new features
+- `AI_PROJECT_GUIDE.md` - Documentation update
+
+---
 
 ### November 25, 2025 - Session Summary
 
@@ -289,7 +372,16 @@ Multi-step wizard with 4 steps:
 - `updateCalculations()` function handles unit-aware display
 - `switchUnits()` and `switchUnitsFromPreview()` keep toggles synced
 - `updateWindowPreview()` updates visual and calculations on dimension change
-- Panel configuration stored as: `{ operationType, orientation, panels: ['O','X','X','O'], hasMullion, mullionWidth }`
+- Panel configuration stored as: `{ operationType, orientation, panels: ['X','O','O','X'], panelRatios, hasMullion, mullionWidth, showLogo, frenchDoor }`
+
+#### Compose Window Technical Notes
+- `panelConfig` array tracks X/O panel types
+- `panelRatios` array tracks relative sizes of each panel
+- `frenchDoorConfig` object stores French door specific settings
+- `updatePanelPreview()` renders the live window preview
+- `renderFrenchDoorPreview()` handles French door specific rendering
+- Draggable dividers use mouse events (mousedown, mousemove, mouseup) for resizing
+- `createGlassPanel()`, `createDoorPanel()`, `createAluminumMullion()` helper functions for preview elements
 
 ---
 
@@ -325,5 +417,5 @@ npm run dev
 
 ---
 
-*Last Updated: November 25, 2025*
+*Last Updated: November 27, 2025*
 

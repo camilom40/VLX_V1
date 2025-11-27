@@ -20,13 +20,24 @@ const muntinConfigurationSchema = new Schema({
   isDefault: { type: Boolean, default: false }, // Default muntin configuration
 });
 
+// French door configuration sub-schema
+const frenchDoorConfigSchema = new Schema({
+  doorType: { type: String, enum: ['single', 'double'], default: 'double' },
+  hingeSide: { type: String, enum: ['left', 'right'], default: 'left' }, // For single doors
+  leftSidelites: { type: Number, default: 0, min: 0, max: 4 },
+  rightSidelites: { type: Number, default: 0, min: 0, max: 4 },
+  transom: { type: String, enum: ['none', 'full', 'over-door'], default: 'none' },
+  showLogo: { type: Boolean, default: true }
+}, { _id: false });
+
 // Panel configuration for dynamic preview (e.g., OXXO, OX, XOX)
 const panelConfigurationSchema = new Schema({
   panels: [{ 
     type: String, 
-    enum: ['O', 'X', 'F'], // O = Operable/Operating, X = Fixed, F = Fixed (alternative)
-    default: 'X'
+    enum: ['O', 'X', 'F'], // X = Operable, O = Fixed, F = Fixed (alternative)
+    default: 'O'
   }],
+  panelRatios: [{ type: Number }], // Ratios for unequal panel sizes
   orientation: { 
     type: String, 
     enum: ['horizontal', 'vertical'], 
@@ -34,11 +45,13 @@ const panelConfigurationSchema = new Schema({
   },
   operationType: { 
     type: String, 
-    enum: ['sliding', 'casement', 'awning', 'hopper', 'fixed', 'single-hung', 'double-hung', 'tilt-turn'],
+    enum: ['sliding', 'casement', 'awning', 'hopper', 'fixed', 'single-hung', 'double-hung', 'tilt-turn', 'french-door'],
     default: 'sliding'
   },
   hasMullion: { type: Boolean, default: true }, // Whether panels have mullions between them
   mullionWidth: { type: Number, default: 2 }, // Mullion width in inches
+  showLogo: { type: Boolean, default: true }, // Show VITRALUX logo on glass
+  frenchDoor: frenchDoorConfigSchema // French door specific configuration
 });
 
 const windowSchema = new Schema({

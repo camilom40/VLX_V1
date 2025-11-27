@@ -375,6 +375,21 @@
     .draggable-mullion:hover {
       animation: none;
     }
+    
+    /* Resizable preview styles */
+    #resizablePreview {
+      border: 2px dashed transparent;
+      transition: border-color 0.2s;
+    }
+    
+    #resizablePreview:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    
+    #resizablePreview::-webkit-resizer {
+      background: linear-gradient(135deg, transparent 50%, rgba(107, 114, 128, 0.5) 50%);
+      border-radius: 0 0 4px 0;
+    }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -449,6 +464,7 @@
                     <option value="single-hung">Single Hung</option>
                     <option value="double-hung">Double Hung</option>
                     <option value="tilt-turn">Tilt & Turn</option>
+                    <option value="french-door">French Door</option>
                   </select>
                 </div>
                 
@@ -464,6 +480,68 @@
                   <label for="panelCount" class="form-label">Number of Panels</label>
                   <input type="number" id="panelCount" min="1" max="8" value="2" class="form-control w-full" onchange="validateAndUpdatePanels()">
                 </div>
+              </div>
+              
+              <!-- French Door Configuration (only shows when french-door is selected) -->
+              <div id="frenchDoorConfig" class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-xl" style="display: none;">
+                <h4 class="text-lg font-semibold text-purple-800 mb-4">
+                  <i class="fas fa-door-open mr-2"></i>French Door Configuration
+                </h4>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <!-- Door Type -->
+                  <div>
+                    <label for="doorType" class="form-label">Door Type</label>
+                    <select id="doorType" class="form-control w-full" onchange="updateFrenchDoorPreview()">
+                      <option value="single">Single Door</option>
+                      <option value="double" selected>Double Door</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Door Hinge Side (only for single door) -->
+                  <div id="hingeSideContainer" style="display: none;">
+                    <label for="hingeSide" class="form-label">Hinge Side</label>
+                    <select id="hingeSide" class="form-control w-full" onchange="updateFrenchDoorPreview()">
+                      <option value="left">Left (Opens Right)</option>
+                      <option value="right">Right (Opens Left)</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Left Sidelites -->
+                  <div>
+                    <label for="leftSidelites" class="form-label">Left Sidelites</label>
+                    <input type="number" id="leftSidelites" min="0" max="4" value="0" class="form-control w-full" onchange="updateFrenchDoorPreview()">
+                  </div>
+                  
+                  <!-- Right Sidelites -->
+                  <div>
+                    <label for="rightSidelites" class="form-label">Right Sidelites</label>
+                    <input type="number" id="rightSidelites" min="0" max="4" value="0" class="form-control w-full" onchange="updateFrenchDoorPreview()">
+                  </div>
+                  
+                  <!-- Transom -->
+                  <div>
+                    <label for="transom" class="form-label">Transom</label>
+                    <select id="transom" class="form-control w-full" onchange="updateFrenchDoorPreview()">
+                      <option value="none">None</option>
+                      <option value="full">Full Width</option>
+                      <option value="over-door">Over Door Only</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Vitralux Logo Toggle -->
+                  <div class="col-span-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" id="frenchDoorLogo" class="w-4 h-4 rounded" checked onchange="updateFrenchDoorPreview()">
+                      <span class="text-sm text-gray-700">Show VITRALUX logo on glass</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <p class="text-xs text-purple-600 mt-3">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  French doors will automatically configure panels based on your selections above.
+                </p>
               </div>
               
               <!-- Panel Layout Builder -->
@@ -492,15 +570,26 @@
                 
                 <!-- Window Frame Container -->
                 <div id="panelPreviewContainer" class="flex justify-center items-center py-4">
-                  <!-- Aluminum Frame -->
-                  <div class="p-1.5 rounded-sm shadow-lg" style="background: linear-gradient(145deg, #909090 0%, #707070 20%, #585858 50%, #707070 80%, #909090 100%);">
-                    <!-- Glass Area -->
-                    <div id="panelPreview" class="flex overflow-hidden" 
-                         style="min-width: 320px; min-height: 220px;">
-                      <!-- Preview panels will be generated here -->
+                  <!-- Resizable wrapper -->
+                  <div id="resizablePreview" class="relative" style="resize: both; overflow: hidden; min-width: 280px; min-height: 180px; width: 360px; height: 260px; max-width: 600px; max-height: 450px;">
+                    <!-- Aluminum Frame -->
+                    <div class="p-1.5 rounded-sm shadow-lg h-full w-full" style="background: linear-gradient(145deg, #909090 0%, #707070 20%, #585858 50%, #707070 80%, #909090 100%);">
+                      <!-- Glass Area -->
+                      <div id="panelPreview" class="flex overflow-hidden h-full w-full">
+                        <!-- Preview panels will be generated here -->
+                      </div>
+                    </div>
+                    <!-- Resize indicator -->
+                    <div class="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-center justify-center" style="color: rgba(255,255,255,0.6);">
+                      <i class="fas fa-expand-alt text-xs"></i>
                     </div>
                   </div>
                 </div>
+                
+                <!-- Resize hint -->
+                <p class="text-xs text-gray-500 text-center mt-1">
+                  <i class="fas fa-expand-arrows-alt mr-1"></i>Drag corner to resize preview
+                </p>
                 
                 <!-- Label and Controls -->
                 <div class="text-center mt-4">
@@ -974,6 +1063,371 @@
       updatePanelPreview();
     }
     
+    // French Door configuration
+    let frenchDoorConfig = {
+      doorType: 'double',
+      hingeSide: 'left',
+      leftSidelites: 0,
+      rightSidelites: 0,
+      transom: 'none'
+    };
+    
+    // Show/hide French Door config
+    function updateFrenchDoorVisibility() {
+      const operationType = document.getElementById('operationType').value;
+      const configSection = document.getElementById('frenchDoorConfig');
+      const panelSection = document.getElementById('panelLayoutBuilder').parentElement;
+      const panelCountDiv = document.getElementById('panelCount').parentElement;
+      
+      if (operationType === 'french-door') {
+        configSection.style.display = 'block';
+        panelSection.style.display = 'none'; // Hide manual panel layout for french doors
+        panelCountDiv.style.display = 'none';
+        updateFrenchDoorPreview();
+      } else {
+        configSection.style.display = 'none';
+        panelSection.style.display = 'block';
+        panelCountDiv.style.display = 'block';
+      }
+    }
+    
+    // Update French Door preview
+    function updateFrenchDoorPreview() {
+      frenchDoorConfig.doorType = document.getElementById('doorType').value;
+      frenchDoorConfig.hingeSide = document.getElementById('hingeSide').value;
+      frenchDoorConfig.leftSidelites = parseInt(document.getElementById('leftSidelites').value) || 0;
+      frenchDoorConfig.rightSidelites = parseInt(document.getElementById('rightSidelites').value) || 0;
+      frenchDoorConfig.transom = document.getElementById('transom').value;
+      
+      // Show/hide hinge side selector based on door type
+      const hingeSideContainer = document.getElementById('hingeSideContainer');
+      if (frenchDoorConfig.doorType === 'single') {
+        hingeSideContainer.style.display = 'block';
+      } else {
+        hingeSideContainer.style.display = 'none';
+      }
+      
+      // Build panel config based on French Door settings
+      panelConfig = [];
+      panelRatios = [];
+      
+      // Add left sidelites
+      for (let i = 0; i < frenchDoorConfig.leftSidelites; i++) {
+        panelConfig.push('O'); // Sidelites are fixed
+        panelRatios.push(0.4);
+      }
+      
+      // Add door(s)
+      if (frenchDoorConfig.doorType === 'single') {
+        panelConfig.push('X'); // Single door is operable
+        panelRatios.push(1);
+      } else {
+        panelConfig.push('X'); // Left door
+        panelConfig.push('X'); // Right door
+        panelRatios.push(1);
+        panelRatios.push(1);
+      }
+      
+      // Add right sidelites
+      for (let i = 0; i < frenchDoorConfig.rightSidelites; i++) {
+        panelConfig.push('O'); // Sidelites are fixed
+        panelRatios.push(0.4);
+      }
+      
+      // Set orientation to horizontal for main panels
+      document.getElementById('panelOrientation').value = 'horizontal';
+      
+      updatePanelPreview();
+    }
+    
+    // Render French Door preview with transom support
+    function renderFrenchDoorPreview(preview, label) {
+      preview.innerHTML = '';
+      preview.style.flexDirection = 'column';
+      
+      const hasTransom = frenchDoorConfig.transom !== 'none';
+      const leftSideliteCount = frenchDoorConfig.leftSidelites;
+      const rightSideliteCount = frenchDoorConfig.rightSidelites;
+      const hasLeftSidelite = leftSideliteCount > 0;
+      const hasRightSidelite = rightSideliteCount > 0;
+      const isDouble = frenchDoorConfig.doorType === 'double';
+      const transomOverDoorOnly = frenchDoorConfig.transom === 'over-door';
+      
+      // Get the French door logo setting and update the global showLogo
+      const frenchDoorLogoCheckbox = document.getElementById('frenchDoorLogo');
+      showLogo = frenchDoorLogoCheckbox ? frenchDoorLogoCheckbox.checked : true;
+      
+      // For "over-door" transom, we need a different layout where sidelites are full height
+      if (hasTransom && transomOverDoorOnly && (hasLeftSidelite || hasRightSidelite)) {
+        // Complex layout: sidelites full height, transom only over doors
+        const mainRow = document.createElement('div');
+        mainRow.className = 'flex w-full flex-1';
+        mainRow.style.minHeight = '220px';
+        
+        // Left sidelites (full height)
+        for (let i = 0; i < leftSideliteCount; i++) {
+          const leftSidelite = createGlassPanel('O', false, false);
+          leftSidelite.style.flex = '0.4';
+          leftSidelite.innerHTML += '<div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-blue-600/50 font-medium">SIDELITE</div>';
+          mainRow.appendChild(leftSidelite);
+          
+          const mullion = createAluminumMullion('vertical');
+          mainRow.appendChild(mullion);
+        }
+        
+        // Door section with transom above
+        const doorSection = document.createElement('div');
+        doorSection.className = 'flex flex-col';
+        doorSection.style.flex = isDouble ? '2' : '1';
+        
+        // Transom
+        const transomRow = document.createElement('div');
+        transomRow.className = 'flex w-full';
+        transomRow.style.height = '60px';
+        transomRow.style.flexShrink = '0';
+        
+        const doorTransom = createGlassPanel('O', false, true);
+        doorTransom.style.flex = '1';
+        doorTransom.innerHTML += '<div class="absolute inset-0 flex items-center justify-center"><span class="text-xs text-blue-600/60 font-medium">TRANSOM</span></div>';
+        transomRow.appendChild(doorTransom);
+        doorSection.appendChild(transomRow);
+        
+        // Horizontal mullion
+        const hMullion = createAluminumMullion('horizontal');
+        doorSection.appendChild(hMullion);
+        
+        // Doors row
+        const doorsRow = document.createElement('div');
+        doorsRow.className = 'flex w-full flex-1';
+        
+        if (isDouble) {
+          const leftDoor = createDoorPanel('left');
+          leftDoor.style.flex = '1';
+          doorsRow.appendChild(leftDoor);
+          
+          const centerMullion = createAluminumMullion('vertical');
+          doorsRow.appendChild(centerMullion);
+          
+          const rightDoor = createDoorPanel('right');
+          rightDoor.style.flex = '1';
+          doorsRow.appendChild(rightDoor);
+        } else {
+          const door = createDoorPanel('single');
+          door.style.flex = '1';
+          doorsRow.appendChild(door);
+        }
+        
+        doorSection.appendChild(doorsRow);
+        mainRow.appendChild(doorSection);
+        
+        // Right sidelites (full height)
+        for (let i = 0; i < rightSideliteCount; i++) {
+          const mullion = createAluminumMullion('vertical');
+          mainRow.appendChild(mullion);
+          
+          const rightSidelite = createGlassPanel('O', false, false);
+          rightSidelite.style.flex = '0.4';
+          rightSidelite.innerHTML += '<div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-blue-600/50 font-medium">SIDELITE</div>';
+          mainRow.appendChild(rightSidelite);
+        }
+        
+        preview.appendChild(mainRow);
+      } else {
+        // Standard layout: transom row (if any) + door row
+        
+        // Transom row (full width, if enabled)
+        if (hasTransom && !transomOverDoorOnly) {
+          const transomRow = document.createElement('div');
+          transomRow.className = 'flex w-full';
+          transomRow.style.height = '60px';
+          transomRow.style.flexShrink = '0';
+          
+          // Left sidelite transoms
+          for (let i = 0; i < leftSideliteCount; i++) {
+            const leftTransom = createGlassPanel('O', false, true);
+            leftTransom.style.flex = '0.4';
+            transomRow.appendChild(leftTransom);
+            
+            const mullion = createAluminumMullion('vertical');
+            transomRow.appendChild(mullion);
+          }
+          
+          // Transom over door(s)
+          const doorTransom = createGlassPanel('O', false, true);
+          doorTransom.style.flex = isDouble ? '2' : '1';
+          doorTransom.innerHTML += '<div class="absolute inset-0 flex items-center justify-center"><span class="text-xs text-blue-600/60 font-medium">TRANSOM</span></div>';
+          transomRow.appendChild(doorTransom);
+          
+          // Right sidelite transoms
+          for (let i = 0; i < rightSideliteCount; i++) {
+            const mullion = createAluminumMullion('vertical');
+            transomRow.appendChild(mullion);
+            
+            const rightTransom = createGlassPanel('O', false, true);
+            rightTransom.style.flex = '0.4';
+            transomRow.appendChild(rightTransom);
+          }
+          
+          preview.appendChild(transomRow);
+          
+          // Horizontal mullion between transom and doors
+          const hMullion = createAluminumMullion('horizontal');
+          preview.appendChild(hMullion);
+        }
+        
+        // Main door row
+        const doorRow = document.createElement('div');
+        doorRow.className = 'flex w-full flex-1';
+        doorRow.style.minHeight = '160px';
+        
+        // Left sidelites
+        for (let i = 0; i < leftSideliteCount; i++) {
+          const leftSidelite = createGlassPanel('O', false, false);
+          leftSidelite.style.flex = '0.4';
+          leftSidelite.innerHTML += '<div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-blue-600/50 font-medium">SIDELITE</div>';
+          doorRow.appendChild(leftSidelite);
+          
+          const mullion = createAluminumMullion('vertical');
+          doorRow.appendChild(mullion);
+        }
+        
+        // Door(s)
+        if (isDouble) {
+          // Left door
+          const leftDoor = createDoorPanel('left');
+          leftDoor.style.flex = '1';
+          doorRow.appendChild(leftDoor);
+          
+          // Center mullion between doors
+          const centerMullion = createAluminumMullion('vertical');
+          doorRow.appendChild(centerMullion);
+          
+          // Right door
+          const rightDoor = createDoorPanel('right');
+          rightDoor.style.flex = '1';
+          doorRow.appendChild(rightDoor);
+        } else {
+          // Single door
+          const door = createDoorPanel('single');
+          door.style.flex = '1';
+          doorRow.appendChild(door);
+        }
+        
+        // Right sidelites
+        for (let i = 0; i < rightSideliteCount; i++) {
+          const mullion = createAluminumMullion('vertical');
+          doorRow.appendChild(mullion);
+          
+          const rightSidelite = createGlassPanel('O', false, false);
+          rightSidelite.style.flex = '0.4';
+          rightSidelite.innerHTML += '<div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-blue-600/50 font-medium">SIDELITE</div>';
+          doorRow.appendChild(rightSidelite);
+        }
+        
+        preview.appendChild(doorRow);
+      }
+      
+      // Update label
+      const doorDesc = isDouble ? 'Double' : 'Single';
+      let extras = [];
+      const totalSidelites = leftSideliteCount + rightSideliteCount;
+      if (totalSidelites > 0) {
+        if (leftSideliteCount > 0 && rightSideliteCount > 0) {
+          extras.push(`${totalSidelites} Sidelites (${leftSideliteCount}L + ${rightSideliteCount}R)`);
+        } else if (leftSideliteCount > 0) {
+          extras.push(`${leftSideliteCount} Left Sidelite${leftSideliteCount > 1 ? 's' : ''}`);
+        } else {
+          extras.push(`${rightSideliteCount} Right Sidelite${rightSideliteCount > 1 ? 's' : ''}`);
+        }
+      }
+      if (hasTransom) {
+        extras.push(transomOverDoorOnly ? 'Transom (Over Door)' : 'Transom');
+      }
+      label.textContent = `${doorDesc} French Door${extras.length > 0 ? ' + ' + extras.join(' + ') : ''}`;
+      
+      // Hide drag hint for French doors
+      updateDragHint(false);
+    }
+    
+    // Create a door panel that looks like a door
+    function createDoorPanel(position) {
+      const door = document.createElement('div');
+      door.className = 'relative flex items-center justify-center overflow-hidden';
+      door.style.background = 'linear-gradient(180deg, rgba(191,219,254,0.8) 0%, rgba(147,197,253,0.6) 50%, rgba(191,219,254,0.7) 100%)';
+      
+      // Determine handle and hinge positions
+      let handleSide, hingeSide;
+      if (position === 'single') {
+        // For single door, use the configured hinge side
+        hingeSide = frenchDoorConfig.hingeSide;
+        handleSide = hingeSide === 'left' ? 'right' : 'left';
+      } else if (position === 'left') {
+        // Left door of double: hinges on left, handle on right
+        hingeSide = 'left';
+        handleSide = 'right';
+      } else {
+        // Right door of double: hinges on right, handle on left
+        hingeSide = 'right';
+        handleSide = 'left';
+      }
+      
+      // Glass effects
+      door.innerHTML = `
+        <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(180deg, rgba(96,165,250,0.25) 0%, rgba(147,197,253,0.15) 30%, transparent 60%);"></div>
+        <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 20%, transparent 40%);"></div>
+        <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 20px rgba(30,64,175,0.1);"></div>
+        
+        <!-- Door handle -->
+        <div class="absolute ${handleSide === 'right' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 flex flex-col items-center gap-1">
+          <div class="w-2 h-8 rounded-full" style="background: linear-gradient(90deg, #a0a0a0 0%, #d0d0d0 50%, #a0a0a0 100%); box-shadow: 1px 1px 3px rgba(0,0,0,0.3);"></div>
+        </div>
+        
+        <!-- Door hinge indicators -->
+        <div class="absolute ${hingeSide === 'right' ? 'right-1' : 'left-1'} top-4 w-1.5 h-4 rounded-sm" style="background: linear-gradient(90deg, #808080, #b0b0b0, #808080);"></div>
+        <div class="absolute ${hingeSide === 'right' ? 'right-1' : 'left-1'} bottom-4 w-1.5 h-4 rounded-sm" style="background: linear-gradient(90deg, #808080, #b0b0b0, #808080);"></div>
+        
+        <!-- Door label -->
+        <div class="relative z-10 flex flex-col items-center">
+          <span class="text-2xl font-bold drop-shadow-sm" style="color: rgba(22,101,52,0.8);">X</span>
+          <span class="text-xs mt-0.5 font-medium" style="color: rgba(22,101,52,0.7);">Door</span>
+        </div>
+        
+        <!-- Vitralux logo -->
+        ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35); letter-spacing: 0.5px; font-family: Arial, sans-serif;">VITRALUX</div>' : ''}
+      `;
+      
+      return door;
+    }
+    
+    // Create a glass panel (for sidelites and transoms)
+    function createGlassPanel(type, isOperable, isTransom) {
+      const panel = document.createElement('div');
+      panel.className = 'relative flex items-center justify-center overflow-hidden';
+      panel.style.background = 'linear-gradient(180deg, rgba(191,219,254,0.8) 0%, rgba(147,197,253,0.6) 50%, rgba(191,219,254,0.7) 100%)';
+      
+      panel.innerHTML = `
+        <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(180deg, rgba(96,165,250,0.25) 0%, rgba(147,197,253,0.15) 30%, transparent 60%);"></div>
+        <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 20%, transparent 40%);"></div>
+        <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 20px rgba(30,64,175,0.1);"></div>
+        ${!isTransom ? `<div class="relative z-10 flex flex-col items-center">
+          <span class="text-lg font-bold drop-shadow-sm" style="color: rgba(30,64,175,0.7);">${type}</span>
+          <span class="text-xs font-medium" style="color: rgba(30,64,175,0.6);">Fixed</span>
+        </div>` : ''}
+        ${showLogo && !isTransom ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35); letter-spacing: 0.5px; font-family: Arial, sans-serif;">VITRALUX</div>' : ''}
+      `;
+      
+      return panel;
+    }
+    
+    // Create aluminum mullion
+    function createAluminumMullion(direction) {
+      const mullion = document.createElement('div');
+      mullion.className = direction === 'vertical' ? 'w-2 self-stretch flex-shrink-0' : 'h-2 w-full flex-shrink-0';
+      mullion.style.background = 'linear-gradient(90deg, #606060 0%, #808080 30%, #909090 50%, #808080 70%, #606060 100%)';
+      mullion.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.2)';
+      return mullion;
+    }
+    
     function updatePanelInputs() {
       const count = parseInt(document.getElementById('panelCount').value) || 2;
       const builder = document.getElementById('panelLayoutBuilder');
@@ -1035,10 +1489,16 @@
       const orientation = document.getElementById('panelOrientation').value;
       const operationType = document.getElementById('operationType').value;
       
+      // Special handling for French Door
+      if (operationType === 'french-door') {
+        renderFrenchDoorPreview(preview, label);
+        return;
+      }
+      
       // Set flex direction based on orientation
       preview.style.flexDirection = orientation === 'horizontal' ? 'row' : 'column';
       
-      // Check if we should allow draggable dividers (sliding or single-hung with 2+ panels)
+      // Check if we should allow draggable dividers
       const allowDraggableDividers = (operationType === 'sliding' || operationType === 'single-hung') && panelConfig.length >= 2;
       
       // Build preview panels
@@ -1134,14 +1594,27 @@
         'fixed': 'Fixed',
         'single-hung': 'Single Hung',
         'double-hung': 'Double Hung',
-        'tilt-turn': 'Tilt & Turn'
+        'tilt-turn': 'Tilt & Turn',
+        'french-door': 'French Door'
       }[operationType] || operationType;
       
       // Build label text
       let labelText = `${configString} - ${panelConfig.length} Panel ${operationLabel}`;
       
+      // Add French Door details
+      if (operationType === 'french-door') {
+        const doorDesc = frenchDoorConfig.doorType === 'single' ? 'Single' : 'Double';
+        let extras = [];
+        if (frenchDoorConfig.sidelites !== 'none') {
+          extras.push(frenchDoorConfig.sidelites === 'both' ? 'Sidelites' : `${frenchDoorConfig.sidelites.charAt(0).toUpperCase() + frenchDoorConfig.sidelites.slice(1)} Sidelite`);
+        }
+        if (frenchDoorConfig.transom !== 'none') {
+          extras.push('Transom');
+        }
+        labelText = `${doorDesc} French Door${extras.length > 0 ? ' + ' + extras.join(' + ') : ''}`;
+      }
       // Add ratio info for windows with custom ratios
-      if (allowDraggableDividers && !areRatiosEqual()) {
+      else if (allowDraggableDividers && !areRatiosEqual()) {
         labelText += ` (${formatRatiosAsFractions(panelRatios)})`;
       }
       
@@ -1281,7 +1754,8 @@
         'fixed': 'Fixed',
         'single-hung': 'Single Hung',
         'double-hung': 'Double Hung',
-        'tilt-turn': 'Tilt & Turn'
+        'tilt-turn': 'Tilt & Turn',
+        'french-door': 'French Door'
       }[operationType] || operationType;
       
       let labelText = `${configString} - ${panelConfig.length} Panel ${operationLabel}`;
@@ -1316,6 +1790,8 @@
           return `<div class="${baseClass} right-2 top-1/2 transform -translate-y-1/2 w-5 h-5"><i class="fas fa-arrows-alt-v text-xs"></i></div>`;
         case 'tilt-turn':
           return `<div class="${baseClass} top-2 right-2 w-5 h-5"><i class="fas fa-sync-alt text-xs"></i></div>`;
+        case 'french-door':
+          return `<div class="${baseClass} bottom-2 left-1/2 transform -translate-x-1/2 w-5 h-5"><i class="fas fa-door-open text-xs"></i></div>`;
         default:
           return '';
       }
@@ -1380,6 +1856,7 @@
     // Add event listeners for panel configuration changes
     document.getElementById('panelOrientation')?.addEventListener('change', updatePanelPreview);
     document.getElementById('operationType')?.addEventListener('change', function() {
+      updateFrenchDoorVisibility();
       enforceMinimumPanels();
       updatePanelPreview();
     });
@@ -1994,15 +2471,28 @@
       form.appendChild(muntinConfigurationInput);
       
       // Add panel configuration
+      const operationType = document.getElementById('operationType').value;
       const panelConfiguration = {
         panels: panelConfig,
         panelRatios: panelRatios,
         orientation: document.getElementById('panelOrientation').value,
-        operationType: document.getElementById('operationType').value,
+        operationType: operationType,
         hasMullion: true,
         mullionWidth: 2,
         showLogo: showLogo
       };
+      
+      // Add French Door specific config if applicable
+      if (operationType === 'french-door') {
+        panelConfiguration.frenchDoor = {
+          doorType: document.getElementById('doorType').value,
+          hingeSide: document.getElementById('hingeSide').value,
+          leftSidelites: parseInt(document.getElementById('leftSidelites').value) || 0,
+          rightSidelites: parseInt(document.getElementById('rightSidelites').value) || 0,
+          transom: document.getElementById('transom').value,
+          showLogo: document.getElementById('frenchDoorLogo').checked
+        };
+      }
       
       const panelConfigurationInput = document.createElement('input');
       panelConfigurationInput.type = 'hidden';

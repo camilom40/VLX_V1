@@ -311,10 +311,13 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       },
       panelConfiguration: {
         panels: panelConfiguration.panels || ['O', 'O'],
+        panelRatios: panelConfiguration.panelRatios || [],
         orientation: panelConfiguration.orientation || 'horizontal',
         operationType: panelConfiguration.operationType || 'fixed',
         hasMullion: panelConfiguration.hasMullion !== false,
         mullionWidth: panelConfiguration.mullionWidth || 2,
+        showLogo: panelConfiguration.showLogo !== false,
+        frenchDoor: panelConfiguration.frenchDoor || null,
       },
     });
 
@@ -418,11 +421,14 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
         showToUser: Boolean(muntinConfigurationData.showToUser),
       },
       panelConfiguration: {
-        panels: panelConfigurationData.panels || ['O'],
+        panels: panelConfigurationData.panels || ['O', 'O'],
+        panelRatios: panelConfigurationData.panelRatios || [],
         orientation: panelConfigurationData.orientation || 'horizontal',
         operationType: panelConfigurationData.operationType || 'fixed',
         hasMullion: panelConfigurationData.hasMullion !== false,
         mullionWidth: panelConfigurationData.mullionWidth || 2,
+        showLogo: panelConfigurationData.showLogo !== false,
+        frenchDoor: panelConfigurationData.frenchDoor || null,
       },
     };
 
