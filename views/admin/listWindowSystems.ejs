@@ -2,14 +2,118 @@
 <html lang="en">
 <head>
   <%- include('../partials/_head.ejs') %>
-  <title>List of Window Systems</title>
+  <title>Window Systems</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .bg-header-blue {
-      background-color: #1e3a8a; /* Custom blue color */
+    /* Window Card Preview */
+    .window-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
+      border: 1px solid #e5e7eb;
     }
-    .bg-header-blue:hover {
-      background-color: #1e40af; /* Darker blue on hover */
+    .window-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    /* Preview Styles */
+    .preview-container {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+    }
+    .window-preview {
+      border-radius: 6px;
+      overflow: hidden;
+      background: linear-gradient(145deg, #707070, #505050);
+      padding: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .window-preview-glass {
+      width: 120px;
+      height: 90px;
+      display: flex;
+      background: linear-gradient(180deg, rgba(186,230,253,0.85) 0%, rgba(147,197,253,0.7) 50%, rgba(186,230,253,0.8) 100%);
+      border-radius: 3px;
+      position: relative;
+    }
+    .window-preview-glass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .preview-panel {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(30,64,175,0.6);
+      position: relative;
+    }
+    .preview-panel.operable {
+      color: rgba(22,101,52,0.7);
+    }
+    .preview-mullion {
+      width: 4px;
+      background: linear-gradient(180deg, #606060, #909090, #606060);
+      flex-shrink: 0;
+    }
+    .preview-mullion-h {
+      height: 4px;
+      width: 100%;
+      background: linear-gradient(90deg, #606060, #909090, #606060);
+      flex-shrink: 0;
+    }
+    
+    /* Operation Type Badge */
+    .operation-badge {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .operation-badge.sliding { background: #dbeafe; color: #1e40af; }
+    .operation-badge.casement { background: #dcfce7; color: #166534; }
+    .operation-badge.fixed { background: #f3f4f6; color: #4b5563; }
+    .operation-badge.single-hung { background: #fef3c7; color: #92400e; }
+    .operation-badge.french-door { background: #fce7f3; color: #9d174d; }
+    
+    /* Search Input */
+    .search-input {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 16px 12px 44px;
+      width: 100%;
+      max-width: 400px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      background: white;
+      border-radius: 16px;
+      border: 2px dashed #e5e7eb;
     }
   </style>
   <script>
@@ -33,8 +137,8 @@
       }
     }
 
-    async function deleteWindowSystem(id) {
-      if (confirm('Are you sure you want to delete this window system?')) {
+    async function deleteWindowSystem(id, name) {
+      if (confirm(`Are you sure you want to delete "${name}"?`)) {
         try {
           const response = await fetch(`/admin/delete/${id}`, {
             method: 'DELETE',
@@ -43,9 +147,10 @@
             },
           });
           const result = await response.json();
-          alert(result.message);
           if (response.ok) {
             location.reload();
+          } else {
+            alert(result.message || 'Failed to delete');
           }
         } catch (error) {
           console.error('Error deleting window system:', error);
@@ -58,204 +163,164 @@
       const searchInput = document.getElementById('searchInput');
       searchInput.addEventListener('keyup', function() {
         const filter = searchInput.value.toLowerCase();
-        const rows = document.querySelectorAll('#windowSystemsTableBody tr');
-        rows.forEach(row => {
-          const cells = row.getElementsByTagName('td');
-          let match = false;
-          for (let i = 0; i < cells.length; i++) {
-            if (cells[i].innerText.toLowerCase().includes(filter)) {
-              match = true;
-              break;
-            }
+        const cards = document.querySelectorAll('.window-card');
+        let visibleCount = 0;
+        cards.forEach(card => {
+          const text = card.innerText.toLowerCase();
+          if (text.includes(filter)) {
+            card.style.display = '';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
           }
-          row.style.display = match ? '' : 'none';
         });
+        document.getElementById('resultCount').textContent = visibleCount;
       });
     });
   </script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
-  <div class="container mx-auto mt-10 flex-grow">
-    <h1 class="text-3xl font-bold mb-5">Window Systems</h1>
-    <div class="flex justify-between items-center mb-5">
-      <div class="flex space-x-4">
-        <a href="/admin/compose-window" class="bg-header-blue text-white font-bold py-2 px-4 rounded hover:bg-header-blue-dark">Add New Window System</a>
-        <a href="/admin/export-window-systems" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Export to Excel</a>
-      </div>
-      <form id="import-form" onsubmit="handleImportFormSubmit(event)" method="POST" enctype="multipart/form-data" class="flex space-x-2 items-center">
-        <input type="file" name="file" accept=".xlsx" class="bg-white text-gray-800 border border-gray-300 rounded py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Import from Excel</button>
-      </form>
-      <input type="text" id="searchInput" placeholder="Search window systems..." class="border border-gray-300 rounded py-2 px-4">
-    </div>
-    <div class="mt-3">
-      <% if (windowSystems.length > 0) { %>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Window Type</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profiles</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accessories</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Muntins</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="windowSystemsTableBody" class="bg-white divide-y divide-gray-200">
-              <% windowSystems.forEach(function(windowSystem) { %>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <% if (windowSystem.image) { %>
-                      <div class="flex items-center">
-                        <img src="<%= windowSystem.image %>" 
-                             alt="<%= windowSystem.type %>" 
-                             class="w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:opacity-75 transition-opacity"
-                             title="Click to view full size"
-                             onclick="viewImage('<%= windowSystem.image %>', '<%= windowSystem.type %>')">
-                      </div>
-                    <% } else { %>
-                      <div class="flex items-center">
-                        <div class="w-16 h-16 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
-                          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                          </svg>
-                        </div>
-                      </div>
-                    <% } %>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900"><%= windowSystem.type %></div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="space-y-2">
-                      <% windowSystem.profiles.forEach(profileEntry => { %>
-                        <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
-                          <div>
-                        <% if (profileEntry.profile) { %>
-                              <span class="font-semibold"><%= profileEntry.profile.name %></span> - <%= profileEntry.quantity %>
-                              <br><span class="text-xs text-gray-500">Discount: <%= profileEntry.lengthDiscount %>, <%= profileEntry.orientation %></span>
-                            <% } else { %>
-                              <span class="font-semibold">Unknown Profile</span> - <%= profileEntry.quantity %>
-                              <br><span class="text-xs text-gray-500">Discount: <%= profileEntry.lengthDiscount %>, <%= profileEntry.orientation %></span>
-                            <% } %>
-                          </div>
-                          <% if (profileEntry.showToUser) { %>
-                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>
-                        <% } else { %>
-                            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>
-                        <% } %>
-                        </div>
-                      <% }); %>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="space-y-2">
-                      <% windowSystem.accessories.forEach(accessoryEntry => { %>
-                        <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
-                          <div>
-                        <% if (accessoryEntry.accessory) { %>
-                              <span class="font-semibold"><%= accessoryEntry.accessory.name %></span> - <%= accessoryEntry.quantity %>
-                              <br><span class="text-xs text-gray-500">Unit: <%= accessoryEntry.unit %></span>
-                            <% } else { %>
-                              <span class="font-semibold">Unknown Accessory</span> - <%= accessoryEntry.quantity %>
-                              <br><span class="text-xs text-gray-500">Unit: <%= accessoryEntry.unit %></span>
-                            <% } %>
-                          </div>
-                          <% if (accessoryEntry.showToUser) { %>
-                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>
-                        <% } else { %>
-                            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>
-                        <% } %>
-                        </div>
-                      <% }); %>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="space-y-2">
-                      <% if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) { %>
-                        <div class="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-200">
-                          <div>
-                            <span class="font-semibold text-blue-800">
-                              <%= windowSystem.muntinConfiguration.muntinType.charAt(0).toUpperCase() + windowSystem.muntinConfiguration.muntinType.slice(1) %> Muntins
-                            </span>
-                            <br>                            <span class="text-xs text-blue-600">
-                              User configurable grid and spacing
-                            </span>
-                          </div>
-                          <% if (windowSystem.muntinConfiguration.showToUser) { %>
-                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>
-                          <% } else { %>
-                            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>
-                          <% } %>
-                        </div>
-                      <% } else { %>
-                        <div class="text-center py-2 text-gray-400 italic">
-                          No muntins
-                        </div>
-                      <% } %>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
-                    <a href="/admin/edit/<%= windowSystem._id %>" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                    <button type="button" class="text-red-600 hover:text-red-900 ml-4" onclick="return deleteWindowSystem('<%= windowSystem._id %>')">Delete</button>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div>
-      <% } else { %>
-        <p>No window systems found.</p>
-      <% } %>
-    </div>
-    <div class="mt-4 text-center">
-      <a href="/admin" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">Back to Admin Console</a>
-    </div>
-  </div>
-
-  <!-- Image Viewer Modal -->
-  <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center">
-    <div class="relative max-w-4xl max-h-full p-4">
-      <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white text-2xl font-bold hover:text-gray-300 z-10">
-        &times;
-      </button>
-      <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain">
-      <div id="modalTitle" class="text-white text-center mt-4 text-lg font-semibold"></div>
-    </div>
-  </div>
-
-  <script>
-    function viewImage(imageSrc, title) {
-      const modal = document.getElementById('imageModal');
-      const modalImage = document.getElementById('modalImage');
-      const modalTitle = document.getElementById('modalTitle');
-      
-      modalImage.src = imageSrc;
-      modalTitle.textContent = title;
-      modal.classList.remove('hidden');
-      
-      // Close modal when clicking outside the image
-      modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-          closeImageModal();
-        }
-      });
-      
-      // Close modal with Escape key
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-          closeImageModal();
-        }
-      });
-    }
+  
+  <div class="container mx-auto px-4 py-8 flex-grow">
     
-    function closeImageModal() {
-      const modal = document.getElementById('imageModal');
-      modal.classList.add('hidden');
-    }
-  </script>
+    <!-- Page Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Window Systems</h1>
+          <p class="text-gray-500 mt-1">Manage your window system templates</p>
+        </div>
+        <a href="/admin/compose-window" class="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition-all">
+          <i class="fas fa-plus mr-2"></i>
+          New Window System
+        </a>
+      </div>
+      
+      <!-- Search and Actions Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div class="relative flex-1 max-w-md">
+          <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input type="text" id="searchInput" placeholder="Search window systems..." class="search-input">
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-500">
+            <span id="resultCount"><%= windowSystems.length %></span> systems
+          </span>
+          
+          <div class="h-6 w-px bg-gray-200"></div>
+          
+          <a href="/admin/export-window-systems" class="inline-flex items-center px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium rounded-lg transition-colors text-sm">
+            <i class="fas fa-file-export mr-2"></i>Export
+          </a>
+          
+          <form id="import-form" onsubmit="handleImportFormSubmit(event)" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
+            <label class="inline-flex items-center px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-lg cursor-pointer transition-colors text-sm">
+              <i class="fas fa-file-import mr-2"></i>Import
+              <input type="file" name="file" accept=".xlsx" class="hidden" onchange="this.form.submit()">
+            </label>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Window Systems Grid -->
+    <% if (windowSystems.length > 0) { %>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <% windowSystems.forEach(function(windowSystem) { %>
+          <% 
+            const panelConfig = windowSystem.panelConfiguration || {};
+            const panels = panelConfig.panels || ['O', 'O'];
+            const orientation = panelConfig.orientation || 'horizontal';
+            const operationType = panelConfig.operationType || 'sliding';
+            const isVertical = orientation === 'vertical';
+            const isFrenchDoor = operationType === 'french-door';
+            
+            // Get operation badge class
+            let badgeClass = 'sliding';
+            if (operationType === 'casement') badgeClass = 'casement';
+            else if (operationType === 'fixed') badgeClass = 'fixed';
+            else if (operationType === 'single-hung') badgeClass = 'single-hung';
+            else if (operationType === 'french-door') badgeClass = 'french-door';
+            
+            // Format operation type for display
+            let operationDisplay = operationType.replace('-', ' ');
+            operationDisplay = operationDisplay.charAt(0).toUpperCase() + operationDisplay.slice(1);
+          %>
+          <div class="window-card">
+            <!-- Preview -->
+            <div class="preview-container">
+              <div class="window-preview">
+                <div class="window-preview-glass" style="flex-direction: <%= isVertical ? 'column' : 'row' %>;">
+                  <% if (isFrenchDoor) { %>
+                    <div class="preview-panel operable">
+                      <i class="fas fa-door-open text-2xl" style="color: rgba(107,114,128,0.6);"></i>
+                    </div>
+                  <% } else { %>
+                    <% panels.forEach((panel, idx) => { %>
+                      <div class="preview-panel <%= panel === 'X' ? 'operable' : '' %>">
+                        <%= panel %>
+                      </div>
+                      <% if (idx < panels.length - 1) { %>
+                        <div class="<%= isVertical ? 'preview-mullion-h' : 'preview-mullion' %>"></div>
+                      <% } %>
+                    <% }); %>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Card Content -->
+            <div class="p-4">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="font-semibold text-gray-900 text-lg leading-tight"><%= windowSystem.type %></h3>
+              </div>
+              
+              <div class="flex items-center gap-2 mb-4">
+                <span class="operation-badge <%= badgeClass %>"><%= operationDisplay %></span>
+                <span class="text-xs text-gray-400 font-mono"><%= panels.join('') %></span>
+              </div>
+              
+              <!-- Actions -->
+              <div class="flex items-center gap-2 pt-3 border-t border-gray-100">
+                <a href="/admin/edit/<%= windowSystem._id %>" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors text-sm">
+                  <i class="fas fa-edit mr-1.5"></i>Edit
+                </a>
+                <button type="button" onclick="deleteWindowSystem('<%= windowSystem._id %>', '<%= windowSystem.type.replace(/'/g, "\\'") %>')" class="inline-flex items-center justify-center px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-lg transition-colors text-sm border border-red-200">
+                  <i class="fas fa-trash-alt mr-1.5"></i>Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <!-- Empty State -->
+      <div class="empty-state">
+        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <i class="fas fa-window-maximize text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Window Systems Yet</h3>
+        <p class="text-gray-500 mb-6 max-w-md mx-auto">
+          Create your first window system template to start building quotes.
+        </p>
+        <a href="/admin/compose-window" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
+          <i class="fas fa-plus mr-2"></i>
+          Create Window System
+        </a>
+      </div>
+    <% } %>
+    
+    <!-- Back Button -->
+    <div class="mt-8 text-center">
+      <a href="/admin" class="inline-flex items-center px-5 py-2.5 text-gray-600 hover:text-gray-900 font-medium transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>
+        Back to Admin Console
+      </a>
+    </div>
+    
+  </div>
 
   <%- include('../partials/_footer.ejs') %>
 </body>
