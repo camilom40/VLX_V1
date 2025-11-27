@@ -343,6 +343,20 @@
         transform: translate(20px, -20px);
       }
     }
+    
+    /* Draggable mullion styles */
+    .cursor-ew-resize:active,
+    .cursor-ns-resize:active {
+      background-color: #3b82f6 !important;
+    }
+    
+    #panelPreview.select-none {
+      user-select: none;
+    }
+    
+    #panelPreview.select-none [data-mullion-index] {
+      background-color: #3b82f6;
+    }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -446,15 +460,19 @@
                 </p>
               </div>
               
-              <!-- Live Preview -->
+<!-- Live Preview -->
               <div class="mt-4 p-6 bg-white rounded-lg border border-gray-200">
                 <label class="form-label text-center block mb-4 text-lg">Live Preview</label>
                 <div id="panelPreviewContainer" class="flex justify-center items-center">
                   <div id="panelPreview" class="border-4 border-gray-600 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex" style="min-width: 320px; min-height: 200px;">
                     <!-- Preview will be generated here -->
+              </div>
                   </div>
-                </div>
                 <p id="panelConfigLabel" class="text-center text-sm font-medium text-gray-700 mt-3">OO - 2 Panel Sliding</p>
+                <button type="button" id="resetRatiosBtn" onclick="resetPanelRatios()" 
+                        class="mt-2 text-xs text-blue-600 hover:text-blue-800 underline" style="display: none;">
+                  <i class="fas fa-undo mr-1"></i>Reset to equal sizes
+                </button>
               </div>
             </div>
           </div>
@@ -905,6 +923,13 @@
       }
     }
     
+    // Panel size ratios (for windows with multiple panels)
+    let panelRatios = [1, 1]; // Default equal ratios for 2 panels
+    let isDragging = false;
+    let dragIndex = -1;
+    let dragStartPos = 0;
+    let dragStartRatios = [];
+    
     function updatePanelInputs() {
       const count = parseInt(document.getElementById('panelCount').value) || 2;
       const builder = document.getElementById('panelLayoutBuilder');
@@ -915,6 +940,14 @@
       }
       while (panelConfig.length > count) {
         panelConfig.pop();
+      }
+      
+      // Adjust panel ratios array
+      while (panelRatios.length < count) {
+        panelRatios.push(1); // Default new panels to ratio 1
+      }
+      while (panelRatios.length > count) {
+        panelRatios.pop();
       }
       
       // Build panel buttons
@@ -961,12 +994,20 @@
       // Set flex direction based on orientation
       preview.style.flexDirection = orientation === 'horizontal' ? 'row' : 'column';
       
+      // Check if we should allow draggable dividers (sliding or single-hung with 2+ panels)
+      const allowDraggableDividers = (operationType === 'sliding' || operationType === 'single-hung') && panelConfig.length >= 2;
+      
       // Build preview panels
       preview.innerHTML = '';
       panelConfig.forEach((type, index) => {
         const isOperable = type === 'X'; // X = Operable, O = Fixed
         const panel = document.createElement('div');
-        panel.className = 'relative flex-1 min-w-[80px] min-h-[80px] border-2 border-gray-500 flex items-center justify-center';
+        panel.className = 'relative min-w-[40px] min-h-[40px] border-2 border-gray-500 flex items-center justify-center';
+        panel.dataset.panelIndex = index;
+        
+        // Use panel ratios for sizing
+        panel.style.flex = `${panelRatios[index]} 0 0%`;
+        
         panel.style.background = isOperable 
           ? 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)' 
           : 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)';
@@ -981,9 +1022,24 @@
         // Add mullion (divider) between panels except for last
         if (index < panelConfig.length - 1) {
           const mullion = document.createElement('div');
+          mullion.dataset.mullionIndex = index;
+          
+          if (allowDraggableDividers) {
+            // Draggable mullion
           mullion.className = orientation === 'horizontal' 
-            ? 'w-1 bg-gray-600 self-stretch' 
-            : 'h-1 bg-gray-600 w-full';
+              ? 'w-2 bg-gray-600 self-stretch flex-shrink-0 cursor-ew-resize hover:bg-blue-500 transition-colors' 
+              : 'h-2 bg-gray-600 w-full flex-shrink-0 cursor-ns-resize hover:bg-blue-500 transition-colors';
+            mullion.title = 'Drag to resize panels';
+            
+            // Add drag handlers
+            mullion.addEventListener('mousedown', (e) => startDrag(e, index, orientation));
+          } else {
+            // Non-draggable mullion
+            mullion.className = orientation === 'horizontal' 
+              ? 'w-1 bg-gray-600 self-stretch flex-shrink-0' 
+              : 'h-1 bg-gray-600 w-full flex-shrink-0';
+          }
+          
           preview.appendChild(panel);
           preview.appendChild(mullion);
         } else {
@@ -1004,7 +1060,164 @@
         'tilt-turn': 'Tilt & Turn'
       }[operationType] || operationType;
       
-      label.textContent = `${configString} - ${panelConfig.length} Panel ${operationLabel}`;
+      // Build label text
+      let labelText = `${configString} - ${panelConfig.length} Panel ${operationLabel}`;
+      
+      // Add ratio info for windows with custom ratios
+      if (allowDraggableDividers && !areRatiosEqual()) {
+        labelText += ` (${formatRatiosAsFractions(panelRatios)})`;
+      }
+      
+      label.textContent = labelText;
+      
+      // Show drag hint for sliding windows
+      updateDragHint(allowDraggableDividers);
+    }
+    
+    // Check if all ratios are equal
+    function areRatiosEqual() {
+      if (panelRatios.length <= 1) return true;
+      const first = panelRatios[0];
+      return panelRatios.every(r => Math.abs(r - first) < 0.05);
+    }
+    
+    // Format ratios as percentage string
+    function formatRatiosAsFractions(ratios) {
+      const total = ratios.reduce((a, b) => a + b, 0);
+      const percentages = ratios.map(r => Math.round((r / total) * 100));
+      return percentages.map(p => `${p}%`).join(' | ');
+    }
+    
+    // Show/hide drag hint and reset button
+    function updateDragHint(show) {
+      let hint = document.getElementById('dragHint');
+      const resetBtn = document.getElementById('resetRatiosBtn');
+      
+      if (show) {
+        if (!hint) {
+          hint = document.createElement('p');
+          hint.id = 'dragHint';
+          hint.className = 'text-xs text-blue-600 mt-2 text-center';
+          hint.innerHTML = '<i class="fas fa-arrows-alt-h mr-1"></i>Drag the dividers to resize panels';
+          document.getElementById('panelConfigLabel').after(hint);
+        }
+        hint.style.display = 'block';
+        
+        // Show reset button only if ratios are not equal
+        if (resetBtn) {
+          resetBtn.style.display = areRatiosEqual() ? 'none' : 'inline-block';
+        }
+      } else {
+        if (hint) hint.style.display = 'none';
+        if (resetBtn) resetBtn.style.display = 'none';
+      }
+    }
+    
+    // Drag functions for resizing panels
+    function startDrag(e, mullionIndex, orientation) {
+      e.preventDefault();
+      isDragging = true;
+      dragIndex = mullionIndex;
+      dragStartPos = orientation === 'horizontal' ? e.clientX : e.clientY;
+      dragStartRatios = [...panelRatios];
+      
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', stopDrag);
+      
+      // Add dragging class to preview
+      document.getElementById('panelPreview').classList.add('select-none');
+    }
+    
+    function onDrag(e) {
+      if (!isDragging || dragIndex < 0) return;
+      
+      const preview = document.getElementById('panelPreview');
+      const orientation = document.getElementById('panelOrientation').value;
+      const previewSize = orientation === 'horizontal' ? preview.offsetWidth : preview.offsetHeight;
+      const currentPos = orientation === 'horizontal' ? e.clientX : e.clientY;
+      
+      // Calculate the delta as a proportion of the preview size
+      const delta = (currentPos - dragStartPos) / previewSize;
+      
+      // Calculate total ratio before the mullion and after
+      const totalRatio = dragStartRatios.reduce((a, b) => a + b, 0);
+      
+      // Adjust the ratios of panels on either side of the mullion
+      const leftRatio = dragStartRatios[dragIndex];
+      const rightRatio = dragStartRatios[dragIndex + 1];
+      const combinedRatio = leftRatio + rightRatio;
+      
+      // Calculate new ratios based on drag
+      let newLeftRatio = leftRatio + (delta * totalRatio);
+      let newRightRatio = rightRatio - (delta * totalRatio);
+      
+      // Clamp ratios to minimum of 0.3
+      const minRatio = 0.3;
+      if (newLeftRatio < minRatio) {
+        newLeftRatio = minRatio;
+        newRightRatio = combinedRatio - minRatio;
+      }
+      if (newRightRatio < minRatio) {
+        newRightRatio = minRatio;
+        newLeftRatio = combinedRatio - minRatio;
+      }
+      
+      // Update ratios
+      panelRatios[dragIndex] = newLeftRatio;
+      panelRatios[dragIndex + 1] = newRightRatio;
+      
+      // Update preview without rebuilding (just update flex values)
+      updatePanelFlexValues();
+    }
+    
+    function stopDrag() {
+      isDragging = false;
+      dragIndex = -1;
+      document.removeEventListener('mousemove', onDrag);
+      document.removeEventListener('mouseup', stopDrag);
+      
+      // Remove dragging class
+      document.getElementById('panelPreview').classList.remove('select-none');
+      
+      // Rebuild preview to update label
+      updatePanelPreview();
+    }
+    
+    // Update only flex values without rebuilding DOM
+    function updatePanelFlexValues() {
+      const preview = document.getElementById('panelPreview');
+      const panels = preview.querySelectorAll('[data-panel-index]');
+      
+      panels.forEach((panel, index) => {
+        panel.style.flex = `${panelRatios[index]} 0 0%`;
+      });
+      
+      // Update label with current ratios
+      const label = document.getElementById('panelConfigLabel');
+      const configString = panelConfig.join('');
+      const operationType = document.getElementById('operationType').value;
+      const operationLabel = {
+        'sliding': 'Sliding',
+        'casement': 'Casement',
+        'awning': 'Awning',
+        'hopper': 'Hopper',
+        'fixed': 'Fixed',
+        'single-hung': 'Single Hung',
+        'double-hung': 'Double Hung',
+        'tilt-turn': 'Tilt & Turn'
+      }[operationType] || operationType;
+      
+      let labelText = `${configString} - ${panelConfig.length} Panel ${operationLabel}`;
+      if (!areRatiosEqual()) {
+        labelText += ` (${formatRatiosAsFractions(panelRatios)})`;
+      }
+      label.textContent = labelText;
+    }
+    
+    // Reset panel ratios to equal
+    function resetPanelRatios() {
+      panelRatios = panelConfig.map(() => 1);
+      updatePanelPreview();
     }
     
     function getOperationIndicator(type, orientation) {
@@ -1703,6 +1916,7 @@
       // Add panel configuration
       const panelConfiguration = {
         panels: panelConfig,
+        panelRatios: panelRatios,
         orientation: document.getElementById('panelOrientation').value,
         operationType: document.getElementById('operationType').value,
         hasMullion: true,
