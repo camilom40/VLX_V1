@@ -47,12 +47,12 @@ router.post('/add', isAdmin, async (req, res) => {
       colorCode,
       pricePerMeter: Number(pricePerMeter),
       currency,
-      weight: Number(weight),
+      weight: weight === '' ? undefined : Number(weight),
       ammaCertification,
       isMuntin: Boolean(isMuntin),
       muntinType: isMuntin ? muntinType : 'none',
       muntinPattern: isMuntin ? muntinPattern : null,
-      muntinSpacing: isMuntin ? Number(muntinSpacing) : null
+      muntinSpacing: isMuntin && muntinSpacing && muntinSpacing !== '' && !isNaN(Number(muntinSpacing)) ? Number(muntinSpacing) : null
     });
     
     await newProfile.save();
@@ -90,12 +90,12 @@ router.post('/update/:id', isAdmin, async (req, res) => {
       colorCode,
       pricePerMeter: Number(pricePerMeter),
       currency,
-      weight: Number(weight),
+      weight: weight === '' ? undefined : Number(weight),
       ammaCertification,
       isMuntin: Boolean(isMuntin),
       muntinType: isMuntin ? muntinType : 'none',
       muntinPattern: isMuntin ? muntinPattern : null,
-      muntinSpacing: isMuntin ? Number(muntinSpacing) : null
+      muntinSpacing: isMuntin && muntinSpacing && muntinSpacing !== '' && !isNaN(Number(muntinSpacing)) ? Number(muntinSpacing) : null
     });
     
     res.redirect('/admin/profiles');
