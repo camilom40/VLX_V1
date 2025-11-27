@@ -3,455 +3,362 @@
 <head>
     <%- include('../partials/_head.ejs') %>
     <title>Edit Accessory: <%= accessory.name %></title>
-    <!-- Include Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .form-input {
-          width: 100%;
-          padding: 0.625rem 1rem;
-          padding-left: 2.5rem;
-          border-radius: 0.375rem;
-          border: 1px solid #d1d5db;
-          background-color: white;
-          color: #111827;
-          transition: all 0.2s;
+        body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+        
+        .main-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.05);
+            border: 1px solid rgba(226,232,240,0.8);
         }
-        .form-input:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-        }
-        .form-input:hover {
-          border-color: #60a5fa;
-        }
-        input[type="text"], input[type="number"], select {
-          background-color: #eff6ff;
-          border-color: #bfdbfe;
-          padding: 0.75rem 1rem;
-          padding-left: 2.5rem;
-        }
-        input[type="text"]:hover, input[type="number"]:hover, select:hover {
-          border-color: #93c5fd;
-        }
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
-          background-color: white;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-          transform: scale(1.01);
-        }
-        select {
-          appearance: none;
-          background-color: #eff6ff;
-          cursor: pointer;
-          padding-left: 2.5rem;
-          padding-right: 2rem;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563EB'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 0.5rem center;
-          background-size: 1.5em 1.5em;
-        }
-        .input-with-icon {
-          position: relative;
-          width: 100%;
-        }
-        .input-icon {
-          position: absolute;
-          left: 0.75rem;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #3b82f6;
-          pointer-events: none;
-          z-index: 10;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .input-icon svg {
-          width: 1.25rem;
-          height: 1.25rem;
-        }
-        .form-label {
-          display: block;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #374151;
-          margin-bottom: 0.25rem;
-        }
-        .required-field {
-          color: #ef4444;
-          margin-left: 0.25rem;
-          font-size: 1.125rem;
-          line-height: 1;
-          position: relative;
-          top: 3px;
-        }
-        .form-help-text {
-          font-size: 0.75rem;
-          color: #6b7280;
-          margin-top: 0.25rem;
-        }
-        .error-message {
-          color: #dc2626;
-          font-size: 0.875rem;
-          margin-top: 0.25rem;
-          display: none;
-        }
-        .btn-primary {
-          background: linear-gradient(to right, #2563eb, #3b82f6);
-          color: white;
-          font-weight: 500;
-          padding: 0.625rem 1.5rem;
-          border-radius: 0.375rem;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-          transition: all 0.3s ease-in-out;
-        }
-        .btn-primary:hover {
-          background: linear-gradient(to right, #1d4ed8, #2563eb);
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          transform: translateY(-0.5px);
-        }
-        .btn-secondary {
-          background: linear-gradient(to right, #4b5563, #6b7280);
-          color: white;
-          font-weight: 500;
-          padding: 0.625rem 1.5rem;
-          border-radius: 0.375rem;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-          transition: all 0.3s ease-in-out;
-        }
-        .btn-secondary:hover {
-          background: linear-gradient(to right, #374151, #4b5563);
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          transform: translateY(-0.5px);
-        }
-        .input-group {
-          position: relative;
-        }
-        .input-group-text {
-          position: absolute;
-          right: 0;
-          top: 0;
-          height: 100%;
-          padding: 0 0.75rem;
-          display: flex;
-          align-items: center;
-          background-color: #dbeafe;
-          color: #1e40af;
-          font-weight: 500;
-          border: 1px solid #bfdbfe;
-          border-left: none;
-          border-top-right-radius: 0.375rem;
-          border-bottom-right-radius: 0.375rem;
-          transition: all 0.2s;
-        }
-        input:focus + .input-group-text {
-          border-color: #3b82f6;
-          background-color: #bfdbfe;
-          color: #1e40af;
-        }
+        
         .form-section {
-          border-bottom: 1px solid #e5e7eb;
-          padding-bottom: 1.25rem;
-          margin-bottom: 1.25rem;
+            background: linear-gradient(to right, #fafbfc, #fff);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
         }
-        .form-section:last-child {
-          border-bottom: none;
-          padding-bottom: 0;
-          margin-bottom: 0;
+        .form-section:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        
+        .section-icon {
+            width: 2.25rem; height: 2.25rem;
+            border-radius: 0.625rem;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
         }
-        .form-card {
-          background-color: white;
-          border-radius: 0.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          padding: 1.5rem;
-          margin-bottom: 1.5rem;
-          transition: all 0.3s;
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border-radius: 0.625rem;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            color: #1e293b;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
         }
-        .form-card:hover {
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        .form-input:hover { border-color: #cbd5e1; background: #fff; }
+        .form-input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+        
+        .form-input-simple {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.625rem;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            color: #1e293b;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
         }
-        .tooltip {
-          position: relative;
-          display: inline-block;
-          margin-left: 0.5rem;
+        .form-input-simple:hover { border-color: #cbd5e1; background: #fff; }
+        .form-input-simple:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+        
+        .input-with-icon { position: relative; width: 100%; }
+        .input-icon {
+            position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
+            color: #64748b; pointer-events: none; z-index: 10; transition: color 0.2s;
         }
-        .tooltip .tooltip-text {
-          visibility: hidden;
-          position: absolute;
-          z-index: 10;
-          width: 15rem;
-          background-color: #1f2937;
-          color: white;
-          font-size: 0.75rem;
-          border-radius: 0.375rem;
-          padding: 0.5rem;
-          margin-left: -7rem;
-          margin-top: 0.5rem;
-          bottom: 100%;
-          opacity: 0;
-          transition: opacity 0.3s;
+        .input-with-icon:focus-within .input-icon { color: #3b82f6; }
+        .input-icon svg { width: 1.125rem; height: 1.125rem; }
+        
+        select.form-input {
+            appearance: none; cursor: pointer; padding-right: 2.5rem;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.125rem;
         }
-        .tooltip:hover .tooltip-text {
-          visibility: visible;
-          opacity: 1;
+        
+        .input-suffix {
+            position: absolute; right: 0; top: 0; height: 100%;
+            padding: 0 0.875rem; display: flex; align-items: center;
+            background: linear-gradient(to right, #e2e8f0, #f1f5f9);
+            color: #475569; font-weight: 600; font-size: 0.8rem;
+            border-top-right-radius: 0.625rem; border-bottom-right-radius: 0.625rem;
+            border: 2px solid #e2e8f0; border-left: none;
         }
-        .tooltip .tooltip-text::after {
-          content: " ";
-          position: absolute;
-          top: 100%;
-          left: 50%;
-          margin-left: -0.25rem;
-          border-width: 0.25rem;
-          border-style: solid;
-          border-color: #1f2937 transparent transparent transparent;
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white; font-weight: 600; padding: 0.75rem 1.75rem;
+            border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(59,130,246,0.4);
+            transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
         }
-        .switch {
-          position: relative;
-          display: inline-block;
-          width: 2.75rem;
-          height: 1.5rem;
+        .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 6px 20px rgba(59,130,246,0.5); transform: translateY(-2px); }
+        
+        .btn-secondary {
+            background: #f1f5f9; color: #475569; font-weight: 600;
+            padding: 0.75rem 1.25rem; border-radius: 0.625rem;
+            border: 2px solid #e2e8f0; transition: all 0.3s ease;
+            display: inline-flex; align-items: center; gap: 0.5rem;
         }
-        .switch input {
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-        .slider {
-          position: absolute;
-          cursor: pointer;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: #d1d5db;
-          transition: all 0.3s;
-          border-radius: 9999px;
-        }
-        .slider:before {
-          content: "";
-          position: absolute;
-          left: 0.25rem;
-          bottom: 0.25rem;
-          background-color: white;
-          width: 1rem;
-          height: 1rem;
-          transition: all 0.3s;
-          border-radius: 9999px;
-        }
-        input:checked + .slider {
-          background-color: #2563eb;
-        }
-        input:focus + .slider {
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-        }
-        input:checked + .slider:before {
-          transform: translateX(1.25rem);
-        }
+        .btn-secondary:hover { background: #e2e8f0; border-color: #cbd5e1; }
+        
         .btn-danger {
-          background: linear-gradient(to right, #dc2626, #ef4444);
-          color: white;
-          font-weight: 500;
-          padding: 0.625rem 1.5rem;
-          border-radius: 0.375rem;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-          transition: all 0.3s ease-in-out;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white; font-weight: 600; padding: 0.75rem 1.25rem;
+            border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(239,68,68,0.3);
+            transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
         }
-        .btn-danger:hover {
-          background: linear-gradient(to right, #b91c1c, #dc2626);
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          transform: translateY(-0.5px);
+        .btn-danger:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); transform: translateY(-2px); }
+        
+        .required-badge {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #92400e; font-size: 0.6rem; font-weight: 700;
+            padding: 0.2rem 0.4rem; border-radius: 0.3rem;
+            margin-left: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        
+        .help-text { color: #64748b; font-size: 0.75rem; margin-top: 0.375rem; }
+        .error-text { color: #dc2626; font-size: 0.75rem; margin-top: 0.375rem; display: none; }
+        
+        .image-upload-area {
+            border: 2px dashed #cbd5e1; border-radius: 0.875rem; padding: 1.5rem;
+            text-align: center; background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .image-upload-area:hover, .image-upload-area.active { border-color: #3b82f6; background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+        
+        .current-image-card {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1rem;
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
     <%- include('../partials/_header.ejs') %>
     
     <main class="flex-grow container mx-auto px-4 py-8">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-3xl font-bold flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        <div class="max-w-4xl mx-auto">
+            <!-- Page Header -->
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Edit Accessory</h1>
+                        <p class="text-gray-500 text-sm">Updating: <span class="font-medium text-amber-600"><%= accessory.name %></span></p>
+                    </div>
+                </div>
+                <a href="/admin/accessories" class="btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600">
-                        Edit Window Accessory
-                    </span>
-                </h1>
-                <p class="text-gray-600 mt-1 ml-11">Update information for <%= accessory.name %></p>
+                    Back
+                </a>
             </div>
-            <a href="/admin/accessories" class="btn-secondary flex items-center text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Accessories
-            </a>
-        </div>
-        
-        <div class="max-w-3xl mx-auto form-card">
-            <form id="editAccessoryForm" action="/admin/accessories/update/<%= accessory._id %>" method="POST" enctype="multipart/form-data" class="space-y-6">
-                <!-- Name field -->
-                <div class="form-section">
-                    <label for="name" class="form-label flex items-center">
-                        <span class="text-blue-600 font-semibold">Accessory Name</span> 
-                        <span class="required-field">*</span>
-                    </label>
-                    <div class="input-with-icon">
-                        <div class="input-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <input type="text" id="name" name="name" value="<%= accessory.name %>" required 
-                            class="form-input w-full pl-10" placeholder="Enter accessory name" maxlength="50">
-                    </div>
-                    <div id="nameError" class="error-message">Accessory name cannot contain spaces.</div>
-                    <p class="form-help-text">Example: WindowHinge, CornerJoint, WeatherSeal (no spaces allowed)</p>
-                </div>
-                
-                <!-- Reference Number field -->
-                <div class="form-section">
-                    <label for="referenceNumber" class="form-label flex items-center">
-                        <span class="text-indigo-600 font-semibold">Reference Number</span>
-                        <span class="required-field">*</span>
-                        <div class="tooltip">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span class="tooltip-text">Enter a unique reference number to identify this accessory.</span>
-                        </div>
-                    </label>
-                    <div class="input-with-icon">
-                        <div class="input-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                            </svg>
-                        </div>
-                        <input type="text" id="referenceNumber" name="referenceNumber" value="<%= accessory.referenceNumber || '' %>" required 
-                            class="form-input w-full pl-10" placeholder="Enter reference number" maxlength="50">
-                    </div>
-                    <div id="referenceNumberError" class="error-message">Reference number is required.</div>
-                    <p class="form-help-text">Example: ACC-001, WIN-HINGE-23, etc.</p>
-                </div>
-                
-                <!-- Provider Name field -->
-                <div class="form-section">
-                    <label for="providerName" class="form-label flex items-center">
-                        <span class="text-purple-600 font-semibold">Provider Company</span>
-                        <div class="tooltip">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span class="tooltip-text">Enter the name of the company that provides this accessory.</span>
-                        </div>
-                    </label>
-                    <div class="input-with-icon">
-                        <div class="input-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                        </div>
-                        <input type="text" id="providerName" name="providerName" value="<%= accessory.providerName || '' %>" 
-                            class="form-input w-full pl-10" placeholder="Enter provider company name (optional)" maxlength="100">
-                    </div>
-                    <p class="form-help-text">Name of the supplier or manufacturer (optional)</p>
-                </div>
-                
-                <!-- Unit field -->
-                <div class="form-section">
-                    <label for="unit" class="form-label">
-                        <span class="text-sky-600 font-semibold">Unit Type</span>
-                        <span class="required-field">*</span>
-                    </label>
-                    <div class="input-with-icon">
-                        <div class="input-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2M6 5v2m12-2v2" />
-                            </svg>
-                        </div>
-                        <input type="text" id="unit" name="unit" value="<%= accessory.unit %>" required 
-                            class="form-input w-full pl-10" placeholder="e.g., piece, set, meter">
-                    </div>
-                    <p class="form-help-text">The unit type determines how this accessory is measured or sold</p>
-                </div>
-                
-                <!-- Price field -->
-                <div class="form-section">
-                    <label for="price" class="form-label">
-                        <span class="text-emerald-600 font-semibold">Price Per Unit</span>
-                        <span class="required-field">*</span>
-                    </label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="input-with-icon">
-                            <div class="input-icon">
-                                <span class="text-blue-500 font-medium">$</span>
-                            </div>
-                            <input type="number" id="price" name="price" step="0.01" min="0" value="<%= accessory.price %>" required 
-                                class="form-input w-full pl-10" placeholder="0">
-                        </div>
-                        <div>
-                            <select id="currency" name="currency" required class="form-input w-full">
-                                <option value="COP" <%= (accessory.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP</option>
-                                <option value="USD" <%= (accessory.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="priceError" class="error-message">Price must be a positive number.</div>
-                    <p class="form-help-text">Enter the price and select the currency</p>
-                </div>
-                
-                <!-- Weight field -->
-                <div class="form-section">
-                    <label for="weight" class="form-label">
-                        <span class="text-amber-600 font-semibold">Weight (Optional)</span>
-                    </label>
-                    <div class="input-with-icon">
-                        <div class="input-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2M6 5v2m12-2v2" />
-                            </svg>
-                        </div>
-                        <input type="number" id="weight" name="weight" step="0.01" min="0" value="<%= accessory.weight %>"
-                            class="form-input w-full pl-10 pr-14" placeholder="0.00">
-                        <div class="input-group-text">kg</div>
-                    </div>
-                    <div id="weightError" class="error-message">Weight must be a positive number.</div>
-                    <p class="form-help-text">Leave empty if weight is not applicable or unknown</p>
-                </div>
-                
-                <!-- Image Management Section -->
-                <div class="form-section">
-                    <label class="form-label flex items-center">
-                        <span class="text-pink-600 font-semibold">Accessory Image</span>
-                        <div class="tooltip">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span class="tooltip-text">Upload an image to help users identify this accessory when selecting it</span>
-                        </div>
-                    </label>
+
+            <!-- Main Form Card -->
+            <div class="main-card p-6 mb-5">
+                <form id="editAccessoryForm" action="/admin/accessories/update/<%= accessory._id %>" method="POST" enctype="multipart/form-data">
                     
-                    <!-- DEBUG: Image field value: '<%= accessory.image %>' -->
-                    <% if (accessory.image && accessory.image.trim() !== '') { %>
-                        <!-- Current Image Display -->
-                        <div id="currentImageContainer" class="mb-4">
-                            <div class="bg-gray-100 border-2 border-gray-200 rounded-lg p-4">
-                                <div class="flex items-start space-x-4">
+                    <!-- Row 1: Name and Reference Number -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Name field -->
+                        <div class="form-section">
+                            <div class="flex items-center gap-2.5 mb-3">
+                                <div class="section-icon bg-blue-100 text-blue-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <label for="name" class="font-semibold text-gray-800 text-sm">Accessory Name</label>
+                                    <span class="required-badge">Required</span>
+                                </div>
+                            </div>
+                            <div class="input-with-icon">
+                                <div class="input-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                </div>
+                                <input type="text" id="name" name="name" value="<%= accessory.name %>" required class="form-input" 
+                                    placeholder="e.g., WindowHinge" maxlength="50">
+                            </div>
+                            <p id="nameError" class="error-text">No spaces allowed</p>
+                            <p class="help-text">No spaces (e.g., CornerJoint)</p>
+                        </div>
+
+                        <!-- Reference Number field -->
+                        <div class="form-section">
+                            <div class="flex items-center gap-2.5 mb-3">
+                                <div class="section-icon bg-indigo-100 text-indigo-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <label for="referenceNumber" class="font-semibold text-gray-800 text-sm">Reference Number</label>
+                                    <span class="required-badge">Required</span>
+                                </div>
+                            </div>
+                            <div class="input-with-icon">
+                                <div class="input-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                    </svg>
+                                </div>
+                                <input type="text" id="referenceNumber" name="referenceNumber" value="<%= accessory.referenceNumber || '' %>" required class="form-input" 
+                                    placeholder="e.g., ACC-001" maxlength="50">
+                            </div>
+                            <p id="referenceNumberError" class="error-text">Required field</p>
+                            <p class="help-text">e.g., WIN-HINGE-23</p>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Provider and Unit -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Provider Name field -->
+                        <div class="form-section">
+                            <div class="flex items-center gap-2.5 mb-3">
+                                <div class="section-icon bg-purple-100 text-purple-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <label for="providerName" class="font-semibold text-gray-800 text-sm">Provider Company</label>
+                                    <span class="text-gray-400 text-xs ml-1.5">Optional</span>
+                                </div>
+                            </div>
+                            <div class="input-with-icon">
+                                <div class="input-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
+                                </div>
+                                <input type="text" id="providerName" name="providerName" value="<%= accessory.providerName || '' %>" class="form-input" 
+                                    placeholder="Supplier name" maxlength="100">
+                            </div>
+                            <p class="help-text">Manufacturer or supplier</p>
+                        </div>
+
+                        <!-- Unit field -->
+                        <div class="form-section">
+                            <div class="flex items-center gap-2.5 mb-3">
+                                <div class="section-icon bg-sky-100 text-sky-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <label for="unit" class="font-semibold text-gray-800 text-sm">Unit Type</label>
+                                    <span class="required-badge">Required</span>
+                                </div>
+                            </div>
+                            <div class="input-with-icon">
+                                <div class="input-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                    </svg>
+                                </div>
+                                <input type="text" id="unit" name="unit" value="<%= accessory.unit %>" required class="form-input" 
+                                    placeholder="e.g., piece, set, meter">
+                            </div>
+                            <p class="help-text">How this item is measured</p>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Price and Weight -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Price field -->
+                        <div class="form-section">
+                            <div class="flex items-center gap-2.5 mb-3">
+                                <div class="section-icon bg-emerald-100 text-emerald-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <label for="price" class="font-semibold text-gray-800 text-sm">Price Per Unit</label>
+                                    <span class="required-badge">Required</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <div class="flex-1 input-with-icon">
+                                    <div class="input-icon">
+                                        <span class="text-base font-bold">$</span>
+                                    </div>
+                                    <input type="number" id="price" name="price" step="0.01" min="0" value="<%= accessory.price %>" required 
+                                        class="form-input" placeholder="0.00">
+                                </div>
+                                <select id="currency" name="currency" required class="form-input-simple !w-24">
+                                    <option value="COP" <%= (accessory.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP</option>
+                                    <option value="USD" <%= (accessory.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD</option>
+                                </select>
+                            </div>
+                            <p id="priceError" class="error-text">Must be positive</p>
+                        </div>
+
+                        <!-- Weight field -->
+                        <div class="form-section">
+                            <div class="flex items-center gap-2.5 mb-3">
+                                <div class="section-icon bg-amber-100 text-amber-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <label for="weight" class="font-semibold text-gray-800 text-sm">Weight</label>
+                                    <span class="text-gray-400 text-xs ml-1.5">Optional</span>
+                                </div>
+                            </div>
+                            <div class="input-with-icon">
+                                <div class="input-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                                    </svg>
+                                </div>
+                                <input type="number" id="weight" name="weight" step="0.01" min="0" value="<%= accessory.weight || '' %>" 
+                                    class="form-input !pr-14" placeholder="0.00">
+                                <div class="input-suffix">kg</div>
+                            </div>
+                            <p id="weightError" class="error-text">Must be positive</p>
+                        </div>
+                    </div>
+
+                    <!-- Image Upload field -->
+                    <div class="form-section mb-4">
+                        <div class="flex items-center gap-2.5 mb-3">
+                            <div class="section-icon bg-pink-100 text-pink-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <label class="font-semibold text-gray-800 text-sm">Accessory Image</label>
+                                <span class="text-gray-400 text-xs ml-1.5">Optional</span>
+                            </div>
+                        </div>
+                        
+                        <% if (accessory.image && accessory.image.trim() !== '') { %>
+                            <!-- Current Image Display -->
+                            <div id="currentImageContainer" class="current-image-card mb-3">
+                                <div class="flex items-center gap-4">
                                     <img id="currentImage" src="/uploads/accessories/<%= accessory.image %>" 
                                          alt="<%= accessory.name %>" 
-                                         class="w-32 h-32 object-cover rounded-lg shadow-md">
+                                         class="w-20 h-20 object-cover rounded-lg shadow-md">
                                     <div class="flex-1">
-                                        <h4 class="font-medium text-gray-800 mb-2">Current Image</h4>
-                                        <p class="text-sm text-gray-600 mb-3">Filename: <%= accessory.image %></p>
-                                        <div class="flex space-x-3">
-                                            <button type="button" id="replaceImageBtn" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-                                                <svg class="inline h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                        <p class="text-sm font-medium text-gray-700 mb-1">Current Image</p>
+                                        <p class="text-xs text-gray-500 mb-2"><%= accessory.image %></p>
+                                        <div class="flex gap-2">
+                                            <button type="button" id="replaceImageBtn" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-1">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                                                 </svg>
                                                 Replace
                                             </button>
-                                            <button type="button" id="removeImageBtn" class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors">
-                                                <svg class="inline h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            <button type="button" id="removeImageBtn" class="text-xs px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors inline-flex items-center gap-1">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                 </svg>
                                                 Remove
                                             </button>
@@ -459,103 +366,63 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    <% } %>
-                    
-                    <!-- Image Upload Area -->
-                    <div id="imageUploadArea" class="<%= accessory.image && accessory.image.trim() !== '' ? 'hidden' : '' %> border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
-                        <input type="file" id="image" name="image" accept="image/*" class="hidden">
-                        <div id="uploadPrompt">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <div class="mt-4">
-                                <p class="text-sm text-gray-600">
-                                    <span class="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">Click to upload</span> or drag and drop
+                        <% } %>
+                        
+                        <div id="imageUploadArea" class="image-upload-area <%= accessory.image && accessory.image.trim() !== '' ? 'hidden' : '' %>">
+                            <input type="file" id="image" name="image" accept="image/*" class="hidden">
+                            <div id="uploadPrompt">
+                                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                                    <svg class="h-6 w-6 text-blue-500" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+                                <p class="text-gray-600 text-sm mb-1">
+                                    <span class="font-semibold text-blue-600">Click to upload</span> or drag and drop
                                 </p>
-                                <p class="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
+                                <p class="text-xs text-gray-400">PNG, JPG, JPEG up to 5MB</p>
+                            </div>
+                            <div id="imagePreview" class="hidden">
+                                <img id="previewImg" src="" alt="Preview" class="mx-auto max-h-32 rounded-lg shadow-lg">
+                                <p id="fileName" class="mt-2 text-sm text-gray-600 font-medium"></p>
+                                <button type="button" id="cancelImageBtn" class="mt-2 text-red-500 hover:text-red-700 text-sm font-medium inline-flex items-center gap-1">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                    Cancel
+                                </button>
                             </div>
                         </div>
-                        <div id="imagePreview" class="hidden">
-                            <img id="previewImg" src="" alt="Preview" class="mx-auto max-h-32 rounded-lg shadow-md">
-                            <p id="fileName" class="mt-2 text-sm text-gray-600"></p>
-                            <button type="button" id="cancelImageBtn" class="mt-2 text-red-600 hover:text-red-800 text-sm">
-                                <svg class="inline h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <input type="hidden" id="removeImageFlag" name="removeImage" value="false">
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-between items-center pt-5 mt-5 border-t border-gray-100">
+                        <!-- Delete button -->
+                        <form action="/admin/accessories/delete/<%= accessory._id %>" method="post" class="inline" id="deleteForm">
+                            <button type="button" id="deleteButton" class="btn-danger">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete
+                            </button>
+                        </form>
+                        
+                        <div class="flex gap-3">
+                            <a href="/admin/accessories" class="btn-secondary">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                                 Cancel
+                            </a>
+                            <button type="submit" id="submitBtn" class="btn-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Save Changes
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Hidden field to track if image should be removed -->
-                    <input type="hidden" id="removeImageFlag" name="removeImage" value="false">
-                    
-                    <p class="form-help-text mt-2">
-                        <% if (accessory.image && accessory.image.trim() !== '') { %>
-                            You can replace the current image with a new one or remove it entirely.
-                        <% } else { %>
-                            Adding an image helps users visually identify the accessory when configuring windows.
-                        <% } %>
-                    </p>
-                </div>
-                
-                <!-- Action Buttons -->
-                <div class="flex justify-between items-center pt-6 mt-6 border-t border-gray-100">
-                    <!-- Delete button on the left -->
-                    <form action="/admin/accessories/delete/<%= accessory._id %>" method="post" class="inline">
-                        <button type="button" id="deleteButton" class="btn-danger flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Delete Accessory
-                        </button>
-                    </form>
-                    
-                    <!-- Update and Cancel buttons on the right -->
-                    <div class="flex space-x-4">
-                        <a href="/admin/accessories" class="btn-secondary">Cancel</a>
-                        <button type="button" id="submitBtn" class="btn-primary flex items-center shadow-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Update Accessory
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Usage Information Box -->
-        <div class="bg-blue-50 border border-blue-100 rounded-lg p-6 max-w-3xl mx-auto">
-            <h3 class="text-lg font-semibold text-blue-900 mb-3 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Accessory Information
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <p class="text-blue-800 mb-4">This accessory is used in window systems with the following details:</p>
-                    <ul class="list-disc list-inside space-y-2 text-blue-800">
-                        <li><span class="font-medium text-indigo-600">Reference:</span> <%= accessory.referenceNumber || 'Not specified' %></li>
-                        <li><span class="font-medium text-blue-600">Name:</span> <%= accessory.name %></li>
-                        <li><span class="font-medium text-purple-600">Provider:</span> <%= accessory.providerName || 'Not specified' %></li>
-                        <li><span class="font-medium text-sky-600">Unit:</span> <%= accessory.unit %></li>
-                        <li><span class="font-medium text-emerald-600">Price:</span> 
-                            <% 
-                                const currency = accessory.currency || 'COP';
-                                const locale = currency === 'USD' ? 'en-US' : 'es-CO';
-                            %>
-                            <%= accessory.price.toLocaleString(locale, { style: 'currency', currency: currency, maximumFractionDigits: currency === 'USD' ? 2 : 0 }) %></li>
-                        <li><span class="font-medium text-amber-600">Weight:</span> <%= accessory.weight ? accessory.weight.toFixed(2) + ' kg' : 'Not specified' %></li>
-                    </ul>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm">
-                    <h4 class="font-semibold text-gray-800 mb-2">Important Notes</h4>
-                    <p class="text-gray-600 mb-3">Changes to this accessory will affect all window systems that use it.</p>
-                    <p class="text-gray-600">Make sure to update the information accurately to maintain consistency across the system.</p>
-                </div>
+                </form>
             </div>
         </div>
     </main>
@@ -564,19 +431,18 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('editAccessoryForm');
             const nameInput = document.getElementById('name');
             const nameError = document.getElementById('nameError');
             const priceInput = document.getElementById('price');
             const priceError = document.getElementById('priceError');
             const weightInput = document.getElementById('weight');
             const weightError = document.getElementById('weightError');
-            const form = document.getElementById('editAccessoryForm');
-            const submitBtn = document.getElementById('submitBtn');
-            const deleteButton = document.getElementById('deleteButton');
             const referenceNumberInput = document.getElementById('referenceNumber');
             const referenceNumberError = document.getElementById('referenceNumberError');
+            const deleteButton = document.getElementById('deleteButton');
             
-            // Image management elements
+            // Image elements
             const imageInput = document.getElementById('image');
             const imageUploadArea = document.getElementById('imageUploadArea');
             const uploadPrompt = document.getElementById('uploadPrompt');
@@ -589,155 +455,102 @@
             const currentImageContainer = document.getElementById('currentImageContainer');
             const removeImageFlag = document.getElementById('removeImageFlag');
             
-            // DEBUG: Check what elements we found
-            console.log('🔧 [EDIT] Page loaded, checking elements:');
-            console.log('🔧 [EDIT] Elements found:', {
-                imageInput: !!imageInput,
-                imageUploadArea: !!imageUploadArea,
-                uploadPrompt: !!uploadPrompt,
-                imagePreview: !!imagePreview,
-                replaceImageBtn: !!replaceImageBtn,
-                removeImageBtn: !!removeImageBtn,
-                currentImageContainer: !!currentImageContainer,
-                removeImageFlag: !!removeImageFlag
-            });
+            // Validation functions
+            function validateName() {
+                const name = nameInput.value.trim();
+                if (/\s/.test(name)) {
+                    nameError.style.display = 'block';
+                    nameInput.style.borderColor = '#f87171';
+                    return false;
+                } else {
+                    nameError.style.display = 'none';
+                    nameInput.style.borderColor = '';
+                    return true;
+                }
+            }
             
-            // Validate name
+            function validateReferenceNumber() {
+                if (referenceNumberInput.value.trim().length === 0) {
+                    referenceNumberError.style.display = 'block';
+                    referenceNumberInput.style.borderColor = '#f87171';
+                    return false;
+                } else {
+                    referenceNumberError.style.display = 'none';
+                    referenceNumberInput.style.borderColor = '';
+                    return true;
+                }
+            }
+            
+            function validatePrice() {
+                const price = parseFloat(priceInput.value);
+                if (priceInput.value && (isNaN(price) || price < 0)) {
+                    priceError.style.display = 'block';
+                    priceInput.style.borderColor = '#f87171';
+                    return false;
+                } else {
+                    priceError.style.display = 'none';
+                    priceInput.style.borderColor = '';
+                    return true;
+                }
+            }
+            
+            function validateWeight() {
+                if (weightInput.value.trim() === '') return true;
+                const weight = parseFloat(weightInput.value);
+                if (isNaN(weight) || weight < 0) {
+                    weightError.style.display = 'block';
+                    weightInput.style.borderColor = '#f87171';
+                    return false;
+                } else {
+                    weightError.style.display = 'none';
+                    weightInput.style.borderColor = '';
+                    return true;
+                }
+            }
+            
+            // Validation listeners
             nameInput.addEventListener('input', validateName);
-            
-            // Validate reference number
             referenceNumberInput.addEventListener('input', validateReferenceNumber);
-            
-            // Validate price
             priceInput.addEventListener('input', validatePrice);
-            
-            // Validate weight
             weightInput.addEventListener('input', validateWeight);
             
-            // Form submission
-            submitBtn.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent default button behavior
-                
-                // Run all validations
-                const nameValid = validateName();
-                const refValid = validateReferenceNumber();
-                const priceValid = validatePrice();
-                const weightValid = validateWeight();
-                
-                // Add visual indication that button was clicked
-                this.classList.add('animate-pulse');
-                setTimeout(() => {
-                    this.classList.remove('animate-pulse');
-                }, 300);
-                
-                // Check if the form is valid
-                if (nameValid && refValid && priceValid && weightValid && form.checkValidity()) {
-                    // Debug: Log form data before submission
-                    const formData = new FormData(form);
-                    console.log('📝 [EDIT] Form data being submitted:');
-                    for (let [key, value] of formData.entries()) {
-                        console.log(key + ':', value);
-                    }
-                    
-                    // Specifically check the image input
-                    const imageFile = imageInput ? imageInput.files[0] : null;
-                    console.log('🖼️ [EDIT] Image input status:', {
-                        hasImageInput: !!imageInput,
-                        hasFiles: imageInput ? imageInput.files.length > 0 : false,
-                        fileName: imageFile ? imageFile.name : 'No file',
-                        fileSize: imageFile ? imageFile.size : 0,
-                        inputValue: imageInput ? imageInput.value : 'No input',
-                        removeImageFlag: removeImageFlag ? removeImageFlag.value : 'No flag'
-                    });
-                    
-                    // Show loading state
-                    submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Updating...';
-                    submitBtn.disabled = true;
-                    
-                    // Submit the form
-                    form.submit();
-                } else {
-                    // Highlight any invalid fields
-                    if (!nameValid) {
-                        nameInput.focus();
-                        nameInput.classList.add('border-red-500', 'ring', 'ring-red-200');
-                    } else if (!refValid) {
-                        referenceNumberInput.focus();
-                        referenceNumberInput.classList.add('border-red-500', 'ring', 'ring-red-200');
-                    } else if (!priceValid) {
-                        priceInput.focus();
-                        priceInput.classList.add('border-red-500', 'ring', 'ring-red-200');
-                    } else if (!weightValid && weightInput.value.trim() !== '') {
-                        weightInput.focus();
-                        weightInput.classList.add('border-red-500', 'ring', 'ring-red-200');
-                    }
-                    
-                    setTimeout(() => {
-                        const invalidFields = document.querySelectorAll('.border-red-500');
-                        invalidFields.forEach(field => {
-                            field.classList.remove('border-red-500', 'ring', 'ring-red-200');
-                        });
-                    }, 2000);
-                }
-            });
-            
-            // Image management event listeners
+            // Image handling
             if (imageUploadArea) {
-                imageUploadArea.addEventListener('click', () => {
-                    console.log('🖱️ [EDIT] Upload area clicked, triggering file input');
-                    imageInput.click();
-                });
+                imageUploadArea.addEventListener('click', () => imageInput.click());
                 
                 imageUploadArea.addEventListener('dragover', (e) => {
                     e.preventDefault();
-                    imageUploadArea.classList.add('border-blue-400', 'bg-blue-50');
+                    imageUploadArea.classList.add('active');
                 });
                 
                 imageUploadArea.addEventListener('dragleave', (e) => {
                     e.preventDefault();
-                    imageUploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+                    imageUploadArea.classList.remove('active');
                 });
                 
                 imageUploadArea.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    imageUploadArea.classList.remove('border-blue-400', 'bg-blue-50');
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        handleImageFile(files[0]);
-                    }
+                    imageUploadArea.classList.remove('active');
+                    if (e.dataTransfer.files.length > 0) handleImageFile(e.dataTransfer.files[0]);
                 });
             }
             
             if (imageInput) {
                 imageInput.addEventListener('change', (e) => {
-                    console.log('📁 [EDIT] Image input change event triggered');
-                    console.log('📁 [EDIT] Files count:', e.target.files.length);
-                    if (e.target.files.length > 0) {
-                        console.log('📁 [EDIT] First file:', e.target.files[0].name);
-                        handleImageFile(e.target.files[0]);
-                    } else {
-                        console.log('⚠️ [EDIT] No files selected in change event');
-                    }
+                    if (e.target.files.length > 0) handleImageFile(e.target.files[0]);
                 });
             }
             
             if (replaceImageBtn) {
-                replaceImageBtn.addEventListener('click', () => {
-                    console.log('🔄 [EDIT] Replace button clicked, triggering file input');
-                    imageInput.click();
-                });
+                replaceImageBtn.addEventListener('click', () => imageInput.click());
             }
             
             if (removeImageBtn) {
                 removeImageBtn.addEventListener('click', () => {
-                    if (confirm('Are you sure you want to remove the current image?')) {
-                        // Hide current image container
+                    if (confirm('Remove current image?')) {
                         currentImageContainer.classList.add('hidden');
-                        // Show upload area
                         imageUploadArea.classList.remove('hidden');
-                        // Set remove flag
                         removeImageFlag.value = 'true';
-                        // Clear any selected file
                         imageInput.value = '';
                     }
                 });
@@ -745,150 +558,50 @@
             
             if (cancelImageBtn) {
                 cancelImageBtn.addEventListener('click', () => {
-                    // Clear the file input
                     imageInput.value = '';
-                    // Hide preview, show upload prompt
                     uploadPrompt.classList.remove('hidden');
                     imagePreview.classList.add('hidden');
-                    // If there's a current image, show it again
                     if (currentImageContainer) {
                         currentImageContainer.classList.remove('hidden');
                         imageUploadArea.classList.add('hidden');
                     }
-                    // Reset remove flag
                     removeImageFlag.value = 'false';
                 });
             }
             
             function handleImageFile(file) {
-                console.log('🖼️ [EDIT] File selected:', file.name, file.size, file.type);
-                
-                // Validate file type
                 if (!file.type.startsWith('image/')) {
                     alert('Please select an image file');
                     return;
                 }
-                
-                // Validate file size (5MB)
                 if (file.size > 5 * 1024 * 1024) {
                     alert('Image size must be less than 5MB');
                     return;
                 }
                 
-                console.log('✅ [EDIT] File validation passed, creating preview');
-                
-                // IMPORTANT: Make sure the file is actually set on the input element
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
                 imageInput.files = dataTransfer.files;
-                console.log('🔧 [EDIT] File manually set on input element');
                 
-                // Create preview
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     previewImg.src = e.target.result;
                     fileName.textContent = file.name;
                     uploadPrompt.classList.add('hidden');
                     imagePreview.classList.remove('hidden');
-                    
-                    // Hide current image if replacing
-                    if (currentImageContainer) {
-                        currentImageContainer.classList.add('hidden');
-                    }
-                    
-                    // Reset remove flag since we're uploading a new image
+                    imageUploadArea.classList.remove('hidden');
+                    if (currentImageContainer) currentImageContainer.classList.add('hidden');
                     removeImageFlag.value = 'false';
-                    console.log('✅ [EDIT] Preview created successfully');
                 };
                 reader.readAsDataURL(file);
             }
             
             // Delete button
             deleteButton.addEventListener('click', function() {
-                if (confirm(`Are you sure you want to delete the accessory "${nameInput.value.trim()}"?`)) {
-                    // Show loading state
-                    this.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...';
-                    this.disabled = true;
-                    
-                    this.closest('form').submit();
+                if (confirm(`Delete "${nameInput.value.trim()}"?`)) {
+                    document.getElementById('deleteForm').submit();
                 }
             });
-            
-            function validateName() {
-                const name = nameInput.value.trim();
-                if (/\s/.test(name)) {
-                    nameError.textContent = 'Accessory name cannot contain spaces.';
-                    nameError.classList.remove('hidden');
-                    nameError.classList.add('block');
-                    nameInput.classList.add('border-red-500');
-                    return false;
-                } else if (name.length === 0) {
-                    nameError.textContent = 'Accessory name is required.';
-                    nameError.classList.remove('hidden');
-                    nameError.classList.add('block');
-                    nameInput.classList.add('border-red-500');
-                    return false;
-                } else {
-                    nameError.classList.remove('block');
-                    nameError.classList.add('hidden');
-                    nameInput.classList.remove('border-red-500');
-                    return true;
-                }
-            }
-            
-            function validateReferenceNumber() {
-                const refNumber = referenceNumberInput.value.trim();
-                if (refNumber.length === 0) {
-                    referenceNumberError.textContent = 'Reference number is required.';
-                    referenceNumberError.classList.remove('hidden');
-                    referenceNumberError.classList.add('block');
-                    referenceNumberInput.classList.add('border-red-500');
-                    return false;
-                } else {
-                    referenceNumberError.classList.remove('block');
-                    referenceNumberError.classList.add('hidden');
-                    referenceNumberInput.classList.remove('border-red-500');
-                    return true;
-                }
-            }
-            
-            function validatePrice() {
-                const price = parseFloat(priceInput.value);
-                if (isNaN(price) || price < 0) {
-                    priceError.classList.remove('hidden');
-                    priceError.classList.add('block');
-                    priceInput.classList.add('border-red-500');
-                    return false;
-                } else {
-                    priceError.classList.remove('block');
-                    priceError.classList.add('hidden');
-                    priceInput.classList.remove('border-red-500');
-                    return true;
-                }
-            }
-            
-            function validateWeight() {
-                if (weightInput.value.trim() === '') {
-                    // Weight is optional, so empty is fine
-                    weightError.classList.remove('block');
-                    weightError.classList.add('hidden');
-                    weightInput.classList.remove('border-red-500');
-                    return true;
-                }
-                
-                const weight = parseFloat(weightInput.value);
-                if (isNaN(weight) || weight < 0) {
-                    weightError.classList.remove('hidden');
-                    weightError.classList.add('block');
-                    weightInput.classList.add('border-red-500');
-                    return false;
-                } else {
-                    weightError.classList.remove('block');
-                    weightError.classList.add('hidden');
-                    weightInput.classList.remove('border-red-500');
-                    return true;
-                }
-            }
         });
     </script>
 </body>
