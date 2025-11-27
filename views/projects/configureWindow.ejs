@@ -66,6 +66,58 @@
         max-height: 150px;
       }
     }
+    
+    /* Enhanced Window Preview Styles */
+    .panel-glass {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .glass-effect {
+      background: linear-gradient(180deg, 
+        rgba(191,219,254,0.8) 0%, 
+        rgba(147,197,253,0.6) 50%, 
+        rgba(191,219,254,0.7) 100%);
+    }
+    
+    .glass-effect::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, 
+        rgba(96,165,250,0.25) 0%, 
+        rgba(147,197,253,0.15) 30%, 
+        transparent 60%);
+      pointer-events: none;
+    }
+    
+    .glass-effect::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, 
+        rgba(255,255,255,0.5) 0%, 
+        rgba(255,255,255,0.2) 20%, 
+        transparent 40%);
+      pointer-events: none;
+    }
+    
+    .fixed-glass .glass-effect {
+      box-shadow: inset 0 0 20px rgba(30,64,175,0.1);
+    }
+    
+    .operable-glass .glass-effect {
+      box-shadow: inset 0 0 20px rgba(30,64,175,0.1);
+    }
+    
+    .aluminum-mullion {
+      background: linear-gradient(90deg, #606060 0%, #808080 30%, #909090 50%, #808080 70%, #606060 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.2);
+    }
+    
+    .aluminum-frame {
+      background: linear-gradient(145deg, #707070 0%, #585858 20%, #484848 50%, #585858 80%, #707070 100%);
+    }
   </style>
 </head>
 
@@ -250,58 +302,15 @@
         </div>
         
         <div class="flex flex-col items-center">
-          <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200 min-h-[300px] w-full max-w-lg">
+          <div class="relative rounded-lg p-6 min-h-[300px] w-full max-w-lg">
             
             <!-- Dynamic Panel Preview -->
-            <div id="dynamicWindowPreview" class="relative mx-auto my-4 transition-all duration-300 ease-in-out" style="width: 280px; height: 200px;">
-              <!-- Window Frame -->
-              <div class="absolute inset-0 border-4 border-gray-600 rounded-lg bg-gray-700 shadow-xl">
-                <!-- Inner Frame -->
-                <div class="absolute inset-1 border-2 border-gray-500 rounded bg-gray-600">
-                  <!-- Panel Container -->
-                  <div id="panelContainer" class="absolute inset-1 flex rounded overflow-hidden" 
-                       style="flex-direction: <%= selectedWindowSystem.panelConfiguration?.orientation === 'vertical' ? 'column' : 'row' %>;">
-                    <% 
-                      const panels = selectedWindowSystem.panelConfiguration?.panels || ['O', 'O'];
-                      const orientation = selectedWindowSystem.panelConfiguration?.orientation || 'horizontal';
-                      const operationType = selectedWindowSystem.panelConfiguration?.operationType || 'fixed';
-                    %>
-                    <% panels.forEach((panel, index) => { %>
-                      <% const isOperable = panel === 'X'; %>
-                      <div class="panel-section flex-1 relative border border-gray-400 <%= isOperable ? 'bg-gradient-to-br from-green-100 to-green-200' : 'bg-gradient-to-br from-blue-100 to-sky-200' %>">
-                        <!-- Glass effect -->
-                        <div class="absolute inset-1 rounded-sm <%= isOperable ? 'bg-green-50/60' : 'bg-blue-50/60' %> border border-gray-300"></div>
-                        <!-- Panel indicator -->
-                        <div class="absolute inset-0 flex items-center justify-center">
-                          <span class="text-2xl font-bold <%= isOperable ? 'text-green-700' : 'text-blue-700' %> opacity-60"><%= panel %></span>
-                        </div>
-                        <% if (isOperable) { %>
-                          <!-- Operation indicator -->
-                          <% if (operationType === 'sliding') { %>
-                            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                              <i class="fas fa-arrows-alt-<%= orientation === 'horizontal' ? 'h' : 'v' %> text-green-600 text-sm"></i>
-                            </div>
-                          <% } else if (operationType === 'casement') { %>
-                            <div class="absolute top-2 right-2">
-                              <i class="fas fa-door-open text-green-600 text-sm"></i>
-                            </div>
-                          <% } else if (operationType === 'awning') { %>
-                            <div class="absolute top-2 left-1/2 transform -translate-x-1/2">
-                              <i class="fas fa-caret-up text-green-600"></i>
-                            </div>
-                          <% } else if (operationType === 'hopper') { %>
-                            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                              <i class="fas fa-caret-down text-green-600"></i>
-                            </div>
-                          <% } %>
-                        <% } %>
-                      </div>
-                      <% if (index < panels.length - 1) { %>
-                        <!-- Mullion -->
-                        <div class="<%= orientation === 'horizontal' ? 'w-1' : 'h-1' %> bg-gray-500 flex-shrink-0"></div>
-                      <% } %>
-                    <% }) %>
-                  </div>
+            <div id="dynamicWindowPreview" class="relative mx-auto my-4 transition-all duration-300 ease-in-out flex justify-center items-center" style="width: 320px; height: 240px;">
+              <!-- Aluminum Frame -->
+              <div class="p-2 rounded-sm shadow-lg aluminum-frame w-full h-full">
+                <!-- Glass Area -->
+                <div id="panelContainer" class="flex overflow-hidden rounded-sm w-full h-full">
+                  <!-- Preview panels will be generated by JavaScript -->
                 </div>
               </div>
               
@@ -316,8 +325,13 @@
               </div>
             </div>
             
+            <!-- Panel Ratios Display -->
+            <div id="panelRatiosDisplay" class="text-center mt-12 mb-2">
+              <span id="ratioLabel" class="text-xs text-gray-500 font-medium"></span>
+            </div>
+            
             <!-- Window Type Label -->
-            <div class="text-center mt-12">
+            <div class="text-center">
               <span class="inline-block bg-indigo-100 text-indigo-800 px-4 py-2 rounded-full text-sm font-medium">
                 <i class="fas fa-window-maximize mr-2"></i>
                 <%= selectedWindowSystem.type %>
@@ -332,11 +346,11 @@
             <!-- Legend -->
             <div class="flex justify-center gap-6 mt-4 text-xs">
               <div class="flex items-center">
-                <div class="w-4 h-4 bg-gradient-to-br from-green-100 to-green-200 border border-green-400 rounded mr-2"></div>
+                <div class="w-4 h-4 rounded mr-2" style="background: linear-gradient(180deg, rgba(191,219,254,0.8) 0%, rgba(147,197,253,0.6) 100%); border: 1px solid rgba(30,64,175,0.3);"></div>
                 <span class="text-gray-600">X = Operable</span>
               </div>
               <div class="flex items-center">
-                <div class="w-4 h-4 bg-gradient-to-br from-blue-100 to-sky-200 border border-blue-400 rounded mr-2"></div>
+                <div class="w-4 h-4 rounded mr-2" style="background: linear-gradient(180deg, rgba(191,219,254,0.8) 0%, rgba(147,197,253,0.6) 100%); border: 1px solid rgba(30,64,175,0.3);"></div>
                 <span class="text-gray-600">O = Fixed</span>
               </div>
             </div>
@@ -736,6 +750,15 @@
     // Initialize variables from server data
     const costSettings = <%- JSON.stringify(costSettings) %>;
     const exchangeRateValue = <%= exchangeRate || 4000 %>;
+    
+    // Panel configuration from the window system
+    const panelConfiguration = <%- JSON.stringify(selectedWindowSystem.panelConfiguration || {}) %>;
+    const panelConfig = panelConfiguration.panels || ['O', 'O'];
+    const panelRatios = panelConfiguration.panelRatios || panelConfig.map(() => 1);
+    const orientation = panelConfiguration.orientation || 'horizontal';
+    const operationType = panelConfiguration.operationType || 'fixed';
+    const showLogo = panelConfiguration.showLogo !== false;
+    const frenchDoorConfig = panelConfiguration.frenchDoor || null;
 
     // Currency conversion function
     function convertToCOP(price, currency, exchangeRate) {
@@ -1197,6 +1220,298 @@
       });
     }
 
+    // Window Preview Rendering Functions
+    function renderWindowPreview() {
+      const container = document.getElementById('panelContainer');
+      const ratioLabel = document.getElementById('ratioLabel');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      container.style.flexDirection = orientation === 'vertical' ? 'column' : 'row';
+      
+      // Check if this is a French door
+      if (operationType === 'french-door' && frenchDoorConfig) {
+        renderFrenchDoorPreview(container, ratioLabel);
+        return;
+      }
+      
+      // Calculate total ratio
+      const totalRatio = panelRatios.reduce((a, b) => a + b, 0);
+      
+      // Render each panel
+      panelConfig.forEach((type, index) => {
+        const isOperable = type === 'X';
+        const ratio = panelRatios[index] || 1;
+        
+        // Create panel
+        const panel = document.createElement('div');
+        panel.className = `relative flex items-center justify-center panel-glass ${isOperable ? 'operable-glass' : 'fixed-glass'}`;
+        panel.style.flex = `${ratio} 0 0%`;
+        panel.style.minWidth = orientation === 'horizontal' ? '40px' : 'auto';
+        panel.style.minHeight = orientation === 'vertical' ? '40px' : 'auto';
+        
+        panel.innerHTML = `
+          <div class="absolute inset-0 glass-effect"></div>
+          <div class="relative z-10 flex flex-col items-center">
+            <span class="text-xl font-bold drop-shadow-sm" style="color: rgba(30,64,175,0.7);">${type}</span>
+          </div>
+          ${isOperable ? getOperationIndicator(operationType, orientation) : ''}
+          ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35); letter-spacing: 0.5px;">VITRALUX</div>' : ''}
+        `;
+        
+        container.appendChild(panel);
+        
+        // Add mullion between panels
+        if (index < panelConfig.length - 1) {
+          const mullion = document.createElement('div');
+          mullion.className = 'aluminum-mullion flex-shrink-0';
+          if (orientation === 'horizontal') {
+            mullion.style.width = '6px';
+            mullion.style.alignSelf = 'stretch';
+          } else {
+            mullion.style.height = '6px';
+            mullion.style.width = '100%';
+          }
+          container.appendChild(mullion);
+        }
+      });
+      
+      // Update ratio label
+      if (ratioLabel && panelRatios.length > 0) {
+        const percentages = panelRatios.map(r => Math.round((r / totalRatio) * 100));
+        ratioLabel.textContent = percentages.join('% | ') + '%';
+      }
+    }
+    
+    function getOperationIndicator(opType, orient) {
+      const iconClass = 'absolute bottom-2 left-1/2 transform -translate-x-1/2 text-blue-600 opacity-60';
+      
+      switch(opType) {
+        case 'sliding':
+          return `<div class="${iconClass}"><i class="fas fa-arrows-alt-${orient === 'horizontal' ? 'h' : 'v'} text-sm"></i></div>`;
+        case 'single-hung':
+        case 'double-hung':
+          return `<div class="${iconClass}"><i class="fas fa-arrows-alt-v text-sm"></i></div>`;
+        case 'casement':
+          return `<div class="absolute top-2 right-2 text-blue-600 opacity-60"><i class="fas fa-door-open text-sm"></i></div>`;
+        case 'awning':
+          return `<div class="absolute top-2 left-1/2 transform -translate-x-1/2 text-blue-600 opacity-60"><i class="fas fa-caret-up"></i></div>`;
+        case 'hopper':
+          return `<div class="${iconClass}"><i class="fas fa-caret-down"></i></div>`;
+        case 'french-door':
+          return `<div class="${iconClass}"><i class="fas fa-door-open text-sm"></i></div>`;
+        default:
+          return '';
+      }
+    }
+    
+    function renderFrenchDoorPreview(container, ratioLabel) {
+      container.style.flexDirection = 'column';
+      
+      const hasTransom = frenchDoorConfig.transom !== 'none';
+      const leftSideliteCount = frenchDoorConfig.leftSidelites || 0;
+      const rightSideliteCount = frenchDoorConfig.rightSidelites || 0;
+      const isDouble = frenchDoorConfig.doorType === 'double';
+      const transomOverDoorOnly = frenchDoorConfig.transom === 'over-door';
+      const hingeSide = frenchDoorConfig.hingeSide || 'left';
+      
+      // Create glass panel helper
+      function createGlassPanel(type, isTransom = false, label = '') {
+        const panel = document.createElement('div');
+        panel.className = 'relative flex items-center justify-center panel-glass fixed-glass';
+        panel.innerHTML = `
+          <div class="absolute inset-0 glass-effect"></div>
+          ${!isTransom ? `<div class="relative z-10 flex flex-col items-center">
+            <span class="text-lg font-bold drop-shadow-sm" style="color: rgba(30,64,175,0.7);">${type}</span>
+            ${label ? `<span class="text-xs" style="color: rgba(30,64,175,0.5);">${label}</span>` : ''}
+          </div>` : '<span class="text-xs text-blue-600/60 font-medium">TRANSOM</span>'}
+          ${showLogo && !isTransom ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35);">VITRALUX</div>' : ''}
+        `;
+        return panel;
+      }
+      
+      // Create door panel helper
+      function createDoorPanel(position) {
+        const panel = document.createElement('div');
+        panel.className = 'relative flex items-center justify-center panel-glass operable-glass';
+        
+        let handleSide, hingeSidePos;
+        if (position === 'single') {
+          hingeSidePos = hingeSide;
+          handleSide = hingeSide === 'left' ? 'right' : 'left';
+        } else if (position === 'left') {
+          hingeSidePos = 'left';
+          handleSide = 'right';
+        } else {
+          hingeSidePos = 'right';
+          handleSide = 'left';
+        }
+        
+        panel.innerHTML = `
+          <div class="absolute inset-0 glass-effect"></div>
+          <div class="absolute ${handleSide === 'right' ? 'right-2' : 'left-2'} top-1/2 transform -translate-y-1/2 w-1.5 h-6 rounded-full" style="background: linear-gradient(90deg, #a0a0a0, #d0d0d0, #a0a0a0);"></div>
+          <div class="absolute ${hingeSidePos === 'right' ? 'right-0.5' : 'left-0.5'} top-3 w-1 h-3 rounded-sm" style="background: #808080;"></div>
+          <div class="absolute ${hingeSidePos === 'right' ? 'right-0.5' : 'left-0.5'} bottom-3 w-1 h-3 rounded-sm" style="background: #808080;"></div>
+          <div class="relative z-10 flex flex-col items-center">
+            <span class="text-xl font-bold drop-shadow-sm" style="color: rgba(22,101,52,0.8);">X</span>
+            <span class="text-xs" style="color: rgba(22,101,52,0.6);">Door</span>
+          </div>
+          ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35);">VITRALUX</div>' : ''}
+        `;
+        return panel;
+      }
+      
+      // Create aluminum mullion helper
+      function createMullion(direction) {
+        const mullion = document.createElement('div');
+        mullion.className = 'aluminum-mullion flex-shrink-0';
+        if (direction === 'vertical') {
+          mullion.style.width = '6px';
+          mullion.style.alignSelf = 'stretch';
+        } else {
+          mullion.style.height = '6px';
+          mullion.style.width = '100%';
+        }
+        return mullion;
+      }
+      
+      // Handle "over-door" transom with full height sidelites
+      if (hasTransom && transomOverDoorOnly && (leftSideliteCount > 0 || rightSideliteCount > 0)) {
+        const mainRow = document.createElement('div');
+        mainRow.className = 'flex w-full flex-1';
+        mainRow.style.minHeight = '160px';
+        
+        // Left sidelites (full height)
+        for (let i = 0; i < leftSideliteCount; i++) {
+          const sidelite = createGlassPanel('O', false, 'Sidelite');
+          sidelite.style.flex = '0.4 0 0%';
+          mainRow.appendChild(sidelite);
+          mainRow.appendChild(createMullion('vertical'));
+        }
+        
+        // Door section with transom
+        const doorSection = document.createElement('div');
+        doorSection.className = 'flex flex-col';
+        doorSection.style.flex = isDouble ? '2 0 0%' : '1 0 0%';
+        
+        // Transom
+        const transomRow = document.createElement('div');
+        transomRow.className = 'flex w-full';
+        transomRow.style.height = '50px';
+        const transom = createGlassPanel('O', true);
+        transom.style.flex = '1';
+        transomRow.appendChild(transom);
+        doorSection.appendChild(transomRow);
+        doorSection.appendChild(createMullion('horizontal'));
+        
+        // Doors
+        const doorsRow = document.createElement('div');
+        doorsRow.className = 'flex w-full flex-1';
+        if (isDouble) {
+          const leftDoor = createDoorPanel('left');
+          leftDoor.style.flex = '1';
+          doorsRow.appendChild(leftDoor);
+          doorsRow.appendChild(createMullion('vertical'));
+          const rightDoor = createDoorPanel('right');
+          rightDoor.style.flex = '1';
+          doorsRow.appendChild(rightDoor);
+        } else {
+          const door = createDoorPanel('single');
+          door.style.flex = '1';
+          doorsRow.appendChild(door);
+        }
+        doorSection.appendChild(doorsRow);
+        mainRow.appendChild(doorSection);
+        
+        // Right sidelites (full height)
+        for (let i = 0; i < rightSideliteCount; i++) {
+          mainRow.appendChild(createMullion('vertical'));
+          const sidelite = createGlassPanel('O', false, 'Sidelite');
+          sidelite.style.flex = '0.4 0 0%';
+          mainRow.appendChild(sidelite);
+        }
+        
+        container.appendChild(mainRow);
+      } else {
+        // Standard layout
+        if (hasTransom && !transomOverDoorOnly) {
+          const transomRow = document.createElement('div');
+          transomRow.className = 'flex w-full';
+          transomRow.style.height = '50px';
+          
+          for (let i = 0; i < leftSideliteCount; i++) {
+            const t = createGlassPanel('O', true);
+            t.style.flex = '0.4';
+            transomRow.appendChild(t);
+            transomRow.appendChild(createMullion('vertical'));
+          }
+          
+          const doorTransom = createGlassPanel('O', true);
+          doorTransom.style.flex = isDouble ? '2' : '1';
+          transomRow.appendChild(doorTransom);
+          
+          for (let i = 0; i < rightSideliteCount; i++) {
+            transomRow.appendChild(createMullion('vertical'));
+            const t = createGlassPanel('O', true);
+            t.style.flex = '0.4';
+            transomRow.appendChild(t);
+          }
+          
+          container.appendChild(transomRow);
+          container.appendChild(createMullion('horizontal'));
+        }
+        
+        // Door row
+        const doorRow = document.createElement('div');
+        doorRow.className = 'flex w-full flex-1';
+        doorRow.style.minHeight = '120px';
+        
+        for (let i = 0; i < leftSideliteCount; i++) {
+          const sidelite = createGlassPanel('O', false, 'Sidelite');
+          sidelite.style.flex = '0.4 0 0%';
+          doorRow.appendChild(sidelite);
+          doorRow.appendChild(createMullion('vertical'));
+        }
+        
+        if (isDouble) {
+          const leftDoor = createDoorPanel('left');
+          leftDoor.style.flex = '1';
+          doorRow.appendChild(leftDoor);
+          doorRow.appendChild(createMullion('vertical'));
+          const rightDoor = createDoorPanel('right');
+          rightDoor.style.flex = '1';
+          doorRow.appendChild(rightDoor);
+        } else {
+          const door = createDoorPanel('single');
+          door.style.flex = '1';
+          doorRow.appendChild(door);
+        }
+        
+        for (let i = 0; i < rightSideliteCount; i++) {
+          doorRow.appendChild(createMullion('vertical'));
+          const sidelite = createGlassPanel('O', false, 'Sidelite');
+          sidelite.style.flex = '0.4 0 0%';
+          doorRow.appendChild(sidelite);
+        }
+        
+        container.appendChild(doorRow);
+      }
+      
+      // Update ratio label for French door
+      if (ratioLabel) {
+        const doorDesc = isDouble ? 'Double' : 'Single';
+        let extras = [];
+        const totalSidelites = leftSideliteCount + rightSideliteCount;
+        if (totalSidelites > 0) {
+          extras.push(`${totalSidelites} Sidelite${totalSidelites > 1 ? 's' : ''}`);
+        }
+        if (hasTransom) {
+          extras.push(transomOverDoorOnly ? 'Transom (Over Door)' : 'Transom');
+        }
+        ratioLabel.textContent = `${doorDesc} French Door${extras.length > 0 ? ' + ' + extras.join(' + ') : ''}`;
+      }
+    }
+    
     // Window Preview Functions
     function updateWindowPreview() {
       const width = parseFloat(document.getElementById('width').value) || 0;
@@ -1378,8 +1693,9 @@
     // Initialize calculations
     document.addEventListener('DOMContentLoaded', function() {
       initializeChoiceGroups();
+      renderWindowPreview(); // Render the panel preview based on configuration
       calculatePricing();
-      updateWindowPreview(); // Initialize preview
+      updateWindowPreview(); // Update dimensions
       
       // Initialize muntin preview if muntin configuration exists
       if (document.getElementById('muntinPreviewGrid')) {

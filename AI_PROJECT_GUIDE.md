@@ -250,10 +250,17 @@ Multi-step wizard with 4 steps:
 ### Configure Window Form (User)
 - Left side: Form inputs (dimensions, quantity, glass, accessories)
 - Right side: Dynamic visual preview with:
-  - Panel layout visualization
+  - **Matches admin compose window preview exactly**
+  - Aluminum frame and realistic glass appearance
+  - Panel layout with X/O indicators
+  - Panel ratios displayed as percentages (e.g., "25% | 50% | 25%")
+  - French door support (doors, sidelites, transoms, hinges, handles)
+  - Operation indicators (arrows for sliding, door icons for casement)
+  - VITRALUX logo watermark (if configured)
   - Dimension labels (width/height)
   - Unit toggle (Imperial/Metric)
   - Calculation displays (Area, Perimeter, Aspect Ratio, Glass Area)
+  - Preview scales proportionally with entered dimensions
 
 ### Unit Handling
 - The app supports both **inches** and **mm**
@@ -317,8 +324,20 @@ Multi-step wizard with 4 steps:
      - `frenchDoor` sub-schema with all French door options
    - Updated `windowRoutes.js` to save/retrieve all new fields
 
+6. **User Configure Window Page Enhanced**
+   - Updated `configureWindow.ejs` to match admin preview exactly
+   - Dynamic JavaScript rendering based on stored `panelConfiguration`
+   - Supports all features:
+     - Panel ratios (unequal sizes displayed as percentages)
+     - All operation types with correct indicators
+     - French doors with transoms, sidelites, door handles, hinges
+     - VITRALUX logo display
+   - Aluminum frame and glass styling matches compose window
+   - Preview updates proportionally with dimension inputs
+
 #### Key Files Modified
 - `views/admin/composeWindow.ejs` - Major UI enhancements
+- `views/projects/configureWindow.ejs` - Enhanced preview to match admin
 - `routes/admin/windowRoutes.js` - Updated data handling
 - `models/Window.js` - Extended schema for new features
 - `AI_PROJECT_GUIDE.md` - Documentation update
@@ -374,7 +393,7 @@ Multi-step wizard with 4 steps:
 - `updateWindowPreview()` updates visual and calculations on dimension change
 - Panel configuration stored as: `{ operationType, orientation, panels: ['X','O','O','X'], panelRatios, hasMullion, mullionWidth, showLogo, frenchDoor }`
 
-#### Compose Window Technical Notes
+#### Compose Window Technical Notes (Admin)
 - `panelConfig` array tracks X/O panel types
 - `panelRatios` array tracks relative sizes of each panel
 - `frenchDoorConfig` object stores French door specific settings
@@ -382,6 +401,14 @@ Multi-step wizard with 4 steps:
 - `renderFrenchDoorPreview()` handles French door specific rendering
 - Draggable dividers use mouse events (mousedown, mousemove, mouseup) for resizing
 - `createGlassPanel()`, `createDoorPanel()`, `createAluminumMullion()` helper functions for preview elements
+
+#### Configure Window Technical Notes (User)
+- `panelConfiguration` loaded from server via `<%- JSON.stringify(selectedWindowSystem.panelConfiguration) %>`
+- `renderWindowPreview()` renders panels based on stored configuration
+- `renderFrenchDoorPreview()` handles French door specific rendering (mirrors admin version)
+- `getOperationIndicator()` returns appropriate icon for each operation type
+- Helper functions create glass panels, door panels, and aluminum mullions
+- Preview initializes on DOMContentLoaded and updates with dimension changes
 
 ---
 
