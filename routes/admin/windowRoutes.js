@@ -26,6 +26,35 @@ router.get('/compose-window', isAdmin, async (req, res) => {
   }
 });
 
+// API endpoint to check if window type name already exists
+router.get('/check-window-name', isAdmin, async (req, res) => {
+  try {
+    const { name, excludeId } = req.query;
+    
+    if (!name || !name.trim()) {
+      return res.json({ exists: false });
+    }
+    
+    // Build query - case insensitive search
+    const query = { type: { $regex: new RegExp(`^${name.trim()}$`, 'i') } };
+    
+    // Exclude current window if editing
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+    
+    const existingWindow = await WindowSystem.findOne(query);
+    
+    res.json({ 
+      exists: !!existingWindow,
+      message: existingWindow ? `A window system named "${existingWindow.type}" already exists.` : null
+    });
+  } catch (error) {
+    console.error('Error checking window name:', error.message);
+    res.status(500).json({ error: error.message, exists: false });
+  }
+});
+
 // Route to render the add user form
 router.get('/users/add', async (req, res) => {
   res.render('admin/addUser'); // Create `addUser.ejs` later

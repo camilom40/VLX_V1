@@ -39,6 +39,18 @@
       display: block; 
     }
     
+    /* Profile Search Styles */
+    #profile-search {
+      transition: all 0.2s ease;
+    }
+    #profile-search:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    #profile-id option {
+      padding: 8px 12px;
+    }
+    
     /* Ensure hidden class works properly */
     .hidden {
       display: none !important;
@@ -442,7 +454,19 @@
                   <span class="tooltip-text">Enter the type of window system you are creating (e.g., OXXO Horizontal Roller, Fixed Window)</span>
                 </span>
               </label>
-              <input type="text" id="type" name="type" class="form-control w-full" placeholder="e.g., OXXO Horizontal Roller" required>
+              <div class="relative">
+                <input type="text" id="type" name="type" class="form-control w-full" placeholder="e.g., OXXO Horizontal Roller" required>
+                <span id="name-check-status" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                  <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                </span>
+              </div>
+              <p id="name-error" class="text-red-500 text-sm mt-1 hidden">
+                <i class="fas fa-exclamation-circle mr-1"></i>
+                <span id="name-error-text"></span>
+              </p>
+              <p id="name-success" class="text-green-500 text-sm mt-1 hidden">
+                <i class="fas fa-check-circle mr-1"></i>Name is available
+              </p>
             </div>
             
             <!-- Panel Configuration -->
@@ -636,13 +660,26 @@
             <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
               <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <div class="md:col-span-2">
-                  <label for="profile-id" class="form-label">Profile Type</label>
+                  <label for="profile-search" class="form-label">Profile Type</label>
+                  <!-- Search Input -->
+                  <div class="relative mb-1">
+                    <input type="text" id="profile-search" placeholder="Search profiles..." class="form-control w-full pr-8" autocomplete="off">
+                    <button type="button" id="clear-profile-search" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                  <!-- Profile Select with Icons -->
                   <select id="profile-id" class="form-control w-full">
                     <option value="">Select Profile</option>
                     <% profiles.forEach(profile => { %>
-                      <option value="<%= profile._id %>"><%= profile.name %></option>
+                      <option value="<%= profile._id %>" 
+                              data-name="<%= profile.name.toLowerCase() %>"
+                              data-color="<%= profile.color %>">
+                        <%= profile.name %>
+                      </option>
                     <% }); %>
                   </select>
+                  <p id="profile-search-count" class="text-xs text-gray-500 mt-1"></p>
                 </div>
                 
                 <div>
@@ -2353,14 +2390,32 @@
         // Step 1 to Step 2
         const toStep2Btn = document.getElementById('to-step2-btn');
         if (toStep2Btn) {
-          toStep2Btn.addEventListener('click', function() {
+          toStep2Btn.addEventListener('click', async function() {
             console.log('Step 2 button clicked');
-            const windowType = document.getElementById('type').value;
+            const windowType = document.getElementById('type').value.trim();
             console.log('Window type value:', windowType);
             if (!windowType) {
               showAlert('Please enter a window type before proceeding.');
               return;
             }
+            
+            // Check if name is valid (not taken)
+            if (!isNameValid) {
+              // Do a final check before proceeding
+              try {
+                const response = await fetch(`/admin/check-window-name?name=${encodeURIComponent(windowType)}`);
+                const data = await response.json();
+                
+                if (data.exists) {
+                  showAlert(data.message || 'This window type name is already taken. Please choose a different name.');
+                  document.getElementById('type').focus();
+                  return;
+                }
+              } catch (error) {
+                console.error('Error checking name:', error);
+              }
+            }
+            
             console.log('Calling goToStep(2)');
             goToStep(2);
           });
@@ -2495,6 +2550,238 @@
       }
     }
 
+    // Profile search and icon functions
+    const profileData = []; // Store original profile data
+    
+    function initProfileSearch() {
+      const searchInput = document.getElementById('profile-search');
+      const clearBtn = document.getElementById('clear-profile-search');
+      const profileSelect = document.getElementById('profile-id');
+      const searchCount = document.getElementById('profile-search-count');
+      
+      // Store original options with their data
+      Array.from(profileSelect.options).slice(1).forEach(option => {
+        profileData.push({
+          value: option.value,
+          name: option.text,
+          nameLower: (option.dataset.name || option.text).toLowerCase(),
+          color: option.dataset.color || ''
+        });
+      });
+      
+      // Add icons to initial options
+      updateProfileOptions('');
+      
+      // Search on input
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        clearBtn.classList.toggle('hidden', !searchTerm);
+        updateProfileOptions(searchTerm);
+      });
+      
+      // Search on Enter key - auto-select if only one result
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (profileSelect.options.length === 2) { // "Select Profile" + 1 result
+            profileSelect.selectedIndex = 1;
+          }
+        }
+      });
+      
+      // Clear search
+      clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        updateProfileOptions('');
+        searchInput.focus();
+      });
+      
+      // Focus search when clicking on label area
+      searchInput.addEventListener('focus', function() {
+        this.select();
+      });
+    }
+    
+    function updateProfileOptions(searchTerm) {
+      const profileSelect = document.getElementById('profile-id');
+      const searchCount = document.getElementById('profile-search-count');
+      
+      // Clear and rebuild options
+      profileSelect.innerHTML = '<option value="">Select Profile</option>';
+      
+      let matchCount = 0;
+      profileData.forEach(profile => {
+        // Match against name, also check if search term matches type keywords
+        const matchesSearch = !searchTerm || 
+          profile.nameLower.includes(searchTerm) ||
+          profile.color.toLowerCase().includes(searchTerm);
+        
+        if (matchesSearch) {
+          const icon = getProfileTypeIcon(profile.name);
+          const option = document.createElement('option');
+          option.value = profile.value;
+          option.text = `${icon.symbol} ${profile.name}`;
+          option.dataset.name = profile.nameLower;
+          profileSelect.appendChild(option);
+          matchCount++;
+        }
+      });
+      
+      // Update search count
+      if (searchTerm) {
+        searchCount.textContent = `${matchCount} of ${profileData.length} profiles`;
+        searchCount.classList.remove('hidden');
+      } else {
+        searchCount.textContent = `${profileData.length} profiles available`;
+        searchCount.classList.add('hidden');
+      }
+    }
+    
+    function getProfileTypeIcon(profileName) {
+      const name = profileName.toLowerCase();
+      
+      // Detect profile type from name patterns
+      if (name.includes('frame') || name.includes('marco')) {
+        return { symbol: '🔲', type: 'Frame' };
+      } else if (name.includes('sash') || name.includes('hoja') || name.includes('leaf')) {
+        return { symbol: '🪟', type: 'Sash' };
+      } else if (name.includes('mullion') || name.includes('parteluz') || name.includes('division')) {
+        return { symbol: '┃', type: 'Mullion' };
+      } else if (name.includes('rail') || name.includes('riel') || name.includes('carril')) {
+        return { symbol: '═', type: 'Rail' };
+      } else if (name.includes('stile') || name.includes('montante')) {
+        return { symbol: '║', type: 'Stile' };
+      } else if (name.includes('muntin') || name.includes('barra')) {
+        return { symbol: '╬', type: 'Muntin' };
+      } else if (name.includes('sill') || name.includes('umbral')) {
+        return { symbol: '▬', type: 'Sill' };
+      } else if (name.includes('head') || name.includes('cabezal')) {
+        return { symbol: '▀', type: 'Head' };
+      } else if (name.includes('jamb') || name.includes('jamba')) {
+        return { symbol: '▐', type: 'Jamb' };
+      } else if (name.includes('interlock') || name.includes('cierre')) {
+        return { symbol: '⟷', type: 'Interlock' };
+      } else if (name.includes('adaptor') || name.includes('adapter') || name.includes('adaptador')) {
+        return { symbol: '⊏', type: 'Adaptor' };
+      } else if (name.includes('glazing') || name.includes('bead') || name.includes('junquillo')) {
+        return { symbol: '◫', type: 'Glazing Bead' };
+      } else {
+        return { symbol: '▪', type: 'Profile' };
+      }
+    }
+    
+    // Window Name Validation
+    let nameCheckTimeout = null;
+    let isNameValid = false;
+    
+    function initWindowNameValidation() {
+      const nameInput = document.getElementById('type');
+      const statusIcon = document.getElementById('name-check-status');
+      const errorMsg = document.getElementById('name-error');
+      const errorText = document.getElementById('name-error-text');
+      const successMsg = document.getElementById('name-success');
+      
+      nameInput.addEventListener('input', function() {
+        // Clear previous timeout
+        if (nameCheckTimeout) {
+          clearTimeout(nameCheckTimeout);
+        }
+        
+        // Reset status
+        hideNameStatus();
+        isNameValid = false;
+        
+        const name = this.value.trim();
+        
+        if (!name) {
+          return;
+        }
+        
+        // Show loading indicator
+        statusIcon.classList.remove('hidden');
+        statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-gray-400"></i>';
+        
+        // Debounce - wait 500ms after user stops typing
+        nameCheckTimeout = setTimeout(() => {
+          checkWindowName(name);
+        }, 500);
+      });
+      
+      // Also check on blur
+      nameInput.addEventListener('blur', function() {
+        const name = this.value.trim();
+        if (name && !isNameValid) {
+          checkWindowName(name);
+        }
+      });
+    }
+    
+    async function checkWindowName(name) {
+      const statusIcon = document.getElementById('name-check-status');
+      const errorMsg = document.getElementById('name-error');
+      const errorText = document.getElementById('name-error-text');
+      const successMsg = document.getElementById('name-success');
+      const nameInput = document.getElementById('type');
+      
+      try {
+        const response = await fetch(`/admin/check-window-name?name=${encodeURIComponent(name)}`);
+        const data = await response.json();
+        
+        statusIcon.classList.add('hidden');
+        
+        if (data.exists) {
+          // Name is taken
+          isNameValid = false;
+          errorText.textContent = data.message || 'This name is already taken.';
+          errorMsg.classList.remove('hidden');
+          successMsg.classList.add('hidden');
+          nameInput.classList.add('border-red-500');
+          nameInput.classList.remove('border-green-500');
+          
+          // Show check icon in status
+          statusIcon.classList.remove('hidden');
+          statusIcon.innerHTML = '<i class="fas fa-times-circle text-red-500"></i>';
+        } else {
+          // Name is available
+          isNameValid = true;
+          errorMsg.classList.add('hidden');
+          successMsg.classList.remove('hidden');
+          nameInput.classList.remove('border-red-500');
+          nameInput.classList.add('border-green-500');
+          
+          // Show success icon in status
+          statusIcon.classList.remove('hidden');
+          statusIcon.innerHTML = '<i class="fas fa-check-circle text-green-500"></i>';
+          
+          // Hide success message after 3 seconds
+          setTimeout(() => {
+            successMsg.classList.add('hidden');
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Error checking window name:', error);
+        statusIcon.classList.add('hidden');
+      }
+    }
+    
+    function hideNameStatus() {
+      const statusIcon = document.getElementById('name-check-status');
+      const errorMsg = document.getElementById('name-error');
+      const successMsg = document.getElementById('name-success');
+      const nameInput = document.getElementById('type');
+      
+      statusIcon.classList.add('hidden');
+      errorMsg.classList.add('hidden');
+      successMsg.classList.add('hidden');
+      nameInput.classList.remove('border-red-500', 'border-green-500');
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      initWindowNameValidation();
+      initProfileSearch();
+    });
+    
     // Profile functions
     function addProfileEntry() {
       const profileSelect = document.getElementById('profile-id');
@@ -2608,9 +2895,17 @@
         const displayValue = profile.lengthDiscountDisplay || profile.lengthDiscount;
         const displayUnit = profile.lengthUnit || 'in';
         
+        // Get profile type icon
+        const icon = getProfileTypeIcon(profile.profileName);
+        
         const row = `
           <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
-            <td class="py-3 px-4 border-b">${profile.profileName}</td>
+            <td class="py-3 px-4 border-b">
+              <div class="flex items-center gap-2">
+                <span class="text-lg" title="${icon.type}">${icon.symbol}</span>
+                <span>${profile.profileName}</span>
+              </div>
+            </td>
             <td class="py-3 px-4 border-b">${profile.quantity}</td>
             <td class="py-3 px-4 border-b">${profile.orientation}</td>
             <td class="py-3 px-4 border-b">${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}</td>
@@ -2796,15 +3091,30 @@
       muntinConfiguration.showToUser = showToUser;
     }
 
-    document.getElementById('window-form').addEventListener('submit', function(event) {
+    document.getElementById('window-form').addEventListener('submit', async function(event) {
       event.preventDefault();
       
       // Validate form
-      const windowType = document.getElementById('type').value;
+      const windowType = document.getElementById('type').value.trim();
       if (!windowType) {
         showAlert('Please enter a window type');
         goToStep(1);
         return;
+      }
+      
+      // Final check if name is taken
+      try {
+        const response = await fetch(`/admin/check-window-name?name=${encodeURIComponent(windowType)}`);
+        const data = await response.json();
+        
+        if (data.exists) {
+          showAlert(data.message || 'This window type name is already taken. Please choose a different name.');
+          goToStep(1);
+          document.getElementById('type').focus();
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking name:', error);
       }
       
       if (profiles.length === 0) {

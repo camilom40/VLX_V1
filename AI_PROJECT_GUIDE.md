@@ -237,6 +237,7 @@ The configure window page features a dynamic preview that:
 ### Compose Window Form (Admin)
 Multi-step wizard with 4 steps:
 1. **Basic Info** - Name, type, panel configuration with live visual preview
+   - **Window Name Validation**: Real-time check if name already exists in database
    - Operation type selector (sliding, casement, french-door, etc.)
    - Panel count and X/O toggle buttons
    - Draggable dividers for unequal panel sizes
@@ -244,6 +245,10 @@ Multi-step wizard with 4 steps:
    - Resizable preview area
    - VITRALUX logo toggle
 2. **Profiles** - Add frame profiles with quantities and length discounts (supports inches/mm)
+   - **Search/Filter**: Type to search profiles by name or color, shows match count
+   - **Profile Type Icons**: Visual icons identify profile types (Frame 🔲, Sash 🪟, Mullion ┃, Rail ═, etc.)
+   - **Enter to Select**: Press Enter to auto-select when only one result matches
+   - **Icons in Table**: Added profiles show type icons in the list
 3. **Accessories** - Add hardware and accessories
 4. **Muntins** - Configure decorative grid patterns
 
