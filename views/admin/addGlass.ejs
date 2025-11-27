@@ -4,227 +4,293 @@
   <%- include('../partials/_head.ejs') %>
   <title>Add New Glass</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Custom input styles */
-    .input-field {
+    body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+    
+    .main-card {
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.05);
+      border: 1px solid rgba(226,232,240,0.8);
+    }
+    
+    .form-section {
+      background: linear-gradient(to right, #fafbfc, #fff);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+    .form-section:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    
+    .section-icon {
+      width: 2.25rem; height: 2.25rem;
+      border-radius: 0.625rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      border-radius: 0.625rem;
+      border: 2px solid #e2e8f0;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .form-input:hover { border-color: #cbd5e1; background: #fff; }
+    .form-input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    
+    .form-input-simple {
       width: 100%;
       padding: 0.75rem 1rem;
-      background-color: #eff6ff;
-      border: 1px solid #d1d5db;
-      border-radius: 0.375rem;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      transition: all 0.15s ease-in-out;
-      min-height: 42px;
+      border-radius: 0.625rem;
+      border: 2px solid #e2e8f0;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .form-input-simple:hover { border-color: #cbd5e1; background: #fff; }
+    .form-input-simple:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    
+    .input-with-icon { position: relative; width: 100%; }
+    .input-icon {
+      position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
+      color: #64748b; pointer-events: none; z-index: 10; transition: color 0.2s;
+    }
+    .input-with-icon:focus-within .input-icon { color: #3b82f6; }
+    .input-icon svg { width: 1.125rem; height: 1.125rem; }
+    
+    select.form-input {
+      appearance: none; cursor: pointer; padding-right: 2.5rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.125rem;
     }
     
-    .input-field:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    .input-suffix {
+      position: absolute; right: 0; top: 0; height: 100%;
+      padding: 0 0.875rem; display: flex; align-items: center;
+      background: linear-gradient(to right, #e2e8f0, #f1f5f9);
+      color: #475569; font-weight: 600; font-size: 0.8rem;
+      border-top-right-radius: 0.625rem; border-bottom-right-radius: 0.625rem;
+      border: 2px solid #e2e8f0; border-left: none;
     }
     
-    .label-text {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 500;
-      margin-bottom: 0.25rem;
-      transition: all 0.15s ease-in-out;
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white; font-weight: 600; padding: 0.75rem 1.75rem;
+      border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(59,130,246,0.4);
+      transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 6px 20px rgba(59,130,246,0.5); transform: translateY(-2px); }
+    
+    .btn-secondary {
+      background: #f1f5f9; color: #475569; font-weight: 600;
+      padding: 0.75rem 1.25rem; border-radius: 0.625rem;
+      border: 2px solid #e2e8f0; transition: all 0.3s ease;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-secondary:hover { background: #e2e8f0; border-color: #cbd5e1; }
+    
+    .required-badge {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      color: #92400e; font-size: 0.6rem; font-weight: 700;
+      padding: 0.2rem 0.4rem; border-radius: 0.3rem;
+      margin-left: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;
     }
     
-    .section-title {
-      font-weight: 700;
-      font-size: 1.125rem;
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-    }
+    .help-text { color: #64748b; font-size: 0.75rem; margin-top: 0.375rem; }
     
-    /* Section title styles */
-    .section-type {
-      background-image: linear-gradient(to right, #4f46e5, #3b82f6);
-    }
-    .section-desc {
-      background-image: linear-gradient(to right, #2563eb, #0ea5e9);
-    }
-    .section-missile {
-      background-image: linear-gradient(to right, #9333ea, #d946ef);
-    }
-    .section-price {
-      background-image: linear-gradient(to right, #059669, #22c55e);
-    }
-    .section-weight {
-      background-image: linear-gradient(to right, #d97706, #eab308);
-    }
-    
-    /* Required field indicator */
-    .required::after {
-      content: "*";
-      color: #ef4444;
-      margin-left: 4px;
-      font-size: 1.2em;
-    }
-    
-    .input-group-text {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      background-color: #f3f4f6;
-      color: #4b5563;
-      font-weight: 500;
-      border: 1px solid #d1d5db;
-      border-left: none;
-      border-top-right-radius: 0.375rem;
-      border-bottom-right-radius: 0.375rem;
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-      transition: all 0.15s ease-in-out;
-    }
-    
-    .input-field:focus + .input-group-text {
-      border-color: #3b82f6;
-      background-color: #e5e7eb;
-      color: #1f2937;
-    }
-    
-    .input-field.rounded-r-none {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
+    textarea.form-input-simple {
+      min-height: 80px;
+      resize: vertical;
     }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
   
-  <main class="container mx-auto px-4 py-8 flex-grow">
-    <div class="max-w-3xl mx-auto">
-      <!-- Header -->
-      <div class="bg-white shadow-md rounded-xl p-4 mb-6">
-        <h1 class="text-3xl font-bold text-gray-800 bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-          Add New Glass
-        </h1>
-      </div>
-      
-      <!-- Form Card -->
-      <div class="bg-white shadow-md rounded-xl overflow-hidden">
-        <div class="p-6">
-          <form action="/admin/glasses/add" method="POST">
-            <!-- Glass Type Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <label for="glass_type" class="label-text section-title section-type required">Glass Type</label>
-              </div>
-              <input type="text" id="glass_type" name="glass_type" required 
-                    class="input-field" 
-                    placeholder="Enter glass type">
-              <p class="mt-1 text-sm text-gray-500">Enter a unique identifier for this glass type</p>
-            </div>
-            
-            <!-- Description Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
-                </svg>
-                <label for="description" class="label-text section-title section-desc required">Description</label>
-              </div>
-              <textarea id="description" name="description" required 
-                       class="input-field" 
-                       placeholder="Enter detailed description"
-                       rows="3"></textarea>
-              <p class="mt-1 text-sm text-gray-500">Provide a detailed description of the glass</p>
-            </div>
-            
-            <!-- Missile Type Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <label for="missile_type" class="label-text section-title section-missile required">Missile Type</label>
-              </div>
-              <select id="missile_type" name="missile_type" required class="input-field">
-                <option value="">Select a missile type</option>
-                <option value="LMI">LMI (Large Missile Impact)</option>
-                <option value="SMI">SMI (Small Missile Impact)</option>
-              </select>
-              <p class="mt-1 text-sm text-gray-500">Specify the missile impact rating of the glass</p>
-            </div>
-            
-            <!-- Price Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <label for="pricePerSquareMeter" class="label-text section-title section-price required">Price Per Square Meter</label>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="flex items-center">
-                  <input type="number" 
-                        id="pricePerSquareMeter" 
-                        name="pricePerSquareMeter" 
-                        required 
-                        class="input-field" 
-                        placeholder="Enter price per square meter"
-                        step="0.01"
-                        min="0">
-                </div>
-                <div class="flex items-center">
-                  <select id="currency" name="currency" required class="input-field">
-                    <option value="COP">COP (Colombian Peso)</option>
-                    <option value="USD">USD (US Dollar)</option>
-                  </select>
-                </div>
-              </div>
-              <p class="mt-1 text-sm text-gray-500">Enter the price per square meter and select the currency</p>
-            </div>
-            
-            <!-- Weight Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                </svg>
-                <label for="weight" class="label-text section-title section-weight required">Weight</label>
-              </div>
-              <div class="flex items-center">
-                <input type="number" 
-                      id="weight" 
-                      name="weight" 
-                      step="0.01" 
-                      required 
-                      class="input-field rounded-r-none" 
-                      placeholder="Enter weight">
-                <span class="input-group-text">
-                  kg/m²
-                </span>
-              </div>
-              <p class="mt-1 text-sm text-gray-500">Weight in kilograms per square meter</p>
-            </div>
-            
-            <!-- Divider -->
-            <div class="border-t border-gray-200 my-8"></div>
-            
-            <!-- Form Actions -->
-            <div class="flex flex-col sm:flex-row sm:justify-between gap-4">
-              <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Add Glass
-              </button>
-              <a href="/admin/glasses" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Cancel
-              </a>
-            </div>
-          </form>
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <!-- Page Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800">Add New Glass</h1>
+            <p class="text-gray-500 text-sm">Create a new glass type for window systems</p>
+          </div>
         </div>
+        <a href="/admin/glasses" class="btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back
+        </a>
+      </div>
+
+      <!-- Main Form Card -->
+      <div class="main-card p-6">
+        <form action="/admin/glasses/add" method="POST">
+          
+          <!-- Row 1: Glass Type and Missile Type -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Glass Type -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-indigo-100 text-indigo-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="glass_type" class="font-semibold text-gray-800 text-sm">Glass Type</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <input type="text" id="glass_type" name="glass_type" required class="form-input" 
+                    placeholder="e.g., Tempered, Laminated">
+              </div>
+              <p class="help-text">Unique identifier for this glass</p>
+            </div>
+
+            <!-- Missile Type -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-purple-100 text-purple-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="missile_type" class="font-semibold text-gray-800 text-sm">Missile Type</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <select id="missile_type" name="missile_type" required class="form-input">
+                  <option value="">Select type...</option>
+                  <option value="LMI">LMI (Large Missile Impact)</option>
+                  <option value="SMI">SMI (Small Missile Impact)</option>
+                </select>
+              </div>
+              <p class="help-text">Impact resistance rating</p>
+            </div>
+          </div>
+
+          <!-- Row 2: Description (Full Width) -->
+          <div class="mb-4">
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-blue-100 text-blue-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="description" class="font-semibold text-gray-800 text-sm">Description</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <textarea id="description" name="description" required class="form-input-simple" 
+                  placeholder="Enter detailed description of the glass type..." rows="3"></textarea>
+              <p class="help-text">Detailed description of this glass type</p>
+            </div>
+          </div>
+
+          <!-- Row 3: Price and Weight -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Price -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-emerald-100 text-emerald-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="pricePerSquareMeter" class="font-semibold text-gray-800 text-sm">Price Per m²</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <div class="flex-1 input-with-icon">
+                  <div class="input-icon">
+                    <span class="text-base font-bold">$</span>
+                  </div>
+                  <input type="number" id="pricePerSquareMeter" name="pricePerSquareMeter" 
+                      step="0.01" min="0" required class="form-input" placeholder="0.00">
+                </div>
+                <select id="currency" name="currency" required class="form-input-simple !w-24">
+                  <option value="COP">COP</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+              <p class="help-text">Price per square meter</p>
+            </div>
+
+            <!-- Weight -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-amber-100 text-amber-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="weight" class="font-semibold text-gray-800 text-sm">Weight</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  </svg>
+                </div>
+                <input type="number" id="weight" name="weight" step="0.01" min="0" required 
+                    class="form-input !pr-20" placeholder="0.00">
+                <div class="input-suffix">kg/m²</div>
+              </div>
+              <p class="help-text">Weight per square meter</p>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex justify-between items-center pt-5 mt-5 border-t border-gray-100">
+            <a href="/admin/glasses" class="btn-secondary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </a>
+            <button type="submit" class="btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Add Glass
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </main>
@@ -233,20 +299,8 @@
   
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Format price input as Colombian currency (whole numbers only)
       const priceInput = document.getElementById('pricePerSquareMeter');
       if (priceInput) {
-        priceInput.addEventListener('input', function(e) {
-          // Remove non-numeric characters
-          let value = this.value.replace(/\D/g, '');
-          
-          // Format with thousand separators if value exists
-          if (value) {
-            this.value = parseInt(value, 10).toLocaleString('es-CO');
-          }
-        });
-        
-        // Before form submission, convert formatted number back to plain number
         priceInput.form.addEventListener('submit', function() {
           priceInput.value = priceInput.value.replace(/\D/g, '');
         });

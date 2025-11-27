@@ -4,429 +4,417 @@
   <%- include('../partials/_head.ejs'); %>
   <title>Create Profile</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Custom input styles */
-    .input-field {
-      margin-top: 0.25rem;
-      display: block;
+    body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+    
+    .main-card {
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.05);
+      border: 1px solid rgba(226,232,240,0.8);
+    }
+    
+    .form-section {
+      background: linear-gradient(to right, #fafbfc, #fff);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+    .form-section:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    
+    .section-icon {
+      width: 2.25rem; height: 2.25rem;
+      border-radius: 0.625rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      border-radius: 0.625rem;
+      border: 2px solid #e2e8f0;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .form-input:hover { border-color: #cbd5e1; background: #fff; }
+    .form-input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    
+    .form-input-simple {
       width: 100%;
       padding: 0.75rem 1rem;
-      background-color: #EFF6FF;
-      border: 1px solid #D1D5DB;
-      border-radius: 0.375rem;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      transition-property: all;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 150ms;
-      height: 45px;
-      line-height: 1.5;
+      border-radius: 0.625rem;
+      border: 2px solid #e2e8f0;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .form-input-simple:hover { border-color: #cbd5e1; background: #fff; }
+    .form-input-simple:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    
+    .input-with-icon { position: relative; width: 100%; }
+    .input-icon {
+      position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
+      color: #64748b; pointer-events: none; z-index: 10; transition: color 0.2s;
+    }
+    .input-with-icon:focus-within .input-icon { color: #3b82f6; }
+    .input-icon svg { width: 1.125rem; height: 1.125rem; }
+    
+    select.form-input {
+      appearance: none; cursor: pointer; padding-right: 2.5rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.125rem;
     }
     
-    .input-field:focus {
-      outline: none;
-      --tw-ring-color: #3B82F6;
-      --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-      --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-      box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-      border-color: #3B82F6;
+    .input-suffix {
+      position: absolute; right: 0; top: 0; height: 100%;
+      padding: 0 0.875rem; display: flex; align-items: center;
+      background: linear-gradient(to right, #e2e8f0, #f1f5f9);
+      color: #475569; font-weight: 600; font-size: 0.8rem;
+      border-top-right-radius: 0.625rem; border-bottom-right-radius: 0.625rem;
+      border: 2px solid #e2e8f0; border-left: none;
     }
     
-    .label-text {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 500;
-      margin-bottom: 0.25rem;
-      transition-property: all;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 150ms;
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white; font-weight: 600; padding: 0.75rem 1.75rem;
+      border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(59,130,246,0.4);
+      transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 6px 20px rgba(59,130,246,0.5); transform: translateY(-2px); }
+    
+    .btn-secondary {
+      background: #f1f5f9; color: #475569; font-weight: 600;
+      padding: 0.75rem 1.25rem; border-radius: 0.625rem;
+      border: 2px solid #e2e8f0; transition: all 0.3s ease;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-secondary:hover { background: #e2e8f0; border-color: #cbd5e1; }
+    
+    .required-badge {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      color: #92400e; font-size: 0.6rem; font-weight: 700;
+      padding: 0.2rem 0.4rem; border-radius: 0.3rem;
+      margin-left: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;
     }
     
-    /* Gradient text for section titles */
-    .section-name {
-      background-image: linear-gradient(to right, #4F46E5, #3B82F6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      color: transparent;
-      font-weight: 700;
-      font-size: 1.125rem;
-    }
+    .help-text { color: #64748b; font-size: 0.75rem; margin-top: 0.375rem; }
+    .error-text { color: #dc2626; font-size: 0.75rem; margin-top: 0.375rem; display: none; }
     
-    .section-color {
-      background-image: linear-gradient(to right, #2563EB, #0EA5E9);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      color: transparent;
-      font-weight: 700;
-      font-size: 1.125rem;
+    .toggle-switch {
+      position: relative;
+      width: 3rem;
+      height: 1.5rem;
     }
-    
-    .section-colorcode {
-      background-image: linear-gradient(to right, #7C3AED, #DB2777);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      color: transparent;
-      font-weight: 700;
-      font-size: 1.125rem;
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
     }
-    
-    .section-amma {
-      background-image: linear-gradient(to right, #C026D3, #E11D48);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      color: transparent;
-      font-weight: 700;
-      font-size: 1.125rem;
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #cbd5e1;
+      border-radius: 9999px;
+      transition: 0.3s;
     }
-    
-    .section-price {
-      background-image: linear-gradient(to right, #10B981, #22C55E);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      color: transparent;
-      font-weight: 700;
-      font-size: 1.125rem;
+    .toggle-slider:before {
+      content: "";
+      position: absolute;
+      height: 1.125rem;
+      width: 1.125rem;
+      left: 0.1875rem;
+      bottom: 0.1875rem;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.3s;
     }
-    
-    .section-weight {
-      background-image: linear-gradient(to right, #F59E0B, #EAB308);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      color: transparent;
-      font-weight: 700;
-      font-size: 1.125rem;
+    input:checked + .toggle-slider {
+      background-color: #22c55e;
     }
-    
-    /* Required field indicator */
-    .required::after {
-      content: "*";
-      color: #ef4444;
-      margin-left: 4px;
-      font-size: 1.2em;
-    }
-    
-    /* Color preview */
-    .color-preview-lg {
-      height: 2.5rem;
-      width: 2.5rem;
-      border-radius: 0.375rem;
-      border: 1px solid #D1D5DB;
-      background-color: #CCCCCC;
-    }
-    
-    .error {
-      color: red;
-      margin-top: 5px;
-      display: none;
-    }
-
-    .input-group-text {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.50rem 1rem;
-      background-color: #f3f4f6;
-      color: #4b5563;
-      font-weight: 500;
-      border: 1px solid #d1d5db;
-      border-left: none;
-      border-top-right-radius: 0.375rem;
-      border-bottom-right-radius: 0.375rem;
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-      transition: all 0.15s ease-in-out;
-      height: 44px;
-      min-width: 60px;
-      justify-content: center;
-      line-height: 1.5;
-    }
-    
-    .input-field:focus + .input-group-text {
-      border-color: #3b82f6;
-      background-color: #e5e7eb;
-      color: #1f2937;
-    }
-    
-    .input-field.rounded-r-none {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-
-    select.input-field {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-      background-position: right 0.5rem center;
-      background-repeat: no-repeat;
-      background-size: 1.5em 1.5em;
-      padding-right: 2.5rem;
-      line-height: 1.5;
+    input:checked + .toggle-slider:before {
+      transform: translateX(1.5rem);
     }
   </style>
 </head>
-<body class="bg-gray-100 flex flex-col min-h-screen">
+<body class="min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs'); %>
-  <main class="flex-grow p-6">
-    <div class="max-w-3xl mx-auto">
-      <!-- Header -->
-      <div class="bg-white shadow-md rounded-xl p-4 mb-6">
-        <h1 class="text-3xl font-bold text-gray-800" style="background-image: linear-gradient(to right, #4F46E5, #3B82F6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent;">
-          Create New Profile
-        </h1>
-      </div>
-      
-      <!-- Form Card -->
-      <div class="bg-white shadow-md rounded-xl overflow-hidden">
-        <div class="p-6">
-          <form id="createProfileForm" action="/admin/profiles/add" method="POST">
-            <!-- Profile Name Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <label for="name" class="label-text section-name required">Profile Name</label>
-              </div>
-              <input type="text" 
-                    id="name" 
-                    name="name" 
-                    class="input-field" 
-                    placeholder="Enter profile name" 
-                    required>
-              <p class="mt-1 text-sm text-gray-500">Enter a unique identifier for this profile</p>
-              <div id="nameError" class="error">Profile name cannot contain spaces.</div>
-            </div>
-            
-            <!-- Color Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2H7z" />
-                </svg>
-                <label for="color" class="label-text section-color required">Color</label>
-              </div>
-              <input type="text" 
-                    id="color" 
-                    name="color" 
-                    class="input-field" 
-                    placeholder="Enter color description" 
-                    required>
-              <p class="mt-1 text-sm text-gray-500">Descriptive name of the profile color</p>
-            </div>
-            
-            <!-- Color Code Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2H7z" />
-                </svg>
-                <label for="colorCode" class="label-text section-colorcode required">Reference</label>
-              </div>
-              <div class="flex gap-3">
-                <input type="text" 
-                      id="colorCode" 
-                      name="colorCode" 
-                      class="input-field" 
-                      placeholder="Enter reference code" 
-                      required>
-              </div>
-              <p class="mt-1 text-sm text-gray-500">Profile reference code</p>
-            </div>
-            
-            <!-- AMMA Certification Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-fuchsia-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <label for="ammaCertification" class="label-text section-amma required">AMMA Certification</label>
-              </div>
-              <select id="ammaCertification" 
-                    name="ammaCertification" 
-                    required 
-                    class="input-field">
-                <option value="">Select certification...</option>
-                <option value="2603">2603</option>
-                <option value="2604">2604</option>
-                <option value="2605">2605</option>
-              </select>
-              <p class="mt-1 text-sm text-gray-500">AMMA certification number</p>
-            </div>
-            
-            <!-- Price Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <label for="pricePerMeter" class="label-text section-price required">Price Per Meter</label>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="flex items-center">
-                  <input type="number" 
-                        id="pricePerMeter" 
-                        name="pricePerMeter" 
-                        required 
-                        class="input-field" 
-                        placeholder="Enter price per meter"
-                        step="0.01"
-                        min="0">
-                </div>
-                <div class="flex items-center">
-                  <select id="currency" name="currency" required class="input-field">
-                    <option value="COP">COP (Colombian Peso)</option>
-                    <option value="USD">USD (US Dollar)</option>
-                  </select>
-                </div>
-              </div>
-              <p class="mt-1 text-sm text-gray-500">Enter the price per meter and select the currency</p>
-            </div>
-            
-            <!-- Weight Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                </svg>
-                <label for="weight" class="label-text section-weight required">Weight</label>
-              </div>
-              <div class="flex items-center">
-                <input type="number" 
-                      id="weight" 
-                      name="weight" 
-                      step="0.01" 
-                      required 
-                      class="input-field rounded-r-none" 
-                      placeholder="Enter weight">
-                <span class="input-group-text">
-                  kg/m
-                </span>
-              </div>
-              <p class="mt-1 text-sm text-gray-500">Weight in kilograms per meter</p>
-            </div>
-            
-            <!-- Muntin Configuration Section -->
-            <div class="mb-6">
-              <div class="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                </svg>
-                <label class="label-text" style="background-image: linear-gradient(to right, #10B981, #22C55E); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent; font-weight: 700; font-size: 1.125rem;">Muntin Configuration</label>
-              </div>
-              
-              <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div class="mb-4">
-                  <div class="flex items-center">
-                    <input type="checkbox" id="isMuntin" name="isMuntin" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
-                    <label for="isMuntin" class="ml-2 text-sm font-medium text-green-800">This profile can be used as a muntin</label>
-                  </div>
-                  <p class="text-xs text-green-600 mt-1">Check this if this profile is designed for ornamental muntin bars</p>
-                </div>
-                
-                <div id="muntinFields" class="space-y-4" style="display: none;">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label for="muntinType" class="block text-sm font-medium text-green-700 mb-1">Muntin Type</label>
-                      <select id="muntinType" name="muntinType" class="input-field">
-                        <option value="colonial">Colonial</option>
-                        <option value="geometric">Geometric</option>
-                        <option value="custom">Custom</option>
-                        <option value="none">None</option>
-                      </select>
-                      <p class="text-xs text-green-600 mt-1">Style of muntin pattern</p>
-                    </div>
-                    
-                    <div>
-                      <label for="muntinSpacing" class="block text-sm font-medium text-green-700 mb-1">Spacing (inches)</label>
-                      <input type="number" id="muntinSpacing" name="muntinSpacing" step="0.1" min="0" class="input-field" placeholder="0.25">
-                      <p class="text-xs text-green-600 mt-1">Spacing between muntin bars</p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label for="muntinPattern" class="block text-sm font-medium text-green-700 mb-1">Pattern Description</label>
-                    <input type="text" id="muntinPattern" name="muntinPattern" class="input-field" placeholder="e.g., Traditional colonial grid, Modern geometric pattern">
-                    <p class="text-xs text-green-600 mt-1">Description of the muntin pattern</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Divider -->
-            <div class="border-t border-gray-200 my-8"></div>
-            
-            <!-- Form Actions -->
-            <div class="flex flex-col sm:flex-row sm:justify-between gap-4">
-              <button type="button" onclick="validateAndSubmit()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Create Profile
-              </button>
-              <a href="/admin/profiles" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Cancel
-              </a>
-            </div>
-          </form>
+  
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <!-- Page Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800">Create New Profile</h1>
+            <p class="text-gray-500 text-sm">Add a new aluminum profile to the system</p>
+          </div>
         </div>
+        <a href="/admin/profiles" class="btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back
+        </a>
+      </div>
+
+      <!-- Main Form Card -->
+      <div class="main-card p-6">
+        <form id="createProfileForm" action="/admin/profiles/add" method="POST">
+          
+          <!-- Row 1: Profile Name and Color -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Profile Name -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-indigo-100 text-indigo-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="name" class="font-semibold text-gray-800 text-sm">Profile Name</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <input type="text" id="name" name="name" required class="form-input" 
+                    placeholder="e.g., FrameProfile01">
+              </div>
+              <p id="nameError" class="error-text">Profile name cannot contain spaces</p>
+              <p class="help-text">No spaces allowed</p>
+            </div>
+
+            <!-- Color -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-blue-100 text-blue-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2H7z" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="color" class="font-semibold text-gray-800 text-sm">Color</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2H7z" />
+                  </svg>
+                </div>
+                <input type="text" id="color" name="color" required class="form-input" 
+                    placeholder="e.g., White, Bronze, Black">
+              </div>
+              <p class="help-text">Descriptive color name</p>
+            </div>
+          </div>
+
+          <!-- Row 2: Reference Code and AMMA -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Reference Code -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-purple-100 text-purple-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="colorCode" class="font-semibold text-gray-800 text-sm">Reference Code</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                  </svg>
+                </div>
+                <input type="text" id="colorCode" name="colorCode" required class="form-input" 
+                    placeholder="e.g., PRF-001">
+              </div>
+              <p class="help-text">Unique reference code</p>
+            </div>
+
+            <!-- AMMA Certification -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-fuchsia-100 text-fuchsia-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="ammaCertification" class="font-semibold text-gray-800 text-sm">AMMA Certification</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <select id="ammaCertification" name="ammaCertification" required class="form-input">
+                  <option value="">Select...</option>
+                  <option value="none">No Certification</option>
+                  <option value="2603">2603</option>
+                  <option value="2604">2604</option>
+                  <option value="2605">2605</option>
+                </select>
+              </div>
+              <p class="help-text">AMMA certification number</p>
+            </div>
+          </div>
+
+          <!-- Row 3: Price and Weight -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Price -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-emerald-100 text-emerald-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="pricePerMeter" class="font-semibold text-gray-800 text-sm">Price Per Meter</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <div class="flex-1 input-with-icon">
+                  <div class="input-icon">
+                    <span class="text-base font-bold">$</span>
+                  </div>
+                  <input type="number" id="pricePerMeter" name="pricePerMeter" 
+                      step="0.01" min="0" required class="form-input" placeholder="0.00">
+                </div>
+                <select id="currency" name="currency" required class="form-input-simple !w-24">
+                  <option value="COP">COP</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+              <p class="help-text">Price per meter</p>
+            </div>
+
+            <!-- Weight -->
+            <div class="form-section">
+              <div class="flex items-center gap-2.5 mb-3">
+                <div class="section-icon bg-amber-100 text-amber-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  </svg>
+                </div>
+                <div>
+                  <label for="weight" class="font-semibold text-gray-800 text-sm">Weight</label>
+                  <span class="required-badge">Required</span>
+                </div>
+              </div>
+              <div class="input-with-icon">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  </svg>
+                </div>
+                <input type="number" id="weight" name="weight" step="0.01" min="0" required 
+                    class="form-input !pr-16" placeholder="0.00">
+                <div class="input-suffix">kg/m</div>
+              </div>
+              <p class="help-text">Weight per meter</p>
+            </div>
+          </div>
+
+          <!-- Muntin Toggle -->
+          <div class="form-section mb-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="section-icon bg-green-100 text-green-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                </div>
+                <div>
+                  <label class="font-semibold text-gray-800 text-sm">Muntin Profile</label>
+                  <p class="text-gray-500 text-xs">Enable if this profile can be used as a muntin bar</p>
+                </div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="isMuntin" name="isMuntin">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex justify-between items-center pt-5 mt-5 border-t border-gray-100">
+            <a href="/admin/profiles" class="btn-secondary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </a>
+            <button type="button" onclick="validateAndSubmit()" class="btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Create Profile
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </main>
+  
   <%- include('../partials/_footer.ejs'); %>
+  
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Format price input as Colombian currency
-      const priceInput = document.getElementById('pricePerMeter');
-      if (priceInput) {
-        priceInput.addEventListener('input', function(e) {
-          // Remove non-numeric characters
-          let value = this.value.replace(/\D/g, '');
-          
-          // Format with thousand separators if value exists
-          if (value) {
-            this.value = parseInt(value, 10).toLocaleString('es-CO');
-          }
-        });
-      }
+      // Name validation on input
+      const nameInput = document.getElementById('name');
+      const nameError = document.getElementById('nameError');
       
-      // Handle muntin fields toggle
-      const isMuntinCheckbox = document.getElementById('isMuntin');
-      const muntinFields = document.getElementById('muntinFields');
-      
-      if (isMuntinCheckbox && muntinFields) {
-        isMuntinCheckbox.addEventListener('change', function() {
-          if (this.checked) {
-            muntinFields.style.display = 'block';
-            // Set default values
-            document.getElementById('muntinType').value = 'colonial';
-            document.getElementById('muntinSpacing').value = '0.25';
-          } else {
-            muntinFields.style.display = 'none';
-            // Reset values
-            document.getElementById('muntinType').value = 'none';
-            document.getElementById('muntinSpacing').value = '';
-            document.getElementById('muntinPattern').value = '';
-          }
-        });
-      }
+      nameInput.addEventListener('input', function() {
+        if (/\s/.test(this.value)) {
+          nameError.style.display = 'block';
+          this.style.borderColor = '#f87171';
+        } else {
+          nameError.style.display = 'none';
+          this.style.borderColor = '';
+        }
+      });
     });
     
     function validateAndSubmit() {
       const name = document.getElementById('name').value.trim();
       const pricePerMeter = document.getElementById('pricePerMeter');
+      const nameError = document.getElementById('nameError');
       
       // Name validation
       if (/\s/.test(name)) {
-        document.getElementById('nameError').style.display = 'block';
+        nameError.style.display = 'block';
+        document.getElementById('name').focus();
         return;
       } else {
-        document.getElementById('nameError').style.display = 'none';
+        nameError.style.display = 'none';
       }
       
       // Convert formatted price before submission
