@@ -956,110 +956,154 @@
             <h2>Step 4: Muntin Configuration</h2>
           </div>
           
-          <div class="info-box">
-            <div class="flex items-start">
-              <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
-              <div>
-                <h4 class="font-semibold text-blue-800 mb-1">Muntin Configuration</h4>
-                <p class="text-blue-700">
-                  Configure ornamental muntins for this window system. Muntins are decorative dividers that create multiple panes within a single glass unit.
-                </p>
-                <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p class="text-sm text-green-700 font-medium">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    This is the final step. Configure muntins (optional) and click "Create Window System" to finish.
-                  </p>
+          <!-- Final Step Banner -->
+          <div class="mb-6 p-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center text-white">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-4">
+                  <i class="fas fa-flag-checkered text-xl"></i>
                 </div>
+                <div>
+                  <h3 class="font-bold text-lg">Final Step!</h3>
+                  <p class="text-green-100 text-sm">Configure muntins (optional) and create your window system</p>
+                </div>
+              </div>
+              <div class="hidden md:block text-white/80">
+                <i class="fas fa-th-large text-4xl"></i>
               </div>
             </div>
           </div>
 
-          <div class="mb-8">
-            <div class="p-6 bg-gray-50 rounded-lg shadow-sm mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label for="muntin-enabled" class="form-label">Enable Muntins</label>
-                  <div class="flex items-center">
-                    <input type="checkbox" id="muntin-enabled" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="toggleMuntinConfiguration()">
-                    <label for="muntin-enabled" class="ml-2 text-sm text-gray-700">Include muntins in this window system</label>
+          <!-- Main Muntin Card -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            
+            <!-- Enable Muntins Toggle -->
+            <div id="muntin-toggle-section" class="p-6 border-b border-gray-100">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mr-4">
+                    <i class="fas fa-th text-amber-600 text-xl"></i>
                   </div>
-                </div>
-                
-                <div id="muntin-config" style="display: none;">
-                  <label for="muntin-profile" class="form-label">Muntin Profile</label>
-                  <select id="muntin-profile" class="form-control w-full">
-                    <option value="">Select Muntin Profile</option>
-                    <% if (profiles.filter(p => p.isMuntin).length > 0) { %>
-                      <% profiles.forEach(profile => { %>
-                        <% if (profile.isMuntin) { %>
-                          <option value="<%= profile._id %>" data-type="<%= profile.muntinType %>" data-pattern="<%= profile.muntinPattern %>">
-                            <%= profile.name %> - <%= profile.muntinType.charAt(0).toUpperCase() + profile.muntinType.slice(1) %>
-                          </option>
-                        <% } %>
-                      <% }); %>
-                    <% } else { %>
-                      <!-- Fallback: Show all profiles if no muntin profiles exist -->
-                      <% profiles.forEach(profile => { %>
-                        <option value="<%= profile._id %>" data-type="colonial" data-pattern="">
-                          <%= profile.name %> - (Can be used as muntin)
-                        </option>
-                      <% }); %>
-                    <% } %>
-                  </select>
-                  <p class="text-xs text-gray-500 mt-1">Select the muntin profile from available options</p>
-                </div>
-              </div>
-              
-              <div id="muntin-details" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6" style="display: none;">
-                <div>
-                  <label for="muntin-type" class="form-label">Muntin Type</label>
-                  <select id="muntin-type" class="form-control w-full">
-                    <option value="colonial">Colonial</option>
-                    <option value="geometric">Geometric</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                  <p class="text-xs text-gray-500 mt-1">Style of muntin pattern</p>
-                </div>
-                
-                <div>
-                  <label for="muntin-show-to-user" class="block text-gray-700 font-medium mb-2">User Configurable:</label>
-                  <div class="flex items-center">
-                    <input type="checkbox" id="muntin-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label for="muntin-show-to-user" class="ml-2 text-sm text-gray-700">Allow users to configure muntin details when quoting</label>
-                  </div>
-                  <p class="text-xs text-gray-500 mt-1">Users can set divisions and spacing when quoting</p>
-                </div>
-              </div>
-              
-              <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-                <div class="flex items-start">
-                  <i class="fas fa-lightbulb text-blue-500 text-lg mr-3 mt-0.5"></i>
                   <div>
-                    <p class="text-sm text-blue-700 font-medium">
-                      <strong>Note:</strong> Users will be able to configure the number of horizontal/vertical divisions and spacing when quoting windows with this system.
-                    </p>
+                    <h3 class="text-lg font-semibold text-gray-800">Decorative Muntins</h3>
+                    <p class="text-sm text-gray-500">Add grid dividers to create multiple pane appearance</p>
                   </div>
                 </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="muntin-enabled" class="sr-only peer" onchange="toggleMuntinConfiguration()">
+                  <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500"></div>
+                  <span id="muntin-toggle-label" class="ml-3 text-sm font-medium text-gray-500">Disabled</span>
+                </label>
               </div>
-              
-              <div id="muntin-preview" class="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl" style="display: none;">
-                <h4 class="text-lg font-semibold text-blue-800 mb-4 text-center">Muntin Preview</h4>
-                <div class="flex justify-center mb-4">
-                  <div id="muntin-preview-grid" class="w-40 h-40 border-2 border-blue-300 mx-auto bg-white rounded-lg shadow-lg relative overflow-hidden">
-                    <!-- Preview grid will be generated here -->
-                  </div>
-                </div>
-                <p class="text-sm text-blue-700 text-center font-medium" id="muntin-preview-text">1x1 Colonial Grid</p>
-                <div class="mt-3 text-center">
-                  <div class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                    <i class="fas fa-eye mr-1"></i>
-                    Preview
-                  </div>
-                </div>
-              </div>
-              
-
             </div>
+            
+            <!-- Muntin Configuration (Hidden by default) -->
+            <div id="muntin-config-section" style="display: none;">
+              
+              <!-- Profile Selection -->
+              <div class="p-6 bg-gray-50 border-b border-gray-100">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="muntin-profile" class="block text-sm font-semibold text-gray-700 mb-2">
+                      <i class="fas fa-layer-group text-amber-500 mr-2"></i>Muntin Profile
+                    </label>
+                    <select id="muntin-profile" class="form-control w-full">
+                      <option value="">Select Muntin Profile</option>
+                      <% if (profiles.filter(p => p.isMuntin).length > 0) { %>
+                        <% profiles.forEach(profile => { %>
+                          <% if (profile.isMuntin) { %>
+                            <option value="<%= profile._id %>">
+                              <%= profile.name %>
+                            </option>
+                          <% } %>
+                        <% }); %>
+                      <% } else { %>
+                        <% profiles.forEach(profile => { %>
+                          <option value="<%= profile._id %>">
+                            <%= profile.name %>
+                          </option>
+                        <% }); %>
+                      <% } %>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-2">Select the aluminum profile for muntin bars</p>
+                  </div>
+                  
+                  <div class="flex items-center">
+                    <div class="p-4 bg-white rounded-xl border-2 border-dashed border-amber-200 w-full">
+                      <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="muntin-show-to-user" class="h-5 w-5 text-amber-600 focus:ring-amber-500 border-gray-300 rounded">
+                        <div class="ml-3">
+                          <span class="text-sm font-medium text-gray-700">User Configurable</span>
+                          <p class="text-xs text-gray-500">Users can customize divisions when quoting</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Visual Preview -->
+              <div class="p-6">
+                <div class="flex flex-col md:flex-row gap-6 items-center justify-center">
+                  
+                  <!-- Preview Window -->
+                  <div class="text-center">
+                    <p class="text-sm font-medium text-gray-600 mb-3">
+                      <i class="fas fa-eye text-amber-500 mr-1"></i> Preview
+                    </p>
+                    <div class="relative inline-block">
+                      <!-- Window Frame -->
+                      <div class="p-2 rounded-lg shadow-xl" style="background: linear-gradient(145deg, #707070, #505050);">
+                        <!-- Glass with Muntins -->
+                        <div id="muntin-preview-grid" class="w-40 h-40 relative overflow-hidden rounded" style="background: linear-gradient(180deg, rgba(186,230,253,0.8) 0%, rgba(147,197,253,0.6) 50%, rgba(186,230,253,0.7) 100%);">
+                          <!-- Muntin bars will be rendered here -->
+                          <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="grid grid-cols-2 gap-0 w-full h-full">
+                              <div class="border-r-2 border-b-2" style="border-color: #606060;"></div>
+                              <div class="border-b-2" style="border-color: #606060;"></div>
+                              <div class="border-r-2" style="border-color: #606060;"></div>
+                              <div></div>
+                            </div>
+                          </div>
+                          <!-- Glass reflection -->
+                          <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%);"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3" id="muntin-preview-text">2×2 Grid Pattern</p>
+                  </div>
+                  
+                  <!-- Info Card -->
+                  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-sm">
+                    <div class="flex items-start">
+                      <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="fas fa-lightbulb text-amber-600"></i>
+                      </div>
+                      <div>
+                        <h4 class="text-sm font-semibold text-amber-800 mb-1">How it works</h4>
+                        <p class="text-xs text-amber-700">
+                          When users quote this window, they'll be able to set the number of horizontal and vertical divisions to create their desired grid pattern.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>
+              
+            </div>
+            
+            <!-- Disabled State Message -->
+            <div id="muntin-disabled-message" class="p-8 text-center">
+              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-th-large text-gray-400 text-2xl"></i>
+              </div>
+              <h4 class="text-gray-600 font-medium mb-2">No Muntins</h4>
+              <p class="text-sm text-gray-500 max-w-md mx-auto">
+                This window system will have clean, unobstructed glass panels. Toggle the switch above to add decorative muntin grids.
+              </p>
+            </div>
+            
           </div>
           
           <div class="mt-8 flex justify-between items-center">
@@ -2430,35 +2474,37 @@
     let muntinConfiguration = {
       enabled: false,
       muntinProfile: null,
-      muntinType: 'colonial',
       showToUser: true
     };
 
     function toggleMuntinConfiguration() {
       const enabled = document.getElementById('muntin-enabled').checked;
-      const configDiv = document.getElementById('muntin-config');
-      const detailsDiv = document.getElementById('muntin-details');
+      const configSection = document.getElementById('muntin-config-section');
+      const disabledMessage = document.getElementById('muntin-disabled-message');
+      const toggleLabel = document.getElementById('muntin-toggle-label');
       
       muntinConfiguration.enabled = enabled;
       
       if (enabled) {
-        configDiv.style.display = 'block';
-        detailsDiv.style.display = 'grid';
+        configSection.style.display = 'block';
+        disabledMessage.style.display = 'none';
+        toggleLabel.textContent = 'Enabled';
+        toggleLabel.classList.remove('text-gray-500');
+        toggleLabel.classList.add('text-amber-600', 'font-semibold');
       } else {
-        configDiv.style.display = 'none';
-        detailsDiv.style.display = 'none';
+        configSection.style.display = 'none';
+        disabledMessage.style.display = 'block';
+        toggleLabel.textContent = 'Disabled';
+        toggleLabel.classList.add('text-gray-500');
+        toggleLabel.classList.remove('text-amber-600', 'font-semibold');
       }
     }
 
     function updateMuntinPreview() {
-      const type = document.getElementById('muntin-type').value;
       const previewGrid = document.getElementById('muntin-preview-grid');
       const previewText = document.getElementById('muntin-preview-text');
       
-      // Update configuration
-      muntinConfiguration.muntinType = type;
-      
-      // Generate a simple preview grid (1x1 as default)
+      // Generate a simple preview grid
       previewGrid.innerHTML = '';
       const cell = document.createElement('div');
       cell.style.position = 'absolute';
@@ -3175,21 +3221,7 @@
           const selectedOption = this.options[this.selectedIndex];
           if (selectedOption && selectedOption.value) {
             muntinConfiguration.muntinProfile = selectedOption.value;
-            const muntinType = selectedOption.getAttribute('data-type');
-            if (muntinType) {
-              document.getElementById('muntin-type').value = muntinType;
-              muntinConfiguration.muntinType = muntinType;
-            }
           }
-        });
-      }
-      
-      // Muntin configuration change listeners
-      const muntinTypeField = document.getElementById('muntin-type');
-      if (muntinTypeField) {
-        muntinTypeField.addEventListener('change', function() {
-          updateMuntinConfiguration();
-          updateMuntinPreview();
         });
       }
       
@@ -3203,10 +3235,7 @@
     });
 
     function updateMuntinConfiguration() {
-      const type = document.getElementById('muntin-type').value;
       const showToUser = document.getElementById('muntin-show-to-user').checked;
-      
-      muntinConfiguration.muntinType = type;
       muntinConfiguration.showToUser = showToUser;
     }
 
