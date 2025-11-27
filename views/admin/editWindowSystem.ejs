@@ -1,951 +1,1667 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Edit Window System</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <%- include('../partials/_head.ejs') %>
+  <title>Edit Window System - <%= windowSystem.type %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Step Navigation */
+    .step-nav {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 2rem;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: #f3f4f6;
+      color: #6b7280;
+      font-weight: 500;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .step-item:hover {
+      background: #e5e7eb;
+    }
+    .step-item.active {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .step-item.completed {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.2);
+    }
+    .step-item.active .step-number {
+      background: rgba(255,255,255,0.3);
+    }
+    .step-item.completed .step-number {
+      background: #166534;
+      color: white;
+    }
+    
+    /* Form Sections */
+    .form-section {
+      display: none;
+    }
+    .form-section.active {
+      display: block;
+    }
+    
+    /* Live Preview Styles */
+    .preview-frame {
+      background: linear-gradient(145deg, #707070, #505050);
+      padding: 8px;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .preview-glass {
+      background: linear-gradient(180deg, rgba(147,197,253,0.7) 0%, rgba(96,165,250,0.5) 50%, rgba(147,197,253,0.6) 100%);
+      border-radius: 4px;
+      position: relative;
+      min-height: 200px;
+    }
+    .preview-glass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%);
+      pointer-events: none;
+      border-radius: 4px;
+    }
+    .preview-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.3s;
+    }
+    .preview-mullion {
+      background: linear-gradient(180deg, #606060, #909090, #606060);
+      flex-shrink: 0;
+      cursor: col-resize;
+      position: relative;
+    }
+    .preview-mullion-h {
+      background: linear-gradient(90deg, #606060, #909090, #606060);
+      flex-shrink: 0;
+      cursor: row-resize;
+      position: relative;
+    }
+    .panel-label {
+      font-size: 24px;
+      font-weight: 700;
+      color: rgba(30,64,175,0.5);
+      text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+    }
+    .panel-label.operable {
+      color: rgba(22,101,52,0.6);
+    }
+    
+    /* Glass Logo */
+    .glass-logo {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      font-size: 8px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      letter-spacing: 1px;
+      z-index: 5;
+    }
+    
+    /* Panel Toggle Button */
+    .panel-toggle {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      color: rgba(0,0,0,0.5);
+      transition: all 0.2s;
+      z-index: 10;
+    }
+    .panel-toggle:hover {
+      background: rgba(255,255,255,0.4);
+      transform: scale(1.1);
+    }
+    
+    /* Profile Search */
+    .profile-search-container {
+      position: relative;
+    }
+    .profile-search-input {
+      width: 100%;
+      padding: 10px 40px 10px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .profile-search-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .search-clear-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .search-clear-btn:hover {
+      color: #6b7280;
+    }
+    
+    /* Category Tabs */
+    .category-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .category-tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+    .category-tab.frame { background: #dbeafe; color: #1e40af; }
+    .category-tab.frame.active { border-color: #1e40af; }
+    .category-tab.fixed-vent { background: #dcfce7; color: #166534; }
+    .category-tab.fixed-vent.active { border-color: #166534; }
+    .category-tab.operable-vent { background: #fef3c7; color: #92400e; }
+    .category-tab.operable-vent.active { border-color: #92400e; }
+    .category-tab.other { background: #f3e8ff; color: #7c3aed; }
+    .category-tab.other.active { border-color: #7c3aed; }
+    
+    /* Table Styles */
+    .data-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .data-table th {
+      padding: 12px 16px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      background: #f9fafb;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .data-table th:first-child {
+      text-align: left;
+    }
+    .data-table td {
+      padding: 12px 16px;
+      text-align: center;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table td:first-child {
+      text-align: left;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    
+    /* Modern Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      width: 56px;
+      height: 28px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #e5e7eb;
+      transition: .3s;
+      border-radius: 28px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    input:checked + .toggle-slider {
+      background-color: #f59e0b;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(28px);
+    }
+    
+    /* Button Styles */
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    }
+  </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-50 min-h-screen">
   <%- include('../partials/_header.ejs') %>
-  <div class="container mx-auto py-8">
-    <h1 class="text-3xl font-bold mb-6 text-center">Edit Window System</h1>
-    <div class="bg-white shadow-md rounded-lg p-6">
-      <form id="window-form" action="/admin/edit/<%= windowSystem._id %>" method="POST" enctype="multipart/form-data">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <label for="type" class="block text-gray-700 font-bold mb-2">Window Type:</label>
-            <input type="text" id="type" name="type" value="<%= windowSystem.type %>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+  
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    
+    <!-- Page Header -->
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-2">
+        <a href="/admin/list-window-systems" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Edit Window System</h1>
+      </div>
+      <p class="text-gray-500">Editing: <span class="font-semibold text-gray-700"><%= windowSystem.type %></span></p>
+    </div>
+    
+    <!-- Step Navigation with Save Button -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="step-nav" style="margin-bottom: 0;">
+        <div class="step-item active" data-step="1" onclick="goToStep(1)">
+          <span class="step-number">1</span>
+          <span>Configuration</span>
+        </div>
+        <div class="step-item" data-step="2" onclick="goToStep(2)">
+          <span class="step-number">2</span>
+          <span>Profiles</span>
+        </div>
+        <div class="step-item" data-step="3" onclick="goToStep(3)">
+          <span class="step-number">3</span>
+          <span>Accessories</span>
+        </div>
+        <div class="step-item" data-step="4" onclick="goToStep(4)">
+          <span class="step-number">4</span>
+          <span>Muntins</span>
+        </div>
+      </div>
+      <button type="button" onclick="saveAndExit()" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg shadow-green-500/30 transition-all flex items-center gap-2">
+        <i class="fas fa-save"></i>
+        Save & Exit
+      </button>
+    </div>
+    
+    <!-- Main Form -->
+    <form id="window-form" action="/admin/edit/<%= windowSystem._id %>" method="POST">
+      
+      <!-- Step 1: Basic Configuration & Panel Preview -->
+      <div id="step1-section" class="form-section active">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          
+          <!-- Window Type Name -->
+          <div class="p-6 border-b border-gray-100">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-tag text-blue-500 mr-2"></i>Window Type Name
+            </label>
+            <input type="text" id="type" name="type" value="<%= windowSystem.type %>" 
+                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg font-medium">
           </div>
           
-          <!-- Window System Image -->
-          <div>
-            <label class="block text-gray-700 font-bold mb-2">Window System Image:</label>
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-              <% if (windowSystem.image) { %>
-                <div class="mb-4">
-                  <img src="<%= windowSystem.image %>" 
-                       alt="<%= windowSystem.type %>" 
-                       class="max-w-full h-32 object-contain mx-auto rounded border">
-                </div>
-                <p class="text-sm text-gray-600 mb-2">Current image</p>
-                <button type="button" onclick="removeCurrentImage()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
-                  Remove Image
-                </button>
-              <% } else { %>
-                <div id="imagePreview" class="hidden mb-4">
-                  <img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded border">
-                </div>
-                <div id="uploadArea" class="cursor-pointer">
-                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <p class="mt-1 text-sm text-gray-600">Click to upload or drag and drop</p>
-                  <p class="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
-                </div>
-                <input type="file" id="windowImage" name="windowImage" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
-              <% } %>
-            </div>
-            <p class="text-xs text-gray-500 mt-2">This image will be used consistently across all quotes for this window system.</p>
-          </div>
-        </div>
-
-        <!-- Profiles Section -->
-        <div id="profiles-section" class="mb-8">
-          <h2 class="text-xl font-bold text-gray-700 mb-4">Profiles Configuration</h2>
-          <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
-            <div class="md:col-span-2">
-              <label class="block text-gray-700 font-medium mb-1">Profile Type:</label>
-            <select id="profile-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <option value="">Select Profile</option>
-              <% profiles.forEach(profile => { %>
-                <option value="<%= profile._id %>"><%= profile.name %></option>
-              <% }); %>
-            </select>
-            </div>
-            <div>
-              <label class="block text-gray-700 font-medium mb-1">Quantity:</label>
-              <input type="number" id="profile-quantity" placeholder="Qty" min="1" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            </div>
-            <div>
-              <label class="block text-gray-700 font-medium mb-1">Orientation:</label>
-              <select id="profile-orientation" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <option value="" disabled selected>Select</option>
-              <option value="horizontal">Horizontal</option>
-              <option value="vertical">Vertical</option>
-            </select>
-            </div>
-            <div>
-              <label class="block text-gray-700 font-medium mb-1">Length Discount:</label>
-              <input type="number" id="profile-length-discount" placeholder="0.0" step="0.01" min="0" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            </div>
-            <div>
-              <label class="block text-gray-700 font-medium mb-1">User Configurable:</label>
-              <div class="flex items-center mt-2">
-                <input type="checkbox" id="profile-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                <label for="profile-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+            
+            <!-- Left: Configuration Options -->
+            <div class="space-y-6">
+              
+              <!-- Operation Type -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-cog text-blue-500 mr-2"></i>Operation Type
+                </label>
+                <select id="operationType" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors" onchange="updateOperationType()">
+                  <option value="sliding">Sliding / Roller</option>
+                  <option value="casement">Casement</option>
+                  <option value="awning">Awning</option>
+                  <option value="hopper">Hopper</option>
+                  <option value="fixed">Fixed</option>
+                  <option value="single-hung">Single Hung</option>
+                  <option value="double-hung">Double Hung</option>
+                  <option value="tilt-turn">Tilt & Turn</option>
+                  <option value="french-door">French Door</option>
+                </select>
               </div>
-              <p class="text-xs text-gray-500 mt-1">Allow users to modify this profile</p>
-            </div>
-            <div class="flex items-end">
-              <button type="button" onclick="addProfileEntry()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200 w-full">
-                Add Profile
-              </button>
-            </div>
-          </div>
-
-          <!-- Table to display added profiles -->
-          <div class="mt-6">
-            <h3 class="text-lg font-bold text-gray-700 mb-4">Added Profiles</h3>
-            <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
-              <thead>
-                <tr>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Profile</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Orientation</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Length Discount</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">User Config</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody id="profiles-table-body">
-                <!-- Rows will be dynamically added here -->
-              </tbody>
-            </table>
-            <div id="profiles-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
-              No profiles added yet. Add at least one profile to continue.
-            </div>
-          </div>
-        </div>
-
-        <!-- Thicker Dark Blue Divider -->
-        <hr class="my-10 border-t-4 border-blue-800">
-
-        <!-- Accessories Section -->
-        <div id="accessories-section" class="mb-8">
-          <h2 class="text-xl font-bold text-gray-700 mb-4">Accessories Configuration</h2>
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
-            <div class="md:col-span-2">
-              <label class="block text-gray-700 font-medium mb-1">Accessory Type:</label>
-            <select id="accessory-id" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <option value="">Select Accessory</option>
-              <% accessories.forEach(accessory => { %>
-                <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
-              <% }); %>
-            </select>
-            </div>
-            <div>
-              <label class="block text-gray-700 font-medium mb-1">Quantity:</label>
-              <input type="number" id="accessory-quantity" placeholder="Qty" min="1" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            </div>
-            <div>
-              <label class="block text-gray-700 font-medium mb-1">Unit:</label>
-              <input type="text" id="accessory-unit" placeholder="Unit" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none" readonly>
-            </div>
-            <div>
-              <label class="block text-gray-700 font-medium mb-1">User Configurable:</label>
-              <div class="flex items-center mt-2">
-                <input type="checkbox" id="accessory-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                <label for="accessory-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
+              
+              <!-- Number of Panels -->
+              <div id="panelCountSection">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-columns text-blue-500 mr-2"></i>Number of Panels
+                </label>
+                <select id="panelCount" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors" onchange="updatePanelCount()">
+                  <option value="2">2 Panels</option>
+                  <option value="3">3 Panels</option>
+                  <option value="4">4 Panels</option>
+                  <option value="5">5 Panels</option>
+                  <option value="6">6 Panels</option>
+                </select>
               </div>
-              <p class="text-xs text-gray-500 mt-1">Allow users to modify this accessory</p>
+              
+              <!-- Panel Orientation -->
+              <div id="orientationSection">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-arrows-alt text-blue-500 mr-2"></i>Panel Orientation
+                </label>
+                <select id="panelOrientation" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors" onchange="updatePanelPreview()">
+                  <option value="horizontal">Horizontal</option>
+                  <option value="vertical">Vertical</option>
+                </select>
+              </div>
+              
+              <!-- Panel Configuration -->
+              <div id="panelConfigSection">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-th-large text-blue-500 mr-2"></i>Panel Configuration
+                </label>
+                <p class="text-xs text-gray-500 mb-3">Click panels in preview or buttons below to toggle: <strong>X</strong> = Operable, <strong>O</strong> = Fixed</p>
+                <div id="panelButtons" class="flex flex-wrap gap-2">
+                  <!-- Buttons generated dynamically -->
+                </div>
+              </div>
+              
+              <!-- Show Logo Toggle -->
+              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div>
+                  <label class="text-sm font-semibold text-gray-700">Show VITRALUX Logo</label>
+                  <p class="text-xs text-gray-500">Display logo watermark on glass</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="showLogo" checked onchange="updatePanelPreview()">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              
+              <!-- French Door Options (hidden by default) -->
+              <div id="frenchDoorConfig" style="display: none;" class="space-y-4 p-4 bg-pink-50 rounded-xl border border-pink-200">
+                <h4 class="font-semibold text-pink-800"><i class="fas fa-door-open mr-2"></i>French Door Options</h4>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm text-gray-700 mb-1">Door Type</label>
+                    <select id="frenchDoorType" class="w-full px-3 py-2 border rounded-lg" onchange="updatePanelPreview()">
+                      <option value="double">Double Door</option>
+                      <option value="single">Single Door</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm text-gray-700 mb-1">Hinge Side</label>
+                    <select id="frenchHingeSide" class="w-full px-3 py-2 border rounded-lg" onchange="updatePanelPreview()">
+                      <option value="left">Left</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm text-gray-700 mb-1">Left Sidelites</label>
+                    <input type="number" id="leftSidelites" min="0" max="4" value="0" class="w-full px-3 py-2 border rounded-lg" onchange="updatePanelPreview()">
+                  </div>
+                  <div>
+                    <label class="block text-sm text-gray-700 mb-1">Right Sidelites</label>
+                    <input type="number" id="rightSidelites" min="0" max="4" value="0" class="w-full px-3 py-2 border rounded-lg" onchange="updatePanelPreview()">
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm text-gray-700 mb-1">Transom</label>
+                  <select id="frenchTransom" class="w-full px-3 py-2 border rounded-lg" onchange="updatePanelPreview()">
+                    <option value="none">None</option>
+                    <option value="full">Full Width</option>
+                    <option value="over-door">Over Door Only</option>
+                  </select>
+                </div>
+              </div>
+              
             </div>
             
-            <!-- Advanced Configuration (only show when user configurable is checked) -->
-            <div id="accessory-advanced-config" class="md:col-span-5 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200" style="display: none;">
-              <div>
-                <label for="accessory-component-group-select" class="block text-gray-700 font-medium mb-1">Component Group:</label>
-                <select id="accessory-component-group-select" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" onchange="toggleCustomGroupInput()">
-                  <option value="">Select a group...</option>
-                  <% componentGroups.forEach(group => { %>
-                    <option value="<%= group.name %>"><%= group.displayName %></option>
-                  <% }); %>
-                  <option value="custom">Custom (Type your own)</option>
-                </select>
-                <input type="text" id="accessory-component-group-custom" placeholder="Enter custom group name" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 mt-2" style="display: none;">
-                <input type="hidden" id="accessory-component-group" value="">
-                <p class="text-xs text-gray-500 mt-1">Group related components together for user selection</p>
-              </div>
-              
-              <div>
-                <label for="accessory-selection-type" class="block text-gray-700 font-medium mb-1">Selection Type:</label>
-                <select id="accessory-selection-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
-                  <option value="quantity">Quantity (Default)</option>
-                  <option value="single">Single Choice</option>
-                  <option value="multiple">Multiple Choice</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">How users can select this component</p>
-              </div>
-              
-              <div>
-                <label for="accessory-is-default" class="block text-gray-700 font-medium mb-1">Default Choice:</label>
-                <div class="flex items-center mt-2">
-                  <input type="checkbox" id="accessory-is-default" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                  <label for="accessory-is-default" class="ml-2 text-sm text-gray-700">Default selection</label>
+            <!-- Right: Live Preview -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                <i class="fas fa-eye text-blue-500 mr-2"></i>Live Preview
+              </label>
+              <div class="bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl p-6 flex items-center justify-center min-h-[300px]">
+                <div id="panelPreviewContainer" class="preview-frame" style="width: 280px;">
+                  <div id="panelPreview" class="preview-glass" style="display: flex; min-height: 200px;">
+                    <!-- Preview panels rendered here -->
+                  </div>
                 </div>
-                <p class="text-xs text-gray-500 mt-1">Pre-select this in choice groups</p>
+              </div>
+              <p class="text-xs text-gray-500 mt-3 text-center">Click on panels to toggle between Operable (X) and Fixed (O)</p>
+            </div>
+            
+          </div>
+          
+        </div>
+        
+        <!-- Step Navigation -->
+        <div class="mt-6 flex justify-end">
+          <button type="button" onclick="goToStep(2)" class="btn-primary">
+            Next: Profiles <i class="fas fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Step 2: Profiles -->
+      <div id="step2-section" class="form-section">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          
+          <div class="p-6 border-b border-gray-100">
+            <h2 class="text-xl font-bold text-gray-900">
+              <i class="fas fa-layer-group text-blue-500 mr-2"></i>Profiles Configuration
+            </h2>
+            <p class="text-gray-500 text-sm mt-1">Add aluminum profiles for this window system</p>
+          </div>
+          
+          <!-- Profile Search -->
+          <div class="p-6 bg-gray-50 border-b border-gray-100">
+            <div class="profile-search-container mb-4">
+              <input type="text" id="profileSearch" placeholder="Search profiles by name or color..." class="profile-search-input" oninput="filterProfiles()">
+              <span class="search-clear-btn" onclick="clearProfileSearch()"><i class="fas fa-times"></i></span>
+            </div>
+            <p class="text-xs text-gray-500" id="profileSearchCount"></p>
+          </div>
+          
+          <!-- Add Profile Form -->
+          <div class="p-6 border-b border-gray-100">
+            <div class="category-tabs mb-4">
+              <span class="text-sm text-gray-600 mr-2">Category:</span>
+              <button type="button" class="category-tab frame active" onclick="setProfileCategory('frame')">
+                <i class="fas fa-border-all mr-1"></i>Frame
+              </button>
+              <button type="button" class="category-tab fixed-vent" onclick="setProfileCategory('fixed-vent')">
+                <i class="fas fa-square mr-1"></i>Fixed Vent
+              </button>
+              <button type="button" class="category-tab operable-vent" onclick="setProfileCategory('operable-vent')">
+                <i class="fas fa-arrows-alt-h mr-1"></i>Operable Vent
+              </button>
+              <button type="button" class="category-tab other" onclick="setProfileCategory('other')">
+                <i class="fas fa-ellipsis-h mr-1"></i>Other
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Profile</label>
+                <select id="profile-id" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                  <option value="">Select Profile</option>
+                  <% profiles.forEach(profile => { %>
+                    <option value="<%= profile._id %>" data-name="<%= profile.name %>" data-color="<%= profile.color || '' %>">
+                      <%= profile.name %>
+                    </option>
+                  <% }); %>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                <input type="number" id="profile-quantity" min="1" value="1" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Orientation</label>
+                <select id="profile-orientation" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                  <option value="horizontal">Horizontal</option>
+                  <option value="vertical">Vertical</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Length Discount</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="profile-length-discount" step="0.01" value="0" class="w-24 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                  <select id="profile-length-unit" class="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" onchange="onUnitChange()">
+                    <option value="in">in.</option>
+                    <option value="mm">mm</option>
+                  </select>
+                </div>
+                <p class="text-xs mt-1" id="unit-lock-message"></p>
               </div>
             </div>
-            <div class="flex items-end">
-              <button type="button" onclick="addAccessoryEntry()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200 w-full">
-                Add Accessory
+            
+            <div class="mt-4 flex justify-end">
+              <button type="button" onclick="addProfileEntry()" class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors">
+                <i class="fas fa-plus mr-2"></i>Add Profile
               </button>
             </div>
           </div>
-
-          <!-- Table to display added accessories -->
-          <div class="mt-6">
-            <h3 class="text-lg font-bold text-gray-700 mb-4">Added Accessories</h3>
-            <table class="min-w-full bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+          
+          <!-- Added Profiles Table -->
+          <div class="p-6">
+            <h3 class="font-semibold text-gray-700 mb-4">Added Profiles</h3>
+            <div id="profiles-table-container">
+              <!-- Tables rendered by category -->
+            </div>
+            <div id="profiles-empty-state" class="text-center py-8 text-gray-400">
+              <i class="fas fa-layer-group text-4xl mb-3"></i>
+              <p>No profiles added yet</p>
+            </div>
+          </div>
+          
+        </div>
+        
+        <!-- Step Navigation -->
+        <div class="mt-6 flex justify-between">
+          <button type="button" onclick="goToStep(1)" class="btn-secondary">
+            <i class="fas fa-arrow-left mr-2"></i>Previous
+          </button>
+          <button type="button" onclick="goToStep(3)" class="btn-primary">
+            Next: Accessories <i class="fas fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Step 3: Accessories -->
+      <div id="step3-section" class="form-section">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          
+          <div class="p-6 border-b border-gray-100">
+            <h2 class="text-xl font-bold text-gray-900">
+              <i class="fas fa-tools text-blue-500 mr-2"></i>Accessories Configuration
+            </h2>
+            <p class="text-gray-500 text-sm mt-1">Add accessories for this window system</p>
+          </div>
+          
+          <!-- Add Accessory Form -->
+          <div class="p-6 border-b border-gray-100">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Accessory</label>
+                <select id="accessory-id" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" onchange="updateAccessoryUnit()">
+                  <option value="">Select Accessory</option>
+                  <% accessories.forEach(accessory => { %>
+                    <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
+                  <% }); %>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                <input type="number" id="accessory-quantity" min="1" value="1" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                <input type="text" id="accessory-unit" readonly class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg bg-gray-50">
+              </div>
+            </div>
+            
+            <div class="mt-4 flex justify-end">
+              <button type="button" onclick="addAccessoryEntry()" class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors">
+                <i class="fas fa-plus mr-2"></i>Add Accessory
+              </button>
+            </div>
+          </div>
+          
+          <!-- Added Accessories Table -->
+          <div class="p-6">
+            <h3 class="font-semibold text-gray-700 mb-4">Added Accessories</h3>
+            <table class="data-table" id="accessories-table" style="display: none;">
               <thead>
                 <tr>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Accessory</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Quantity</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Unit</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">User Config</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Choice Group</th>
-                  <th class="py-3 px-4 bg-gray-100 text-left text-gray-600 font-medium">Action</th>
+                  <th>Accessory</th>
+                  <th>Quantity</th>
+                  <th>Unit</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="accessories-table-body">
-                <!-- Rows will be dynamically added here -->
               </tbody>
             </table>
-            <div id="accessories-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
-              No accessories added yet. Add accessories to complete the window system.
+            <div id="accessories-empty-state" class="text-center py-8 text-gray-400" style="display: block;">
+              <i class="fas fa-tools text-4xl mb-3"></i>
+              <p>No accessories added yet</p>
             </div>
-          </div>
-        </div>
-
-        <!-- Thicker Dark Blue Divider -->
-        <hr class="my-10 border-t-4 border-blue-800">
-
-        <!-- Muntin Configuration Section -->
-        <div class="mb-8">
-          <h2 class="text-lg font-bold text-gray-700 mb-4">Muntin Configuration</h2>
-          <div class="bg-blue-50 p-4 rounded-lg mb-6">
-            <p class="text-sm text-blue-800">
-              <i class="fas fa-info-circle mr-2"></i>
-              Configure ornamental muntins for this window system. Muntins are decorative dividers that create multiple panes within a single glass unit.
-            </p>
           </div>
           
-          <div class="p-6 bg-gray-50 rounded-lg shadow-sm mb-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        </div>
+        
+        <!-- Step Navigation -->
+        <div class="mt-6 flex justify-between">
+          <button type="button" onclick="goToStep(2)" class="btn-secondary">
+            <i class="fas fa-arrow-left mr-2"></i>Previous
+          </button>
+          <button type="button" onclick="goToStep(4)" class="btn-primary">
+            Next: Muntins <i class="fas fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Step 4: Muntins -->
+      <div id="step4-section" class="form-section">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          
+          <!-- Final Step Banner -->
+          <div class="p-4 bg-gradient-to-r from-green-500 to-emerald-600">
+            <div class="flex items-center text-white">
+              <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-4">
+                <i class="fas fa-flag-checkered text-xl"></i>
+              </div>
               <div>
-                <label for="muntin-enabled" class="block text-gray-700 font-medium mb-2">Enable Muntins:</label>
-                <div class="flex items-center">
-                  <input type="checkbox" id="muntin-enabled" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="toggleMuntinConfiguration()">
-                  <label for="muntin-enabled" class="ml-2 text-sm text-gray-700">Include muntins in this window system</label>
+                <h3 class="font-bold text-lg">Final Step!</h3>
+                <p class="text-green-100 text-sm">Configure muntins and save your changes</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Muntin Toggle -->
+          <div class="p-6 border-b border-gray-100">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mr-4">
+                  <i class="fas fa-th text-amber-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-800">Decorative Muntins</h3>
+                  <p class="text-sm text-gray-500">Add grid dividers to create multiple pane appearance</p>
                 </div>
               </div>
-              
-              <div id="muntin-config" style="display: none;">
-                <label for="muntin-profile" class="block text-gray-700 font-medium mb-2">Muntin Profile:</label>
-                <select id="muntin-profile" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
-                  <option value="">Select Muntin Profile</option>
-                  <% profiles.forEach(profile => { %>
-                    <% if (profile.isMuntin) { %>
-                      <option value="<%= profile._id %>" data-type="<%= profile.muntinType %>" data-pattern="<%= profile.muntinPattern %>">
-                        <%= profile.name %> - <%= profile.muntinType.charAt(0).toUpperCase() + profile.muntinType.slice(1) %>
-                      </option>
-                    <% } %>
-                  <% }); %>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">Select the muntin profile from available options</p>
-              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="muntin-enabled" onchange="toggleMuntinConfiguration()">
+                <span class="toggle-slider"></span>
+              </label>
             </div>
-            
-            <div id="muntin-details" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6" style="display: none;">
-              <div>
-                <label for="muntin-type" class="block text-gray-700 font-medium mb-2">Muntin Type:</label>
-                <select id="muntin-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
-                  <option value="colonial">Colonial</option>
-                  <option value="geometric">Geometric</option>
-                  <option value="custom">Custom</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">Style of muntin pattern</p>
-              </div>
-              
-
-              
-
-              
-
-              
-              <div>
-                <label for="muntin-show-to-user" class="block text-gray-700 font-medium mb-2">User Configurable:</label>
+          </div>
+          
+          <!-- Muntin Config (hidden by default) -->
+          <div id="muntin-config-section" style="display: none;">
+            <div class="p-6 bg-gray-50 border-b border-gray-100">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-layer-group text-amber-500 mr-2"></i>Muntin Profile
+                  </label>
+                  <select id="muntin-profile" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-amber-500 focus:outline-none">
+                    <option value="">Select Muntin Profile</option>
+                    <% profiles.forEach(profile => { %>
+                      <% if (profile.isMuntin) { %>
+                        <option value="<%= profile._id %>"><%= profile.name %></option>
+                      <% } %>
+                    <% }); %>
+                  </select>
+                </div>
                 <div class="flex items-center">
-                  <input type="checkbox" id="muntin-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                  <label for="muntin-show-to-user" class="ml-2 text-sm text-gray-700">Allow users to modify muntin settings</label>
+                  <div class="p-4 bg-white rounded-xl border-2 border-dashed border-amber-200 w-full">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="checkbox" id="muntin-show-to-user" class="h-5 w-5 text-amber-600 rounded">
+                      <div class="ml-3">
+                        <span class="text-sm font-medium text-gray-700">User Configurable</span>
+                        <p class="text-xs text-gray-500">Users can customize divisions when quoting</p>
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
-              
             </div>
             
-            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-              <strong>Note:</strong> Users will be able to configure the number of horizontal/vertical divisions and spacing when quoting windows with this system.
-            </div>
-            
-            <div id="muntin-preview" class="mt-6 p-4 bg-white border border-gray-200 rounded-lg" style="display: none;">
-              <h4 class="text-sm font-medium text-gray-700 mb-2">Muntin Preview:</h4>
-              <div id="muntin-preview-grid" class="w-32 h-32 border-2 border-gray-300 mx-auto bg-blue-50 relative">
-                <!-- Preview grid will be generated here -->
+            <!-- Muntin Preview -->
+            <div class="p-6">
+              <div class="flex flex-col md:flex-row gap-6 items-center justify-center">
+                <div class="text-center">
+                  <p class="text-sm font-medium text-gray-600 mb-3"><i class="fas fa-eye text-amber-500 mr-1"></i> Preview</p>
+                  <div class="p-2 rounded-lg shadow-xl" style="background: linear-gradient(145deg, #707070, #505050);">
+                    <div class="w-40 h-40 relative overflow-hidden rounded" style="background: linear-gradient(180deg, rgba(186,230,253,0.8) 0%, rgba(147,197,253,0.6) 50%, rgba(186,230,253,0.7) 100%);">
+                      <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="grid grid-cols-2 gap-0 w-full h-full">
+                          <div class="border-r-2 border-b-2" style="border-color: #606060;"></div>
+                          <div class="border-b-2" style="border-color: #606060;"></div>
+                          <div class="border-r-2" style="border-color: #606060;"></div>
+                          <div></div>
+                        </div>
+                      </div>
+                      <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%);"></div>
+                    </div>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-3">2×2 Grid Pattern</p>
+                </div>
+                
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-sm">
+                  <div class="flex items-start">
+                    <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                      <i class="fas fa-lightbulb text-amber-600"></i>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-semibold text-amber-800 mb-1">How it works</h4>
+                      <p class="text-xs text-amber-700">Users can set the number of horizontal and vertical divisions when quoting.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p class="text-xs text-gray-500 mt-2 text-center" id="muntin-preview-text">1x1 Colonial Grid</p>
             </div>
           </div>
-        </div>
-
-        <!-- Thicker Dark Blue Divider -->
-        <hr class="my-10 border-t-4 border-blue-800">
-
-        <!-- Glass Restrictions Section -->
-        <div class="mb-8">
-          <h2 class="text-lg font-bold text-gray-700 mb-4">Glass Restrictions</h2>
-          <div id="glass-restrictions-container">
-            <div class="glass-restriction-entry mb-4 p-4 bg-gray-50 rounded-lg shadow-inner">
-              <label class="block text-gray-700 font-bold mb-1">Glass Type:</label>
-              <select id="glass-type" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-              </select>
-              <label class="block text-gray-700 font-bold mb-1">Width (inches):</label>
-              <input type="number" id="glass-width" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <label class="block text-gray-700 font-bold mb-1">Height (inches):</label>
-              <input type="number" id="glass-height" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <label class="block text-gray-700 font-bold mb-1">Positive Pressure (EXT+):</label>
-              <input type="number" id="glass-positive-pressure" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <label class="block text-gray-700 font-bold mb-1">Negative Pressure (EXT):</label>
-              <input type="number" id="glass-negative-pressure" class="form-control mb-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-              <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded mt-4" onclick="addGlassRestriction()">Add Glass Restriction</button>
+          
+          <!-- Disabled State -->
+          <div id="muntin-disabled-message" class="p-8 text-center">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-th-large text-gray-400 text-2xl"></i>
             </div>
+            <h4 class="text-gray-600 font-medium mb-2">No Muntins</h4>
+            <p class="text-sm text-gray-500 max-w-md mx-auto">Toggle the switch above to add decorative muntin grids.</p>
           </div>
-
-          <!-- Table to display added glass restrictions -->
-          <div class="mt-6">
-            <h3 class="text-lg font-bold text-gray-700 mb-4">Added Glass Restrictions</h3>
-            <table class="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th class="py-2 px-4 bg-gray-200">Type</th>
-                  <th class="py-2 px-4 bg-gray-200">Width (inches)</th>
-                  <th class="py-2 px-4 bg-gray-200">Height (inches)</th>
-                  <th class="py-2 px-4 bg-gray-200">Positive Pressure (EXT+)</th>
-                  <th class="py-2 px-4 bg-gray-200">Negative Pressure (EXT)</th>
-                  <th class="py-2 px-4 bg-gray-200">Action</th>
-                </tr>
-              </thead>
-              <tbody id="glass-restrictions-table-body">
-                <!-- Rows will be dynamically added here -->
-              </tbody>
-            </table>
-          </div>
+          
         </div>
-
-        <!-- Submit Button -->
-        <div class="mt-4 flex justify-end">
-          <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">Update</button>
+        
+        <!-- Final Actions -->
+        <div class="mt-6 flex justify-between items-center">
+          <button type="button" onclick="goToStep(3)" class="btn-secondary">
+            <i class="fas fa-arrow-left mr-2"></i>Previous
+          </button>
+          <button type="submit" class="btn-success text-lg px-8">
+            <i class="fas fa-save mr-2"></i>Save Changes
+          </button>
         </div>
-      </form>
-      <a href="/admin" class="bg-gray-500 text-white px-4 py-2 rounded mt-4 inline-block">Back to Admin Console</a>
+      </div>
+      
+    </form>
+    
+    <!-- Back Link -->
+    <div class="mt-8 text-center">
+      <a href="/admin/list-window-systems" class="text-gray-500 hover:text-gray-700">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Window Systems
+      </a>
     </div>
+    
   </div>
+
   <%- include('../partials/_footer.ejs') %>
 
   <script type="application/json" id="window-system-data">
     <%- JSON.stringify(windowSystem) %>
   </script>
+  
   <script>
-    // Initialize data from server
+    // Load existing data
     const windowSystemData = JSON.parse(document.getElementById('window-system-data').textContent);
     
-    let profiles = windowSystemData.profiles.map(profile => ({
-      profileId: profile.profile._id,
-      profileName: profile.profile.name,
-      quantity: profile.quantity,
-      orientation: profile.orientation,
-      lengthDiscount: profile.lengthDiscount,
-      showToUser: profile.showToUser || false,
-    }));
-
-    let accessories = windowSystemData.accessories.map(accessory => ({
-      accessoryId: accessory.accessory._id,
-      accessoryName: accessory.accessory.name,
-      quantity: accessory.quantity,
-      unit: accessory.unit,
-      showToUser: accessory.showToUser || false,
-      componentGroup: accessory.componentGroup || null,
-      selectionType: accessory.selectionType || 'quantity',
-      isDefault: accessory.isDefault || false,
-    }));
-
-    let glassRestrictions = windowSystemData.glassRestrictions.map(glass => ({
-      type: glass.type,
-      width: glass.width,
-      height: glass.height,
-      positivePressure: glass.positivePressure,
-      negativePressure: glass.negativePressure,
-    }));
-
-    // Initialize muntin configuration
+    // Panel configuration
+    let panelConfig = windowSystemData.panelConfiguration?.panels || ['O', 'O'];
+    let panelRatios = windowSystemData.panelConfiguration?.panelRatios || panelConfig.map(() => 1);
+    let showLogo = windowSystemData.panelConfiguration?.showLogo !== false;
+    let currentCategory = 'frame';
+    
+    // Profiles and Accessories
+    let profiles = (windowSystemData.profiles || [])
+      .filter(p => p && p.profile) // Filter out invalid entries
+      .map(p => ({
+        profileId: p.profile?._id || p.profile,
+        profileName: p.profile?.name || 'Unknown',
+        quantity: p.quantity || 1,
+        orientation: p.orientation || 'horizontal',
+        lengthDiscount: p.lengthDiscount || 0,
+        lengthDiscountDisplay: p.lengthDiscountDisplay || String(p.lengthDiscount || 0),
+        lengthUnit: p.lengthUnit || 'in',
+        category: p.category || 'frame'
+      }));
+    
+    console.log('Loaded profiles:', profiles);
+    
+    // Track locked unit from existing profiles
+    let lockedLengthUnit = profiles.length > 0 ? (profiles[0].lengthUnit || 'in') : null;
+    
+    let accessoriesData = (windowSystemData.accessories || [])
+      .filter(a => a && a.accessory) // Filter out invalid entries
+      .map(a => ({
+        accessoryId: a.accessory?._id || a.accessory,
+        accessoryName: a.accessory?.name || 'Unknown',
+        quantity: a.quantity || 1,
+        unit: a.unit || 'unit'
+      }));
+    
+    // Use different variable name to avoid conflict with EJS accessories variable
+    let accessories = accessoriesData;
+    
+    console.log('Loaded accessories:', accessories);
+    
+    // Muntin configuration
     let muntinConfiguration = {
-      enabled: windowSystemData.muntinConfiguration ? windowSystemData.muntinConfiguration.enabled : false,
-      muntinProfile: windowSystemData.muntinConfiguration ? windowSystemData.muntinConfiguration.muntinProfile : null,
-      muntinType: windowSystemData.muntinConfiguration ? windowSystemData.muntinConfiguration.muntinType : 'colonial',
-      showToUser: windowSystemData.muntinConfiguration ? windowSystemData.muntinConfiguration.showToUser : true,
+      enabled: windowSystemData.muntinConfiguration?.enabled || false,
+      muntinProfile: windowSystemData.muntinConfiguration?.muntinProfile || null,
+      showToUser: windowSystemData.muntinConfiguration?.showToUser || true
     };
+    
+    // Step Navigation
+    function goToStep(step) {
+      document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.step-item').forEach(s => {
+        s.classList.remove('active');
+        if (parseInt(s.dataset.step) < step) {
+          s.classList.add('completed');
+        } else {
+          s.classList.remove('completed');
+        }
+      });
+      
+      document.getElementById(`step${step}-section`).classList.add('active');
+      document.querySelector(`.step-item[data-step="${step}"]`).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    // Save and Exit - submit form from any step
+    function saveAndExit() {
+      document.getElementById('window-form').requestSubmit();
+    }
+    
+    // Initialize values from existing data
+    function initializeFromData() {
+      try {
+        console.log('Initializing from data...');
+        const config = windowSystemData.panelConfiguration || {};
+        
+        // Set operation type
+        document.getElementById('operationType').value = config.operationType || 'sliding';
+        
+        // Set panel count
+        document.getElementById('panelCount').value = panelConfig.length;
+        
+        // Set orientation
+        document.getElementById('panelOrientation').value = config.orientation || 'horizontal';
+        
+        // Set show logo
+        document.getElementById('showLogo').checked = showLogo;
+        
+        // French door settings
+        if (config.operationType === 'french-door' && config.frenchDoor) {
+          document.getElementById('frenchDoorType').value = config.frenchDoor.doorType || 'double';
+          document.getElementById('frenchHingeSide').value = config.frenchDoor.hingeSide || 'right';
+          document.getElementById('leftSidelites').value = config.frenchDoor.leftSidelites || 0;
+          document.getElementById('rightSidelites').value = config.frenchDoor.rightSidelites || 0;
+          document.getElementById('frenchTransom').value = config.frenchDoor.transom || 'none';
+        }
+        
+        // Muntin settings
+        if (muntinConfiguration.enabled) {
+          document.getElementById('muntin-enabled').checked = true;
+          if (muntinConfiguration.muntinProfile) {
+            document.getElementById('muntin-profile').value = muntinConfiguration.muntinProfile;
+          }
+          document.getElementById('muntin-show-to-user').checked = muntinConfiguration.showToUser;
+          toggleMuntinConfiguration();
+        }
+        
+        // Set unit selector if there are existing profiles
+        if (lockedLengthUnit) {
+          setUnitSelector(lockedLengthUnit);
+        }
+        
+        console.log('Updating operation type...');
+        updateOperationType();
+        
+        console.log('Updating panel preview...');
+        updatePanelPreview();
+        
+        console.log('Rendering profiles table...');
+        renderProfilesTable();
+        
+        console.log('Rendering accessories table...');
+        renderAccessoriesTable();
+        
+        console.log('Initialization complete!');
+      } catch (error) {
+        console.error('Error initializing:', error);
+        alert('Error loading window system data: ' + error.message);
+      }
+    }
+    
+    // Set unit selector value
+    function setUnitSelector(unit) {
+      const unitSelect = document.getElementById('profile-length-unit');
+      unitSelect.value = unit;
+      lockedLengthUnit = unit;
+      updateUnitMessage();
+    }
 
+    // Update unit message
+    function updateUnitMessage() {
+      const unit = document.getElementById('profile-length-unit').value;
+      const msgEl = document.getElementById('unit-lock-message');
+      if (profiles.length > 0) {
+        msgEl.innerHTML = `<span class="text-blue-600"><i class="fas fa-info-circle mr-1"></i>Profiles displayed in ${unit === 'mm' ? 'mm' : 'inches'}</span>`;
+      } else {
+        msgEl.innerHTML = '';
+      }
+    }
+    
+    // When user changes unit dropdown
+    function onUnitChange() {
+      const newUnit = document.getElementById('profile-length-unit').value;
+      const oldUnit = lockedLengthUnit || 'in';
+      
+      if (profiles.length > 0 && newUnit !== oldUnit) {
+        // Convert all existing profiles to new unit
+        profiles.forEach(profile => {
+          const storedValue = parseFloat(profile.lengthDiscount);
+          
+          if (newUnit === 'mm') {
+            // Convert inches to mm for display
+            const mmValue = (storedValue * 25.4).toFixed(2);
+            profile.lengthDiscountDisplay = mmValue;
+          } else {
+            // Show stored inches value
+            profile.lengthDiscountDisplay = storedValue.toFixed(4);
+          }
+          profile.lengthUnit = newUnit;
+        });
+        
+        renderProfilesTable();
+      }
+      
+      lockedLengthUnit = newUnit;
+      updateUnitMessage();
+    }
+    
+    // Operation Type
+    function updateOperationType() {
+      const operationType = document.getElementById('operationType').value;
+      const frenchDoorConfig = document.getElementById('frenchDoorConfig');
+      const panelCountSection = document.getElementById('panelCountSection');
+      const panelConfigSection = document.getElementById('panelConfigSection');
+      const orientationSection = document.getElementById('orientationSection');
+      
+      if (operationType === 'french-door') {
+        frenchDoorConfig.style.display = 'block';
+        panelCountSection.style.display = 'none';
+        panelConfigSection.style.display = 'none';
+        orientationSection.style.display = 'none';
+      } else {
+        frenchDoorConfig.style.display = 'none';
+        panelCountSection.style.display = 'block';
+        panelConfigSection.style.display = 'block';
+        orientationSection.style.display = 'block';
+        
+        // Lock orientation for specific types
+        const orientationSelect = document.getElementById('panelOrientation');
+        if (operationType === 'sliding') {
+          orientationSelect.value = 'horizontal';
+          orientationSelect.disabled = true;
+        } else if (operationType === 'single-hung') {
+          orientationSelect.value = 'vertical';
+          orientationSelect.disabled = true;
+        } else {
+          orientationSelect.disabled = false;
+        }
+        
+        // Fixed windows can only have O panels
+        if (operationType === 'fixed') {
+          panelConfig = panelConfig.map(() => 'O');
+        }
+      }
+      
+      updatePanelPreview();
+    }
+    
+    // Panel Count
+    function updatePanelCount() {
+      const count = parseInt(document.getElementById('panelCount').value);
+      const operationType = document.getElementById('operationType').value;
+      
+      while (panelConfig.length < count) {
+        panelConfig.push('O');
+        panelRatios.push(1);
+      }
+      while (panelConfig.length > count) {
+        panelConfig.pop();
+        panelRatios.pop();
+      }
+      
+      if (operationType === 'fixed') {
+        panelConfig = panelConfig.map(() => 'O');
+      }
+      
+      updatePanelPreview();
+    }
+    
+    // Toggle Panel
+    function togglePanel(index) {
+      const operationType = document.getElementById('operationType').value;
+      if (operationType === 'fixed') return;
+      
+      panelConfig[index] = panelConfig[index] === 'O' ? 'X' : 'O';
+      updatePanelPreview();
+    }
+    
+    // Update Panel Preview
+    function updatePanelPreview() {
+      const operationType = document.getElementById('operationType').value;
+      const orientation = document.getElementById('panelOrientation').value;
+      const previewContainer = document.getElementById('panelPreview');
+      const buttonsContainer = document.getElementById('panelButtons');
+      showLogo = document.getElementById('showLogo').checked;
+      
+      if (operationType === 'french-door') {
+        renderFrenchDoorPreview();
+        buttonsContainer.innerHTML = '';
+        return;
+      }
+      
+      const isVertical = orientation === 'vertical';
+      previewContainer.style.flexDirection = isVertical ? 'column' : 'row';
+      previewContainer.innerHTML = '';
+      buttonsContainer.innerHTML = '';
+      
+      panelConfig.forEach((panel, idx) => {
+        // Create panel
+        const panelDiv = document.createElement('div');
+        panelDiv.className = 'preview-panel';
+        panelDiv.style.flex = panelRatios[idx] || 1;
+        panelDiv.style.cursor = 'pointer';
+        panelDiv.onclick = () => togglePanel(idx);
+        
+        const label = document.createElement('span');
+        label.className = `panel-label ${panel === 'X' ? 'operable' : ''}`;
+        label.textContent = panel;
+        panelDiv.appendChild(label);
+        
+        // Add logo
+        if (showLogo) {
+          const logo = document.createElement('div');
+          logo.className = 'glass-logo';
+          logo.textContent = 'VITRALUX';
+          panelDiv.appendChild(logo);
+        }
+        
+        // Add visual elements based on operation type
+        if (panel === 'X') {
+          if (operationType === 'casement') {
+            // Hinges
+            const hingeTop = document.createElement('div');
+            hingeTop.style.cssText = 'position:absolute;left:2px;top:15%;width:6px;height:12px;background:linear-gradient(90deg,#505050,#808080,#505050);border-radius:2px;';
+            panelDiv.appendChild(hingeTop);
+            const hingeBottom = document.createElement('div');
+            hingeBottom.style.cssText = 'position:absolute;left:2px;bottom:15%;width:6px;height:12px;background:linear-gradient(90deg,#505050,#808080,#505050);border-radius:2px;';
+            panelDiv.appendChild(hingeBottom);
+            // Handle
+            const handle = document.createElement('div');
+            handle.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);width:4px;height:20px;background:linear-gradient(90deg,#606060,#a0a0a0,#606060);border-radius:2px;';
+            panelDiv.appendChild(handle);
+          } else if (operationType === 'sliding') {
+            // Handle on outer edge
+            const handleOnLeft = idx === 0;
+            const handle = document.createElement('div');
+            handle.style.cssText = `position:absolute;${handleOnLeft ? 'left' : 'right'}:6px;top:50%;transform:translateY(-50%);width:4px;height:24px;background:linear-gradient(90deg,#606060,#c0c0c0,#606060);border-radius:2px;box-shadow:1px 1px 3px rgba(0,0,0,0.3);`;
+            panelDiv.appendChild(handle);
+          } else if (operationType === 'single-hung') {
+            // Lift handle
+            const liftHandle = document.createElement('div');
+            liftHandle.style.cssText = 'position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:30px;height:6px;background:linear-gradient(180deg,#707070,#a0a0a0,#707070);border-radius:3px;';
+            panelDiv.appendChild(liftHandle);
+          }
+        }
+        
+        previewContainer.appendChild(panelDiv);
+        
+        // Add mullion between panels
+        if (idx < panelConfig.length - 1) {
+          const mullion = document.createElement('div');
+          mullion.className = isVertical ? 'preview-mullion-h' : 'preview-mullion';
+          mullion.style[isVertical ? 'height' : 'width'] = '6px';
+          previewContainer.appendChild(mullion);
+        }
+        
+        // Create button
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `px-4 py-2 rounded-lg font-medium transition-colors ${panel === 'X' ? 'bg-green-100 text-green-700 border-2 border-green-300' : 'bg-blue-100 text-blue-700 border-2 border-blue-300'}`;
+        btn.textContent = `Panel ${idx + 1}: ${panel}`;
+        btn.onclick = () => togglePanel(idx);
+        buttonsContainer.appendChild(btn);
+      });
+    }
+    
+    // French Door Preview
+    function renderFrenchDoorPreview() {
+      const previewContainer = document.getElementById('panelPreview');
+      const doorType = document.getElementById('frenchDoorType').value;
+      const hingeSide = document.getElementById('frenchHingeSide').value;
+      const leftSidelites = parseInt(document.getElementById('leftSidelites').value) || 0;
+      const rightSidelites = parseInt(document.getElementById('rightSidelites').value) || 0;
+      const transom = document.getElementById('frenchTransom').value;
+      
+      previewContainer.innerHTML = '';
+      previewContainer.style.flexDirection = 'column';
+      
+      // Transom
+      if (transom !== 'none') {
+        const transomDiv = document.createElement('div');
+        transomDiv.style.cssText = 'height:50px;display:flex;border-bottom:6px solid #707070;';
+        
+        if (transom === 'full' || leftSidelites > 0) {
+          for (let i = 0; i < leftSidelites; i++) {
+            const sideliteTransom = document.createElement('div');
+            sideliteTransom.style.cssText = 'flex:1;background:linear-gradient(180deg,rgba(186,230,253,0.8),rgba(147,197,253,0.6));border-right:4px solid #707070;';
+            transomDiv.appendChild(sideliteTransom);
+          }
+        }
+        
+        const doorTransom = document.createElement('div');
+        doorTransom.style.cssText = `flex:${doorType === 'double' ? 2 : 1};background:linear-gradient(180deg,rgba(186,230,253,0.8),rgba(147,197,253,0.6));`;
+        if (rightSidelites > 0 || (transom === 'full' && leftSidelites === 0 && rightSidelites === 0)) {
+          doorTransom.style.borderRight = '4px solid #707070';
+        }
+        transomDiv.appendChild(doorTransom);
+        
+        if (transom === 'full' || rightSidelites > 0) {
+          for (let i = 0; i < rightSidelites; i++) {
+            const sideliteTransom = document.createElement('div');
+            sideliteTransom.style.cssText = 'flex:1;background:linear-gradient(180deg,rgba(186,230,253,0.8),rgba(147,197,253,0.6));';
+            if (i < rightSidelites - 1) sideliteTransom.style.borderRight = '4px solid #707070';
+            transomDiv.appendChild(sideliteTransom);
+          }
+        }
+        
+        previewContainer.appendChild(transomDiv);
+      }
+      
+      // Main content
+      const mainContent = document.createElement('div');
+      mainContent.style.cssText = 'flex:1;display:flex;min-height:150px;';
+      
+      // Left sidelites
+      for (let i = 0; i < leftSidelites; i++) {
+        const sidelite = document.createElement('div');
+        sidelite.style.cssText = 'flex:1;background:linear-gradient(180deg,rgba(186,230,253,0.8),rgba(147,197,253,0.6));border-right:4px solid #707070;position:relative;';
+        if (showLogo) {
+          const logo = document.createElement('div');
+          logo.className = 'glass-logo';
+          logo.textContent = 'VITRALUX';
+          sidelite.appendChild(logo);
+        }
+        mainContent.appendChild(sidelite);
+      }
+      
+      // Door(s)
+      if (doorType === 'double') {
+        // Left door
+        const leftDoor = createDoorPanel('left', true);
+        mainContent.appendChild(leftDoor);
+        // Mullion
+        const mullion = document.createElement('div');
+        mullion.style.cssText = 'width:6px;background:linear-gradient(180deg,#606060,#909090,#606060);';
+        mainContent.appendChild(mullion);
+        // Right door
+        const rightDoor = createDoorPanel('right', true);
+        mainContent.appendChild(rightDoor);
+      } else {
+        const singleDoor = createDoorPanel(hingeSide, false);
+        mainContent.appendChild(singleDoor);
+      }
+      
+      // Right sidelites
+      for (let i = 0; i < rightSidelites; i++) {
+        const sidelite = document.createElement('div');
+        sidelite.style.cssText = 'flex:1;background:linear-gradient(180deg,rgba(186,230,253,0.8),rgba(147,197,253,0.6));border-left:4px solid #707070;position:relative;';
+        if (showLogo) {
+          const logo = document.createElement('div');
+          logo.className = 'glass-logo';
+          logo.textContent = 'VITRALUX';
+          sidelite.appendChild(logo);
+        }
+        mainContent.appendChild(sidelite);
+      }
+      
+      previewContainer.appendChild(mainContent);
+    }
+    
+    function createDoorPanel(hingeSide, isDouble) {
+      const door = document.createElement('div');
+      door.style.cssText = `flex:${isDouble ? 1 : 2};background:linear-gradient(180deg,rgba(186,230,253,0.8),rgba(147,197,253,0.6));position:relative;`;
+      
+      // Handle
+      const handleSide = hingeSide === 'left' ? 'right' : 'left';
+      const handle = document.createElement('div');
+      handle.style.cssText = `position:absolute;${handleSide}:12px;top:55%;width:8px;height:28px;background:linear-gradient(90deg,#505050,#909090,#505050);border-radius:4px;box-shadow:2px 2px 4px rgba(0,0,0,0.3);`;
+      door.appendChild(handle);
+      
+      // Hinges
+      const hingePositions = ['15%', '50%', '85%'];
+      hingePositions.forEach(pos => {
+        const hinge = document.createElement('div');
+        hinge.style.cssText = `position:absolute;${hingeSide}:2px;top:${pos};width:8px;height:16px;background:linear-gradient(90deg,#404040,#707070,#404040);border-radius:2px;transform:translateY(-50%);`;
+        door.appendChild(hinge);
+      });
+      
+      if (showLogo) {
+        const logo = document.createElement('div');
+        logo.className = 'glass-logo';
+        logo.textContent = 'VITRALUX';
+        door.appendChild(logo);
+      }
+      
+      return door;
+    }
+    
+    // Profile Management
+    function setProfileCategory(category) {
+      currentCategory = category;
+      document.querySelectorAll('.category-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.classList.contains(category)) {
+          tab.classList.add('active');
+        }
+      });
+    }
+    
+    function filterProfiles() {
+      const search = document.getElementById('profileSearch').value.toLowerCase();
+      const select = document.getElementById('profile-id');
+      let visibleCount = 0;
+      
+      Array.from(select.options).forEach(option => {
+        if (!option.value) return;
+        const name = (option.dataset.name || '').toLowerCase();
+        const color = (option.dataset.color || '').toLowerCase();
+        const matches = name.includes(search) || color.includes(search);
+        option.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+      });
+      
+      document.getElementById('profileSearchCount').textContent = search ? `${visibleCount} profiles found` : '';
+    }
+    
+    function clearProfileSearch() {
+      document.getElementById('profileSearch').value = '';
+      filterProfiles();
+    }
+    
     function addProfileEntry() {
-      const profileSelect = document.getElementById('profile-id');
-      const profileId = profileSelect.value;
-      const profileName = profileSelect.options[profileSelect.selectedIndex].text;
+      const select = document.getElementById('profile-id');
+      const profileId = select.value;
+      const profileName = select.options[select.selectedIndex]?.text || '';
       const quantity = document.getElementById('profile-quantity').value;
       const orientation = document.getElementById('profile-orientation').value;
       const lengthDiscount = document.getElementById('profile-length-discount').value;
-      const showToUser = document.getElementById('profile-show-to-user').checked;
-
-      if (profileId && quantity && orientation && lengthDiscount !== '') {
-        profiles.push({ profileId, profileName, quantity, orientation, lengthDiscount, showToUser });
-        renderProfilesTable();
-        
-        // Clear form fields
-        document.getElementById('profile-id').value = '';
-        document.getElementById('profile-quantity').value = '';
-        document.getElementById('profile-orientation').value = '';
-        document.getElementById('profile-length-discount').value = '';
-        document.getElementById('profile-show-to-user').checked = false;
-      } else {
-        alert('Please fill in all profile fields');
+      const lengthUnit = document.getElementById('profile-length-unit').value;
+      
+      if (!profileId || !quantity) {
+        alert('Please select a profile and enter quantity');
+        return;
       }
+      
+      // Convert mm to inches for storage (backend uses inches)
+      let lengthDiscountInches = parseFloat(lengthDiscount) || 0;
+      if (lengthUnit === 'mm') {
+        lengthDiscountInches = lengthDiscountInches / 25.4;
+      }
+      
+      // Set unit after first profile
+      if (profiles.length === 0 && !lockedLengthUnit) {
+        lockedLengthUnit = lengthUnit;
+      }
+      updateUnitMessage();
+      
+      profiles.push({
+        profileId,
+        profileName,
+        quantity: parseInt(quantity),
+        orientation,
+        lengthDiscount: lengthDiscountInches.toFixed(4),
+        lengthDiscountDisplay: lengthDiscount,
+        lengthUnit: lengthUnit,
+        category: currentCategory
+      });
+      
+      // Reset form
+      select.value = '';
+      document.getElementById('profile-quantity').value = '1';
+      document.getElementById('profile-length-discount').value = '0';
+      
+      renderProfilesTable();
     }
-
+    
     function renderProfilesTable() {
-      const tableBody = document.getElementById('profiles-table-body');
+      const container = document.getElementById('profiles-table-container');
       const emptyState = document.getElementById('profiles-empty-state');
       
       if (profiles.length === 0) {
-        tableBody.innerHTML = '';
+        container.innerHTML = '';
         emptyState.style.display = 'block';
-      } else {
-        emptyState.style.display = 'none';
-      tableBody.innerHTML = '';
-      profiles.forEach((profile, index) => {
-          const configBadge = profile.showToUser 
-            ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>'
-            : '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>';
-          
-        const row = `
-            <tr class="hover:bg-gray-50">
-              <td class="py-3 px-4 border-b border-gray-200">${profile.profileName}</td>
-              <td class="py-3 px-4 border-b border-gray-200">${profile.quantity}</td>
-              <td class="py-3 px-4 border-b border-gray-200">${profile.orientation}</td>
-              <td class="py-3 px-4 border-b border-gray-200">${profile.lengthDiscount}</td>
-              <td class="py-3 px-4 border-b border-gray-200">${configBadge}</td>
-              <td class="py-3 px-4 border-b border-gray-200">
-                <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${index})">Remove</button>
-            </td>
-          </tr>
-        `;
-        tableBody.insertAdjacentHTML('beforeend', row);
-      });
+        return;
       }
+      
+      emptyState.style.display = 'none';
+      
+      const categories = [
+        { id: 'frame', name: 'Frame', icon: 'fa-border-all', color: 'blue' },
+        { id: 'fixed-vent', name: 'Fixed Vent', icon: 'fa-square', color: 'green' },
+        { id: 'operable-vent', name: 'Operable Vent', icon: 'fa-arrows-alt-h', color: 'yellow' },
+        { id: 'other', name: 'Other', icon: 'fa-ellipsis-h', color: 'purple' }
+      ];
+      
+      let html = '';
+      categories.forEach(cat => {
+        const catProfiles = profiles.filter(p => p.category === cat.id);
+        if (catProfiles.length === 0) return;
+        
+        html += `
+          <div class="mb-6">
+            <h4 class="text-sm font-semibold text-gray-600 mb-2">
+              <i class="fas ${cat.icon} text-${cat.color}-500 mr-2"></i>${cat.name}
+            </h4>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Profile</th>
+                  <th>Qty</th>
+                  <th>Orientation</th>
+                  <th>Length Discount</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        catProfiles.forEach((profile, idx) => {
+          const globalIdx = profiles.indexOf(profile);
+          const displayValue = profile.lengthDiscountDisplay || profile.lengthDiscount;
+          const displayUnit = profile.lengthUnit || 'in';
+          const discountDisplay = displayValue ? `${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}` : `0 ${displayUnit === 'mm' ? 'mm' : 'in.'}`;
+          html += `
+            <tr>
+              <td class="font-medium">${profile.profileName}</td>
+              <td>${profile.quantity}</td>
+              <td class="capitalize">${profile.orientation}</td>
+              <td>${discountDisplay}</td>
+              <td>
+                <button type="button" onclick="removeProfile(${globalIdx})" class="text-red-500 hover:text-red-700">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        
+        html += '</tbody></table></div>';
+      });
+      
+      container.innerHTML = html;
     }
-
+    
     function removeProfile(index) {
       profiles.splice(index, 1);
+      
+      // Clear unit lock if all profiles removed
+      if (profiles.length === 0) {
+        lockedLengthUnit = null;
+      }
+      
+      updateUnitMessage();
       renderProfilesTable();
     }
-
+    
+    // Accessory Management
+    function updateAccessoryUnit() {
+      const select = document.getElementById('accessory-id');
+      const unit = select.options[select.selectedIndex]?.dataset.unit || '';
+      document.getElementById('accessory-unit').value = unit;
+    }
+    
     function addAccessoryEntry() {
-      const accessorySelect = document.getElementById('accessory-id');
-      const accessoryId = accessorySelect.value;
-      const accessoryName = accessorySelect.options[accessorySelect.selectedIndex].text;
+      const select = document.getElementById('accessory-id');
+      const accessoryId = select.value;
+      const accessoryName = select.options[select.selectedIndex]?.text || '';
       const quantity = document.getElementById('accessory-quantity').value;
       const unit = document.getElementById('accessory-unit').value;
-      const showToUser = document.getElementById('accessory-show-to-user').checked;
       
-      // Get advanced configuration fields
-      const componentGroup = document.getElementById('accessory-component-group').value;
-      const selectionType = document.getElementById('accessory-selection-type').value;
-      const isDefault = document.getElementById('accessory-is-default').checked;
-
-      if (accessoryId && quantity && unit) {
-        accessories.push({ 
-          accessoryId, 
-          accessoryName, 
-          quantity, 
-          unit, 
-          showToUser,
-          componentGroup: componentGroup || null,
-          selectionType,
-          isDefault
-        });
-        renderAccessoriesTable();
-        
-        // Clear form fields
-        document.getElementById('accessory-id').value = '';
-        document.getElementById('accessory-quantity').value = '';
-        document.getElementById('accessory-unit').value = '';
-        document.getElementById('accessory-show-to-user').checked = false;
-        document.getElementById('accessory-component-group-select').value = '';
-        document.getElementById('accessory-component-group-custom').style.display = 'none';
-        document.getElementById('accessory-component-group-custom').value = '';
-        document.getElementById('accessory-component-group').value = '';
-        document.getElementById('accessory-selection-type').value = 'quantity';
-        document.getElementById('accessory-is-default').checked = false;
-        
-        // Hide advanced config
-        document.getElementById('accessory-advanced-config').style.display = 'none';
-      } else {
-        alert('Please fill in all accessory fields');
+      if (!accessoryId || !quantity) {
+        alert('Please select an accessory and enter quantity');
+        return;
       }
+      
+      accessories.push({
+        accessoryId,
+        accessoryName,
+        quantity: parseInt(quantity),
+        unit
+      });
+      
+      select.value = '';
+      document.getElementById('accessory-quantity').value = '1';
+      document.getElementById('accessory-unit').value = '';
+      
+      renderAccessoriesTable();
     }
-
+    
     function renderAccessoriesTable() {
+      console.log('renderAccessoriesTable called, count:', accessories ? accessories.length : 0);
+      
       const tableBody = document.getElementById('accessories-table-body');
       const emptyState = document.getElementById('accessories-empty-state');
+      const table = document.getElementById('accessories-table');
       
-      if (accessories.length === 0) {
+      if (!tableBody || !emptyState || !table) {
+        console.error('Accessories table elements not found');
+        return;
+      }
+      
+      if (!accessories || accessories.length === 0) {
         tableBody.innerHTML = '';
         emptyState.style.display = 'block';
-      } else {
-        emptyState.style.display = 'none';
-      tableBody.innerHTML = '';
-      accessories.forEach((accessory, index) => {
-          const configBadge = accessory.showToUser 
-            ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Config</span>'
-            : '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto</span>';
-          
-          // Choice group information
-          let choiceGroupInfo = '<span class="text-gray-400">-</span>';
-          if (accessory.showToUser && accessory.componentGroup) {
-            const selectionTypeLabel = {
-              'single': 'Single Choice',
-              'multiple': 'Multiple Choice', 
-              'quantity': 'Quantity'
-            }[accessory.selectionType] || 'Quantity';
-            
-            const defaultMarker = accessory.isDefault ? ' ⭐' : '';
-            choiceGroupInfo = `
-              <div class="text-sm">
-                <strong>${accessory.componentGroup}</strong><br>
-                <span class="text-xs text-gray-600">${selectionTypeLabel}${defaultMarker}</span>
-              </div>
-            `;
-          }
-          
-        const row = `
-            <tr class="hover:bg-gray-50">
-              <td class="py-3 px-4 border-b border-gray-200">${accessory.accessoryName}</td>
-              <td class="py-3 px-4 border-b border-gray-200">${accessory.quantity}</td>
-              <td class="py-3 px-4 border-b border-gray-200">${accessory.unit}</td>
-              <td class="py-3 px-4 border-b border-gray-200">${configBadge}</td>
-              <td class="py-3 px-4 border-b border-gray-200">${choiceGroupInfo}</td>
-              <td class="py-3 px-4 border-b border-gray-200">
-                <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeAccessory(${index})">Remove</button>
-            </td>
-          </tr>
-        `;
-        tableBody.insertAdjacentHTML('beforeend', row);
-      });
+        table.style.display = 'none';
+        console.log('No accessories, showing empty state');
+        return;
       }
+      
+      emptyState.style.display = 'none';
+      table.style.display = 'table';
+      
+      let html = '';
+      for (let i = 0; i < accessories.length; i++) {
+        const acc = accessories[i];
+        html += '<tr>';
+        html += '<td class="font-medium">' + (acc.accessoryName || 'Unknown') + '</td>';
+        html += '<td>' + (acc.quantity || 1) + '</td>';
+        html += '<td>' + (acc.unit || 'unit') + '</td>';
+        html += '<td><button type="button" onclick="removeAccessory(' + i + ')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button></td>';
+        html += '</tr>';
+      }
+      tableBody.innerHTML = html;
+      console.log('Accessories table rendered:', accessories.length, 'items');
     }
-
+    
     function removeAccessory(index) {
       accessories.splice(index, 1);
       renderAccessoriesTable();
     }
-
-    function addGlassRestriction() {
-      const type = document.getElementById('glass-type').value;
-      const width = document.getElementById('glass-width').value;
-      const height = document.getElementById('glass-height').value;
-      const positivePressure = document.getElementById('glass-positive-pressure').value;
-      const negativePressure = document.getElementById('glass-negative-pressure').value;
-
-      if (type && width && height && positivePressure && negativePressure) {
-        glassRestrictions.push({ type, width, height, positivePressure, negativePressure });
-        renderGlassRestrictionsTable();
-      }
-    }
-
-    function renderGlassRestrictionsTable() {
-      const tableBody = document.getElementById('glass-restrictions-table-body');
-      tableBody.innerHTML = '';
-      glassRestrictions.forEach((glass, index) => {
-        const row = `
-          <tr>
-            <td class="py-2 px-4 border">${glass.type}</td>
-            <td class="py-2 px-4 border">${glass.width}</td>
-            <td class="py-2 px-4 border">${glass.height}</td>
-            <td class="py-2 px-4 border">${glass.positivePressure}</td>
-            <td class="py-2 px-4 border">${glass.negativePressure}</td>
-            <td class="py-2 px-4 border">
-              <button type="button" class="bg-red-500 text-white px-4 py-2 rounded" onclick="removeGlassRestriction(${index})">Remove</button>
-            </td>
-          </tr>
-        `;
-        tableBody.insertAdjacentHTML('beforeend', row);
-      });
-    }
-
-    function removeGlassRestriction(index) {
-      glassRestrictions.splice(index, 1);
-      renderGlassRestrictionsTable();
-    }
-
-    // Attach event listeners and ensure correct data is sent on form submission
-    document.getElementById('accessory-id').addEventListener('change', function() {
-      const selectedOption = this.options[this.selectedIndex];
-      const unit = selectedOption.getAttribute('data-unit');
-      document.getElementById('accessory-unit').value = unit || '';
-    });
     
-    // Setup advanced configuration toggle for accessories
-    document.getElementById('accessory-show-to-user').addEventListener('change', function() {
-      const advancedConfig = document.getElementById('accessory-advanced-config');
-      if (this.checked) {
-        advancedConfig.style.display = 'grid';
+    // Muntin Configuration
+    function toggleMuntinConfiguration() {
+      const enabled = document.getElementById('muntin-enabled').checked;
+      const configSection = document.getElementById('muntin-config-section');
+      const disabledMessage = document.getElementById('muntin-disabled-message');
+      
+      muntinConfiguration.enabled = enabled;
+      
+      if (enabled) {
+        configSection.style.display = 'block';
+        disabledMessage.style.display = 'none';
       } else {
-        advancedConfig.style.display = 'none';
-        // Reset advanced config fields when hiding
-        document.getElementById('accessory-component-group-select').value = '';
-        document.getElementById('accessory-component-group-custom').style.display = 'none';
-        document.getElementById('accessory-component-group-custom').value = '';
-        document.getElementById('accessory-component-group').value = '';
-        document.getElementById('accessory-selection-type').value = 'quantity';
-        document.getElementById('accessory-is-default').checked = false;
-      }
-    });
-    
-    // Toggle between dropdown and custom input for component groups
-    function toggleCustomGroupInput() {
-      const select = document.getElementById('accessory-component-group-select');
-      const customInput = document.getElementById('accessory-component-group-custom');
-      const hiddenInput = document.getElementById('accessory-component-group');
-      
-      if (select.value === 'custom') {
-        customInput.style.display = 'block';
-        customInput.focus();
-        hiddenInput.value = customInput.value;
-      } else {
-        customInput.style.display = 'none';
-        customInput.value = '';
-        hiddenInput.value = select.value;
+        configSection.style.display = 'none';
+        disabledMessage.style.display = 'block';
       }
     }
     
-    // Update hidden input when custom text changes
-    document.getElementById('accessory-component-group-custom').addEventListener('input', function() {
-      document.getElementById('accessory-component-group').value = this.value;
-    });
-    
-    // Function to populate component group dropdown when editing existing accessories
-    function populateComponentGroupDropdown(componentGroup) {
-      const select = document.getElementById('accessory-component-group-select');
-      const customInput = document.getElementById('accessory-component-group-custom');
-      const hiddenInput = document.getElementById('accessory-component-group');
+    // Form Submission
+    document.getElementById('window-form').addEventListener('submit', function(e) {
+      console.log('=== Form Submit Started ===');
+      const form = e.target;
       
-      if (!componentGroup) {
-        select.value = '';
-        customInput.style.display = 'none';
-        customInput.value = '';
-        hiddenInput.value = '';
-        return;
+      // Remove any existing hidden inputs to prevent duplicates
+      form.querySelectorAll('input[name="panelConfiguration"]').forEach(el => el.remove());
+      form.querySelectorAll('input[name="profiles"]').forEach(el => el.remove());
+      form.querySelectorAll('input[name="accessories"]').forEach(el => el.remove());
+      form.querySelectorAll('input[name="muntinConfiguration"]').forEach(el => el.remove());
+      form.querySelectorAll('input[name="glassRestrictions"]').forEach(el => el.remove());
+      
+      // Get current values from the form
+      const currentOperationType = document.getElementById('operationType').value;
+      const currentOrientation = document.getElementById('panelOrientation').value;
+      
+      console.log('Current operation type:', currentOperationType);
+      console.log('Current orientation:', currentOrientation);
+      console.log('Current panelConfig:', panelConfig);
+      console.log('Current showLogo:', showLogo);
+      
+      // Panel Configuration
+      const panelConfigData = {
+        panels: panelConfig,
+        panelRatios: panelRatios,
+        orientation: currentOrientation,
+        operationType: currentOperationType,
+        showLogo: showLogo
+      };
+      
+      if (panelConfigData.operationType === 'french-door') {
+        panelConfigData.frenchDoor = {
+          doorType: document.getElementById('frenchDoorType').value,
+          hingeSide: document.getElementById('frenchHingeSide').value,
+          leftSidelites: parseInt(document.getElementById('leftSidelites').value) || 0,
+          rightSidelites: parseInt(document.getElementById('rightSidelites').value) || 0,
+          transom: document.getElementById('frenchTransom').value
+        };
       }
       
-      // Check if the component group exists in our dropdown options
-      const options = Array.from(select.options).map(option => option.value);
-      const predefinedOptions = options.filter(opt => opt !== '' && opt !== 'custom');
+      console.log('=== Saving panel config ===', JSON.stringify(panelConfigData, null, 2));
       
-      if (predefinedOptions.includes(componentGroup)) {
-        select.value = componentGroup;
-        customInput.style.display = 'none';
-        customInput.value = '';
-        hiddenInput.value = componentGroup;
-      } else {
-        // It's a custom group
-        select.value = 'custom';
-        customInput.style.display = 'block';
-        customInput.value = componentGroup;
-        hiddenInput.value = componentGroup;
-      }
-    }
-
-    document.getElementById('window-form').addEventListener('submit', function(event) {
-      const form = event.target;
+      // Add hidden inputs
+      const panelConfigInput = document.createElement('input');
+      panelConfigInput.type = 'hidden';
+      panelConfigInput.name = 'panelConfiguration';
+      panelConfigInput.value = JSON.stringify(panelConfigData);
+      form.appendChild(panelConfigInput);
+      
+      // Prepare profiles with all necessary data
+      const profilesData = profiles.map(p => ({
+        profileId: p.profileId,
+        profileName: p.profileName,
+        quantity: p.quantity,
+        orientation: p.orientation,
+        lengthDiscount: p.lengthDiscount,
+        lengthDiscountDisplay: p.lengthDiscountDisplay,
+        lengthUnit: p.lengthUnit,
+        category: p.category
+      }));
+      
       const profilesInput = document.createElement('input');
       profilesInput.type = 'hidden';
       profilesInput.name = 'profiles';
-      profilesInput.value = JSON.stringify(profiles);
+      profilesInput.value = JSON.stringify(profilesData);
       form.appendChild(profilesInput);
-
+      
       const accessoriesInput = document.createElement('input');
       accessoriesInput.type = 'hidden';
       accessoriesInput.name = 'accessories';
       accessoriesInput.value = JSON.stringify(accessories);
       form.appendChild(accessoriesInput);
-
-      const glassRestrictionsInput = document.createElement('input');
-      glassRestrictionsInput.type = 'hidden';
-      glassRestrictionsInput.name = 'glassRestrictions';
-      glassRestrictionsInput.value = JSON.stringify(glassRestrictions);
-      form.appendChild(glassRestrictionsInput);
-
-      const muntinConfigurationInput = document.createElement('input');
-      muntinConfigurationInput.type = 'hidden';
-      muntinConfigurationInput.name = 'muntinConfiguration';
-      muntinConfigurationInput.value = JSON.stringify(muntinConfiguration);
-      form.appendChild(muntinConfigurationInput);
+      
+      // Muntin configuration
+      muntinConfiguration.muntinProfile = document.getElementById('muntin-profile').value || null;
+      muntinConfiguration.showToUser = document.getElementById('muntin-show-to-user').checked;
+      
+      const muntinInput = document.createElement('input');
+      muntinInput.type = 'hidden';
+      muntinInput.name = 'muntinConfiguration';
+      muntinInput.value = JSON.stringify(muntinConfiguration);
+      form.appendChild(muntinInput);
+      
+      // Empty glass restrictions for now
+      const glassInput = document.createElement('input');
+      glassInput.type = 'hidden';
+      glassInput.name = 'glassRestrictions';
+      glassInput.value = JSON.stringify([]);
+      form.appendChild(glassInput);
     });
-
-    // Muntin Configuration Functions
-    function toggleMuntinConfiguration() {
-      const enabled = document.getElementById('muntin-enabled').checked;
-      const configDiv = document.getElementById('muntin-config');
-      const detailsDiv = document.getElementById('muntin-details');
-      const previewDiv = document.getElementById('muntin-preview');
-      
-      muntinConfiguration.enabled = enabled;
-      
-      if (enabled) {
-        configDiv.style.display = 'block';
-        detailsDiv.style.display = 'grid';
-        previewDiv.style.display = 'block';
-        updateMuntinPreview();
-      } else {
-        configDiv.style.display = 'none';
-        detailsDiv.style.display = 'none';
-        previewDiv.style.display = 'none';
-      }
-    }
-
-    function updateMuntinPreview() {
-      const horizontal = document.getElementById('muntin-horizontal').value;
-      const vertical = document.getElementById('muntin-vertical').value;
-      const type = document.getElementById('muntin-type').value;
-      const previewGrid = document.getElementById('muntin-preview-grid');
-      const previewText = document.getElementById('muntin-preview-text');
-      
-      // Update configuration
-      muntinConfiguration.muntinType = type;
-      
-      // Generate a simple preview grid (1x1 as default)
-      previewGrid.innerHTML = '';
-      const cell = document.createElement('div');
-      cell.style.position = 'absolute';
-      cell.style.left = '0%';
-      cell.style.top = '0%';
-      cell.style.width = '100%';
-      cell.style.height = '100%';
-      cell.style.border = '1px solid #6b7280';
-      cell.style.backgroundColor = '#e5e7eb';
-      previewGrid.appendChild(cell);
-      
-      // Update preview text
-      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
-      previewText.textContent = `1x1 ${typeLabel} Grid (User configurable)`;
-    }
-
-    function updateMuntinConfiguration() {
-      const type = document.getElementById('muntin-type').value;
-      const showToUser = document.getElementById('muntin-show-to-user').checked;
-      
-      muntinConfiguration.muntinType = type;
-      muntinConfiguration.showToUser = showToUser;
-    }
-
-    // Initialize muntin configuration on page load
+    
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
-      // Set initial values
-      if (muntinConfiguration.enabled) {
-        document.getElementById('muntin-enabled').checked = true;
-        toggleMuntinConfiguration();
-        
-        // Set form values
-        if (muntinConfiguration.muntinProfile) {
-          document.getElementById('muntin-profile').value = muntinConfiguration.muntinProfile;
-        }
-        document.getElementById('muntin-type').value = muntinConfiguration.muntinType;
-        document.getElementById('muntin-show-to-user').checked = muntinConfiguration.showToUser;
-        
-        updateMuntinPreview();
-      }
-      
-      // Add event listeners for muntin configuration
-      const muntinTypeField = document.getElementById('muntin-type');
-      if (muntinTypeField) {
-        muntinTypeField.addEventListener('change', function() {
-          updateMuntinConfiguration();
-          updateMuntinPreview();
-        });
-      }
-      
-      // Muntin checkbox
-      const muntinShowToUser = document.getElementById('muntin-show-to-user');
-      if (muntinShowToUser) {
-        muntinShowToUser.addEventListener('change', function() {
-          muntinConfiguration.showToUser = this.checked;
-        });
-      }
-      
-      // Muntin profile selection
-      const muntinProfileSelect = document.getElementById('muntin-profile');
-      if (muntinProfileSelect) {
-        muntinProfileSelect.addEventListener('change', function() {
-          const selectedOption = this.options[this.selectedIndex];
-          if (selectedOption && selectedOption.value) {
-            muntinConfiguration.muntinProfile = selectedOption.value;
-            const muntinType = selectedOption.getAttribute('data-type');
-            if (muntinType) {
-              document.getElementById('muntin-type').value = muntinType;
-              muntinConfiguration.muntinType = muntinType;
-            }
-          }
-        });
+      try {
+        initializeFromData();
+      } catch (e) {
+        console.error('Initialization error:', e);
       }
     });
-
-    // Initial render of the tables with pre-loaded data
-    renderProfilesTable();
-    renderAccessoriesTable();
-    renderGlassRestrictionsTable();
-
-    // Initially hide empty states if we have data
-    if (profiles.length === 0) {
-      document.getElementById('profiles-empty-state').style.display = 'block';
-    } else {
-      document.getElementById('profiles-empty-state').style.display = 'none';
-    }
     
-    if (accessories.length === 0) {
-      document.getElementById('accessories-empty-state').style.display = 'block';
-    } else {
-      document.getElementById('accessories-empty-state').style.display = 'none';
-    }
-
-    // Image Upload Functions
-    function setupImageUpload() {
-      const uploadArea = document.getElementById('uploadArea');
-      const fileInput = document.getElementById('windowImage');
-      
-      if (!uploadArea || !fileInput) return;
-      
-      // Drag and drop functionality
-      uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        uploadArea.classList.add('border-blue-400', 'bg-blue-50');
-      });
-      
-      uploadArea.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
-      });
-      
-      uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('border-blue-400', 'bg-blue-50');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-          fileInput.files = files;
-          handleImageUpload(fileInput);
-        }
-      });
-      
-      // Click to upload
-      uploadArea.addEventListener('click', function() {
-        fileInput.click();
-      });
-    }
-    
-    function handleImageUpload(input) {
-      const file = input.files[0];
-      if (!file) return;
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file.');
-        return;
-      }
-      
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB.');
-        return;
-      }
-      
-      // Show preview
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const preview = document.getElementById('imagePreview');
-        const previewImg = document.getElementById('previewImg');
-        const uploadArea = document.getElementById('uploadArea');
-        
-        previewImg.src = e.target.result;
-        preview.style.display = 'block';
-        uploadArea.style.display = 'none';
-        
-        // Add remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm mt-2';
-        removeBtn.textContent = 'Remove Image';
-        removeBtn.onclick = removeImage;
-        preview.appendChild(removeBtn);
-      };
-      reader.readAsDataURL(file);
-    }
-    
-    function removeImage() {
-      const fileInput = document.getElementById('windowImage');
-      const preview = document.getElementById('imagePreview');
-      const uploadArea = document.getElementById('uploadArea');
-      
-      if (fileInput) {
-        fileInput.value = '';
-      }
-      
-      if (preview) {
-        preview.style.display = 'none';
-        preview.innerHTML = '<img id="previewImg" src="" alt="Window System Preview" class="max-w-full h-32 object-contain mx-auto rounded border">';
-      }
-      
-      if (uploadArea) {
-        uploadArea.style.display = 'block';
-      }
-    }
-    
-    async function removeCurrentImage() {
-      if (confirm('Are you sure you want to remove the current image?')) {
+    // Also try to initialize immediately in case DOMContentLoaded already fired
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(function() {
         try {
-          const response = await fetch(`/admin/remove-image/<%= windowSystem._id %>`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          const result = await response.json();
-          
-          if (response.ok) {
-            // Reload the page to show the updated state
-            location.reload();
-          } else {
-            alert('Error: ' + result.error);
+          if (!window._initialized) {
+            window._initialized = true;
+            initializeFromData();
           }
-        } catch (error) {
-          console.error('Error removing image:', error);
-          alert('Failed to remove image');
+        } catch (e) {
+          console.error('Delayed initialization error:', e);
         }
-      }
+      }, 100);
     }
-    
-    // Initialize image upload functionality
-    document.addEventListener('DOMContentLoaded', function() {
-      setupImageUpload();
-    });
   </script>
 </body>
 </html>

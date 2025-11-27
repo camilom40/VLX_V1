@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <%- include('../partials/_head.ejs') %>
   <title>Create Window System</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   
   <style>
@@ -90,10 +88,7 @@
     .profile-category-header.operable-vent { border-left: 4px solid #059669; }
     .profile-category-header.other { border-left: 4px solid #6b7280; }
     
-    /* Ensure hidden class works properly */
-    .hidden {
-      display: none !important;
-    }
+    /* Note: Removed .hidden override to allow Tailwind responsive classes to work */
     
     .form-section {
       margin-bottom: 2rem;
@@ -443,16 +438,18 @@
     }
   </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
-  <div class="container mx-auto py-8 px-4">
-    <div class="text-center mb-8">
-      <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
-        Create New Window System
-      </h1>
-      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-        Build a comprehensive window system by configuring profiles, accessories, muntins, and glass specifications
-      </p>
+  <div class="container mx-auto py-8 px-4 max-w-6xl flex-grow">
+    <!-- Page Header -->
+    <div class="mb-6">
+      <div class="flex items-center gap-3 mb-2">
+        <a href="/admin/list-window-systems" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Create New Window System</h1>
+      </div>
+      <p class="text-gray-500">Configure a new window system template</p>
     </div>
     
     <!-- Enhanced Step Indicator -->

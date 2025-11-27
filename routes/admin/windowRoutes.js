@@ -19,7 +19,7 @@ router.get('/compose-window', isAdmin, async (req, res) => {
     const accessories = await Accessory.find({});
     const ComponentGroup = require('../../models/ComponentGroup');
     const componentGroups = await ComponentGroup.find({ isActive: true }).sort({ sortOrder: 1, displayName: 1 });
-    res.render('admin/composeWindow', { profiles, accessories, componentGroups });
+    res.render('admin/composeWindow', { profiles, accessories, componentGroups, session: req.session });
   } catch (error) {
     console.error('Failed to fetch profiles and accessories:', error.message);
     res.status(500).json({ error: error.message });
@@ -308,6 +308,9 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       quantity: parseInt(profile.quantity, 10),
       orientation: profile.orientation,
       lengthDiscount: parseFloat(profile.lengthDiscount),
+      lengthDiscountDisplay: profile.lengthDiscountDisplay || String(profile.lengthDiscount),
+      lengthUnit: profile.lengthUnit || 'in',
+      category: profile.category || 'frame',
       showToUser: Boolean(profile.showToUser),
     }));
 
@@ -381,7 +384,7 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
     const accessories = await Accessory.find({});
     const ComponentGroup = require('../../models/ComponentGroup');
     const componentGroups = await ComponentGroup.find({ isActive: true }).sort({ sortOrder: 1, displayName: 1 });
-    res.render('admin/editWindowSystem', { windowSystem, profiles, accessories, componentGroups });
+    res.render('admin/editWindowSystem', { windowSystem, profiles, accessories, componentGroups, session: req.session });
   } catch (error) {
     console.error('Failed to fetch window system:', error.message);
     res.status(500).json({ error: error.message });
@@ -398,6 +401,9 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       quantity: parseInt(profile.quantity, 10),
       orientation: profile.orientation,
       lengthDiscount: parseFloat(profile.lengthDiscount),
+      lengthDiscountDisplay: profile.lengthDiscountDisplay || String(profile.lengthDiscount),
+      lengthUnit: profile.lengthUnit || 'in',
+      category: profile.category || 'frame',
       showToUser: Boolean(profile.showToUser),
     }));
 
@@ -453,7 +459,7 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
         panels: panelConfigurationData.panels || ['O', 'O'],
         panelRatios: panelConfigurationData.panelRatios || [],
         orientation: panelConfigurationData.orientation || 'horizontal',
-        operationType: panelConfigurationData.operationType || 'fixed',
+        operationType: panelConfigurationData.operationType || 'sliding',
         hasMullion: panelConfigurationData.hasMullion !== false,
         mullionWidth: panelConfigurationData.mullionWidth || 2,
         showLogo: panelConfigurationData.showLogo !== false,
@@ -461,7 +467,14 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       },
     };
 
-    await WindowSystem.findByIdAndUpdate(req.params.id, updateData);
+    console.log('=== Updating window system ===');
+    console.log('ID:', req.params.id);
+    console.log('Panel Config received:', req.body.panelConfiguration);
+    console.log('Panel Config parsed:', JSON.stringify(updateData.panelConfiguration, null, 2));
+    
+    const result = await WindowSystem.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    console.log('Update result - panels:', result?.panelConfiguration?.panels);
+    console.log('Update result - operationType:', result?.panelConfiguration?.operationType);
 
     res.redirect('/admin/list-window-systems');
   } catch (error) {

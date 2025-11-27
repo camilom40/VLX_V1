@@ -62,7 +62,10 @@ const windowSchema = new Schema({
     profile: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
     quantity: { type: Number, required: true },
     orientation: { type: String, required: true },
-    lengthDiscount: { type: Number, required: true }, // in inches
+    lengthDiscount: { type: Number, required: true }, // Stored in inches for backend calculations
+    lengthDiscountDisplay: { type: String, default: null }, // Original value as entered by user
+    lengthUnit: { type: String, enum: ['in', 'mm'], default: 'in' }, // Unit used for display
+    category: { type: String, enum: ['frame', 'fixed-vent', 'operable-vent', 'other'], default: 'frame' }, // Component category
     showToUser: { type: Boolean, default: false }, // Whether to show this profile to users for configuration
     componentGroup: { type: String, default: null }, // Group name for related components (e.g., "frame-types", "mullions")
     selectionType: { type: String, enum: ['single', 'multiple', 'quantity'], default: 'quantity' }, // How users can select this component
