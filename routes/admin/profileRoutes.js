@@ -54,7 +54,7 @@ router.post('/add', isAdmin, async (req, res) => {
       muntinPattern: isMuntin ? muntinPattern : null,
       muntinSpacing: isMuntin && muntinSpacing && muntinSpacing !== '' && !isNaN(Number(muntinSpacing)) ? Number(muntinSpacing) : null
     });
-    
+    //ffff
     await newProfile.save();
     res.redirect('/admin/profiles');
   } catch (error) {
