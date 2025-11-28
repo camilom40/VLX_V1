@@ -21,6 +21,14 @@ const { isAdmin } = require('./routes/middleware/adminMiddleware');
 const windowRoutes = require('./routes/admin/windowRoutes'); // Correctly import the routes
 const dashboardRoutes = require('./routes/dashboardRoutes'); // Adjust path if required
 const User = require('./models/User'); // Import User model for pricing tier updates
+const Project = require('./models/Project');
+const Window = require('./models/Window');
+const Accessory = require('./models/Accessory');
+const Profile = require('./models/Profile');
+const Glass = require('./models/Glass');
+const ComponentGroup = require('./models/ComponentGroup');
+const SystemMetric = require('./models/SystemMetric');
+const UserActivity = require('./models/UserActivity');
 const systemMonitor = require('./utils/systemMonitor'); // Import system monitor
 
 
@@ -138,8 +146,73 @@ app.use('/admin/metrics', metricsRoutes);
 app.use('/admin', componentGroupRoutes);
 
 // Admin Console Route
-app.get('/admin', isAdmin, (req, res) => {
-  res.render('admin/adminConsole');
+app.get('/admin', isAdmin, async (req, res) => {
+  try {
+    // Fetch statistics for the dashboard
+    const [
+      totalUsers,
+      totalProjects,
+      totalWindows,
+      totalAccessories,
+      totalProfiles,
+      totalGlasses,
+      totalComponentGroups,
+      latestMetrics,
+      recentActivities
+    ] = await Promise.all([
+      User.countDocuments(),
+      Project.countDocuments(),
+      Window.countDocuments(),
+      Accessory.countDocuments(),
+      Profile.countDocuments(),
+      Glass.countDocuments(),
+      ComponentGroup.countDocuments(),
+      SystemMetric.findOne().sort({ timestamp: -1 }).lean(),
+      UserActivity.find().sort({ timestamp: -1 }).limit(5).populate('userId', 'username').lean()
+    ]);
+
+    // Determine system status
+    let systemStatus = 'online';
+    let systemLoad = 'normal';
+    
+    if (latestMetrics) {
+      if (latestMetrics.cpuUsage > 80 || latestMetrics.memoryUsage > 80) {
+        systemLoad = 'high';
+      } else if (latestMetrics.cpuUsage > 60 || latestMetrics.memoryUsage > 60) {
+        systemLoad = 'warning';
+      }
+      
+      if (latestMetrics.errorCount > 10) {
+        systemStatus = 'warning';
+      }
+    }
+
+    res.render('admin/adminConsole', {
+      stats: {
+        totalUsers,
+        totalProjects,
+        totalWindows,
+        totalAccessories,
+        totalProfiles,
+        totalGlasses,
+        totalComponentGroups
+      },
+      systemStatus,
+      systemLoad,
+      latestMetrics,
+      recentActivities
+    });
+  } catch (error) {
+    console.error('Error loading admin console:', error);
+    // Fallback to basic render if there's an error
+    res.render('admin/adminConsole', {
+      stats: {},
+      systemStatus: 'unknown',
+      systemLoad: 'unknown',
+      latestMetrics: null,
+      recentActivities: []
+    });
+  }
 });
 
 // Add the pricing tier update route

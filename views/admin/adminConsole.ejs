@@ -88,7 +88,7 @@
   <%- include('../partials/_header.ejs'); %>
 
   <div class="container mx-auto px-4 py-10 flex-grow">
-    <div class="text-center mb-12">
+    <div class="text-center mb-8">
       <div class="flex justify-center mb-4">
         <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg transform rotate-3">
           <img src="/images/Accesory_icon.png" alt="Admin Console Icon" class="w-12 h-12" />
@@ -98,12 +98,115 @@
       <p class="mt-6 text-gray-600 max-w-xl mx-auto">Access all administrative functions to manage your VLX system</p>
     </div>
 
+    <!-- Statistics Dashboard -->
+    <% if (typeof stats !== 'undefined' && stats) { %>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+        <div class="text-2xl font-bold text-gray-800"><%= stats.totalUsers || 0 %></div>
+        <div class="text-sm text-gray-600">Users</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500">
+        <div class="text-2xl font-bold text-gray-800"><%= stats.totalProjects || 0 %></div>
+        <div class="text-sm text-gray-600">Projects</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-purple-500">
+        <div class="text-2xl font-bold text-gray-800"><%= stats.totalWindows || 0 %></div>
+        <div class="text-sm text-gray-600">Window Systems</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
+        <div class="text-2xl font-bold text-gray-800"><%= stats.totalAccessories || 0 %></div>
+        <div class="text-sm text-gray-600">Accessories</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-500">
+        <div class="text-2xl font-bold text-gray-800"><%= stats.totalProfiles || 0 %></div>
+        <div class="text-sm text-gray-600">Profiles</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-gray-500">
+        <div class="text-2xl font-bold text-gray-800"><%= stats.totalGlasses || 0 %></div>
+        <div class="text-sm text-gray-600">Glass Types</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-teal-500">
+        <div class="text-2xl font-bold text-gray-800"><%= stats.totalComponentGroups || 0 %></div>
+        <div class="text-sm text-gray-600">Groups</div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- System Status & Recent Activity Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- System Status Card -->
+      <div class="lg:col-span-1 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          System Status
+        </h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Status:</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= systemStatus === 'online' ? 'bg-green-100 text-green-800' : systemStatus === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800' %>">
+              <%= systemStatus === 'online' ? 'Online' : systemStatus === 'warning' ? 'Warning' : 'Offline' %>
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Load:</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= systemLoad === 'normal' ? 'bg-blue-100 text-blue-800' : systemLoad === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800' %>">
+              <%= systemLoad === 'normal' ? 'Normal' : systemLoad === 'warning' ? 'Warning' : 'High' %>
+            </span>
+          </div>
+          <% if (latestMetrics) { %>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">CPU Usage:</span>
+            <span class="text-sm font-medium text-gray-800"><%= latestMetrics.cpuUsage ? latestMetrics.cpuUsage.toFixed(1) : 'N/A' %>%</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Memory:</span>
+            <span class="text-sm font-medium text-gray-800"><%= latestMetrics.memoryUsage ? (latestMetrics.memoryUsage / 1024 / 1024 / 1024).toFixed(2) : 'N/A' %> GB</span>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Recent Activity Card -->
+      <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Recent Activity
+        </h3>
+        <div class="space-y-2 max-h-48 overflow-y-auto">
+          <% if (recentActivities && recentActivities.length > 0) { %>
+            <% recentActivities.forEach(activity => { %>
+              <div class="flex items-start justify-between py-2 border-b border-gray-100 last:border-0">
+                <div class="flex-1">
+                  <div class="text-sm font-medium text-gray-800"><%= activity.username || 'Unknown' %></div>
+                  <div class="text-xs text-gray-500"><%= activity.activityType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %></div>
+                </div>
+                <div class="text-xs text-gray-400">
+                  <%= new Date(activity.timestamp).toLocaleString() %>
+                </div>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div class="text-sm text-gray-500 text-center py-4">No recent activity</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
       
       <!-- Card for managing accessories -->
       <a href="/admin/accessories" class="admin-card red p-6 flex flex-col h-full">
         <div class="flex items-start justify-between mb-4">
-          <h2 class="text-xl font-bold text-gray-800">Manage Accessories</h2>
+          <div class="flex-1">
+            <h2 class="text-xl font-bold text-gray-800">Manage Accessories</h2>
+            <% if (typeof stats !== 'undefined' && stats.totalAccessories !== undefined) { %>
+            <div class="mt-1 text-sm text-gray-500"><%= stats.totalAccessories %> total</div>
+            <% } %>
+          </div>
           <div class="icon-wrapper red-grad shadow-md">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -124,7 +227,12 @@
       <!-- Card for managing glass types -->
       <a href="/admin/glasses" class="admin-card gray p-6 flex flex-col h-full">
         <div class="flex items-start justify-between mb-4">
-          <h2 class="text-xl font-bold text-gray-800">Manage Glass Types</h2>
+          <div class="flex-1">
+            <h2 class="text-xl font-bold text-gray-800">Manage Glass Types</h2>
+            <% if (typeof stats !== 'undefined' && stats.totalGlasses !== undefined) { %>
+            <div class="mt-1 text-sm text-gray-500"><%= stats.totalGlasses %> total</div>
+            <% } %>
+          </div>
           <div class="icon-wrapper gray-grad shadow-md">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -145,7 +253,12 @@
       <!-- Card for managing profiles -->
       <a href="/admin/profiles" class="admin-card yellow p-6 flex flex-col h-full">
         <div class="flex items-start justify-between mb-4">
-          <h2 class="text-xl font-bold text-gray-800">Manage Profiles</h2>
+          <div class="flex-1">
+            <h2 class="text-xl font-bold text-gray-800">Manage Profiles</h2>
+            <% if (typeof stats !== 'undefined' && stats.totalProfiles !== undefined) { %>
+            <div class="mt-1 text-sm text-gray-500"><%= stats.totalProfiles %> total</div>
+            <% } %>
+          </div>
           <div class="icon-wrapper yellow-grad shadow-md">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
@@ -187,7 +300,12 @@
       <!-- Card for managing component groups -->
       <a href="/admin/component-groups" class="admin-card teal p-6 flex flex-col h-full">
         <div class="flex items-start justify-between mb-4">
-          <h2 class="text-xl font-bold text-gray-800">Component Groups</h2>
+          <div class="flex-1">
+            <h2 class="text-xl font-bold text-gray-800">Component Groups</h2>
+            <% if (typeof stats !== 'undefined' && stats.totalComponentGroups !== undefined) { %>
+            <div class="mt-1 text-sm text-gray-500"><%= stats.totalComponentGroups %> total</div>
+            <% } %>
+          </div>
           <div class="icon-wrapper teal-grad shadow-md">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -229,7 +347,12 @@
       <!-- Card for viewing window systems -->
       <a href="/admin/list-window-systems" class="admin-card blue p-6 flex flex-col h-full">
         <div class="flex items-start justify-between mb-4">
-          <h2 class="text-xl font-bold text-gray-800">All Window Systems</h2>
+          <div class="flex-1">
+            <h2 class="text-xl font-bold text-gray-800">All Window Systems</h2>
+            <% if (typeof stats !== 'undefined' && stats.totalWindows !== undefined) { %>
+            <div class="mt-1 text-sm text-gray-500"><%= stats.totalWindows %> total</div>
+            <% } %>
+          </div>
           <div class="icon-wrapper blue-grad shadow-md">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -250,7 +373,12 @@
       <!-- Card for viewing users -->
       <a href="/admin/users" class="admin-card indigo p-6 flex flex-col h-full">
         <div class="flex items-start justify-between mb-4">
-          <h2 class="text-xl font-bold text-gray-800">User Management</h2>
+          <div class="flex-1">
+            <h2 class="text-xl font-bold text-gray-800">User Management</h2>
+            <% if (typeof stats !== 'undefined' && stats.totalUsers !== undefined) { %>
+            <div class="mt-1 text-sm text-gray-500"><%= stats.totalUsers %> total</div>
+            <% } %>
+          </div>
           <div class="icon-wrapper indigo-grad shadow-md">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -279,12 +407,12 @@
           </div>
         </div>
         <p class="text-gray-600 mb-4">Monitor system performance and health statistics.</p>
-        <div class="mt-2 flex mb-3">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2">
-            System: Online
+        <div class="mt-2 flex mb-3 flex-wrap gap-2">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= systemStatus === 'online' ? 'bg-green-100 text-green-800' : systemStatus === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800' %>">
+            System: <%= systemStatus === 'online' ? 'Online' : systemStatus === 'warning' ? 'Warning' : 'Offline' %>
           </span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            Load: Normal
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= systemLoad === 'normal' ? 'bg-blue-100 text-blue-800' : systemLoad === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800' %>">
+            Load: <%= systemLoad === 'normal' ? 'Normal' : systemLoad === 'warning' ? 'Warning' : 'High' %>
           </span>
         </div>
         <div class="mt-auto pt-4 border-t border-gray-100">
