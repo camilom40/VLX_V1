@@ -12,6 +12,11 @@ const projectSchema = new Schema({
     type: String,
     trim: true // Optional, remove if not needed
   },
+  quoteNumber: {
+    type: String,
+    trim: true,
+    index: true // Index for faster querying
+  },
   // Link to the user who owns this project
   userId: {
     type: Schema.Types.ObjectId,

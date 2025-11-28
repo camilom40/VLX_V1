@@ -16,11 +16,17 @@
     <!-- Project Header -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-        <div>
+        <div class="flex-1">
           <h2 class="text-3xl font-bold text-gray-800 mb-2"><%= project.projectName %></h2>
-          <p class="text-gray-600 mb-4">
+          <p class="text-gray-600 mb-2">
             <span class="font-medium">Client:</span> <%= project.clientName || 'Not specified' %>
           </p>
+          <% if (project.quoteNumber) { %>
+          <p class="text-gray-700 mb-4">
+            <span class="font-medium">Quote #:</span> 
+            <span class="font-mono text-lg font-bold text-blue-600"><%= project.quoteNumber %></span>
+          </p>
+          <% } %>
           <div class="flex flex-col xs:flex-row space-y-2 xs:space-y-0 xs:space-x-4 text-sm text-gray-500">
             <div class="flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -349,17 +355,9 @@
     
     <!-- Action Buttons -->
     <div class="mt-6 flex justify-end">
-      <a href="/dashboard" class="btn-secondary mr-3">
+      <a href="/dashboard" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
         Back to Projects
       </a>
-      
-      <!-- PDF Export (future feature) -->
-      <button type="button" class="btn-primary flex items-center" disabled title="Coming soon">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Export as PDF
-      </button>
     </div>
   </main>
 
@@ -451,25 +449,26 @@
       formatExistingPrices();
       
       // Simple form validation for window reference and system selection
-      const form = document.querySelector('form');
+      // Only validate the "Add New Window" form, not the duplicate form
+      const addWindowForm = document.querySelector('form[action*="/windows/new"]');
       const windowRefInput = document.getElementById('windowRef');
       const windowSystemSelect = document.getElementById('windowSystemId');
       
-      if (form) {
-        form.addEventListener('submit', (e) => {
+      if (addWindowForm) {
+        addWindowForm.addEventListener('submit', (e) => {
           let isValid = true;
           
           // Validate window reference
-          if (!windowRefInput.value.trim()) {
-            windowRefInput.classList.add('border-red-500');
+          if (!windowRefInput || !windowRefInput.value.trim()) {
+            if (windowRefInput) windowRefInput.classList.add('border-red-500');
             isValid = false;
           } else {
             windowRefInput.classList.remove('border-red-500');
           }
           
           // Validate window system selection
-          if (!windowSystemSelect.value) {
-            windowSystemSelect.classList.add('border-red-500');
+          if (!windowSystemSelect || !windowSystemSelect.value) {
+            if (windowSystemSelect) windowSystemSelect.classList.add('border-red-500');
             isValid = false;
           } else {
             windowSystemSelect.classList.remove('border-red-500');

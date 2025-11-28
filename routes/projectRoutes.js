@@ -6,6 +6,59 @@ const WindowItem = require('../models/WindowItem');
 const { isAuthenticated } = require('./middleware/authMiddleware'); // Adjust path
 const { convertToCOP, getExchangeRate } = require('../utils/currencyConverter');
 
+// Helper function to generate quote number
+async function generateQuoteNumber(userId) {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const datePrefix = `${year}${month}${day}`;
+  
+  // Find all projects created today by this user
+  const startOfDay = new Date(year, today.getMonth(), today.getDate(), 0, 0, 0, 0);
+  const endOfDay = new Date(year, today.getMonth(), today.getDate(), 23, 59, 59, 999);
+  
+  const todayProjects = await Project.find({
+    userId: userId,
+    createdAt: { $gte: startOfDay, $lte: endOfDay },
+    quoteNumber: { $regex: `^${datePrefix}-` }
+  }).sort({ createdAt: -1 });
+  
+  // Find the highest version number for today
+  let maxVersion = 0;
+  todayProjects.forEach(project => {
+    if (project.quoteNumber) {
+      const match = project.quoteNumber.match(/^(\d{8})-v(\d+)$/);
+      if (match) {
+        const version = parseInt(match[2]);
+        if (version > maxVersion) {
+          maxVersion = version;
+        }
+      }
+    }
+  });
+  
+  // Next version number
+  const nextVersion = maxVersion + 1;
+  
+  // Return quote number with version (format: YYYYMMDD-vN)
+  return `${datePrefix}-v${nextVersion}`;
+}
+
+// Helper function to generate next version of a quote
+async function generateNextVersion(originalQuoteNumber, userId) {
+  const match = originalQuoteNumber.match(/^(\d{8})-v(\d+)$/);
+  if (!match) {
+    // If format doesn't match, generate a new quote number
+    return await generateQuoteNumber(userId);
+  }
+  
+  const [, datePrefix, version] = match;
+  const nextVersion = parseInt(version) + 1;
+  
+  return `${datePrefix}-v${nextVersion}`;
+}
+
 // Route to display the "Create New Project" form
 router.get('/projects/new', isAuthenticated, (req, res) => {
   res.render('projects/newProject'); // We will create this view next
@@ -20,9 +73,13 @@ router.post('/projects', isAuthenticated, async (req, res) => {
       return res.status(400).send('Project Name is required.');
     }
 
+    // Generate quote number
+    const quoteNumber = await generateQuoteNumber(req.session.userId);
+
     const newProject = new Project({
       projectName,
       clientName,
+      quoteNumber,
       userId: req.session.userId // Associate project with logged-in user
     });
 
@@ -902,6 +959,60 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
   } catch (error) {
     console.error("Error updating window configuration:", error);
     res.status(500).send('Failed to update window configuration.');
+  }
+});
+
+// Route to duplicate a project with next version
+router.post('/projects/:id/duplicate', isAuthenticated, async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.session.userId;
+
+    // Find the original project
+    const originalProject = await Project.findOne({ _id: projectId, userId });
+    if (!originalProject) {
+      return res.status(404).send('Project not found or access denied.');
+    }
+
+    // Generate next version quote number
+    const newQuoteNumber = originalProject.quoteNumber 
+      ? await generateNextVersion(originalProject.quoteNumber, userId)
+      : await generateQuoteNumber(userId);
+
+    // Create new project with same details but new quote number
+    const newProject = new Project({
+      projectName: originalProject.projectName,
+      clientName: originalProject.clientName,
+      quoteNumber: newQuoteNumber,
+      userId: userId
+    });
+
+    await newProject.save();
+
+    // Duplicate all window items
+    const originalWindowItems = await WindowItem.find({ projectId: originalProject._id });
+    for (const item of originalWindowItems) {
+      const newItem = new WindowItem({
+        projectId: newProject._id,
+        itemName: item.itemName,
+        width: item.width,
+        height: item.height,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        material: item.material,
+        color: item.color,
+        style: item.style,
+        description: item.description
+      });
+      await newItem.save();
+    }
+
+    res.redirect(`/projects/${newProject._id}`);
+
+  } catch (error) {
+    console.error("Error duplicating project:", error);
+    res.status(500).send('Failed to duplicate project.');
   }
 });
 
