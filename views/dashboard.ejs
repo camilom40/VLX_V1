@@ -104,8 +104,14 @@
             background: #f8fafc;
             border-radius: 0.5rem;
             transition: all 0.2s;
+            text-decoration: none;
+            display: block;
         }
-        .activity-item:hover { border-left-color: #3b82f6; background: #f1f5f9; }
+        .activity-item:hover { 
+            border-left-color: #3b82f6; 
+            background: #eff6ff; 
+            transform: translateX(4px);
+        }
         
         .status-badge {
             display: inline-flex;
@@ -215,17 +221,21 @@
                 <% 
                 const recentProjects = projects.slice(0, 5).map(p => {
                     const date = p.updatedAt || p.createdAt;
-                    return { name: p.projectName, date: date instanceof Date ? date : new Date(date) };
+                    return { 
+                        id: p._id,
+                        name: p.projectName, 
+                        date: date instanceof Date ? date : new Date(date) 
+                    };
                 });
                 recentProjects.sort((a, b) => b.date - a.date);
                 recentProjects.forEach(activity => { %>
-                    <div class="activity-item">
+                    <a href="/projects/<%= activity.id %>" class="activity-item block cursor-pointer hover:bg-blue-50">
                         <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm text-gray-800"><%= activity.name %></span>
+                            <span class="font-medium text-sm text-gray-800 hover:text-blue-600 transition-colors"><%= activity.name %></span>
                             <span class="text-xs text-gray-500"><%= activity.date.toLocaleDateString() %></span>
                         </div>
                         <p class="text-xs text-gray-600 mt-1">Project updated</p>
-                    </div>
+                    </a>
                 <% }); %>
             </div>
         </div>
