@@ -228,46 +228,21 @@
         </div>
         <% } %>
 
-        <!-- Quick Actions & Search Bar -->
+        <!-- Quick Actions -->
         <div class="main-card p-6 mb-6">
-            <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                <!-- Quick Actions -->
-                <div class="flex flex-wrap gap-3">
-                    <a href="/projects/new" class="btn-primary flex items-center gap-2 px-4 py-2 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        New Project
-                    </a>
-                    <button onclick="exportProjects()" class="btn-secondary flex items-center gap-2 px-4 py-2 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Export
-                    </button>
-                </div>
-                
-                <!-- Search & Filters -->
-                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                    <div class="search-container flex-1 lg:w-64">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input type="text" id="projectSearch" placeholder="Search projects..." class="search-input">
-                    </div>
-                    <select id="sortSelect" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="updated">Sort by: Recently Updated</option>
-                        <option value="created">Sort by: Date Created</option>
-                        <option value="name">Sort by: Name</option>
-                        <option value="value">Sort by: Value (High to Low)</option>
-                        <option value="windows">Sort by: Window Count</option>
-                    </select>
-                </div>
-            </div>
-            
-            <!-- Filter Chips -->
-            <div id="filterChips" class="flex flex-wrap gap-2 mt-4">
-                <!-- Filters will be populated by JavaScript -->
+            <div class="flex flex-wrap gap-3">
+                <a href="/projects/new" class="btn-primary flex items-center gap-2 px-4 py-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    New Project
+                </a>
+                <button onclick="exportProjects()" class="btn-secondary flex items-center gap-2 px-4 py-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export
+                </button>
             </div>
         </div>
 
@@ -300,6 +275,23 @@
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-800">All Projects</h2>
                 <span class="text-sm text-gray-600" id="projectCount"><%= typeof projects !== 'undefined' ? projects.length : 0 %> projects</span>
+            </div>
+            
+            <!-- Search & Sort Bar -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-6 pb-4 border-b border-gray-200">
+                <div class="search-container flex-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" id="projectSearch" placeholder="Search projects..." class="search-input">
+                </div>
+                <select id="sortSelect" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="updated">Sort by: Recently Updated</option>
+                    <option value="created">Sort by: Date Created</option>
+                    <option value="name">Sort by: Name</option>
+                    <option value="value">Sort by: Value (High to Low)</option>
+                    <option value="windows">Sort by: Window Count</option>
+                </select>
             </div>
             
             <!-- Mobile/Tablet Card View -->
@@ -668,7 +660,11 @@
 
         // Export projects
         function exportProjects() {
-            showToast('Export feature coming soon!', 'info');
+            // Show loading toast
+            showToast('Preparing export...', 'info');
+            
+            // Trigger download
+            window.location.href = '/dashboard/export-projects';
         }
 
         // Initialize
