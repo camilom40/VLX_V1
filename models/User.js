@@ -11,7 +11,11 @@ const userSchema = new mongoose.Schema({
     enum: ['tier1', 'tier2', 'tier3', 'tier4', ''], 
     default: '' 
   },
-  lastLogin: { type: Date, default: null }
+  lastLogin: { type: Date, default: null },
+  companyLogo: {
+    type: String,
+    default: null // Path to the user's company logo file
+  }
 });
 
 userSchema.pre('save', function(next) {

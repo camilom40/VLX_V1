@@ -17,6 +17,7 @@ const settingsRoutes = require('./routes/admin/settingsRoutes');
 const metricsRoutes = require('./routes/admin/metricsRoutes');
 const componentGroupRoutes = require('./routes/admin/componentGroupRoutes');
 const { isAdmin } = require('./routes/middleware/adminMiddleware');
+const { isAuthenticated } = require('./routes/middleware/authMiddleware');
 // const windowSystemConfigRoutes = require('./routes/admin/windowSystemConfigRoutes');
 const windowRoutes = require('./routes/admin/windowRoutes'); // Correctly import the routes
 const dashboardRoutes = require('./routes/dashboardRoutes'); // Adjust path if required
@@ -232,10 +233,34 @@ app.post('/admin/users/update-pricing', isAdmin, async (req, res) => {
 });
 
 // Logo upload route
-app.post('/api/upload-logo', upload.single('logo'), async (req, res) => {
+app.post('/api/upload-logo', isAuthenticated, upload.single('logo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    if (!req.session.userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Get current user
+    const user = await User.findById(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Delete old logo file if it exists
+    if (user.companyLogo) {
+      const oldLogoPath = path.join(__dirname, 'public', user.companyLogo);
+      if (fs.existsSync(oldLogoPath)) {
+        try {
+          fs.unlinkSync(oldLogoPath);
+          console.log('Deleted old logo for user:', user.username);
+        } catch (err) {
+          console.error('Error deleting old logo:', err);
+          // Continue even if deletion fails
+        }
+      }
     }
 
     // Create upload directory if it doesn't exist
@@ -244,22 +269,26 @@ app.post('/api/upload-logo', upload.single('logo'), async (req, res) => {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    // Generate unique filename with user ID to ensure uniqueness
+    const uniqueSuffix = req.session.userId.toString() + '-' + Date.now();
     const filename = 'company-logo-' + uniqueSuffix + '.png';
     const filepath = path.join(uploadDir, filename);
 
     // Process and save the image
     await sharp(req.file.buffer)
-      .resize(200, 200, { // Set maximum dimensions
-        fit: 'contain', // Maintain aspect ratio
-        background: { r: 255, g: 255, b: 255, alpha: 0 } // Transparent background
+      .resize(200, 200, {
+        fit: 'contain',
+        background: { r: 255, g: 255, b: 255, alpha: 0 }
       })
-      .png({ quality: 90 }) // Convert to PNG with good quality
+      .png({ quality: 90 })
       .toFile(filepath);
 
     // Get the file path relative to public directory
     const logoUrl = '/uploads/company/' + filename;
+
+    // Save logo path to user's record in database
+    user.companyLogo = logoUrl;
+    await user.save();
 
     res.json({
       success: true,
