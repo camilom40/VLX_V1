@@ -223,7 +223,8 @@
                     const date = p.updatedAt || p.createdAt;
                     return { 
                         id: p._id,
-                        name: p.projectName, 
+                        name: p.projectName,
+                        quoteNumber: p.quoteNumber,
                         date: date instanceof Date ? date : new Date(date) 
                     };
                 });
@@ -231,8 +232,15 @@
                 recentProjects.forEach(activity => { %>
                     <a href="/projects/<%= activity.id %>" class="activity-item block cursor-pointer hover:bg-blue-50">
                         <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm text-gray-800 hover:text-blue-600 transition-colors"><%= activity.name %></span>
-                            <span class="text-xs text-gray-500"><%= activity.date.toLocaleDateString() %></span>
+                            <div class="flex-1">
+                                <span class="font-medium text-sm text-gray-800 hover:text-blue-600 transition-colors"><%= activity.name %></span>
+                                <% if (activity.quoteNumber) { %>
+                                <div class="text-xs font-mono text-blue-600 font-semibold mt-0.5">
+                                    <%= activity.quoteNumber %>
+                                </div>
+                                <% } %>
+                            </div>
+                            <span class="text-xs text-gray-500 ml-2"><%= activity.date.toLocaleDateString() %></span>
                         </div>
                         <p class="text-xs text-gray-600 mt-1">Project updated</p>
                     </a>
