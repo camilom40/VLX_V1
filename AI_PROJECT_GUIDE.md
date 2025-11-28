@@ -1,4 +1,4 @@
-# VLX-ESTIMATOR - AI Project Guide
+# VLX-ESTIMATOR - AI Project Guide - by camilo mejia
 
 > This document is designed to help AI assistants (or future developers) quickly understand the VLX-ESTIMATOR web application, its architecture, key features, and recent development history.
 
