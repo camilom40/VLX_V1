@@ -298,6 +298,7 @@
                             <div class="project-card" 
                                  data-project-name="<%= project.projectName.toLowerCase() %>" 
                                  data-client-name="<%= (project.clientName || '').toLowerCase() %>"
+                                 data-quote-number="<%= (project.quoteNumber || '').toLowerCase() %>"
                                  data-value="<%= project.projectValue || 0 %>"
                                  data-windows="<%= project.windowCount || 0 %>"
                                  data-created="<%= project.createdAt instanceof Date ? project.createdAt.getTime() : new Date(project.createdAt).getTime() %>"
@@ -409,6 +410,7 @@
                                 <tr class="hover:bg-gray-50 project-row transition-colors" 
                                     data-project-name="<%= project.projectName.toLowerCase() %>" 
                                     data-client-name="<%= (project.clientName || '').toLowerCase() %>"
+                                    data-quote-number="<%= (project.quoteNumber || '').toLowerCase() %>"
                                     data-value="<%= project.projectValue || 0 %>"
                                     data-windows="<%= project.windowCount || 0 %>"
                                     data-created="<%= project.createdAt instanceof Date ? project.createdAt.getTime() : new Date(project.createdAt).getTime() %>"
@@ -608,8 +610,9 @@
             [...cards, ...rows].forEach(item => {
                 const name = item.getAttribute('data-project-name');
                 const client = item.getAttribute('data-client-name');
+                const quoteNumber = item.getAttribute('data-quote-number') || '';
                 
-                if (name.includes(searchTerm) || client.includes(searchTerm)) {
+                if (name.includes(searchTerm) || client.includes(searchTerm) || quoteNumber.includes(searchTerm)) {
                     item.style.display = '';
                     visibleCount++;
                 } else {
