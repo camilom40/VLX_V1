@@ -1,380 +1,681 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Projects Dashboard</title>
     <%- include('partials/_head.ejs') %>
-    <!-- Use only Tailwind CSS for consistency - no direct Bootstrap import -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Add modern Heroicons for better UI elements -->
-    <script src="https://unpkg.com/heroicons@1.0.6/outline/index.js"></script>
-    <!-- Add dashboard styles -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/css/dashboard.css">
+    <style>
+        body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+        
+        .main-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.05);
+            border: 1px solid rgba(226,232,240,0.8);
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+        
+        .stat-card-blue { border-left-color: #3b82f6; }
+        .stat-card-green { border-left-color: #10b981; }
+        .stat-card-purple { border-left-color: #8b5cf6; }
+        .stat-card-amber { border-left-color: #f59e0b; }
+        
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        
+        .project-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .project-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-color: #cbd5e1; }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+        .toast-success { background: #10b981; color: white; }
+        .toast-error { background: #ef4444; color: white; }
+        .toast-info { background: #3b82f6; color: white; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-chip:hover { background: #e2e8f0; }
+        .filter-chip.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+        
+        .activity-item {
+            padding: 0.75rem;
+            border-left: 3px solid #e2e8f0;
+            margin-bottom: 0.75rem;
+            background: #f8fafc;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+        .activity-item:hover { border-left-color: #3b82f6; background: #f1f5f9; }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-active { background: #d1fae5; color: #047857; }
+        .status-in-progress { background: #fef3c7; color: #92400e; }
+        .status-completed { background: #dbeafe; color: #1e40af; }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
-
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
     <%- include('partials/_header.ejs') %>
 
-    <main role="main" class="container mx-auto mt-6 px-4 flex-grow mb-16">
-        <!-- Dashboard Header with Stats -->
-        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="flex items-center space-x-6 mb-4 md:mb-0">
-                    <!-- Company Logo Section -->
-                    <div class="company-logo-container">
-                        <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
-                            <img src="<%= companyLogo %>" alt="Company Logo" class="company-logo-image">
-                        <% } else { %>
-                            <div class="company-logo-placeholder">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                        <% } %>
-                        <label for="logoUpload" class="logo-upload-btn">
-                            <%= typeof companyLogo !== 'undefined' && companyLogo ? 'Change Logo' : 'Upload Logo' %>
-                        </label>
-                        <input type="file" id="logoUpload" class="hidden" accept="image/*">
-                    </div>
-                    
-                    <div>
-                        <h2 class="text-3xl font-bold text-gray-800">My Projects</h2>
-                        <p class="text-sm text-gray-600 mt-1">Welcome back, <%= typeof user !== 'undefined' ? user.username : 'User' %></p>
-                    </div>
+    <main role="main" class="container mx-auto px-4 py-8 flex-grow">
+        <!-- Dashboard Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">My Projects Dashboard</h1>
+                    <p class="text-gray-500 text-sm">Welcome back, <%= typeof user !== 'undefined' ? user.username : 'User' %></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Company Logo -->
+                <div class="company-logo-container relative">
+                    <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
+                        <img src="<%= companyLogo %>" alt="Company Logo" class="company-logo-image">
+                    <% } else { %>
+                        <div class="company-logo-placeholder">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                    <% } %>
+                    <label for="logoUpload" class="logo-upload-btn">
+                        <%= typeof companyLogo !== 'undefined' && companyLogo ? 'Change' : 'Upload' %>
+                    </label>
+                    <input type="file" id="logoUpload" class="hidden" accept="image/*">
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Statistics Cards -->
+        <% if (typeof stats !== 'undefined' && stats) { %>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Total Projects -->
+            <div class="stat-card stat-card-blue">
+                <div class="stat-icon bg-blue-100 text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+                <div class="text-2xl font-bold text-gray-800 mb-1"><%= stats.totalProjects || 0 %></div>
+                <div class="text-sm text-gray-600">Total Projects</div>
+            </div>
+            
+            <!-- Total Windows -->
+            <div class="stat-card stat-card-green">
+                <div class="stat-icon bg-green-100 text-green-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                </div>
+                <div class="text-2xl font-bold text-gray-800 mb-1"><%= stats.totalWindows || 0 %></div>
+                <div class="text-sm text-gray-600">Total Windows</div>
+            </div>
+            
+            <!-- Portfolio Value -->
+            <div class="stat-card stat-card-purple">
+                <div class="stat-icon bg-purple-100 text-purple-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                </div>
+                <div class="text-xl sm:text-2xl font-bold text-gray-800 mb-1 break-words">$<%= typeof stats.totalPortfolioValue !== 'undefined' ? stats.totalPortfolioValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %></div>
+                <div class="text-sm text-gray-600">Portfolio Value</div>
+            </div>
+            
+            <!-- Active Clients -->
+            <div class="stat-card stat-card-amber">
+                <div class="stat-icon bg-amber-100 text-amber-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <div class="text-2xl font-bold text-gray-800 mb-1"><%= stats.uniqueClients || 0 %></div>
+                <div class="text-sm text-gray-600">Active Clients</div>
+            </div>
+        </div>
+        <% } %>
+
+        <!-- Quick Actions & Search Bar -->
+        <div class="main-card p-6 mb-6">
+            <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                <!-- Quick Actions -->
+                <div class="flex flex-wrap gap-3">
+                    <a href="/projects/new" class="btn-primary flex items-center gap-2 px-4 py-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        New Project
+                    </a>
+                    <button onclick="exportProjects()" class="btn-secondary flex items-center gap-2 px-4 py-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Export
+                    </button>
                 </div>
                 
-                <div class="flex flex-col sm:flex-row gap-4 items-center">
-                    <!-- Search Box -->
-                    <div class="search-container w-full sm:w-64 md:w-80">
+                <!-- Search & Filters -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                    <div class="search-container flex-1 lg:w-64">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        <input type="text" id="projectSearch" placeholder="Search projects..." 
-                            class="search-input border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
+                        <input type="text" id="projectSearch" placeholder="Search projects..." class="search-input">
                     </div>
-                    
-                    <!-- Create New Project Button -->
-                    <a href="/projects/new" class="btn-primary flex items-center justify-center px-6 py-3 text-base rounded-lg shadow-md hover:shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Create New Project
-                    </a>
+                    <select id="sortSelect" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="updated">Sort by: Recently Updated</option>
+                        <option value="created">Sort by: Date Created</option>
+                        <option value="name">Sort by: Name</option>
+                        <option value="value">Sort by: Value (High to Low)</option>
+                        <option value="windows">Sort by: Window Count</option>
+                    </select>
                 </div>
             </div>
-
-            <!-- Project Stats Summary -->
-            <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                    <div class="text-blue-800 text-2xl font-bold"><%= projects.length %></div>
-                    <div class="text-blue-600">Total Projects</div>
-                </div>
-                <div class="bg-green-50 border border-green-100 rounded-lg p-4">
-                    <div class="text-green-800 text-2xl font-bold">
-                    <% 
-                        const today = new Date();
-                        const recentProjects = projects.filter(p => {
-                            const date = p.updatedAt || p.createdAt;
-                            const projectDate = date instanceof Date ? date : new Date(date);
-                            const diffDays = Math.floor((today - projectDate) / (1000 * 60 * 60 * 24));
-                            return diffDays < 30;
-                        });
-                    %>
-                    <%= recentProjects.length %>
-                    </div>
-                    <div class="text-green-600">Recent Activity (30 days)</div>
-                </div>
-                <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
-                    <div class="text-purple-800 text-2xl font-bold">
-                    <% 
-                        // Count unique clients
-                        const uniqueClients = new Set(projects.map(p => p.clientName).filter(name => name));
-                    %>
-                    <%= uniqueClients.size %>
-                    </div>
-                    <div class="text-purple-600">Unique Clients</div>
-                </div>
+            
+            <!-- Filter Chips -->
+            <div id="filterChips" class="flex flex-wrap gap-2 mt-4">
+                <!-- Filters will be populated by JavaScript -->
             </div>
-            <% } %>
         </div>
 
-        <!-- Projects List - Card View for Mobile, Table for Larger Screens -->
-        <div class="block lg:hidden">
-            <!-- Card view for mobile/tablet -->
-            <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="projectCardsContainer">
-                    <% projects.forEach(function(project) { %>
-                        <div class="project-card bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100" data-project-name="<%= project.projectName.toLowerCase() %>" data-client-name="<%= (project.clientName || '').toLowerCase() %>">
-                            <div class="border-l-4 border-blue-500 p-4">
-                                <h3 class="font-bold text-gray-800 text-lg mb-2">
-                                    <a href="/projects/<%= project._id %>" class="hover:text-blue-600">
-                                        <%= project.projectName %>
-                                    </a>
-                                </h3>
-                                <p class="text-gray-600 mb-2">
-                                    <span class="font-medium">Client:</span> 
-                                    <%= project.clientName || 'Not specified' %>
-                                </p>
-                                <div class="flex flex-col space-y-2 mb-3">
-                                    <% const updateDate = project.updatedAt || project.createdAt;
-                                       const createDate = project.createdAt; %>
-                                    
-                                    <p class="text-gray-500 text-sm flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <span class="font-medium">Created:</span>
-                                        <span class="ml-1 date-badge date-badge-created">
-                                            <%= createDate instanceof Date ? createDate.toLocaleDateString() : (createDate ? new Date(createDate).toLocaleDateString() : 'N/A') %>
-                                        </span>
-                                    </p>
-                                    
-                                    <p class="text-gray-500 text-sm flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span class="font-medium">Updated:</span>
-                                        <span class="ml-1 date-badge date-badge-updated">
-                                            <%= updateDate instanceof Date ? updateDate.toLocaleDateString() : (updateDate ? new Date(updateDate).toLocaleDateString() : 'N/A') %>
-                                        </span>
-                                    </p>
+        <!-- Recent Activity -->
+        <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
+        <div class="main-card p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+            <div id="recentActivity" class="max-h-64 overflow-y-auto">
+                <% 
+                const recentProjects = projects.slice(0, 5).map(p => {
+                    const date = p.updatedAt || p.createdAt;
+                    return { name: p.projectName, date: date instanceof Date ? date : new Date(date) };
+                });
+                recentProjects.sort((a, b) => b.date - a.date);
+                recentProjects.forEach(activity => { %>
+                    <div class="activity-item">
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-sm text-gray-800"><%= activity.name %></span>
+                            <span class="text-xs text-gray-500"><%= activity.date.toLocaleDateString() %></span>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">Project updated</p>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+        <% } %>
+
+        <!-- Projects List -->
+        <div class="main-card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">All Projects</h2>
+                <span class="text-sm text-gray-600" id="projectCount"><%= typeof projects !== 'undefined' ? projects.length : 0 %> projects</span>
+            </div>
+            
+            <!-- Mobile/Tablet Card View -->
+            <div class="block lg:hidden">
+                <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="projectCardsContainer">
+                        <% projects.forEach(function(project) { %>
+                            <div class="project-card" 
+                                 data-project-name="<%= project.projectName.toLowerCase() %>" 
+                                 data-client-name="<%= (project.clientName || '').toLowerCase() %>"
+                                 data-value="<%= project.projectValue || 0 %>"
+                                 data-windows="<%= project.windowCount || 0 %>"
+                                 data-created="<%= project.createdAt instanceof Date ? project.createdAt.getTime() : new Date(project.createdAt).getTime() %>"
+                                 data-updated="<%= (project.updatedAt || project.createdAt) instanceof Date ? (project.updatedAt || project.createdAt).getTime() : new Date(project.updatedAt || project.createdAt).getTime() %>">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex-1">
+                                        <h3 class="font-bold text-lg text-gray-800 mb-1">
+                                            <a href="/projects/<%= project._id %>" class="hover:text-blue-600 transition-colors">
+                                                <%= project.projectName %>
+                                            </a>
+                                        </h3>
+                                        <p class="text-sm text-gray-600 mb-2">
+                                            <span class="font-medium">Client:</span> <%= project.clientName || 'Not specified' %>
+                                        </p>
+                                    </div>
+                                    <span class="status-badge status-active">Active</span>
                                 </div>
-                                <div class="flex justify-between items-center mt-2">
-                                    <a href="/projects/<%= project._id %>" class="text-blue-600 hover:text-blue-800 font-medium">
-                                        View Details
+                                
+                                <div class="grid grid-cols-2 gap-3 mb-3">
+                                    <div class="bg-blue-50 rounded-lg p-2">
+                                        <div class="text-xs text-gray-600 mb-1">Windows</div>
+                                        <div class="text-lg font-bold text-blue-600"><%= project.windowCount || 0 %></div>
+                                    </div>
+                                    <div class="bg-purple-50 rounded-lg p-2">
+                                        <div class="text-xs text-gray-600 mb-1">Value</div>
+                                        <div class="text-lg font-bold text-purple-600">$<%= (project.projectValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                    <span>Created: <%= project.createdAt instanceof Date ? project.createdAt.toLocaleDateString() : new Date(project.createdAt).toLocaleDateString() %></span>
+                                    <span>Updated: <%= (project.updatedAt || project.createdAt) instanceof Date ? (project.updatedAt || project.createdAt).toLocaleDateString() : new Date(project.updatedAt || project.createdAt).toLocaleDateString() %></span>
+                                </div>
+                                
+                                <div class="flex items-center justify-between pt-3 border-t border-gray-200">
+                                    <a href="/projects/<%= project._id %>" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                        View Details →
                                     </a>
-                                    <button type="button"
-                                            class="btn-danger flex items-center delete-project-btn"
-                                            data-project-id="<%= project._id %>"
+                                    <button type="button" class="text-red-600 hover:text-red-800 delete-project-btn text-sm" 
+                                            data-project-id="<%= project._id %>" 
                                             data-project-name="<%= project.projectName %>">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
                                         Delete
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    <% }); %>
-                </div>
-            <% } else { %>
-                <div class="bg-white p-8 rounded-lg shadow-sm text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <p class="text-lg text-gray-600 mb-4">No projects found.</p>
-                    <a href="/projects/new" class="btn-primary inline-flex items-center px-6 py-3 text-base rounded-lg shadow-md hover:shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Create Your First Project
-                    </a>
-                </div>
-            <% } %>
-        </div>
-
-        <!-- Table view for desktop -->
-        <div class="hidden lg:block">
-            <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
-                <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200" id="projectTable">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created On</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <% projects.forEach(function(project, index) { %>
-                                    <tr class="hover:bg-gray-50 project-row" data-project-name="<%= project.projectName.toLowerCase() %>" data-client-name="<%= (project.clientName || '').toLowerCase() %>">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-800"><%= index + 1 %></div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <a href="/projects/<%= project._id %>" class="text-base font-medium text-blue-600 hover:text-blue-800">
-                                                <%= project.projectName %>
-                                            </a>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900"><%= project.clientName || 'N/A' %></div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <% const createDate = project.createdAt; %>
-                                            <div class="text-sm text-gray-500 flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                <span class="date-badge date-badge-created">
-                                                    <%= createDate instanceof Date ? createDate.toLocaleDateString() : (createDate ? new Date(createDate).toLocaleDateString() : 'N/A') %>
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <% const updateDate = project.updatedAt || project.createdAt; %>
-                                            <div class="text-sm text-gray-500 flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <span class="date-badge date-badge-updated">
-                                                    <%= updateDate instanceof Date ? updateDate.toLocaleDateString() : (updateDate ? new Date(updateDate).toLocaleDateString() : 'N/A') %>
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div class="flex items-center justify-end space-x-4">
-                                                <a href="/projects/<%= project._id %>" class="text-blue-600 hover:text-blue-800" title="View Details">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                    </svg>
-                                                </a>
-                                                <button type="button"
-                                                        class="text-red-600 hover:text-red-800 delete-project-btn"
-                                                        data-project-id="<%= project._id %>"
-                                                        data-project-name="<%= project.projectName %>"
-                                                        title="Delete Project">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <% }); %>
-                            </tbody>
-                        </table>
+                        <% }); %>
                     </div>
-                </div>
-            <% } else { %>
-                <div class="bg-white p-8 rounded-lg shadow-sm text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <p class="text-lg text-gray-600 mb-4">No projects found.</p>
-                    <a href="/projects/new" class="btn-primary inline-flex items-center px-6 py-3 text-base rounded-lg shadow-md hover:shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                <% } else { %>
+                    <div class="text-center py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                         </svg>
-                        Create Your First Project
-                    </a>
-                </div>
-            <% } %>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">No Projects Yet</h3>
+                        <p class="text-gray-600 mb-6">Get started by creating your first project</p>
+                        <a href="/projects/new" class="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Create Your First Project
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Desktop Table View -->
+            <div class="hidden lg:block overflow-x-auto">
+                <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
+                    <table class="min-w-full divide-y divide-gray-200" id="projectTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('name')">
+                                    Project Name <span class="sort-indicator" id="sort-name"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('client')">
+                                    Client <span class="sort-indicator" id="sort-client"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('windows')">
+                                    Windows <span class="sort-indicator" id="sort-windows"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('value')">
+                                    Value <span class="sort-indicator" id="sort-value"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('updated')">
+                                    Last Updated <span class="sort-indicator" id="sort-updated"></span>
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="projectTableBody">
+                            <% projects.forEach(function(project) { %>
+                                <tr class="hover:bg-gray-50 project-row transition-colors" 
+                                    data-project-name="<%= project.projectName.toLowerCase() %>" 
+                                    data-client-name="<%= (project.clientName || '').toLowerCase() %>"
+                                    data-value="<%= project.projectValue || 0 %>"
+                                    data-windows="<%= project.windowCount || 0 %>"
+                                    data-created="<%= project.createdAt instanceof Date ? project.createdAt.getTime() : new Date(project.createdAt).getTime() %>"
+                                    data-updated="<%= (project.updatedAt || project.createdAt) instanceof Date ? (project.updatedAt || project.createdAt).getTime() : new Date(project.updatedAt || project.createdAt).getTime() %>">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <a href="/projects/<%= project._id %>" class="text-base font-medium text-blue-600 hover:text-blue-800">
+                                            <%= project.projectName %>
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900"><%= project.clientName || 'N/A' %></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                                            <%= project.windowCount || 0 %>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-semibold text-gray-900">
+                                            $<%= (project.projectValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-500">
+                                            <%= (project.updatedAt || project.createdAt) instanceof Date ? (project.updatedAt || project.createdAt).toLocaleDateString() : new Date(project.updatedAt || project.createdAt).toLocaleDateString() %>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex items-center justify-end gap-3">
+                                            <a href="/projects/<%= project._id %>" class="text-blue-600 hover:text-blue-800" title="View Details">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </a>
+                                            <button type="button" class="text-red-600 hover:text-red-800 delete-project-btn" 
+                                                    data-project-id="<%= project._id %>" 
+                                                    data-project-name="<%= project.projectName %>"
+                                                    title="Delete Project">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } else { %>
+                    <div class="text-center py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">No Projects Yet</h3>
+                        <p class="text-gray-600 mb-6">Get started by creating your first project</p>
+                        <a href="/projects/new" class="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Create Your First Project
+                        </a>
+                    </div>
+                <% } %>
+            </div>
         </div>
     </main>
 
     <%- include('partials/_footer.ejs') %>
 
-    <!-- JavaScript for Handling Delete Button Clicks and Search -->
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        // Delete button functionality
-        const deleteButtons = document.querySelectorAll('.delete-project-btn');
-        deleteButtons.forEach(button => {
-          button.addEventListener('click', function(event) {
-            const projectId = this.getAttribute('data-project-id');
-            const projectName = this.getAttribute('data-project-name');
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M${type === 'success' ? '9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : type === 'error' ? '10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' : '13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}" />
+                </svg>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
 
-            // Show confirmation dialog with more details
-            if (confirm(`Are you sure you want to delete the project: "${projectName}"?\n\nThis action cannot be undone.`)) {
-              const form = document.createElement('form');
-              form.method = 'POST';
-              form.action = `/projects/delete/${projectId}`;
-              document.body.appendChild(form);
-              form.submit();
-            }
-          });
-        });
+        // Modal confirmation
+        function showConfirmModal(message, onConfirm) {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal-content">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Confirm Action</h3>
+                    <p class="text-gray-600 mb-6">${message}</p>
+                    <div class="flex gap-3 justify-end">
+                        <button class="modal-cancel btn-secondary px-4 py-2 rounded-lg">Cancel</button>
+                        <button class="modal-confirm btn-primary px-4 py-2 rounded-lg">Confirm</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            
+            overlay.querySelector('.modal-cancel').addEventListener('click', () => overlay.remove());
+            overlay.querySelector('.modal-confirm').addEventListener('click', () => {
+                overlay.remove();
+                onConfirm();
+            });
+        }
 
         // Search functionality
         const searchInput = document.getElementById('projectSearch');
         if (searchInput) {
-          searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            
-            // For cards view
-            const projectCards = document.querySelectorAll('#projectCardsContainer .project-card');
-            projectCards.forEach(card => {
-              const projectName = card.getAttribute('data-project-name');
-              const clientName = card.getAttribute('data-client-name');
-              
-              if (projectName.includes(searchTerm) || clientName.includes(searchTerm)) {
-                card.style.display = '';
-              } else {
-                card.style.display = 'none';
-              }
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                filterProjects();
             });
-            
-            // For table view
-            const projectRows = document.querySelectorAll('#projectTable .project-row');
-            projectRows.forEach(row => {
-              const projectName = row.getAttribute('data-project-name');
-              const clientName = row.getAttribute('data-client-name');
-              
-              if (projectName.includes(searchTerm) || clientName.includes(searchTerm)) {
-                row.style.display = '';
-              } else {
-                row.style.display = 'none';
-              }
-            });
-          });
         }
 
-        // Logo upload functionality
+        // Sort functionality
+        let currentSort = 'updated';
+        let sortDirection = 'desc';
+        
+        document.getElementById('sortSelect')?.addEventListener('change', function() {
+            currentSort = this.value;
+            sortProjects();
+        });
+
+        function sortTable(column) {
+            currentSort = column;
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            sortProjects();
+        }
+
+        function sortProjects() {
+            const cards = Array.from(document.querySelectorAll('#projectCardsContainer .project-card'));
+            const rows = Array.from(document.querySelectorAll('#projectTableBody .project-row'));
+            
+            const sortFunction = (a, b) => {
+                let aVal, bVal;
+                switch(currentSort) {
+                    case 'name':
+                        aVal = a.getAttribute('data-project-name');
+                        bVal = b.getAttribute('data-project-name');
+                        return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                    case 'client':
+                        aVal = a.getAttribute('data-client-name');
+                        bVal = b.getAttribute('data-client-name');
+                        return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                    case 'windows':
+                        aVal = parseInt(a.getAttribute('data-windows'));
+                        bVal = parseInt(b.getAttribute('data-windows'));
+                        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    case 'value':
+                        aVal = parseFloat(a.getAttribute('data-value'));
+                        bVal = parseFloat(b.getAttribute('data-value'));
+                        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    case 'updated':
+                    default:
+                        aVal = parseInt(a.getAttribute('data-updated'));
+                        bVal = parseInt(b.getAttribute('data-updated'));
+                        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                }
+            };
+            
+            cards.sort(sortFunction).forEach(card => document.getElementById('projectCardsContainer').appendChild(card));
+            rows.sort(sortFunction).forEach(row => document.getElementById('projectTableBody').appendChild(row));
+            
+            // Update sort indicators
+            document.querySelectorAll('.sort-indicator').forEach(ind => ind.textContent = '');
+            const indicator = document.getElementById(`sort-${currentSort}`);
+            if (indicator) indicator.textContent = sortDirection === 'asc' ? '↑' : '↓';
+        }
+
+        function filterProjects() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const cards = document.querySelectorAll('#projectCardsContainer .project-card');
+            const rows = document.querySelectorAll('#projectTableBody .project-row');
+            
+            let visibleCount = 0;
+            
+            [...cards, ...rows].forEach(item => {
+                const name = item.getAttribute('data-project-name');
+                const client = item.getAttribute('data-client-name');
+                
+                if (name.includes(searchTerm) || client.includes(searchTerm)) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('projectCount').textContent = `${visibleCount} projects`;
+        }
+
+        // Delete project with modal
+        document.querySelectorAll('.delete-project-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const projectId = this.getAttribute('data-project-id');
+                const projectName = this.getAttribute('data-project-name');
+                
+                showConfirmModal(
+                    `Are you sure you want to delete "${projectName}"? This action cannot be undone.`,
+                    function() {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `/projects/delete/${projectId}`;
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                );
+            });
+        });
+
+        // Logo upload
         const logoUpload = document.getElementById('logoUpload');
         if (logoUpload) {
-          logoUpload.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-              const formData = new FormData();
-              formData.append('logo', file);
-
-              // Show loading state
-              const logoContainer = document.querySelector('.company-logo-container');
-              logoContainer.classList.add('opacity-50');
-
-              // Send the file to the server
-              fetch('/api/upload-logo', {
-                method: 'POST',
-                body: formData
-              })
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  // Update the logo image
-                  const logoImage = document.querySelector('.company-logo-image');
-                  if (logoImage) {
-                    logoImage.src = data.logoUrl + '?t=' + new Date().getTime();
-                  } else {
-                    // If no image exists, create one
-                    const placeholder = document.querySelector('.company-logo-placeholder');
-                    if (placeholder) {
-                      placeholder.innerHTML = `<img src="${data.logoUrl}?t=${new Date().getTime()}" alt="Company Logo" class="company-logo-image">`;
-                    }
-                  }
-                } else {
-                  alert('Failed to upload logo. Please try again.');
+            logoUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const formData = new FormData();
+                    formData.append('logo', file);
+                    
+                    const logoContainer = document.querySelector('.company-logo-container');
+                    logoContainer.classList.add('opacity-50');
+                    
+                    fetch('/api/upload-logo', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const logoImage = document.querySelector('.company-logo-image');
+                            if (logoImage) {
+                                logoImage.src = data.logoUrl + '?t=' + new Date().getTime();
+                            } else {
+                                const placeholder = document.querySelector('.company-logo-placeholder');
+                                if (placeholder) {
+                                    placeholder.innerHTML = `<img src="${data.logoUrl}?t=${new Date().getTime()}" alt="Company Logo" class="company-logo-image">`;
+                                }
+                            }
+                            showToast('Logo uploaded successfully!', 'success');
+                        } else {
+                            showToast('Failed to upload logo', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('An error occurred while uploading', 'error');
+                    })
+                    .finally(() => {
+                        logoContainer.classList.remove('opacity-50');
+                    });
                 }
-              })
-              .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while uploading the logo. Please try again.');
-              })
-              .finally(() => {
-                // Remove loading state
-                logoContainer.classList.remove('opacity-50');
-              });
-            }
-          });
+            });
         }
-      });
+
+        // Export projects
+        function exportProjects() {
+            showToast('Export feature coming soon!', 'info');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            sortProjects();
+            filterProjects();
+        });
     </script>
 </body>
 </html>
