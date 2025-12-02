@@ -43,7 +43,7 @@
           </div>
         </div>
         
-        <div class="mt-4 md:mt-0 bg-blue-50 rounded-lg px-6 py-4 border border-blue-100">
+        <div class="mt-4 md:mt-0 bg-blue-50 rounded-lg px-6 py-4 border border-blue-100" data-project-total="<%= projectTotal %>">
           <div class="text-blue-800 text-xl font-bold" id="displayTotal">$<%= projectTotal %></div>
           <div class="text-blue-600 text-sm">Total Project Value</div>
         </div>
@@ -372,7 +372,8 @@
       administrativeExpenses: 8.0
     };
     
-    const baseProjectTotal = <%= projectTotal %>;
+    // Get project total from data attribute (initialized after DOM loads)
+    let baseProjectTotal = 0;
     
     // Format numbers with commas
     function formatCurrency(amount) {
@@ -445,6 +446,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      // Get project total from data attribute
+      const projectTotalElement = document.querySelector('[data-project-total]');
+      baseProjectTotal = projectTotalElement ? parseFloat(projectTotalElement.getAttribute('data-project-total')) || 0 : 0;
+      
       // Format existing prices with commas
       formatExistingPrices();
       
