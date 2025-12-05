@@ -311,6 +311,73 @@ router.post('/projects/:id/items', isAuthenticated, async (req, res) => {
   }
 });
 
+// NEW ROUTE: Duplicate a window item
+router.post('/projects/:projectId/items/:itemId/duplicate', isAuthenticated, async (req, res) => {
+  try {
+    const { projectId, itemId } = req.params;
+    const userId = req.session.userId;
+
+    // Verify project ownership
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) {
+      return res.status(404).send('Project not found or access denied.');
+    }
+
+    // Find the original item
+    const originalItem = await WindowItem.findById(itemId);
+    if (!originalItem) {
+      return res.status(404).send('Window item not found.');
+    }
+
+    // Generate a unique item name
+    // Always start with a number suffix since we're duplicating
+    const baseName = originalItem.itemName;
+    let newItemName = `${baseName} (2)`;
+    let counter = 2;
+    
+    // Check if the name already exists and find a unique name
+    // Exclude the original item from the check
+    while (true) {
+      const existingItem = await WindowItem.findOne({ 
+        projectId, 
+        itemName: newItemName,
+        _id: { $ne: itemId } // Exclude the original item being duplicated
+      });
+      
+      if (!existingItem) {
+        break; // Name is unique
+      }
+      
+      // Try with the next number suffix
+      counter++;
+      newItemName = `${baseName} (${counter})`;
+    }
+
+    // Create a duplicate item with the new name
+    const duplicatedItem = new WindowItem({
+      projectId: originalItem.projectId,
+      itemName: newItemName,
+      width: originalItem.width,
+      height: originalItem.height,
+      quantity: originalItem.quantity,
+      unitPrice: originalItem.unitPrice,
+      material: originalItem.material,
+      color: originalItem.color,
+      style: originalItem.style,
+      description: originalItem.description,
+      // totalPrice will be calculated automatically by the model
+    });
+
+    await duplicatedItem.save();
+    
+    res.redirect(`/projects/${projectId}`);
+
+  } catch (error) {
+    console.error("Error duplicating window item:", error);
+    res.status(500).send('Failed to duplicate window item.');
+  }
+});
+
 // NEW ROUTE: Delete a window item
 router.post('/projects/:projectId/items/:itemId/delete', isAuthenticated, async (req, res) => {
   try {
@@ -658,6 +725,16 @@ User-Configured Accessories: ${userConfigurableAccessories.length}
 Auto-Managed Accessories: ${autoManagedAccessories.length}
 ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     `.trim();
+
+    // Check if the item name already exists in this project
+    const existingItemWithName = await WindowItem.findOne({ 
+      projectId, 
+      itemName: windowRef 
+    });
+    
+    if (existingItemWithName) {
+      return res.status(400).send(`An item with the name "${windowRef}" already exists in this project. Please choose a different name.`);
+    }
 
     // Calculate unit price with validation
     const unitPrice = isNaN(finalPrice) || isNaN(windowQuantity) || windowQuantity === 0 
@@ -1045,6 +1122,17 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       console.error('Invalid pricing calculation - cannot update window item');
       console.error('unitPrice:', unitPrice, 'finalPrice:', finalPrice);
       throw new Error('Pricing calculation failed - invalid numeric values');
+    }
+
+    // Check if the new item name is unique (excluding the current item)
+    const existingItemWithName = await WindowItem.findOne({ 
+      projectId, 
+      itemName: windowRef,
+      _id: { $ne: windowId } // Exclude the current item being edited
+    });
+    
+    if (existingItemWithName) {
+      return res.status(400).send(`An item with the name "${windowRef}" already exists in this project. Please choose a different name.`);
     }
 
     // Update the existing window item

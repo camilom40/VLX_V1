@@ -3,19 +3,68 @@
 <head>
   <%- include('../partials/_head.ejs'); %>
   <title>User Management - VLX System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+    
+    .main-card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.05);
+      border: 1px solid rgba(226,232,240,0.8);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white; font-weight: 600; padding: 0.625rem 1.25rem;
+      border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+      transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); transform: translateY(-1px); }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table thead {
+      background: linear-gradient(135deg, #1e40af, #3b82f6);
+    }
+    .data-table th {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: white;
+    }
+    .data-table tbody tr {
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.15s ease;
+    }
+    .data-table tbody tr:hover { background: #f8fafc; }
+    .data-table td {
+      padding: 1rem 1.25rem;
+      font-size: 0.875rem;
+      color: #374151;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs'); %>
 
   <main class="py-10 flex-grow">
     <div class="max-w-[1440px] mx-auto px-4 sm:px-6">
       <!-- Page Header -->
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-brand-blue to-blue-400 p-7">
-          <div class="flex flex-col md:flex-row justify-center items-center text-center md:text-left">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white mb-4 md:mb-0 md:mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
+      <div class="main-card overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-7">
+          <div class="flex flex-col md:flex-row items-center text-center md:text-left">
+            <div class="bg-white/20 p-3 rounded-xl mb-4 md:mb-0 md:mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
             <div>
               <h1 class="text-2xl md:text-3xl font-bold text-white">User Management</h1>
               <p class="text-blue-100 mt-1 max-w-2xl">
@@ -32,16 +81,8 @@
               <span class="font-medium"><%= users.length %></span> total user<%= users.length !== 1 ? 's' : '' %> in the system
             </div>
             <div class="flex flex-wrap justify-center gap-3">
-              <% if (users.length > 0) { %>
-                <button type="submit" form="userManagementForm" class="bg-brand-blue hover:bg-brand-blue-light text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                  </svg>
-                  Save Changes
-                </button>
-              <% } %>
-              <a href="/admin/users/add" class="bg-brand-blue-light hover:bg-brand-blue text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <a href="/admin/users/add" class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 Add New User
@@ -52,11 +93,11 @@
       </div>
 
       <!-- Users Table Card -->
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="main-card overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
           <div class="flex justify-between items-center">
             <h2 class="text-lg font-semibold text-gray-700">Registered Users</h2>
-            <button id="toggleView" class="md:hidden text-gray-500 hover:text-brand-blue">
+            <button id="toggleView" class="md:hidden text-gray-500 hover:text-blue-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
@@ -66,24 +107,25 @@
         
         <div class="overflow-x-auto">
           <% if (users.length > 0) { %>
-            <form id="userManagementForm" action="/admin/users/update-all" method="POST">
               <!-- Desktop Table (hidden on small screens) -->
-              <table class="min-w-full divide-y divide-gray-200 table-fixed hidden md:table">
-                <thead class="bg-blue-50">
+              <table class="data-table hidden md:table">
+                <thead>
                   <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[15%]">Username</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[20%]">Password</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[10%]">Role</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[12%]">New Role</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[12%]">Current Tier</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[12%]">New Tier</th>
-                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[8%]">Projects</th>
-                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[11%]">Actions</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Username</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Login</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Activity</th>
+                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Active</th>
+                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                   <% users.forEach(user => { %>
-                    <tr class="hover:bg-blue-50 transition-colors duration-150">
+                    <tr class="hover:bg-blue-50 transition-colors duration-150 cursor-pointer <%= user.isActive === false ? 'opacity-60' : '' %>" onclick="window.location.href='/admin/users/<%= user._id %>'" data-user-id="<%= user._id %>">
+                      <td class="px-6 py-5 text-sm text-gray-600">
+                        <%= user.companyName || '—' %>
+                      </td>
                       <td class="px-6 py-5 text-sm text-gray-900 font-medium">
                         <div class="flex items-center">
                           <div class="h-10 w-10 flex-shrink-0 mr-3">
@@ -93,74 +135,53 @@
                           </div>
                           <div class="truncate max-w-[140px]" title="<%= user.username %>">
                             <%= user.username %>
-                            <input type="hidden" name="userId[]" value="<%= user._id %>">
                           </div>
                         </div>
                       </td>
-                      <td class="px-6 py-5">
-                        <div class="relative flex items-center">
-                          <input type="password" id="password-<%= user._id %>" readonly value="••••••••" class="pr-16 border-0 bg-transparent focus:ring-0 text-sm text-gray-500 w-full overflow-x-auto" />
-                          <div class="absolute right-0 flex space-x-1">
-                            <button type="button" data-userid="<%= user._id %>" class="view-password-btn bg-gray-50 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                            <button type="button" data-userid="<%= user._id %>" data-username="<%= user.username %>" class="change-password-btn bg-gray-50 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
+                      <td class="px-6 py-5 text-sm text-gray-600">
+                        <% if (user.lastLogin) { %>
+                          <div class="text-xs">
+                            <%= new Date(user.lastLogin).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
                           </div>
-                        </div>
-                      </td>
-                      <td class="px-6 py-5">
-                        <span class="px-3 py-1 text-xs font-medium rounded-full <%= user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800' %>">
-                          <%= user.role %>
-                        </span>
-                      </td>
-                      <td class="px-6 py-5">
-                        <select name="newRole[]" class="w-full border border-gray-300 rounded-lg text-center py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                          <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
-                          <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
-                        </select>
-                      </td>
-                      <td class="px-6 py-5">
-                        <span class="px-3 py-1 text-xs font-medium rounded-full 
-                          <%= !user.pricingTier ? 'bg-gray-100 text-gray-800' : 
-                            user.pricingTier === 'tier1' ? 'bg-blue-100 text-blue-800' :
-                            user.pricingTier === 'tier2' ? 'bg-green-100 text-green-800' :
-                            user.pricingTier === 'tier3' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800' %>">
-                          <%= !user.pricingTier ? 'Not Set' : 
-                            user.pricingTier === 'tier1' ? 'Small' :
-                            user.pricingTier === 'tier2' ? 'Medium' :
-                            user.pricingTier === 'tier3' ? 'Large' :
-                            'Enterprise' %>
-                        </span>
-                      </td>
-                      <td class="px-6 py-5">
-                        <select name="pricingTier[]" class="w-full border border-gray-300 rounded-lg text-center py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                          <option value="" <%= !user.pricingTier ? 'selected' : '' %>>Not Set</option>
-                          <option value="tier1" <%= user.pricingTier === 'tier1' ? 'selected' : '' %>>Small</option>
-                          <option value="tier2" <%= user.pricingTier === 'tier2' ? 'selected' : '' %>>Medium</option>
-                          <option value="tier3" <%= user.pricingTier === 'tier3' ? 'selected' : '' %>>Large</option>
-                          <option value="tier4" <%= user.pricingTier === 'tier4' ? 'selected' : '' %>>Enterprise</option>
-                        </select>
-                      </td>
-                      <td class="px-6 py-5 text-center">
-                        <% if (user.projectCount > 0) { %>
-                          <span class="px-3 py-1 text-xs font-medium rounded-full bg-brand-blue text-white">
-                            <%= user.projectCount %>
-                          </span>
+                          <div class="text-xs text-gray-400">
+                            <%= new Date(user.lastLogin).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) %>
+                          </div>
                         <% } else { %>
-                          <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
-                            0
-                          </span>
+                          <span class="text-gray-400 text-xs">Never</span>
                         <% } %>
                       </td>
-                      <td class="px-6 py-5 text-center">
+                      <td class="px-6 py-5 text-sm text-gray-600">
+                        <% if (user.createdAt) { %>
+                          <div class="text-xs">
+                            <%= new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                          </div>
+                        <% } else { %>
+                          <span class="text-gray-400 text-xs">—</span>
+                        <% } %>
+                      </td>
+                      <td class="px-6 py-5 text-sm text-gray-600">
+                        <% if (user.lastActivity) { %>
+                          <div class="text-xs">
+                            <%= new Date(user.lastActivity).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                          </div>
+                          <div class="text-xs text-gray-400">
+                            <%= new Date(user.lastActivity).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) %>
+                          </div>
+                        <% } else { %>
+                          <span class="text-gray-400 text-xs">No activity</span>
+                        <% } %>
+                      </td>
+                      <td class="text-center" onclick="event.stopPropagation()">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" 
+                                 id="isActive-checkbox-<%= user._id %>"
+                                 class="sr-only peer"
+                                 <%= (user.isActive !== false) ? 'checked' : '' %>
+                                 onchange="toggleUserActive('<%= user._id %>', this.checked)">
+                          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </td>
+                      <td class="text-center" onclick="event.stopPropagation()">
                         <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
                           <input type="hidden" name="userId" value="<%= user._id %>">
                           <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
@@ -178,7 +199,66 @@
               <!-- Mobile Cards (shown only on small screens) -->
               <div class="md:hidden space-y-4 px-4 py-2">
                 <% users.forEach(user => { %>
-                  <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                  <div class="bg-white rounded-lg shadow p-4 border border-gray-200 cursor-pointer <%= user.isActive === false ? 'opacity-60' : '' %>" onclick="window.location.href='/admin/users/<%= user._id %>'">
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="flex items-center">
+                        <div class="h-12 w-12 flex-shrink-0 mr-3">
+                          <div class="rounded-full bg-blue-100 h-12 w-12 flex items-center justify-center">
+                            <span class="text-blue-800 font-semibold text-lg"><%= user.username.charAt(0).toUpperCase() %></span>
+                          </div>
+                        </div>
+                        <div>
+                          <div class="font-medium text-gray-900"><%= user.username %></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p class="text-gray-500">Company</p>
+                        <p class="font-medium"><%= user.companyName || '—' %></p>
+                      </div>
+                      <div>
+                        <p class="text-gray-500">Username</p>
+                        <p class="font-medium"><%= user.username %></p>
+                      </div>
+                      <div>
+                        <p class="text-gray-500">Last Login</p>
+                        <p class="font-medium text-xs">
+                          <% if (user.lastLogin) { %>
+                            <%= new Date(user.lastLogin).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+                          <% } else { %>
+                            Never
+                          <% } %>
+                        </p>
+                      </div>
+                      <div>
+                        <p class="text-gray-500">Last Activity</p>
+                        <p class="font-medium text-xs">
+                          <% if (user.lastActivity) { %>
+                            <%= new Date(user.lastActivity).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+                          <% } else { %>
+                            No activity
+                          <% } %>
+                        </p>
+                      </div>
+                      <div>
+                        <p class="text-gray-500">Status</p>
+                        <p class="font-medium">
+                          <span class="px-2 py-1 text-xs rounded-full <%= (user.isActive !== false) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                            <%= (user.isActive !== false) ? 'Active' : 'Inactive' %>
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+              
+              <!-- OLD MOBILE CARDS - REMOVED -->
+              <!--
+              <div class="md:hidden space-y-4 px-4 py-2">
+                <% users.forEach(user => { %>
+                  <div class="bg-white rounded-lg shadow p-4 border border-gray-200 <%= user.isActive === false ? 'opacity-60' : '' %>">
                     <div class="flex items-center justify-between mb-4">
                       <div class="flex items-center">
                         <div class="h-12 w-12 flex-shrink-0 mr-3">
@@ -211,6 +291,15 @@
                           </form>
                         </div>
                       </div>
+                    </div>
+                    
+                    <!-- Company Name Section -->
+                    <div class="mb-4 border-b pb-4">
+                      <div class="text-sm text-gray-500 mb-1">Company Name</div>
+                      <input type="text" name="companyName[]" 
+                             value="<%= user.companyName || '' %>" 
+                             placeholder="Enter company name"
+                             class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
                     </div>
                     
                     <!-- Password Section -->
@@ -247,7 +336,7 @@
                         <div class="text-sm text-gray-500 mb-1">Projects</div>
                         <div class="text-center py-2">
                           <% if (user.projectCount > 0) { %>
-                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-brand-blue text-white">
+                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-blue-600 text-white">
                               <%= user.projectCount %>
                             </span>
                           <% } else { %>
@@ -256,6 +345,62 @@
                             </span>
                           <% } %>
                         </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Activity Info Section -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <div class="text-sm text-gray-500 mb-1">Last Login</div>
+                        <div class="text-xs text-gray-600">
+                          <% if (user.lastLogin) { %>
+                            <%= new Date(user.lastLogin).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+                            <br>
+                            <span class="text-gray-400"><%= new Date(user.lastLogin).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) %></span>
+                          <% } else { %>
+                            <span class="text-gray-400">Never</span>
+                          <% } %>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="text-sm text-gray-500 mb-1">Created</div>
+                        <div class="text-xs text-gray-600">
+                          <% if (user.createdAt) { %>
+                            <%= new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                          <% } else { %>
+                            <span class="text-gray-400">—</span>
+                          <% } %>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Last Activity Section -->
+                    <div class="mb-4 border-b pb-4">
+                      <div class="text-sm text-gray-500 mb-1">Last Activity</div>
+                      <div class="text-xs text-gray-600">
+                        <% if (user.lastActivity) { %>
+                          <%= new Date(user.lastActivity).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                          <span class="text-gray-400 ml-2"><%= new Date(user.lastActivity).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) %></span>
+                        <% } else { %>
+                          <span class="text-gray-400">No activity</span>
+                        <% } %>
+                      </div>
+                    </div>
+                    
+                    <!-- Active Toggle Section -->
+                    <div class="mb-4 border-b pb-4">
+                      <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-500">Account Status</div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" 
+                                 id="isActive-checkbox-mobile-<%= user._id %>"
+                                 name="isActive-mobile-<%= user._id %>"
+                                 class="sr-only peer"
+                                 <%= (user.isActive !== false) ? 'checked' : '' %>
+                                 onchange="toggleUserActive('<%= user._id %>', this.checked)">
+                          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                        <input type="hidden" id="isActive-hidden-mobile-<%= user._id %>" name="isActive[]" value="<%= (user.isActive !== false) ? 'true' : 'false' %>">
                       </div>
                     </div>
                     
@@ -290,7 +435,6 @@
                   </div>
                 <% }) %>
               </div>
-            </form>
           <% } else { %>
             <div class="bg-blue-50 p-10 rounded-lg text-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-blue-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -298,8 +442,8 @@
               </svg>
               <h3 class="text-xl font-medium text-gray-800 mb-2">No Users Found</h3>
               <p class="text-gray-600 mb-6">There are no registered users in the system yet.</p>
-              <a href="/admin/users/add" class="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-brand-blue hover:bg-brand-blue-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <a href="/admin/users/add" class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 Create First User
@@ -310,7 +454,7 @@
       </div>
 
       <!-- Quick Tips Card -->
-      <div class="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="mt-8 main-card overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
           <h2 class="text-lg font-semibold text-gray-700">Pricing Tier Information</h2>
         </div>
@@ -370,7 +514,7 @@
   <!-- Password Change Modal -->
   <div id="passwordChangeModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
     <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 my-6 max-h-[90vh] overflow-y-auto">
-      <div class="bg-gradient-to-r from-brand-blue to-blue-400 px-4 sm:px-6 py-4 rounded-t-lg sticky top-0 z-10">
+      <div class="bg-gradient-to-r from-blue-600 to-blue-500 px-4 sm:px-6 py-4 rounded-t-lg sticky top-0 z-10">
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold text-white">Change Password</h3>
           <button type="button" id="closePasswordModal" class="text-white hover:text-gray-200">
@@ -397,7 +541,7 @@
           <div class="mb-5">
             <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
             <div class="relative">
-              <input type="password" id="newPassword" name="newPassword" class="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue" placeholder="Enter password">
+              <input type="password" id="newPassword" name="newPassword" class="w-full border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter password">
               <button type="button" id="toggleNewPassword" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -425,7 +569,7 @@
           <button type="button" id="cancelPasswordChange" class="w-full sm:w-auto px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
             Cancel
           </button>
-          <button type="submit" id="updatePasswordBtn" class="w-full sm:w-auto px-4 py-2 bg-brand-blue hover:bg-brand-blue-light text-white rounded-lg flex items-center justify-center" disabled>
+          <button type="submit" id="updatePasswordBtn" class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg flex items-center justify-center transition-all duration-200" disabled>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -437,7 +581,104 @@
   </div>
 
   <script>
+    // Toggle user active status
+    async function toggleUserActive(userId, isActive) {
+      try {
+        const response = await fetch('/admin/users/toggle-active', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId, isActive })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            // Update the hidden input values (both desktop and mobile)
+            const hiddenInput = document.getElementById(`isActive-hidden-${userId}`);
+            const hiddenInputMobile = document.getElementById(`isActive-hidden-mobile-${userId}`);
+            
+            const newValue = isActive ? 'true' : 'false';
+            
+            if (hiddenInput) {
+              hiddenInput.value = newValue;
+              console.log(`Updated hidden input for ${userId} to ${newValue}`);
+            }
+            if (hiddenInputMobile) {
+              hiddenInputMobile.value = newValue;
+              console.log(`Updated mobile hidden input for ${userId} to ${newValue}`);
+            }
+            
+            // Update row/card opacity and sync checkboxes
+            const checkbox = document.getElementById(`isActive-checkbox-${userId}`);
+            const checkboxMobile = document.getElementById(`isActive-checkbox-mobile-${userId}`);
+            
+            // Sync the other checkbox if it exists
+            if (checkbox && checkboxMobile) {
+              checkboxMobile.checked = isActive;
+            } else if (checkboxMobile && checkbox) {
+              checkbox.checked = isActive;
+            }
+            
+            const elementToUpdate = checkbox || checkboxMobile;
+            if (elementToUpdate) {
+              const row = elementToUpdate.closest('tr') || elementToUpdate.closest('.bg-white.rounded-lg');
+              if (row) {
+                if (isActive) {
+                  row.classList.remove('opacity-60');
+                } else {
+                  row.classList.add('opacity-60');
+                }
+              }
+            }
+          }
+        } else {
+          console.error('Failed to update user status');
+          // Revert checkbox
+          const checkbox = document.getElementById(`isActive-checkbox-${userId}`);
+          const checkboxMobile = document.getElementById(`isActive-checkbox-mobile-${userId}`);
+          if (checkbox) {
+            checkbox.checked = !isActive;
+          }
+          if (checkboxMobile) {
+            checkboxMobile.checked = !isActive;
+          }
+        }
+      } catch (error) {
+        console.error('Error toggling user status:', error);
+        // Revert checkbox
+        const checkbox = document.getElementById(`isActive-checkbox-${userId}`);
+        const checkboxMobile = document.getElementById(`isActive-checkbox-mobile-${userId}`);
+        if (checkbox) {
+          checkbox.checked = !isActive;
+        }
+        if (checkboxMobile) {
+          checkboxMobile.checked = !isActive;
+        }
+      }
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
+      // Enable/disable hidden inputs based on screen size to prevent duplicate form submissions
+      function updateFormInputs() {
+        const isMobile = window.innerWidth < 768; // md breakpoint
+        const desktopInputs = document.querySelectorAll('table input[name="isActive[]"]');
+        const mobileInputs = document.querySelectorAll('.md\\:hidden input[name="isActive[]"]');
+        
+        desktopInputs.forEach(input => {
+          input.disabled = isMobile;
+        });
+        
+        mobileInputs.forEach(input => {
+          input.disabled = !isMobile;
+        });
+      }
+      
+      // Update on load and resize
+      updateFormInputs();
+      window.addEventListener('resize', updateFormInputs);
+      
       // Toggle between table and card view on mobile
       const toggleViewButton = document.getElementById('toggleView');
       const tableView = document.querySelector('.min-w-full.divide-y');

@@ -11,8 +11,14 @@ const userSchema = new mongoose.Schema({
     enum: ['tier1', 'tier2', 'tier3', 'tier4', ''], 
     default: '' 
   },
-  lastLogin: { type: Date, default: null }
-});
+  lastLogin: { type: Date, default: null },
+  companyName: { type: String, default: '' },
+  isActive: { type: Boolean, default: true },
+  email: { type: String, default: '' },
+  firstName: { type: String, default: '' },
+  lastName: { type: String, default: '' },
+  city: { type: String, default: '' }
+}, { timestamps: true });
 
 userSchema.pre('save', function(next) {
   const user = this;

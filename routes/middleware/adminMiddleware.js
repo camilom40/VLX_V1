@@ -17,6 +17,13 @@ const isAdmin = async (req, res, next) => {
         message: 'User account not found or access denied.'
       });
     }
+    if (user.isActive === false) {
+      console.log('Access denied. User account is inactive.');
+      req.session.destroy();
+      return res.status(403).render('unauthorized', {
+        message: 'Your account has been deactivated. Please contact an administrator.'
+      });
+    }
     if (user.role !== 'admin') {
       console.log('Access denied. User is not an admin.');
       return res.status(403).render('unauthorized', {

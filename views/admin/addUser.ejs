@@ -2,58 +2,152 @@
 <html lang="en">
 <head>
   <%- include('../partials/_head.ejs'); %>
-  <title>Add New User</title>
+  <title>Add New User - VLX System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+    
+    .main-card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.05);
+      border: 1px solid rgba(226,232,240,0.8);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white; font-weight: 600; padding: 0.625rem 1.25rem;
+      border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+      transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); transform: translateY(-1px); }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs'); %>
 
   <main class="py-10 flex-grow">
     <div class="max-w-[1440px] mx-auto px-4 sm:px-6">
       <!-- Page Header -->
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-brand-blue to-blue-400 p-7">
-          <div class="flex flex-col md:flex-row justify-center items-center text-center md:text-left">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white mb-4 md:mb-0 md:mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <div>
-              <h1 class="text-2xl md:text-3xl font-bold text-white">Add New User</h1>
-              <p class="text-blue-100 mt-1 max-w-2xl">
-                Create a new user account with appropriate permissions for the VLX System
-              </p>
+      <div class="main-card overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-7">
+          <div class="flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center mb-4 md:mb-0">
+              <div class="bg-white/20 p-3 rounded-xl mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-white">Add New User</h1>
+                <p class="text-blue-100 mt-1">
+                  Create a new user account with appropriate permissions for the VLX System
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-        
-        <!-- Actions Bar -->
-        <div class="p-4 md:p-6 bg-gray-50 border-b border-gray-100">
-          <div class="flex flex-wrap gap-3 justify-start items-center">
-            <a href="/admin/users" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Users
-            </a>
+            <div class="flex gap-3">
+              <a href="/admin/users" class="bg-white/20 hover:bg-white/30 text-white font-medium py-2.5 px-5 rounded-lg transition-colors duration-200 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Users
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- User Form Card -->
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="main-card overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
           <h2 class="text-lg font-semibold text-gray-700">User Information</h2>
         </div>
         
         <div class="p-6">
           <form action="/admin/users/add" method="POST" class="space-y-6">
+            <!-- Company Name (First Field) -->
+            <div>
+              <label for="companyName" class="block text-sm font-medium text-gray-700 mb-2">Company Name <span class="text-red-500">*</span></label>
+              <input 
+                type="text" 
+                id="companyName" 
+                name="companyName" 
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter company name" 
+                required
+                autocomplete="off"
+                value="">
+              <p class="mt-1 text-sm text-gray-500">Enter the company name for this user</p>
+            </div>
+            
+            <!-- First Name and Last Name -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="firstName" class="block text-sm font-medium text-gray-700 mb-2">First Name <span class="text-red-500">*</span></label>
+                <input 
+                  type="text" 
+                  id="firstName" 
+                  name="firstName" 
+                  class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter first name" 
+                  required
+                  autocomplete="given-name"
+                  value="">
+                <p class="mt-1 text-sm text-gray-500">Person's first name</p>
+              </div>
+              <div>
+                <label for="lastName" class="block text-sm font-medium text-gray-700 mb-2">Last Name <span class="text-red-500">*</span></label>
+                <input 
+                  type="text" 
+                  id="lastName" 
+                  name="lastName" 
+                  class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter last name" 
+                  required
+                  autocomplete="family-name"
+                  value="">
+                <p class="mt-1 text-sm text-gray-500">Person's last name</p>
+              </div>
+            </div>
+            
+            <!-- Email -->
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email <span class="text-red-500">*</span></label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter email address" 
+                required
+                autocomplete="email"
+                value="">
+              <p class="mt-1 text-sm text-gray-500">User's email address</p>
+            </div>
+            
+            <!-- City -->
+            <div>
+              <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City</label>
+              <input 
+                type="text" 
+                id="city" 
+                name="city" 
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter city" 
+                autocomplete="address-level2"
+                value="">
+              <p class="mt-1 text-sm text-gray-500">Optional: Enter the city</p>
+            </div>
+            
             <!-- Username -->
             <div>
-              <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username <span class="text-red-500">*</span></label>
               <input 
                 type="text" 
                 id="username" 
                 name="username" 
-                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter username" 
                 required
                 autocomplete="off"
@@ -63,13 +157,13 @@
             
             <!-- Password -->
             <div>
-              <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password <span class="text-red-500">*</span></label>
               <div class="relative">
                 <input 
                   type="password" 
                   id="password" 
                   name="password" 
-                  class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+                  class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter password" 
                   required
                   autocomplete="new-password"
@@ -89,7 +183,7 @@
                 <button 
                   type="button" 
                   id="generatePassword" 
-                  class="text-sm text-brand-blue hover:text-brand-blue-light font-medium">
+                  class="text-sm text-blue-600 hover:text-blue-700 font-medium">
                   Generate secure password
                 </button>
               </div>
@@ -101,7 +195,7 @@
               <select 
                 id="role" 
                 name="role" 
-                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 autocomplete="off">
                 <option value="user" selected>User</option>
                 <option value="admin">Administrator</option>
@@ -118,7 +212,7 @@
               <select 
                 id="pricingTier" 
                 name="pricingTier" 
-                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+                class="w-full border border-gray-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 autocomplete="off">
                 <option value="" selected>Not Set</option>
                 <option value="tier1">Small Volume (< $10k/year)</option>
@@ -130,9 +224,9 @@
             </div>
 
             <!-- Actions -->
-            <div class="flex justify-end pt-4">
-              <button type="submit" class="bg-brand-blue hover:bg-brand-blue-light text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="flex justify-end pt-4 border-t">
+              <button type="submit" class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
                 Create User
@@ -143,7 +237,7 @@
       </div>
 
       <!-- Pricing Tier Information Card -->
-      <div class="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="mt-8 main-card overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
           <h2 class="text-lg font-semibold text-gray-700">Pricing Tier Information</h2>
         </div>
