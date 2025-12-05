@@ -362,89 +362,59 @@
       </div>
     </div>
 
-    <!-- Main Content: Two-column layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Add New Window Form -->
-      <div class="lg:col-span-1">
-        <div class="main-card p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+    <!-- Main Content: Sidebar + Table Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Sidebar: Add New Window Form -->
+      <div class="lg:col-span-3">
+        <div class="main-card p-5 sticky top-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             Add New Window
           </h3>
           
-          <form action="/projects/<%= project._id %>/windows/new" method="GET" class="space-y-4">
+          <form action="/projects/<%= project._id %>/windows/new" method="GET" class="space-y-3">
             <!-- Window Reference -->
             <div>
-              <label for="windowRef" class="form-label">Window Reference <span class="text-red-500">*</span></label>
-              <input type="text" id="windowRef" name="windowRef" required class="form-input" placeholder="e.g., V1, W1, D1" maxlength="10">
-              <p class="text-xs text-gray-500 mt-1">Enter a unique reference for this window</p>
+              <label for="windowRef" class="block text-sm font-medium text-gray-700 mb-1">
+                Window Reference <span class="text-red-500">*</span>
+              </label>
+              <input type="text" id="windowRef" name="windowRef" required 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" 
+                     placeholder="e.g., V1, W1" maxlength="10">
             </div>
             
             <!-- Window System Selection -->
             <div>
-              <label for="windowSystemId" class="form-label">Window System Type <span class="text-red-500">*</span></label>
-              <select id="windowSystemId" name="windowSystemId" required class="form-input">
-                <option value="">Select Window System</option>
+              <label for="windowSystemId" class="block text-sm font-medium text-gray-700 mb-1">
+                Window System <span class="text-red-500">*</span>
+              </label>
+              <select id="windowSystemId" name="windowSystemId" required 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                <option value="">Select System</option>
                 <% if (typeof windowSystems !== 'undefined' && windowSystems.length > 0) { %>
                   <% windowSystems.forEach(system => { %>
                     <option value="<%= system._id %>"><%= system.type %></option>
                   <% }) %>
                 <% } else { %>
-                  <option value="" disabled>No window systems available</option>
+                  <option value="" disabled>No systems available</option>
                 <% } %>
               </select>
-              <p class="text-xs text-gray-500 mt-1">Choose from pre-configured window systems</p>
             </div>
             
-            <!-- Info Box -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div class="flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div class="text-sm text-blue-800">
-                  <p class="font-medium mb-1">Next Step:</p>
-                  <p>You'll configure detailed specifications, dimensions, quantities, and pricing on the next page.</p>
-                </div>
-              </div>
-            </div>
-            
-            <div class="pt-2">
-              <button type="submit" class="btn-primary w-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Add New Window
-              </button>
-            </div>
+            <button type="submit" class="btn-primary w-full flex items-center justify-center text-sm py-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add Window
+            </button>
           </form>
-        </div>
-        
-        <!-- Window Systems Info -->
-        <div class="main-card p-4 mt-4">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">Available Window Systems:</h4>
-          <% if (typeof windowSystems !== 'undefined' && windowSystems.length > 0) { %>
-            <ul class="text-xs text-gray-600 space-y-1">
-              <% windowSystems.slice(0, 3).forEach(system => { %>
-                <li class="flex items-center">
-                  <span class="w-2 h-2 bg-indigo-400 rounded-full mr-2"></span>
-                  <%= system.type %>
-                </li>
-              <% }) %>
-              <% if (windowSystems.length > 3) { %>
-                <li class="text-gray-500 italic">+ <%= windowSystems.length - 3 %> more...</li>
-              <% } %>
-            </ul>
-          <% } else { %>
-            <p class="text-xs text-gray-500 italic">No window systems configured. Contact admin.</p>
-          <% } %>
         </div>
       </div>
       
-      <!-- Window Items List -->
-      <div class="lg:col-span-2">
+      <!-- Main Content: Window Items Table -->
+      <div class="lg:col-span-9">
         <div class="main-card p-6">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
@@ -562,8 +532,8 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th class="w-32">Preview</th>
                     <th>Item Name</th>
+                    <th class="w-32">Preview</th>
                     <th id="dimensionsHeader">Dimensions (in)</th>
                     <th>Description</th>
                     <th class="text-center">Qty</th>
@@ -575,6 +545,9 @@
                 <tbody>
                   <% windowItems.forEach((item, index) => { %>
                     <tr>
+                      <td>
+                        <div class="text-sm font-medium text-gray-900"><%= item.itemName %></div>
+                      </td>
                       <td class="py-3">
                         <div class="window-preview-mini" 
                              data-item-id="<%= item._id %>"
@@ -583,9 +556,6 @@
                              data-panel-config="<%= item.windowSystem && item.windowSystem.panelConfiguration ? JSON.stringify(item.windowSystem.panelConfiguration) : '{}' %>"
                              style="width: 100px; height: 75px; margin: 0 auto;">
                         </div>
-                      </td>
-                      <td>
-                        <div class="text-sm font-medium text-gray-900"><%= item.itemName %></div>
                       </td>
                       <td>
                         <div class="text-sm text-gray-900 dimension-display" 
@@ -635,14 +605,13 @@
                   <tr class="bg-indigo-50 font-medium">
                     <td colspan="6" class="px-4 py-3 text-right text-gray-900">TOTAL:</td>
                     <td class="px-4 py-3 text-right text-green-700 font-bold text-lg" data-price="<%= projectTotal %>">$<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                    <td></td>
+                    <td class="px-4 py-3"></td>
                   </tr>
                 </tbody>
               </table>
             </div>
           <% } %>
         </div>
-      </div>
     </div>
   </main>
 
@@ -715,41 +684,162 @@
             const panelContainer = document.createElement('div');
             panelContainer.className = 'panel-container';
             
-            // Set direction based on orientation
-            if (panelConfig.orientation === 'vertical') {
-              panelContainer.style.flexDirection = 'column';
-            } else {
-              panelContainer.style.flexDirection = 'row';
-            }
-            
             // Get panels and ratios
             const panels = panelConfig.panels || ['O'];
             const ratios = panelConfig.panelRatios || panels.map(() => 1);
-            const totalRatio = ratios.reduce((a, b) => a + b, 0);
+            const operationType = panelConfig.operationType || 'sliding';
             
-            // Render panels
-            panels.forEach((panel, index) => {
-              const isOperable = panel === 'X';
-              const ratio = ratios[index] || 1;
+            // Special handling for Single Hung
+            if (operationType === 'single-hung') {
+              panelContainer.style.flexDirection = 'column'; // Always vertical
               
-              const panelDiv = document.createElement('div');
-              panelDiv.className = `panel-glass ${isOperable ? 'operable-glass' : ''}`;
-              panelDiv.style.flex = `${ratio} 0 0%`;
+              panels.forEach((panel, index) => {
+                const isOperable = panel === 'X';
+                const ratio = ratios[index] || 1;
+                const isTopSash = index === 0;
+                const isBottomSash = index === panels.length - 1;
+                
+                const panelDiv = document.createElement('div');
+                panelDiv.className = `panel-glass ${isOperable ? 'operable-glass' : ''}`;
+                panelDiv.style.flex = `${ratio} 0 0%`;
+                panelDiv.style.position = 'relative';
+                
+                // Add Single Hung specific elements
+                if (isOperable && isBottomSash) {
+                  // Bottom operable sash - add lift handles
+                  const handles = document.createElement('div');
+                  handles.style.cssText = 'position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px;';
+                  handles.innerHTML = `
+                    <div style="width: 8px; height: 1px; background: linear-gradient(180deg, #808080, #d0d0d0, #808080); border-radius: 1px;"></div>
+                    <div style="width: 8px; height: 1px; background: linear-gradient(180deg, #808080, #d0d0d0, #808080); border-radius: 1px;"></div>
+                  `;
+                  panelDiv.appendChild(handles);
+                  
+                  // Sash lock at top
+                  const lock = document.createElement('div');
+                  lock.style.cssText = 'position: absolute; top: 1px; left: 50%; transform: translateX(-50%); width: 4px; height: 2px; background: linear-gradient(180deg, #808080, #b0b0b0, #808080); border-radius: 1px;';
+                  panelDiv.appendChild(lock);
+                }
+                
+                // Panel label
+                const label = document.createElement('div');
+                label.className = 'panel-label';
+                label.textContent = panel;
+                panelDiv.appendChild(label);
+                
+                panelContainer.appendChild(panelDiv);
+                
+                // Add meeting rail between sashes (after each panel except the last)
+                if (index < panels.length - 1) {
+                  const meetingRail = document.createElement('div');
+                  meetingRail.className = 'mullion vertical';
+                  meetingRail.style.cssText = 'flex-shrink: 0; height: 4px; width: 100%; background: linear-gradient(180deg, #505050, #707070, #808080, #707070, #505050); box-shadow: 0 1px 2px rgba(0,0,0,0.2);';
+                  panelContainer.appendChild(meetingRail);
+                }
+              });
+            }
+            // Special handling for Casement
+            else if (operationType === 'casement') {
+              const orientation = panelConfig.orientation || 'horizontal';
+              panelContainer.style.flexDirection = orientation === 'vertical' ? 'column' : 'row';
               
-              const label = document.createElement('div');
-              label.className = 'panel-label';
-              label.textContent = panel;
-              panelDiv.appendChild(label);
+              panels.forEach((panel, index) => {
+                const isOperable = panel === 'X';
+                const ratio = ratios[index] || 1;
+                const hingeOnLeft = index % 2 === 0;
+                
+                const panelDiv = document.createElement('div');
+                panelDiv.className = `panel-glass ${isOperable ? 'operable-glass' : ''}`;
+                panelDiv.style.flex = `${ratio} 0 0%`;
+                panelDiv.style.position = 'relative';
+                
+                if (isOperable) {
+                  // Hinge
+                  const hinge = document.createElement('div');
+                  hinge.style.cssText = `position: absolute; ${hingeOnLeft ? 'left' : 'right'}: 1px; top: 50%; transform: translateY(-50%); width: 2px; height: 60%; background: linear-gradient(180deg, #505050, #707070, #505050); border-radius: 1px;`;
+                  panelDiv.appendChild(hinge);
+                  
+                  // Handle
+                  const handle = document.createElement('div');
+                  handle.style.cssText = `position: absolute; ${hingeOnLeft ? 'right' : 'left'}: 2px; top: 50%; transform: translateY(-50%); width: 3px; height: 4px; background: #808080; border-radius: 1px;`;
+                  panelDiv.appendChild(handle);
+                }
+                
+                const label = document.createElement('div');
+                label.className = 'panel-label';
+                label.textContent = panel;
+                panelDiv.appendChild(label);
+                
+                panelContainer.appendChild(panelDiv);
+              });
+            }
+            // Special handling for Sliding
+            else if (operationType === 'sliding') {
+              const orientation = panelConfig.orientation || 'horizontal';
+              panelContainer.style.flexDirection = orientation === 'vertical' ? 'column' : 'row';
               
-              panelContainer.appendChild(panelDiv);
-              
-              // Add mullion if not last panel
-              if (index < panels.length - 1 && panelConfig.hasMullion) {
-                const mullion = document.createElement('div');
-                mullion.className = `mullion ${panelConfig.orientation === 'vertical' ? 'vertical' : 'horizontal'}`;
-                panelContainer.appendChild(mullion);
+              panels.forEach((panel, index) => {
+                const isOperable = panel === 'X';
+                const ratio = ratios[index] || 1;
+                
+                const panelDiv = document.createElement('div');
+                panelDiv.className = `panel-glass ${isOperable ? 'operable-glass' : ''}`;
+                panelDiv.style.flex = `${ratio} 0 0%`;
+                panelDiv.style.position = 'relative';
+                
+                if (isOperable) {
+                  // Handle
+                  const handle = document.createElement('div');
+                  handle.style.cssText = 'position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 3px; height: 4px; background: #808080; border-radius: 1px;';
+                  panelDiv.appendChild(handle);
+                }
+                
+                const label = document.createElement('div');
+                label.className = 'panel-label';
+                label.textContent = panel;
+                panelDiv.appendChild(label);
+                
+                panelContainer.appendChild(panelDiv);
+              });
+            }
+            // Default rendering for other types
+            else {
+              // Set direction based on orientation
+              if (panelConfig.orientation === 'vertical') {
+                panelContainer.style.flexDirection = 'column';
+              } else {
+                panelContainer.style.flexDirection = 'row';
               }
-            });
+              
+              // Render panels
+              panels.forEach((panel, index) => {
+                const isOperable = panel === 'X';
+                const ratio = ratios[index] || 1;
+                
+                const panelDiv = document.createElement('div');
+                panelDiv.className = `panel-glass ${isOperable ? 'operable-glass' : ''}`;
+                panelDiv.style.flex = `${ratio} 0 0%`;
+                
+                const label = document.createElement('div');
+                label.className = 'panel-label';
+                label.textContent = panel;
+                panelDiv.appendChild(label);
+                
+                panelContainer.appendChild(panelDiv);
+              });
+            }
+            
+            // Add mullions if configured (for non-special types)
+            if (panelConfig.hasMullion && panels.length > 1 && 
+                operationType !== 'single-hung' && operationType !== 'casement' && operationType !== 'sliding') {
+              const orientation = panelConfig.orientation || 'horizontal';
+              // Insert mullions between panels
+              for (let i = panelContainer.children.length - 1; i > 0; i--) {
+                const mullion = document.createElement('div');
+                mullion.className = `mullion ${orientation === 'vertical' ? 'vertical' : 'horizontal'}`;
+                panelContainer.insertBefore(mullion, panelContainer.children[i]);
+              }
+            }
             
             frame.appendChild(panelContainer);
             container.appendChild(frame);

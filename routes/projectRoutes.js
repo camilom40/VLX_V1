@@ -678,7 +678,7 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     // Create window item (totalPrice will be calculated automatically by the model)
     const newWindowItem = new WindowItem({
       projectId,
-      itemName: `${windowRef} - ${windowSystem.type}`,
+      itemName: windowRef,
       width: isNaN(windowWidth) ? 0 : windowWidth,
       height: isNaN(windowHeight) ? 0 : windowHeight,
       quantity: isNaN(windowQuantity) ? 1 : windowQuantity,
@@ -1049,7 +1049,7 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
 
     // Update the existing window item
     await WindowItem.findByIdAndUpdate(windowId, {
-      itemName: `${windowRef} - ${windowSystem.type}`,
+      itemName: windowRef,
       width: isNaN(windowWidth) ? 0 : windowWidth,
       height: isNaN(windowHeight) ? 0 : windowHeight,
       quantity: isNaN(windowQuantity) ? 1 : windowQuantity,
