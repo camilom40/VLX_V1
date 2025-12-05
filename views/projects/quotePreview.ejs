@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote Preview - <%= project.projectName %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { 
+      font-family: 'DM Sans', sans-serif; 
+      background: #f8fafc;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+      .print-break { page-break-after: always; }
+      /* Ensure dimensions display correctly when printing */
+      .dimension-display {
+        display: inline-block;
+      }
+    }
+    
+    .quote-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .quote-header {
+      border-bottom: 3px solid #3b82f6;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .quote-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+    
+    .quote-table thead {
+      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      color: white;
+    }
+    
+    .quote-table th {
+      padding: 12px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .quote-table td {
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.875rem;
+    }
+    
+    .quote-table tbody tr:hover {
+      background: #f9fafb;
+    }
+    
+    .quote-total {
+      background: #eff6ff;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+    }
+    
+    .logo-container {
+      width: 120px;
+      height: 120px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    .logo-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f9fafb;
+    }
+    
+    .logo-placeholder svg {
+      width: 60px;
+      height: 60px;
+      color: #9ca3af;
+    }
+    
+    /* Unit Toggle Styles */
+    .unit-toggle-btn {
+      color: #374151;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .unit-toggle-btn.active {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      color: white;
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+    }
+    
+    .unit-toggle-btn:hover:not(.active) {
+      background: #e5e7eb;
+    }
+    
+    /* Window Preview Mini Styles - Matching Original Compose Window */
+    .window-preview-mini {
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .window-preview-mini .aluminum-frame {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, #909090 0%, #707070 20%, #585858 50%, #707070 80%, #909090 100%);
+      border-radius: 2px;
+      padding: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .window-preview-mini .panel-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      gap: 1px;
+    }
+    
+    .window-preview-mini .panel-glass {
+      flex: 1;
+      background: linear-gradient(180deg, rgba(191,219,254,0.8) 0%, rgba(147,197,253,0.6) 50%, rgba(191,219,254,0.7) 100%);
+      border-radius: 1px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    .window-preview-mini .panel-glass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    
+    .window-preview-mini .panel-glass.operable-glass {
+      background: linear-gradient(180deg, rgba(186,230,253,0.75) 0%, rgba(147,197,253,0.55) 50%, rgba(186,230,253,0.65) 100%);
+    }
+    
+    .window-preview-mini .panel-glass .panel-label {
+      font-size: 8px;
+      font-weight: bold;
+      color: rgba(30,64,175,0.6);
+      text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+      z-index: 1;
+    }
+    
+    .window-preview-mini .panel-glass.operable-glass .panel-label {
+      color: rgba(22,101,52,0.7);
+    }
+    
+    .window-preview-mini .mullion {
+      background: linear-gradient(145deg, #606060, #505050);
+      flex-shrink: 0;
+    }
+    
+    .window-preview-mini .mullion.horizontal {
+      width: 2px;
+      height: 100%;
+    }
+    
+    .window-preview-mini .mullion.vertical {
+      width: 100%;
+      height: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="quote-container">
+    <!-- Header -->
+    <div class="quote-header">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800 mb-2"><%= project.projectName %></h1>
+          <% if (project.clientName) { %>
+            <p class="text-lg text-gray-600">Client: <span class="font-semibold"><%= project.clientName %></span></p>
+          <% } %>
+          <div class="mt-2 space-y-1">
+            <p class="text-sm text-gray-500">
+              Quote Date: <span class="font-semibold text-gray-700"><%= new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+            </p>
+            <% 
+              const quoteDate = new Date();
+              const validThroughDate = new Date(quoteDate);
+              validThroughDate.setMonth(validThroughDate.getMonth() + 1);
+            %>
+            <p class="text-sm text-gray-500">
+              Valid Through: <span class="font-semibold text-gray-700"><%= validThroughDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+            </p>
+          </div>
+        </div>
+        <div class="logo-container">
+          <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
+            <img src="<%= companyLogo %>" alt="Company Logo">
+          <% } else { %>
+            <div class="logo-placeholder">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Window Items Table -->
+    <% if (windowItems.length > 0) { %>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Window Items</h2>
+        <!-- Unit Toggle -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Units:</span>
+          <div class="flex bg-gray-100 rounded-lg p-1">
+            <button id="unitToggleInches" onclick="switchUnits('inches')" class="unit-toggle-btn active px-3 py-1 rounded text-sm font-medium transition-colors">
+              in
+            </button>
+            <button id="unitToggleMm" onclick="switchUnits('mm')" class="unit-toggle-btn px-3 py-1 rounded text-sm font-medium transition-colors">
+              mm
+            </button>
+          </div>
+        </div>
+      </div>
+      <table class="quote-table">
+        <thead>
+          <tr>
+            <th class="w-32">Preview</th>
+            <th>#</th>
+            <th>Item Name</th>
+            <th id="dimensionsHeader">Dimensions (in)</th>
+            <th>Description</th>
+            <th class="text-center">Quantity</th>
+            <th class="text-right">Unit Price</th>
+            <th class="text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% windowItems.forEach((item, index) => { %>
+            <tr>
+              <td class="py-3">
+                <div class="window-preview-mini" 
+                     data-item-id="<%= item._id %>"
+                     data-width="<%= item.width %>"
+                     data-height="<%= item.height %>"
+                     data-panel-config="<%= item.windowSystem && item.windowSystem.panelConfiguration ? JSON.stringify(item.windowSystem.panelConfiguration) : '{}' %>"
+                     style="width: 100px; height: 75px; margin: 0 auto;">
+                </div>
+              </td>
+              <td class="text-gray-600"><%= index + 1 %></td>
+              <td>
+                <div class="font-medium text-gray-900"><%= item.itemName %></div>
+              </td>
+              <td class="text-gray-700">
+                <div class="dimension-display" 
+                     data-width-inches="<%= item.width %>" 
+                     data-height-inches="<%= item.height %>">
+                  <%= parseFloat(item.width).toFixed(2) %> × <%= parseFloat(item.height).toFixed(2) %>
+                </div>
+              </td>
+              <td>
+                <% if (item.description) { %>
+                  <div class="text-xs text-gray-600 whitespace-pre-wrap" style="max-width: 250px;">
+                    <%= item.description %>
+                  </div>
+                <% } else { %>
+                  <span class="text-gray-400 text-xs">—</span>
+                <% } %>
+              </td>
+              <td class="text-center">
+                <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-semibold">
+                  <%= item.quantity %>
+                </span>
+              </td>
+              <td class="text-right text-gray-700">
+                $<%= parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+              </td>
+              <td class="text-right font-semibold text-green-600">
+                $<%= parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <!-- Total Section -->
+      <div class="quote-total">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-1">Total Project Value</h3>
+            <p class="text-sm text-gray-600">Including all window items</p>
+          </div>
+          <div class="text-right">
+            <div class="text-3xl font-bold text-green-600">
+              $<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+        </svg>
+        <p class="text-gray-600 font-medium">No window items in this quote</p>
+      </div>
+    <% } %>
+
+    <!-- Footer -->
+    <div class="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+      <p>This is a preview of the quotation. For official quotes, please contact your representative.</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="no-print mt-6 text-center flex justify-center gap-4">
+      <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        Print Quote
+      </button>
+      <a id="downloadPdfLink" href="/projects/<%= project._id %>/quote-pdf?unit=inches" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2 inline-flex">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Download as PDF
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Render window previews
+    function renderWindowPreviews() {
+      document.querySelectorAll('.window-preview-mini').forEach(preview => {
+        const width = parseFloat(preview.dataset.width) || 0;
+        const height = parseFloat(preview.dataset.height) || 0;
+        const panelConfigStr = preview.dataset.panelConfig || '{}';
+        
+        try {
+          const panelConfig = JSON.parse(panelConfigStr);
+          const container = preview;
+          container.innerHTML = '';
+          
+          // Create aluminum frame
+          const frame = document.createElement('div');
+          frame.className = 'aluminum-frame';
+          
+          const panelContainer = document.createElement('div');
+          panelContainer.className = 'panel-container';
+          
+          // Set direction based on orientation
+          if (panelConfig.orientation === 'vertical') {
+            panelContainer.style.flexDirection = 'column';
+          } else {
+            panelContainer.style.flexDirection = 'row';
+          }
+          
+          // Get panels and ratios
+          const panels = panelConfig.panels || ['O'];
+          const ratios = panelConfig.panelRatios || panels.map(() => 1);
+          const totalRatio = ratios.reduce((a, b) => a + b, 0);
+          
+          // Render panels
+          panels.forEach((panel, index) => {
+            const isOperable = panel === 'X';
+            const ratio = ratios[index] || 1;
+            
+            const panelDiv = document.createElement('div');
+            panelDiv.className = `panel-glass ${isOperable ? 'operable-glass' : ''}`;
+            panelDiv.style.flex = `${ratio} 0 0%`;
+            
+            const label = document.createElement('div');
+            label.className = 'panel-label';
+            label.textContent = panel;
+            panelDiv.appendChild(label);
+            
+            panelContainer.appendChild(panelDiv);
+            
+            // Add mullion if not last panel
+            if (index < panels.length - 1 && panelConfig.hasMullion) {
+              const mullion = document.createElement('div');
+              mullion.className = `mullion ${panelConfig.orientation === 'vertical' ? 'vertical' : 'horizontal'}`;
+              panelContainer.appendChild(mullion);
+            }
+          });
+          
+          frame.appendChild(panelContainer);
+          container.appendChild(frame);
+        } catch (e) {
+          // If no config, show simple placeholder
+          container.innerHTML = `
+            <div class="aluminum-frame" style="display: flex; align-items: center; justify-content: center;">
+              <div class="panel-glass" style="width: 100%; height: 100%;">
+                <div class="panel-label" style="font-size: 10px;">Window</div>
+              </div>
+            </div>
+          `;
+        }
+      });
+    }
+    
+    // Initialize previews on load
+    document.addEventListener('DOMContentLoaded', renderWindowPreviews);
+    
+    // Unit conversion functions (global scope)
+    function inchesToMm(inches) {
+      return inches * 25.4;
+    }
+    
+    function mmToInches(mm) {
+      return mm / 25.4;
+    }
+    
+    // Switch between units (global scope - accessible from onclick)
+    window.switchUnits = function(unit) {
+      // Update toggle buttons
+      const inchesBtn = document.getElementById('unitToggleInches');
+      const mmBtn = document.getElementById('unitToggleMm');
+      const dimensionsHeader = document.getElementById('dimensionsHeader');
+      
+      if (!inchesBtn || !mmBtn) return; // Exit if buttons don't exist
+      
+      if (unit === 'inches') {
+        inchesBtn.classList.add('active', 'bg-indigo-600', 'text-white');
+        inchesBtn.classList.remove('text-gray-700');
+        mmBtn.classList.remove('active', 'bg-indigo-600', 'text-white');
+        mmBtn.classList.add('text-gray-700');
+        if (dimensionsHeader) dimensionsHeader.textContent = 'Dimensions (in)';
+      } else {
+        mmBtn.classList.add('active', 'bg-indigo-600', 'text-white');
+        mmBtn.classList.remove('text-gray-700');
+        inchesBtn.classList.remove('active', 'bg-indigo-600', 'text-white');
+        inchesBtn.classList.add('text-gray-700');
+        if (dimensionsHeader) dimensionsHeader.textContent = 'Dimensions (mm)';
+      }
+      
+      // Update all dimension displays
+      document.querySelectorAll('.dimension-display').forEach(display => {
+        const widthInches = parseFloat(display.dataset.widthInches);
+        const heightInches = parseFloat(display.dataset.heightInches);
+        
+        if (isNaN(widthInches) || isNaN(heightInches)) return;
+        
+        if (unit === 'inches') {
+          display.textContent = `${widthInches.toFixed(2)} × ${heightInches.toFixed(2)}`;
+        } else {
+          const widthMm = inchesToMm(widthInches);
+          const heightMm = inchesToMm(heightInches);
+          display.textContent = `${Math.round(widthMm)} × ${Math.round(heightMm)}`;
+        }
+      });
+      
+      // Save preference
+      localStorage.setItem('dimensionUnit', unit);
+      
+      // Update PDF download link to match current unit
+      const downloadLink = document.getElementById('downloadPdfLink');
+      if (downloadLink) {
+        const projectId = downloadLink.href.match(/\/projects\/([^\/]+)\/quote-pdf/)[1];
+        downloadLink.href = `/projects/${projectId}/quote-pdf?unit=${unit}`;
+      }
+    };
+    
+    // Load saved unit preference on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedUnit = localStorage.getItem('dimensionUnit') || 'inches';
+      if (savedUnit) {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          if (window.switchUnits) {
+            window.switchUnits(savedUnit);
+          }
+        }, 100);
+      }
+    });
+  </script>
+</body>
+</html>
+

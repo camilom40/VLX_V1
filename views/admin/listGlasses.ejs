@@ -154,7 +154,7 @@
 <body class="min-h-screen flex flex-col">
     <%- include('../partials/_header.ejs') %>
     
-    <main class="flex-grow container mx-auto px-4 py-8">
+    <main class="flex-grow container mx-auto px-4 py-8" data-exchange-rate="<%- typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate : 4000 %>">
         <!-- Page Header -->
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
@@ -308,7 +308,7 @@
                         </thead>
                         <tbody>
                             <% glasses.forEach(function(glass, index) { %>
-                                <tr class="glass-row animate-row" style="animation-delay: <%= index * 30 %>ms"
+                                <tr class="glass-row animate-row" data-animation-delay="<%= index * 30 %>"
                                     data-id="<%= glass._id %>"
                                     data-search="<%= glass.glass_type.toLowerCase() %> <%= glass.description.toLowerCase() %> <%= glass.missile_type.toLowerCase() %>">
                                     <td>
@@ -392,8 +392,9 @@
     <%- include('../partials/_footer.ejs') %>
     
     <script>
-        // Exchange rate
-        const exchangeRate = <%= exchangeRate || 4000 %>;
+        // Exchange rate - get from data attribute
+        const exchangeRateElement = document.querySelector('[data-exchange-rate]');
+        const exchangeRate = exchangeRateElement ? parseFloat(exchangeRateElement.getAttribute('data-exchange-rate')) : 4000;
         let currentCurrency = 'COP';
         
         // Currency functions
@@ -620,6 +621,12 @@
         // Weight unit toggle event listeners
         document.getElementById('kgBtn').addEventListener('click', () => switchWeightUnit('kg'));
         document.getElementById('lbsBtn').addEventListener('click', () => switchWeightUnit('lbs'));
+        
+        // Set animation delays dynamically
+        document.querySelectorAll('.animate-row[data-animation-delay]').forEach(row => {
+            const delay = row.getAttribute('data-animation-delay');
+            row.style.animationDelay = delay + 'ms';
+        });
         
         // Initial price display
         updatePrices();

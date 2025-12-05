@@ -126,6 +126,10 @@ app.use((req, res, next) => {
 
 app.use('/dashboard', dashboardRoutes);
 
+// Project Routes (mounted early to avoid conflicts)
+const projectRoutes = require('./routes/projectRoutes');
+app.use(projectRoutes);
+
 // Authentication Routes
 app.use(authRoutes);
 
@@ -274,11 +278,7 @@ app.post('/api/upload-logo', upload.single('logo'), async (req, res) => {
   }
 });
 
-// server.js
-const projectRoutes = require('./routes/projectRoutes'); // Add this require at the top
-// ... other middleware ...
-app.use(projectRoutes); // Add this line to mount the routes
-// ... 404 handler ...
+// Project routes are now mounted earlier in the file (see above)
 
 
 
