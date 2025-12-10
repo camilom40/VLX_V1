@@ -23,6 +23,45 @@
     }
     .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); transform: translateY(-1px); }
     
+    .stat-card {
+      background: linear-gradient(135deg, #fff, #f8fafc);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, currentColor, transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .stat-card:hover { 
+      transform: translateY(-4px); 
+      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+      border-color: #cbd5e1;
+    }
+    .stat-card:hover::before { opacity: 0.3; }
+    
+    .search-input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      border-radius: 0.75rem;
+      border: 2px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .search-input:hover { border-color: #cbd5e1; background: #fff; }
+    .search-input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    
     .data-table {
       width: 100%;
       border-collapse: collapse;
@@ -39,16 +78,87 @@
       letter-spacing: 0.05em;
       color: white;
     }
+    .data-table th:first-child { border-top-left-radius: 0.75rem; }
+    .data-table th:last-child { border-top-right-radius: 0.75rem; }
+    
     .data-table tbody tr {
       border-bottom: 1px solid #f1f5f9;
-      transition: background 0.15s ease;
+      transition: all 0.2s ease;
     }
-    .data-table tbody tr:hover { background: #f8fafc; }
+    .data-table tbody tr:hover { 
+      background: linear-gradient(90deg, #eff6ff 0%, #f0f9ff 100%);
+      transform: scale(1.01);
+      box-shadow: 0 2px 8px rgba(59,130,246,0.1);
+    }
+    .data-table tbody tr:last-child { border-bottom: none; }
+    .data-table tbody tr:last-child td:first-child { border-bottom-left-radius: 0.75rem; }
+    .data-table tbody tr:last-child td:last-child { border-bottom-right-radius: 0.75rem; }
+    
     .data-table td {
       padding: 1rem 1.25rem;
       font-size: 0.875rem;
       color: #374151;
     }
+    
+    .action-btn {
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+    }
+    .action-btn.delete { color: #ef4444; }
+    .action-btn.delete:hover { 
+      background: #fef2f2; 
+      color: #b91c1c;
+      transform: scale(1.1);
+    }
+    
+    .avatar-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .avatar-gradient-blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    .avatar-gradient-green {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .avatar-gradient-purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+    .avatar-gradient-orange {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.625rem;
+      border-radius: 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .role-badge.admin {
+      background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+      color: #7c3aed;
+    }
+    .role-badge.user {
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      color: #1e40af;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-row { 
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    .animate-row:nth-child(1) { animation-delay: 0.05s; }
+    .animate-row:nth-child(2) { animation-delay: 0.1s; }
+    .animate-row:nth-child(3) { animation-delay: 0.15s; }
+    .animate-row:nth-child(4) { animation-delay: 0.2s; }
+    .animate-row:nth-child(5) { animation-delay: 0.25s; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -73,68 +183,134 @@
             </div>
           </div>
         </div>
-        
-        <!-- Actions Bar -->
-        <div class="p-4 md:p-6 bg-gray-50 border-b border-gray-100">
-          <div class="flex flex-col sm:flex-row justify-between items-center">
-            <div class="text-sm text-gray-600 mb-4 sm:mb-0">
-              <span class="font-medium"><%= users.length %></span> total user<%= users.length !== 1 ? 's' : '' %> in the system
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
             </div>
-            <div class="flex flex-wrap justify-center gap-3">
-              <a href="/admin/users/add" class="btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Add New User
-              </a>
+            <div>
+              <p class="text-2xl font-bold text-gray-800"><%= users.length %></p>
+              <p class="text-xs text-gray-500">Total Users</p>
             </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-2xl font-bold text-gray-800"><%= users.filter(u => u.isActive !== false).length %></p>
+              <p class="text-xs text-gray-500">Active Users</p>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-2xl font-bold text-gray-800"><%= users.filter(u => u.isActive === false).length %></p>
+              <p class="text-xs text-gray-500">Inactive Users</p>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-2xl font-bold text-gray-800"><%= users.reduce((sum, u) => sum + (u.projectCount || 0), 0) %></p>
+              <p class="text-xs text-gray-500">Total Projects</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search and Actions Bar -->
+      <div class="main-card p-4 mb-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <!-- Search -->
+          <div class="relative flex-1 max-w-md">
+            <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input type="text" id="searchInput" class="search-input pl-10" placeholder="Search by username, company, or email...">
+            <span id="searchCount" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 hidden">
+              <span id="visibleCount"><%= users.length %></span> results
+            </span>
+          </div>
+          
+          <!-- Right Actions -->
+          <div class="flex items-center gap-3">
+            <a href="/admin/users/add" class="btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add New User
+            </a>
           </div>
         </div>
       </div>
 
       <!-- Users Table Card -->
       <div class="main-card overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <div class="flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-700">Registered Users</h2>
-            <button id="toggleView" class="md:hidden text-gray-500 hover:text-blue-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
-        
-        <div class="overflow-x-auto">
+        <div class="table-container">
           <% if (users.length > 0) { %>
-              <!-- Desktop Table (hidden on small screens) -->
+              <!-- Desktop Table -->
               <table class="data-table hidden md:table">
                 <thead>
                   <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Username</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Login</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Created</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Activity</th>
-                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Active</th>
-                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    <th>Company</th>
+                    <th>Username</th>
+                    <th>Last Login</th>
+                    <th>Created</th>
+                    <th>Last Activity</th>
+                    <th class="text-center">Active</th>
+                    <th class="text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <% users.forEach(user => { %>
-                    <tr class="hover:bg-blue-50 transition-colors duration-150 cursor-pointer <%= user.isActive === false ? 'opacity-60' : '' %>" onclick="window.location.href='/admin/users/<%= user._id %>'" data-user-id="<%= user._id %>">
-                      <td class="px-6 py-5 text-sm text-gray-600">
-                        <%= user.companyName || '—' %>
+                  <% users.forEach((user, index) => { %>
+                    <tr class="animate-row hover:bg-blue-50 transition-all duration-200 cursor-pointer <%= user.isActive === false ? 'opacity-60' : '' %>" onclick="window.location.href='/admin/users/<%= user._id %>'" data-user-id="<%= user._id %>" style="animation-delay: <%= index * 0.03 %>s;">
+                      <td class="px-6 py-5 text-sm">
+                        <div class="font-medium text-gray-700"><%= user.companyName || '—' %></div>
+                        <% if (user.email) { %>
+                          <div class="text-xs text-gray-400 mt-0.5"><%= user.email %></div>
+                        <% } %>
                       </td>
                       <td class="px-6 py-5 text-sm text-gray-900 font-medium">
-                        <div class="flex items-center">
-                          <div class="h-10 w-10 flex-shrink-0 mr-3">
-                            <div class="rounded-full bg-blue-100 h-10 w-10 flex items-center justify-center">
-                              <span class="text-blue-800 font-semibold"><%= user.username.charAt(0).toUpperCase() %></span>
+                        <div class="flex items-center gap-3">
+                          <div class="h-12 w-12 flex-shrink-0">
+                            <div class="rounded-full avatar-gradient-<%= ['blue', 'green', 'purple', 'orange'][user.username.charCodeAt(0) % 4] %> h-12 w-12 flex items-center justify-center shadow-md">
+                              <span class="text-white font-bold text-lg"><%= user.username.charAt(0).toUpperCase() %></span>
                             </div>
                           </div>
-                          <div class="truncate max-w-[140px]" title="<%= user.username %>">
-                            <%= user.username %>
+                          <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-gray-900 truncate" title="<%= user.username %>">
+                              <%= user.username %>
+                            </div>
+                            <div class="mt-1">
+                              <span class="role-badge <%= user.role === 'admin' ? 'admin' : 'user' %>">
+                                <%= user.role %>
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -172,19 +348,24 @@
                         <% } %>
                       </td>
                       <td class="text-center" onclick="event.stopPropagation()">
-                        <label class="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" 
-                                 id="isActive-checkbox-<%= user._id %>"
-                                 class="sr-only peer"
-                                 <%= (user.isActive !== false) ? 'checked' : '' %>
-                                 onchange="toggleUserActive('<%= user._id %>', this.checked)">
-                          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
+                        <div class="flex flex-col items-center gap-1">
+                          <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" 
+                                   id="isActive-checkbox-<%= user._id %>"
+                                   class="sr-only peer"
+                                   <%= (user.isActive !== false) ? 'checked' : '' %>
+                                   onchange="toggleUserActive('<%= user._id %>', this.checked)">
+                            <div class="w-12 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-green-500 peer-checked:to-emerald-600 shadow-md"></div>
+                          </label>
+                          <span class="text-xs font-medium <%= (user.isActive !== false) ? 'text-green-600' : 'text-gray-400' %>">
+                            <%= (user.isActive !== false) ? 'Active' : 'Inactive' %>
+                          </span>
+                        </div>
                       </td>
                       <td class="text-center" onclick="event.stopPropagation()">
                         <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
                           <input type="hidden" name="userId" value="<%= user._id %>">
-                          <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
+                          <button type="submit" class="action-btn delete">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                               <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                             </svg>
@@ -198,256 +379,95 @@
               
               <!-- Mobile Cards (shown only on small screens) -->
               <div class="md:hidden space-y-4 px-4 py-2">
-                <% users.forEach(user => { %>
-                  <div class="bg-white rounded-lg shadow p-4 border border-gray-200 cursor-pointer <%= user.isActive === false ? 'opacity-60' : '' %>" onclick="window.location.href='/admin/users/<%= user._id %>'">
+                <% users.forEach((user, index) => { %>
+                  <div class="bg-white rounded-xl shadow-lg p-5 border border-gray-200 cursor-pointer <%= user.isActive === false ? 'opacity-60' : '' %> hover:shadow-xl transition-all duration-200 animate-row" onclick="window.location.href='/admin/users/<%= user._id %>'" style="animation-delay: <%= index * 0.03 %>s;">
                     <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center">
-                        <div class="h-12 w-12 flex-shrink-0 mr-3">
-                          <div class="rounded-full bg-blue-100 h-12 w-12 flex items-center justify-center">
-                            <span class="text-blue-800 font-semibold text-lg"><%= user.username.charAt(0).toUpperCase() %></span>
+                      <div class="flex items-center gap-3">
+                        <div class="h-14 w-14 flex-shrink-0">
+                          <div class="rounded-full avatar-gradient-<%= ['blue', 'green', 'purple', 'orange'][user.username.charCodeAt(0) % 4] %> h-14 w-14 flex items-center justify-center shadow-lg">
+                            <span class="text-white font-bold text-xl"><%= user.username.charAt(0).toUpperCase() %></span>
                           </div>
                         </div>
-                        <div>
-                          <div class="font-medium text-gray-900"><%= user.username %></div>
+                        <div class="flex-1 min-w-0">
+                          <div class="font-bold text-gray-900 text-lg"><%= user.username %></div>
+                          <div class="text-sm text-gray-600 mt-0.5"><%= user.companyName || '—' %></div>
+                          <div class="mt-1.5">
+                            <span class="role-badge <%= user.role === 'admin' ? 'admin' : 'user' %>">
+                              <%= user.role %>
+                            </span>
+                          </div>
                         </div>
+                      </div>
+                      <div onclick="event.stopPropagation()">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" 
+                                 id="isActive-checkbox-mobile-<%= user._id %>"
+                                 class="sr-only peer"
+                                 <%= (user.isActive !== false) ? 'checked' : '' %>
+                                 onchange="toggleUserActive('<%= user._id %>', this.checked)">
+                          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-green-500 peer-checked:to-emerald-600"></div>
+                        </label>
                       </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p class="text-gray-500">Company</p>
-                        <p class="font-medium"><%= user.companyName || '—' %></p>
-                      </div>
-                      <div>
-                        <p class="text-gray-500">Username</p>
-                        <p class="font-medium"><%= user.username %></p>
-                      </div>
-                      <div>
-                        <p class="text-gray-500">Last Login</p>
+                        <p class="text-gray-500 text-xs mb-1">Last Login</p>
                         <p class="font-medium text-xs">
                           <% if (user.lastLogin) { %>
                             <%= new Date(user.lastLogin).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
                           <% } else { %>
-                            Never
+                            <span class="text-gray-400">Never</span>
                           <% } %>
                         </p>
                       </div>
                       <div>
-                        <p class="text-gray-500">Last Activity</p>
+                        <p class="text-gray-500 text-xs mb-1">Last Activity</p>
                         <p class="font-medium text-xs">
                           <% if (user.lastActivity) { %>
                             <%= new Date(user.lastActivity).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
                           <% } else { %>
-                            No activity
+                            <span class="text-gray-400">No activity</span>
                           <% } %>
                         </p>
                       </div>
                       <div>
-                        <p class="text-gray-500">Status</p>
-                        <p class="font-medium">
-                          <span class="px-2 py-1 text-xs rounded-full <%= (user.isActive !== false) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                            <%= (user.isActive !== false) ? 'Active' : 'Inactive' %>
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                <% }) %>
-              </div>
-              
-              <!-- OLD MOBILE CARDS - REMOVED -->
-              <!--
-              <div class="md:hidden space-y-4 px-4 py-2">
-                <% users.forEach(user => { %>
-                  <div class="bg-white rounded-lg shadow p-4 border border-gray-200 <%= user.isActive === false ? 'opacity-60' : '' %>">
-                    <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center">
-                        <div class="h-12 w-12 flex-shrink-0 mr-3">
-                          <div class="rounded-full bg-blue-100 h-12 w-12 flex items-center justify-center">
-                            <span class="text-blue-800 font-semibold text-lg"><%= user.username.charAt(0).toUpperCase() %></span>
-                          </div>
-                        </div>
-                        <div>
-                          <div class="font-medium text-gray-900"><%= user.username %></div>
-                          <span class="px-2 py-1 text-xs font-medium rounded-full <%= user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800' %>">
-                            <%= user.role %>
-                          </span>
-                          <input type="hidden" name="userId[]" value="<%= user._id %>">
-                        </div>
-                      </div>
-                      <div class="flex space-x-2">
-                        <button type="button" data-userid="<%= user._id %>" data-username="<%= user.username %>" data-role="<%= user.role %>" data-pricingtier="<%= user.pricingTier %>" class="mobile-edit-user-btn bg-blue-50 hover:bg-blue-100 text-blue-500 border border-blue-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <div class="flex space-x-1">
-                          <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
-                            <input type="hidden" name="userId" value="<%= user._id %>">
-                            <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 font-medium p-2 rounded-lg text-sm transition-colors duration-200 inline-flex items-center justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                              </svg>
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Company Name Section -->
-                    <div class="mb-4 border-b pb-4">
-                      <div class="text-sm text-gray-500 mb-1">Company Name</div>
-                      <input type="text" name="companyName[]" 
-                             value="<%= user.companyName || '' %>" 
-                             placeholder="Enter company name"
-                             class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                    </div>
-                    
-                    <!-- Password Section -->
-                    <div class="mb-4 border-b pb-4">
-                      <div class="text-sm text-gray-500 mb-1">Password</div>
-                      <div class="relative flex items-center">
-                        <input type="password" id="mobile-password-<%= user._id %>" readonly value="••••••••" class="pr-16 border border-gray-200 rounded-lg bg-white px-3 py-2 focus:ring-0 text-sm text-gray-700 w-full" />
-                        <div class="absolute right-2 flex space-x-1">
-                          <button type="button" data-userid="<%= user._id %>" class="mobile-view-password-btn bg-gray-50 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                          </button>
-                          <button type="button" data-userid="<%= user._id %>" data-username="<%= user.username %>" class="mobile-change-password-btn bg-gray-50 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Role Section -->
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <div class="text-sm text-gray-500 mb-1">New Role</div>
-                        <select name="newRole[]" class="w-full border border-gray-300 rounded-lg text-center py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                          <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
-                          <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
-                        </select>
-                      </div>
-                      <div>
-                        <div class="text-sm text-gray-500 mb-1">Projects</div>
-                        <div class="text-center py-2">
-                          <% if (user.projectCount > 0) { %>
-                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-blue-600 text-white">
-                              <%= user.projectCount %>
-                            </span>
-                          <% } else { %>
-                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
-                              0
-                            </span>
-                          <% } %>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Activity Info Section -->
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <div class="text-sm text-gray-500 mb-1">Last Login</div>
-                        <div class="text-xs text-gray-600">
-                          <% if (user.lastLogin) { %>
-                            <%= new Date(user.lastLogin).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
-                            <br>
-                            <span class="text-gray-400"><%= new Date(user.lastLogin).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) %></span>
-                          <% } else { %>
-                            <span class="text-gray-400">Never</span>
-                          <% } %>
-                        </div>
-                      </div>
-                      <div>
-                        <div class="text-sm text-gray-500 mb-1">Created</div>
-                        <div class="text-xs text-gray-600">
-                          <% if (user.createdAt) { %>
-                            <%= new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
-                          <% } else { %>
-                            <span class="text-gray-400">—</span>
-                          <% } %>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Last Activity Section -->
-                    <div class="mb-4 border-b pb-4">
-                      <div class="text-sm text-gray-500 mb-1">Last Activity</div>
-                      <div class="text-xs text-gray-600">
-                        <% if (user.lastActivity) { %>
-                          <%= new Date(user.lastActivity).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
-                          <span class="text-gray-400 ml-2"><%= new Date(user.lastActivity).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) %></span>
-                        <% } else { %>
-                          <span class="text-gray-400">No activity</span>
-                        <% } %>
-                      </div>
-                    </div>
-                    
-                    <!-- Active Toggle Section -->
-                    <div class="mb-4 border-b pb-4">
-                      <div class="flex items-center justify-between">
-                        <div class="text-sm text-gray-500">Account Status</div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" 
-                                 id="isActive-checkbox-mobile-<%= user._id %>"
-                                 name="isActive-mobile-<%= user._id %>"
-                                 class="sr-only peer"
-                                 <%= (user.isActive !== false) ? 'checked' : '' %>
-                                 onchange="toggleUserActive('<%= user._id %>', this.checked)">
-                          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                        <input type="hidden" id="isActive-hidden-mobile-<%= user._id %>" name="isActive[]" value="<%= (user.isActive !== false) ? 'true' : 'false' %>">
-                      </div>
-                    </div>
-                    
-                    <!-- Pricing Tier Section -->
-                    <div class="mb-4">
-                      <div class="flex justify-between items-center mb-1">
-                        <div class="text-sm text-gray-500">Current Tier</div>
-                        <span class="px-3 py-1 text-xs font-medium rounded-full 
-                          <%= !user.pricingTier ? 'bg-gray-100 text-gray-800' : 
-                            user.pricingTier === 'tier1' ? 'bg-blue-100 text-blue-800' :
-                            user.pricingTier === 'tier2' ? 'bg-green-100 text-green-800' :
-                            user.pricingTier === 'tier3' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800' %>">
-                          <%= !user.pricingTier ? 'Not Set' : 
-                            user.pricingTier === 'tier1' ? 'Small' :
-                            user.pricingTier === 'tier2' ? 'Medium' :
-                            user.pricingTier === 'tier3' ? 'Large' :
-                            'Enterprise' %>
+                        <p class="text-gray-500 text-xs mb-1">Status</p>
+                        <span class="text-xs font-semibold <%= (user.isActive !== false) ? 'text-green-600' : 'text-gray-400' %>">
+                          <%= (user.isActive !== false) ? 'Active' : 'Inactive' %>
                         </span>
                       </div>
-                      <div>
-                        <div class="text-sm text-gray-500 mb-1">New Tier</div>
-                        <select name="pricingTier[]" class="w-full border border-gray-300 rounded-lg text-center py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                          <option value="" <%= !user.pricingTier ? 'selected' : '' %>>Not Set</option>
-                          <option value="tier1" <%= user.pricingTier === 'tier1' ? 'selected' : '' %>>Small</option>
-                          <option value="tier2" <%= user.pricingTier === 'tier2' ? 'selected' : '' %>>Medium</option>
-                          <option value="tier3" <%= user.pricingTier === 'tier3' ? 'selected' : '' %>>Large</option>
-                          <option value="tier4" <%= user.pricingTier === 'tier4' ? 'selected' : '' %>>Enterprise</option>
-                        </select>
+                      <div onclick="event.stopPropagation()">
+                        <p class="text-gray-500 text-xs mb-1">Actions</p>
+                        <form action="/admin/users/remove" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove <%= user.username %>?');">
+                          <input type="hidden" name="userId" value="<%= user._id %>">
+                          <button type="submit" class="action-btn delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                          </button>
+                        </form>
                       </div>
                     </div>
                   </div>
                 <% }) %>
               </div>
           <% } else { %>
-            <div class="bg-blue-50 p-10 rounded-lg text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-blue-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 class="text-xl font-medium text-gray-800 mb-2">No Users Found</h3>
-              <p class="text-gray-600 mb-6">There are no registered users in the system yet.</p>
-              <a href="/admin/users/add" class="btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Create First User
-              </a>
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-16 rounded-xl text-center border-2 border-dashed border-blue-200">
+              <div class="max-w-md mx-auto">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center shadow-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-3">No Users Found</h3>
+                <p class="text-gray-600 mb-8 text-lg">Get started by adding your first user to the system.</p>
+                <a href="/admin/users/add" class="btn-primary inline-flex items-center text-base px-6 py-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create First User
+                </a>
+              </div>
             </div>
           <% } %>
         </div>
@@ -581,6 +601,36 @@
   </div>
 
   <script>
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const searchCount = document.getElementById('searchCount');
+    const visibleCount = document.getElementById('visibleCount');
+    const allRows = document.querySelectorAll('tbody tr, .md\\:hidden > div');
+    
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        let visible = 0;
+        
+        allRows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          if (text.includes(searchTerm)) {
+            row.style.display = '';
+            visible++;
+          } else {
+            row.style.display = 'none';
+          }
+        });
+        
+        if (searchTerm) {
+          searchCount.classList.remove('hidden');
+          visibleCount.textContent = visible;
+        } else {
+          searchCount.classList.add('hidden');
+        }
+      });
+    }
+    
     // Toggle user active status
     async function toggleUserActive(userId, isActive) {
       try {
