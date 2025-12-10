@@ -221,6 +221,54 @@
                         <p class="help-text">Provide a detailed description of the glass</p>
                     </div>
 
+                    <!-- Row 2.5: Color and Low E -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Glass Color -->
+                        <div class="form-section">
+                            <div class="flex items-center gap-2.5 mb-3">
+                                <div class="section-icon bg-pink-100 text-pink-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <label for="color" class="font-semibold text-gray-800 text-sm">Glass Color</label>
+                                </div>
+                            </div>
+                            <div class="input-with-icon">
+                                <div class="input-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                                    </svg>
+                                </div>
+                                <input type="text" id="color" name="color" value="<%= glass.color || '' %>" class="form-input" 
+                                    placeholder="e.g., Clear, Bronze, Blue, Green">
+                            </div>
+                            <p class="help-text">Optional: Glass tint or color</p>
+                        </div>
+
+                        <!-- Low E Checkbox -->
+                        <div class="form-section">
+                            <div class="flex items-center gap-2.5 mb-3">
+                                <div class="section-icon bg-green-100 text-green-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <label for="isLowE" class="font-semibold text-gray-800 text-sm">Low E Glass</label>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" id="isLowE" name="isLowE" <%= glass.isLowE ? 'checked' : '' %> class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                                    <span class="ml-2 text-sm text-gray-700">This glass type is Low E (Low Emissivity)</span>
+                                </label>
+                            </div>
+                            <p class="help-text">Check if this glass has Low E coating for energy efficiency</p>
+                        </div>
+                    </div>
+
                     <!-- Row 2: Price and Weight -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <!-- Price field -->

@@ -27,6 +27,14 @@ const glassSchema = new mongoose.Schema({
   weight: {
     type: Number,
     required: true
+  },
+  isLowE: {
+    type: Boolean,
+    default: false
+  },
+  color: {
+    type: String,
+    default: ''
   }
 });
 

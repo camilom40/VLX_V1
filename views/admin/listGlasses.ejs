@@ -113,6 +113,7 @@
         .badge-blue { background: #dbeafe; color: #1e40af; }
         .badge-amber { background: #fef3c7; color: #b45309; }
         .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-pink { background: #fce7f3; color: #9f1239; }
         
         .action-btn {
             padding: 0.5rem;
@@ -300,6 +301,7 @@
                                 </th>
                                 <th>Type</th>
                                 <th>Description</th>
+                                <th>Color</th>
                                 <th>Missile</th>
                                 <th>Price</th>
                                 <th>Weight</th>
@@ -310,7 +312,7 @@
                             <% glasses.forEach(function(glass, index) { %>
                                 <tr class="glass-row animate-row" data-animation-delay="<%= index * 30 %>"
                                     data-id="<%= glass._id %>"
-                                    data-search="<%= glass.glass_type.toLowerCase() %> <%= glass.description.toLowerCase() %> <%= glass.missile_type.toLowerCase() %>">
+                                    data-search="<%= glass.glass_type.toLowerCase() %> <%= glass.description.toLowerCase() %> <%= (glass.color || '').toLowerCase() %> <%= glass.missile_type.toLowerCase() %>">
                                     <td>
                                         <input type="checkbox" class="row-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-id="<%= glass._id %>">
                                     </td>
@@ -319,6 +321,13 @@
                                     </td>
                                     <td>
                                         <span class="font-medium text-gray-900 max-w-xs truncate block"><%= glass.description %></span>
+                                    </td>
+                                    <td>
+                                        <% if (glass.color && glass.color.trim() !== '') { %>
+                                            <span class="badge badge-pink"><%= glass.color %></span>
+                                        <% } else { %>
+                                            <span class="text-gray-400 text-sm">—</span>
+                                        <% } %>
                                     </td>
                                     <td>
                                         <span class="badge <%= glass.missile_type === 'LMI' ? 'badge-purple' : 'badge-blue' %>"><%= glass.missile_type %></span>
@@ -560,19 +569,23 @@
         
         // Export to Excel
         function exportToExcel() {
-            const data = [['Type', 'Description', 'Missile Type', 'Price Per Square Meter', 'Currency', 'Weight']];
+            const data = [['Type', 'Description', 'Color', 'Missile Type', 'Price Per Square Meter', 'Currency', 'Weight']];
             
             document.querySelectorAll('.glass-row').forEach(row => {
                 if (row.style.display !== 'none') {
                     const cells = row.querySelectorAll('td');
-                    const priceEl = cells[4].querySelector('.price-display');
-                    const weightText = cells[5].textContent.trim();
+                    const priceEl = cells[5].querySelector('.price-display');
+                    const weightText = cells[6].textContent.trim();
                     // Extract weight value (remove unit)
                     const weight = weightText === '—' ? '' : weightText.replace(/ (kg\/m²|lbs\/ft²)/, '').trim();
+                    // Extract color (remove badge styling if present)
+                    const colorText = cells[3].textContent.trim();
+                    const color = colorText === '—' ? '' : colorText;
                     data.push([
                         cells[1].textContent.trim(),
                         cells[2].textContent.trim(),
-                        cells[3].textContent.trim(),
+                        color,
+                        cells[4].textContent.trim(),
                         priceEl ? priceEl.dataset.price : '',
                         priceEl ? priceEl.dataset.currency : '',
                         weight
@@ -584,7 +597,7 @@
             const ws = XLSX.utils.aoa_to_sheet(data);
             
             ws['!cols'] = [
-                { wch: 20 }, { wch: 30 }, { wch: 15 },
+                { wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
                 { wch: 20 }, { wch: 10 }, { wch: 12 }
             ];
             

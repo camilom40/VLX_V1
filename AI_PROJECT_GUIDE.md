@@ -208,12 +208,14 @@ The configure window page features a dynamic preview that:
 ### Glass
 ```javascript
 {
-  name: String,
-  type: String,
-  price: Number,
-  weight: Number,      // Optional (kg/m²)
-  missileType: String,
-  // ... other fields
+  glass_type: String,
+  description: String,
+  missile_type: String,  // 'LMI' or 'SMI'
+  pricePerSquareMeter: Number,
+  currency: String,      // 'COP' or 'USD'
+  weight: Number,        // Optional (kg/m²)
+  isLowE: Boolean,       // Low Emissivity coating (default: false)
+  color: String          // Glass tint/color (e.g., Clear, Bronze, Blue, Gray) (default: '')
 }
 ```
 
@@ -796,5 +798,53 @@ npm run dev
 
 ---
 
-*Last Updated: December 2025 - Project Pages, User Management & Quote System Enhancements*
+## December 2025 - Glass Model Enhancements & Project Details Table Reorganization
+
+### What We Worked On
+
+1. **Glass Model Enhancements**
+   - **Low E Field**: Added `isLowE` boolean field to indicate if glass has Low Emissivity coating
+   - **Glass Color Field**: Added `color` string field to store glass tint/color (e.g., Clear, Bronze, Blue, Gray)
+   - **UI Updates**: Added checkbox for Low E and text input for color on both add and edit glass pages
+   - **List Table**: Added Color column to the glass management table with pink badge styling
+   - **Excel Export**: Updated export functionality to include color field
+
+2. **Project Details Table Reorganization**
+   - **Removed Dimensions Column**: Dimensions moved into description column
+   - **Structured Description Column**: Description now displays all specification details in organized format:
+     - Dimensions (Width and Height with unit toggle support)
+     - Missile Impact Rating
+     - Aluminum Color
+     - Glass Type (with full description)
+     - Glass Color
+     - Low E status
+   - **Improved Table Layout**:
+     - Better column width management
+     - Consistent padding and alignment
+     - Cleaner visual hierarchy
+     - Compact, organized specification display
+   - **Enhanced Styling**:
+     - Fixed-width labels for alignment
+     - Better spacing with `space-y-1.5`
+     - Improved quantity badge (circular with centered text)
+     - Better price formatting
+
+#### Key Files Modified
+- `models/Glass.js` - Added `isLowE` and `color` fields
+- `routes/admin/glassRoutes.js` - Updated to handle new fields in add/update routes
+- `views/admin/addGlass.ejs` - Added Low E checkbox and color input field
+- `views/admin/editGlass.ejs` - Added Low E checkbox and color input field with pre-population
+- `views/admin/listGlasses.ejs` - Added Color column to table, updated search and export
+- `views/projects/projectDetails.ejs` - Reorganized table structure, moved dimensions to description column, improved layout and styling
+
+#### Technical Notes
+- **Glass Color**: Optional field, displayed as pink badge in list table when present
+- **Low E**: Boolean field, displayed as "YES" or "NO" in project details
+- **Description Parsing**: Glass information is parsed from description field in window items
+- **Table Organization**: Description column uses flex layout with fixed-width labels for consistent alignment
+- **Unit Toggle**: Dimension display in description column supports inches/mm toggle
+
+---
+
+*Last Updated: December 2025 - Glass Model Enhancements & Project Details Table Reorganization*
 

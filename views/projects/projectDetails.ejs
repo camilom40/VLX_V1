@@ -106,8 +106,8 @@
     }
     .data-table tbody tr:last-child { border-bottom: none; }
     .data-table td {
-      padding: 1.25rem 1rem;
-      vertical-align: top;
+      padding: 0.875rem 1rem;
+      vertical-align: middle;
       background: inherit;
       font-size: 0.875rem;
       color: #374151;
@@ -469,24 +469,50 @@
             
             <!-- Desktop view: Table -->
             <div class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm" style="min-width: 100%; -webkit-overflow-scrolling: touch;">
-              <table class="data-table" style="min-width: 950px;">
+              <table class="data-table" style="min-width: 1200px;">
                 <thead>
                   <tr>
-                    <th>Item Name</th>
+                    <th class="w-24">Item</th>
                     <th class="w-32">Preview</th>
-                    <th id="dimensionsHeader">Dimensions (in)</th>
-                    <th>Description</th>
-                    <th class="text-center">Qty</th>
-                    <th class="text-right">Unit Price</th>
-                    <th class="text-right">Total</th>
-                    <th class="text-center whitespace-nowrap">Actions</th>
+                    <th class="min-w-96">Description</th>
+                    <th class="text-center w-20">Qty</th>
+                    <th class="text-right w-32">Unit Price</th>
+                    <th class="text-right w-32">Total</th>
+                    <th class="text-center w-28 whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <% windowItems.forEach((item, index) => { %>
+                  <% windowItems.forEach((item, index) => { 
+                    // Parse glass information from description
+                    let glassType = '—';
+                    let glassColor = '—';
+                    let lowE = 'NO';
+                    let missileType = '—';
+                    let glassDescription = '';
+                    
+                    if (item.description) {
+                      // Extract Glass Type
+                      const glassTypeMatch = item.description.match(/Glass Type:\s*([^-]+)/);
+                      if (glassTypeMatch) {
+                        glassType = glassTypeMatch[1].trim();
+                      }
+                      
+                      // Extract full glass description (after the dash)
+                      const glassDescMatch = item.description.match(/Glass Type:\s*[^-]+-\s*(.+?)(?:\n|$)/);
+                      if (glassDescMatch) {
+                        glassDescription = glassDescMatch[1].trim();
+                      }
+                    }
+                    
+                    // Get color from item.color (Aluminum Color)
+                    const aluminumColor = item.color && item.color !== 'Various' ? item.color : '—';
+                    
+                    // Get window system type
+                    const windowSystemType = item.style || item.windowSystem?.type || '—';
+                  %>
                     <tr>
-                      <td>
-                        <div class="text-sm font-medium text-gray-900"><%= item.itemName %></div>
+                      <td class="py-3">
+                        <div class="text-sm font-semibold text-gray-900"><%= item.itemName %></div>
                       </td>
                       <td class="py-3">
                         <div class="window-preview-mini" 
@@ -497,30 +523,58 @@
                              style="width: 100px; height: 75px; margin: 0 auto;">
                         </div>
                       </td>
-                      <td>
-                        <div class="text-sm text-gray-900 dimension-display" 
-                             data-width-inches="<%= item.width %>" 
-                             data-height-inches="<%= item.height %>">
-                          <%= parseFloat(item.width).toFixed(2) %> × <%= parseFloat(item.height).toFixed(2) %>
+                      <td class="py-3">
+                        <div class="text-xs text-gray-700 space-y-1.5">
+                          <div class="flex items-start gap-2">
+                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Dimensions:</span>
+                            <span class="text-xs font-medium text-gray-900 dimension-display" 
+                                  data-width-inches="<%= item.width %>" 
+                                  data-height-inches="<%= item.height %>">
+                              <span>Width: <%= parseFloat(item.width).toFixed(2) %></span>
+                              <span class="mx-1.5 text-gray-400">|</span>
+                              <span>Height: <%= parseFloat(item.height).toFixed(2) %></span>
+                            </span>
+                          </div>
+                          
+                          <div class="flex items-start gap-2">
+                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Missile Impact:</span>
+                            <span class="text-xs text-gray-700"><%= missileType %></span>
+                          </div>
+                          
+                          <div class="flex items-start gap-2">
+                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Aluminum Color:</span>
+                            <span class="text-xs text-gray-700"><%= aluminumColor %></span>
+                          </div>
+                          
+                          <div class="flex items-start gap-2">
+                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Glass Type:</span>
+                            <div class="flex-1">
+                              <span class="text-xs text-gray-700"><%= glassType %></span>
+                              <% if (glassDescription) { %>
+                                <div class="text-xs text-gray-600 mt-0.5"><%= glassDescription %></div>
+                              <% } %>
+                            </div>
+                          </div>
+                          
+                          <div class="flex items-start gap-2">
+                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Glass Color:</span>
+                            <span class="text-xs text-gray-700"><%= glassColor %></span>
+                          </div>
+                          
+                          <div class="flex items-start gap-2">
+                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Low E:</span>
+                            <span class="text-xs text-gray-700"><%= lowE %></span>
+                          </div>
                         </div>
                       </td>
-                      <td>
-                        <% if (item.description) { %>
-                          <div class="text-xs text-gray-600 whitespace-pre-wrap break-words text-left" style="max-width: 400px; line-height: 1.6;">
-                            <%= item.description %>
-                          </div>
-                        <% } else { %>
-                          <span class="text-gray-400 text-xs">—</span>
-                        <% } %>
+                      <td class="text-center py-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-blue-100 text-blue-800 font-semibold text-sm"><%= item.quantity %></span>
                       </td>
-                      <td class="text-center">
-                        <span class="badge badge-blue"><%= item.quantity %></span>
+                      <td class="text-right py-3">
+                        <div class="text-sm font-medium text-gray-900" data-price="<%= item.unitPrice %>">$<%= parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
                       </td>
-                      <td class="text-right">
-                        <div class="text-sm text-gray-900" data-price="<%= item.unitPrice %>">$<%= parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
-                      </td>
-                      <td class="text-right">
-                        <div class="text-sm font-medium text-green-600" data-price="<%= item.totalPrice %>">$<%= parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
+                      <td class="text-right py-3">
+                        <div class="text-sm font-bold text-green-700" data-price="<%= item.totalPrice %>">$<%= parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
                       </td>
                       <td class="whitespace-nowrap">
                         <div class="flex items-center justify-center gap-1 flex-nowrap">
@@ -550,7 +604,7 @@
                   
                   <!-- Total Row -->
                   <tr class="bg-gradient-to-r from-indigo-50 to-blue-50 font-medium border-t-2 border-indigo-200">
-                    <td colspan="6" class="px-4 py-3 text-right text-gray-900 font-semibold">TOTAL:</td>
+                    <td colspan="4" class="px-4 py-3 text-right text-gray-900 font-semibold">TOTAL:</td>
                     <td class="px-4 py-3 text-right text-green-700 font-bold text-lg" data-price="<%= projectTotal %>">$<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                     <td class="px-4 py-3"></td>
                   </tr>
@@ -1126,7 +1180,7 @@
       // Update toggle buttons
       const inchesBtn = document.getElementById('unitToggleInches');
       const mmBtn = document.getElementById('unitToggleMm');
-      const dimensionsHeader = document.getElementById('dimensionsHeader');
+      // Dimensions header removed - dimensions now in description column
       const mobileUnit = document.getElementById('mobileDimensionsUnit');
       
       if (!inchesBtn || !mmBtn) return; // Exit if buttons don't exist
@@ -1136,14 +1190,14 @@
         inchesBtn.classList.remove('text-gray-700');
         mmBtn.classList.remove('active', 'bg-indigo-600', 'text-white');
         mmBtn.classList.add('text-gray-700');
-        if (dimensionsHeader) dimensionsHeader.textContent = 'Dimensions (in)';
+        // Dimensions header removed
         if (mobileUnit) mobileUnit.textContent = '(in)';
       } else {
         mmBtn.classList.add('active', 'bg-indigo-600', 'text-white');
         mmBtn.classList.remove('text-gray-700');
         inchesBtn.classList.remove('active', 'bg-indigo-600', 'text-white');
         inchesBtn.classList.add('text-gray-700');
-        if (dimensionsHeader) dimensionsHeader.textContent = 'Dimensions (mm)';
+        // Dimensions header removed
         if (mobileUnit) mobileUnit.textContent = '(mm)';
       }
       
@@ -1154,12 +1208,18 @@
         
         if (isNaN(widthInches) || isNaN(heightInches)) return;
         
+        // Find width and height spans within the dimension-display container
+        const widthSpan = display.querySelector('span:first-of-type');
+        const heightSpan = display.querySelector('span:last-of-type');
+        
         if (unit === 'inches') {
-          display.textContent = `${widthInches.toFixed(2)} × ${heightInches.toFixed(2)}`;
+          if (widthSpan) widthSpan.textContent = `Width: ${widthInches.toFixed(2)}`;
+          if (heightSpan) heightSpan.textContent = `Height: ${heightInches.toFixed(2)}`;
         } else {
           const widthMm = inchesToMm(widthInches);
           const heightMm = inchesToMm(heightInches);
-          display.textContent = `${Math.round(widthMm)} × ${Math.round(heightMm)}`;
+          if (widthSpan) widthSpan.textContent = `Width: ${Math.round(widthMm)}`;
+          if (heightSpan) heightSpan.textContent = `Height: ${Math.round(heightMm)}`;
         }
       });
       

@@ -38,8 +38,17 @@ router.get('/add', isAdmin, (req, res) => {
 
 router.post('/add', isAdmin, async (req, res) => {
   try {
-    const { glass_type, description, missile_type, pricePerSquareMeter, currency, weight } = req.body;
-    const newGlass = new Glass({ glass_type, description, missile_type, pricePerSquareMeter, currency, weight });
+    const { glass_type, description, missile_type, pricePerSquareMeter, currency, weight, isLowE, color } = req.body;
+    const newGlass = new Glass({ 
+      glass_type, 
+      description, 
+      missile_type, 
+      pricePerSquareMeter, 
+      currency, 
+      weight,
+      isLowE: isLowE === 'on' || isLowE === true,
+      color: color || ''
+    });
     await newGlass.save();
     res.redirect('/admin/glasses');
   } catch (error) {
@@ -69,8 +78,17 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 // Route to update a glass
 router.post('/update/:id', isAdmin, async (req, res) => {
   try {
-    const { glass_type, description, missile_type, pricePerSquareMeter, currency, weight } = req.body;
-    await Glass.findByIdAndUpdate(req.params.id, { glass_type, description, missile_type, pricePerSquareMeter, currency, weight });
+    const { glass_type, description, missile_type, pricePerSquareMeter, currency, weight, isLowE, color } = req.body;
+    await Glass.findByIdAndUpdate(req.params.id, { 
+      glass_type, 
+      description, 
+      missile_type, 
+      pricePerSquareMeter, 
+      currency, 
+      weight,
+      isLowE: isLowE === 'on' || isLowE === true,
+      color: color || ''
+    });
     logger.info(`Glass with ID: ${req.params.id} updated successfully.`);
     res.redirect('/admin/glasses');
   } catch (error) {
