@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/_head.ejs'); %>
+    <title>Projects Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+        
+        .main-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.05);
+            border: 1px solid rgba(226,232,240,0.8);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #fff, #f8fafc);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border-radius: 0.75rem;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        .search-input:hover { border-color: #cbd5e1; background: #fff; }
+        .search-input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white; font-weight: 600; padding: 0.625rem 1.25rem;
+            border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+            transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); transform: translateY(-1px); }
+        
+        .btn-secondary {
+            background: #f1f5f9; color: #475569; font-weight: 600;
+            padding: 0.625rem 1.25rem; border-radius: 0.625rem;
+            border: 2px solid #e2e8f0; transition: all 0.3s ease;
+            display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-secondary:hover { background: #e2e8f0; border-color: #cbd5e1; }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white; font-weight: 600; padding: 0.625rem 1.25rem;
+            border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(239,68,68,0.3);
+            transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-danger:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); transform: translateY(-1px); }
+        
+        .table-container {
+            overflow-x: auto;
+            border-radius: 0.75rem;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table thead {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+        }
+        .data-table th {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+        }
+        .data-table th:first-child { border-top-left-radius: 0.75rem; }
+        .data-table th:last-child { border-top-right-radius: 0.75rem; }
+        
+        .data-table tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.15s ease;
+        }
+        .data-table tbody tr:hover { background: #f8fafc; }
+        .data-table tbody tr:last-child { border-bottom: none; }
+        .data-table tbody tr:last-child td:first-child { border-bottom-left-radius: 0.75rem; }
+        .data-table tbody tr:last-child td:last-child { border-bottom-right-radius: 0.75rem; }
+        
+        .data-table td {
+            padding: 1rem 1.25rem;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-indigo { background: #e0e7ff; color: #3730a3; }
+        .badge-purple { background: #f3e8ff; color: #7c3aed; }
+        .badge-sky { background: #e0f2fe; color: #0369a1; }
+        .badge-amber { background: #fef3c7; color: #b45309; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        
+        .action-btn {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+        .action-btn.edit { color: #3b82f6; }
+        .action-btn.edit:hover { background: #eff6ff; color: #1d4ed8; }
+        .action-btn.view { color: #10b981; }
+        .action-btn.view:hover { background: #d1fae5; color: #059669; }
+        .action-btn.delete { color: #ef4444; }
+        .action-btn.delete:hover { background: #fef2f2; color: #b91c1c; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-row { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <%- include('../partials/_header.ejs') %>
+    
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Projects Management</h1>
+                    <p class="text-gray-500 text-sm">Manage your construction projects</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/projects/new" class="btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    New Project
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-800"><%= projects.length %></p>
+                        <p class="text-xs text-gray-500">Total Projects</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-800"><%= [...new Set(projects.map(p => p.clientName).filter(Boolean))].length %></p>
+                        <p class="text-xs text-gray-500">Unique Clients</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-800"><%= projects.reduce((sum, p) => sum + p.windowCount, 0) %></p>
+                        <p class="text-xs text-gray-500">Total Windows</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-800">
+                            $<%= projects.reduce((sum, p) => sum + (p.projectTotal || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                        </p>
+                        <p class="text-xs text-gray-500">Total Value</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Actions Bar -->
+        <div class="main-card p-4 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <!-- Search -->
+                <div class="relative flex-1 max-w-md">
+                    <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="searchInput" class="search-input pl-10" placeholder="Search by project name or client...">
+                    <span id="searchCount" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 hidden">
+                        <span id="visibleCount"><%= projects.length %></span> results
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Table -->
+        <% if (projects.length > 0) { %>
+            <div class="main-card overflow-hidden">
+                <div class="table-container">
+                    <table class="data-table" id="projectTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Project Name</th>
+                                <th>Client</th>
+                                <th>Windows</th>
+                                <th>Total Value</th>
+                                <th>Created</th>
+                                <th>Last Updated</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% projects.forEach(function(project, index) { %>
+                                <tr class="project-row animate-row" style="animation-delay: <%= index * 30 %>ms"
+                                    data-search="<%= project.projectName.toLowerCase() %> <%= (project.clientName || '').toLowerCase() %>">
+                                    <td>
+                                        <span class="font-medium text-gray-800"><%= index + 1 %></span>
+                                    </td>
+                                    <td>
+                                        <a href="/projects/<%= project._id %>" class="font-medium text-blue-600 hover:text-blue-800">
+                                            <%= project.projectName %>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <% if (project.clientName) { %>
+                                            <span class="badge badge-purple"><%= project.clientName %></span>
+                                        <% } else { %>
+                                            <span class="text-gray-400 text-sm">—</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-blue"><%= project.windowCount || 0 %></span>
+                                    </td>
+                                    <td>
+                                        <span class="font-semibold text-green-600">
+                                            $<%= (project.projectTotal || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <% const createDate = project.createdAt; %>
+                                        <span class="text-gray-600">
+                                            <%= createDate instanceof Date ? createDate.toLocaleDateString() : (createDate ? new Date(createDate).toLocaleDateString() : 'N/A') %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <% const updateDate = project.updatedAt || project.createdAt; %>
+                                        <span class="text-gray-600">
+                                            <%= updateDate instanceof Date ? updateDate.toLocaleDateString() : (updateDate ? new Date(updateDate).toLocaleDateString() : 'N/A') %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center justify-center gap-1">
+                                            <a href="/projects/<%= project._id %>" class="action-btn view" title="View Details">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </a>
+                                            <button onclick="deleteProject('<%= project._id %>', '<%= project.projectName %>')" class="action-btn delete" title="Delete">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                            <form id="delete-form-<%= project._id %>" action="/projects/delete/<%= project._id %>" method="post" class="hidden"></form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Footer Info -->
+            <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Showing <span id="displayCount" class="font-medium text-blue-600"><%= projects.length %></span> of <%= projects.length %> projects
+                </div>
+            </div>
+        <% } else { %>
+            <!-- Empty State -->
+            <div class="main-card p-12 text-center">
+                <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 mb-2">No projects yet</h2>
+                <p class="text-gray-500 mb-6">Get started by creating your first project</p>
+                <a href="/projects/new" class="btn-primary inline-flex">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Create First Project
+                </a>
+            </div>
+        <% } %>
+    </main>
+
+    <%- include('../partials/_footer.ejs') %>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const searchCount = document.getElementById('searchCount');
+        const visibleCount = document.getElementById('visibleCount');
+        const displayCount = document.getElementById('displayCount');
+        const projectRows = document.querySelectorAll('.project-row');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                let visibleRows = 0;
+
+                projectRows.forEach(row => {
+                    const searchText = row.getAttribute('data-search') || '';
+                    if (searchText.includes(searchTerm)) {
+                        row.style.display = '';
+                        visibleRows++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Update count display
+                if (searchTerm) {
+                    visibleCount.textContent = visibleRows;
+                    displayCount.textContent = visibleRows;
+                    searchCount.classList.remove('hidden');
+                } else {
+                    visibleCount.textContent = projectRows.length;
+                    displayCount.textContent = projectRows.length;
+                    searchCount.classList.add('hidden');
+                }
+            });
+        }
+
+        // Delete project function
+        function deleteProject(projectId, projectName) {
+            if (confirm(`Are you sure you want to delete the project "${projectName}"?\n\nThis action cannot be undone and will delete all associated windows.`)) {
+                const form = document.getElementById(`delete-form-${projectId}`);
+                if (form) {
+                    form.submit();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+

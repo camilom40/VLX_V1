@@ -15,8 +15,14 @@ const userSchema = new mongoose.Schema({
   companyLogo: {
     type: String,
     default: null // Path to the user's company logo file
-  }
-});
+  },
+  companyName: { type: String, default: '' },
+  isActive: { type: Boolean, default: true },
+  email: { type: String, default: '' },
+  firstName: { type: String, default: '' },
+  lastName: { type: String, default: '' },
+  city: { type: String, default: '' }
+}, { timestamps: true });
 
 userSchema.pre('save', function(next) {
   const user = this;

@@ -1,8 +1,21 @@
 const User = require('../../models/User');
 
-const isAuthenticated = (req, res, next) => {
+const isAuthenticated = async (req, res, next) => {
   if (req.session && req.session.userId) {
-    return next(); // User is authenticated, proceed to the next middleware/route handler
+    // Check if user is active
+    try {
+      const user = await User.findById(req.session.userId);
+      if (user && user.isActive === false) {
+        // User account is inactive, destroy session and redirect
+        req.session.destroy();
+        return res.status(403).render('unauthorized', {
+          message: 'Your account has been deactivated. Please contact an administrator.'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking user active status:', error);
+    }
+    return next(); // User is authenticated and active, proceed to the next middleware/route handler
   } else {
     // Render the pretty unauthorized page instead of plain text
     return res.status(401).render('unauthorized', {

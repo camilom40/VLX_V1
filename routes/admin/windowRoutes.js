@@ -63,10 +63,31 @@ router.get('/users/add', async (req, res) => {
 // Route to handle adding a new user
 router.post('/users/add', async (req, res) => {
   try {
-    const { username, password, role, pricingTier } = req.body;
+    const { username, password, role, pricingTier, companyName, email, firstName, lastName, city } = req.body;
+
+    // Validate required fields
+    if (!username || !password || !companyName || !email || !firstName || !lastName) {
+      return res.status(400).send('Username, password, company name, email, first name, and last name are required.');
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).send('Please enter a valid email address.');
+    }
 
     // Create a new user
-    const newUser = new User({ username, password, role, pricingTier });
+    const newUser = new User({ 
+      username, 
+      password, 
+      role, 
+      pricingTier,
+      companyName: companyName.trim(),
+      email: email.trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      city: city ? city.trim() : ''
+    });
     await newUser.save();
 
     console.log('New user added:', username);
@@ -191,7 +212,7 @@ router.post('/users/update-password', async (req, res) => {
 // New route to handle batch update of multiple users
 router.post('/users/update-all', async (req, res) => {
   try {
-    const { userId, newRole, pricingTier } = req.body;
+    const { userId, newRole, pricingTier, companyName, isActive } = req.body;
     
     // Check if we have arrays of user IDs and data
     if (Array.isArray(userId)) {
@@ -201,6 +222,25 @@ router.post('/users/update-all', async (req, res) => {
           role: newRole[index],
           pricingTier: pricingTier[index]
         };
+        
+        // Add company name if provided
+        if (companyName && companyName[index] !== undefined) {
+          updateData.companyName = companyName[index] || '';
+        }
+        
+        // Add isActive status if provided
+        // Only update if the value is explicitly provided and is a valid boolean string
+        if (isActive && Array.isArray(isActive) && isActive[index] !== undefined) {
+          const activeValue = isActive[index];
+          // Handle both string 'true'/'false' and boolean values
+          if (activeValue === 'true' || activeValue === true) {
+            updateData.isActive = true;
+          } else if (activeValue === 'false' || activeValue === false) {
+            updateData.isActive = false;
+          }
+          // If the value is neither 'true' nor 'false', skip updating isActive
+          // This allows the toggle to work independently
+        }
         
         // Update the user with the corresponding data
         return User.findByIdAndUpdate(id, updateData);
@@ -220,31 +260,188 @@ router.post('/users/update-all', async (req, res) => {
   }
 });
 
-// Route to view registered users
-router.get('/users', async (req, res) => {
+// Route to toggle user active status
+router.post('/users/toggle-active', async (req, res) => {
   try {
-    // Fetch users first
-    const users = await User.find({}, 'username role lastLogin pricingTier');
+    const { userId, isActive } = req.body;
     
-    // Get project counts for all users in a single efficient query
-    const projectCounts = await Project.aggregate([
+    await User.findByIdAndUpdate(userId, { isActive: isActive === 'true' || isActive === true });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error toggling user active status:', error.message);
+    res.status(500).json({ error: 'Error updating user status' });
+  }
+});
+
+// Route to view/edit a single user
+router.get('/users/:id', async (req, res) => {
+  try {
+    const UserActivity = require('../../models/UserActivity');
+    const WindowItem = require('../../models/WindowItem');
+    const { id } = req.params;
+    
+    // Fetch user with all fields
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+    
+    // Get project count and total value
+    const projectStats = await Project.aggregate([
+      { $match: { userId: user._id } },
       { $group: { _id: '$userId', count: { $sum: 1 } } }
     ]);
     
-    // Convert to a lookup object for easier access
+    const projectValues = await WindowItem.aggregate([
+      {
+        $lookup: {
+          from: 'projects',
+          localField: 'projectId',
+          foreignField: '_id',
+          as: 'project'
+        }
+      },
+      { $unwind: '$project' },
+      { $match: { 'project.userId': user._id } },
+      { $group: { _id: '$project.userId', totalValue: { $sum: '$totalPrice' } } }
+    ]);
+    
+    // Get last activity
+    const lastActivity = await UserActivity.findOne({ userId: user._id })
+      .sort({ timestamp: -1 })
+      .select('timestamp');
+    
+    // Get recent activity history
+    const activityHistory = await UserActivity.find({ userId: user._id })
+      .sort({ timestamp: -1 })
+      .limit(20)
+      .lean();
+    
+    // Get user's projects
+    const projects = await Project.find({ userId: user._id })
+      .sort({ updatedAt: -1 })
+      .limit(10)
+      .lean();
+    
+    const userData = user.toObject();
+    userData.projectCount = projectStats[0]?.count || 0;
+    userData.totalProjectValue = projectValues[0]?.totalValue || 0;
+    userData.lastActivity = lastActivity?.timestamp || null;
+    userData.activityHistory = activityHistory;
+    userData.projects = projects;
+    
+    res.render('admin/userDetail', { user: userData });
+  } catch (error) {
+    console.error('Error fetching user details:', error.message);
+    res.status(500).send('Error loading user details');
+  }
+});
+
+// Route to update a single user
+router.post('/users/:id/update', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, companyName, role, pricingTier, isActive, email, firstName, lastName, city } = req.body;
+    
+    const updateData = {};
+    if (username) updateData.username = username;
+    if (companyName !== undefined) updateData.companyName = companyName;
+    if (email !== undefined) updateData.email = email.trim();
+    if (firstName !== undefined) updateData.firstName = firstName.trim();
+    if (lastName !== undefined) updateData.lastName = lastName.trim();
+    if (city !== undefined) updateData.city = city.trim();
+    if (role) updateData.role = role;
+    if (pricingTier !== undefined) updateData.pricingTier = pricingTier;
+    if (isActive !== undefined) {
+      updateData.isActive = isActive === 'true' || isActive === true;
+    }
+    
+    await User.findByIdAndUpdate(id, updateData);
+    
+    res.redirect(`/admin/users/${id}`);
+  } catch (error) {
+    console.error('Error updating user:', error.message);
+    res.status(500).send('Error updating user');
+  }
+});
+
+// Route to view registered users
+router.get('/users', async (req, res) => {
+  try {
+    const UserActivity = require('../../models/UserActivity');
+    const WindowItem = require('../../models/WindowItem');
+    
+    // Fetch users with all necessary fields
+    const users = await User.find({}, 'username role lastLogin pricingTier companyName isActive createdAt updatedAt');
+    
+    // Get project counts and total values for all users
+    const projectStats = await Project.aggregate([
+      {
+        $group: {
+          _id: '$userId',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    // Get total project values (sum of all window items' totalPrice for each user's projects)
+    const projectValues = await WindowItem.aggregate([
+      {
+        $lookup: {
+          from: 'projects',
+          localField: 'projectId',
+          foreignField: '_id',
+          as: 'project'
+        }
+      },
+      {
+        $unwind: '$project'
+      },
+      {
+        $group: {
+          _id: '$project.userId',
+          totalValue: { $sum: '$totalPrice' }
+        }
+      }
+    ]);
+    
+    // Get last activity for each user
+    const lastActivities = await UserActivity.aggregate([
+      {
+        $group: {
+          _id: '$userId',
+          lastActivity: { $max: '$timestamp' }
+        }
+      }
+    ]);
+    
+    // Convert to lookup objects
     const projectCountMap = {};
-    projectCounts.forEach(item => {
+    projectStats.forEach(item => {
       projectCountMap[item._id.toString()] = item.count;
     });
     
-    // Add project count to each user object
-    const usersWithProjects = users.map(user => {
+    const projectValueMap = {};
+    projectValues.forEach(item => {
+      projectValueMap[item._id.toString()] = item.totalValue || 0;
+    });
+    
+    const lastActivityMap = {};
+    lastActivities.forEach(item => {
+      lastActivityMap[item._id.toString()] = item.lastActivity;
+    });
+    
+    // Add additional data to each user object
+    const usersWithData = users.map(user => {
       const userObj = user.toObject();
       userObj.projectCount = projectCountMap[user._id.toString()] || 0;
+      userObj.totalProjectValue = projectValueMap[user._id.toString()] || 0;
+      userObj.lastActivity = lastActivityMap[user._id.toString()] || null;
       return userObj;
     });
     
-    res.render('admin/users', { users: usersWithProjects });
+    res.render('admin/users', { users: usersWithData });
   } catch (error) {
     console.error('Error fetching users:', error.message);
     res.status(500).send('Error loading users');

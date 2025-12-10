@@ -99,6 +99,14 @@ router.post('/auth/login', async (req, res) => {
       });
     }
     
+    // Check if user account is active
+    if (user.isActive === false) {
+      return res.render('login', { 
+        error: 'Your account has been deactivated. Please contact an administrator.',
+        username
+      });
+    }
+    
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {

@@ -3,8 +3,48 @@ const express = require('express');
 const router = express.Router();
 const Project = require('../models/Project'); // Adjust path
 const WindowItem = require('../models/WindowItem');
+const User = require('../models/User');
 const { isAuthenticated } = require('./middleware/authMiddleware'); // Adjust path
 const { convertToCOP, getExchangeRate } = require('../utils/currencyConverter');
+const fs = require('fs');
+const path = require('path');
+
+// Route to display all projects (list page)
+router.get('/projects', isAuthenticated, async (req, res) => {
+  try {
+    console.log('Projects list route hit!'); // Debug log
+    const userId = req.session.userId;
+    
+    // Fetch all projects belonging to the logged-in user, sort by most recently updated
+    const projects = await Project.find({ userId: userId })
+                                  .sort({ updatedAt: -1 })
+                                  .lean();
+    
+    // Get window items count for each project
+    const WindowItem = require('../models/WindowItem');
+    const projectsWithCounts = await Promise.all(
+      projects.map(async (project) => {
+        const windowCount = await WindowItem.countDocuments({ projectId: project._id });
+        const projectTotal = await WindowItem.aggregate([
+          { $match: { projectId: project._id } },
+          { $group: { _id: null, total: { $sum: '$totalPrice' } } }
+        ]);
+        return {
+          ...project,
+          windowCount,
+          projectTotal: projectTotal.length > 0 ? projectTotal[0].total : 0
+        };
+      })
+    );
+    
+    res.render('projects/listProjects', {
+      projects: projectsWithCounts
+    });
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    res.status(500).send('Failed to load projects.');
+  }
+});
 
 // Helper function to generate quote number
 async function generateQuoteNumber(userId) {
@@ -119,6 +159,74 @@ router.post('/projects/delete/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+// NEW ROUTE: Quote preview (opens in popup window)
+router.get('/projects/:id/quote-preview', isAuthenticated, async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.session.userId;
+
+    // Find the project and ensure it belongs to the current user
+    const project = await Project.findOne({ _id: projectId, userId });
+
+    if (!project) {
+      return res.status(404).send('Project not found or access denied.');
+    }
+
+    // Get all window items for this project
+    const windowItems = await WindowItem.find({ projectId }).sort({ createdAt: -1 });
+
+    // Get window system configurations for each window item
+    const WindowSystem = require('../models/Window');
+    const windowItemsWithConfig = await Promise.all(
+      windowItems.map(async (item) => {
+        // Try to find the window system by matching the style or extracting from description
+        let windowSystem = null;
+        if (item.style) {
+          windowSystem = await WindowSystem.findOne({ type: item.style })
+            .populate('profiles.profile')
+            .populate('accessories.accessory')
+            .lean();
+        }
+        
+        // If not found, try to extract from description
+        if (!windowSystem && item.description) {
+          const match = item.description.match(/Window System: ([^\n]+)/);
+          if (match) {
+            const systemType = match[1].trim();
+            windowSystem = await WindowSystem.findOne({ type: systemType })
+              .populate('profiles.profile')
+              .populate('accessories.accessory')
+              .lean();
+          }
+        }
+        
+        return {
+          ...item.toObject(),
+          windowSystem: windowSystem
+        };
+      })
+    );
+
+    // Calculate total project value
+    const projectTotal = windowItems.reduce((total, item) => total + item.totalPrice, 0);
+
+    // Get the company logo from user's database record
+    const user = await User.findById(userId).lean();
+    const companyLogo = user?.companyLogo || null;
+
+    res.render('projects/quotePreview', {
+      project,
+      windowItems: windowItemsWithConfig,
+      projectTotal: projectTotal.toFixed(2),
+      companyLogo: companyLogo
+    });
+
+  } catch (error) {
+    console.error("Error fetching quote preview:", error);
+    res.status(500).send('Failed to load quote preview.');
+  }
+});
+
 // NEW ROUTE: View project details and window items
 router.get('/projects/:id', isAuthenticated, async (req, res) => {
   try {
@@ -139,14 +247,50 @@ router.get('/projects/:id', isAuthenticated, async (req, res) => {
     const WindowSystem = require('../models/Window');
     const windowSystems = await WindowSystem.find({}).sort({ type: 1 });
 
+    // Get window system configurations for each window item
+    const windowItemsWithConfig = await Promise.all(
+      windowItems.map(async (item) => {
+        // Try to find the window system by matching the style or extracting from description
+        let windowSystem = null;
+        if (item.style) {
+          windowSystem = await WindowSystem.findOne({ type: item.style })
+            .populate('profiles.profile')
+            .populate('accessories.accessory')
+            .lean();
+        }
+        
+        // If not found, try to extract from description
+        if (!windowSystem && item.description) {
+          const match = item.description.match(/Window System: ([^\n]+)/);
+          if (match) {
+            const systemType = match[1].trim();
+            windowSystem = await WindowSystem.findOne({ type: systemType })
+              .populate('profiles.profile')
+              .populate('accessories.accessory')
+              .lean();
+          }
+        }
+        
+        return {
+          ...item.toObject(),
+          windowSystem: windowSystem
+        };
+      })
+    );
+
     // Calculate total project value
     const projectTotal = windowItems.reduce((total, item) => total + item.totalPrice, 0);
 
+    // Get the company logo from user's database record
+    const user = await User.findById(userId).lean();
+    const companyLogo = user?.companyLogo || null;
+
     res.render('projects/projectDetails', { 
       project, 
-      windowItems,
+      windowItems: windowItemsWithConfig,
       windowSystems,
-      projectTotal: projectTotal.toFixed(2)
+      projectTotal: projectTotal.toFixed(2),
+      companyLogo: companyLogo
     });
 
   } catch (error) {
@@ -204,6 +348,78 @@ router.post('/projects/:id/items', isAuthenticated, async (req, res) => {
   }
 });
 
+// NEW ROUTE: Duplicate a window item
+router.post('/projects/:projectId/items/:itemId/duplicate', isAuthenticated, async (req, res) => {
+  try {
+    const { projectId, itemId } = req.params;
+    const userId = req.session.userId;
+
+    // Verify project ownership
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) {
+      return res.status(404).send('Project not found or access denied.');
+    }
+
+    // Find the original item and verify it belongs to this project
+    const originalItem = await WindowItem.findById(itemId);
+    if (!originalItem) {
+      return res.status(404).send('Window item not found.');
+    }
+
+    // Verify that the window item belongs to the specified project
+    if (originalItem.projectId.toString() !== projectId) {
+      return res.status(403).send('Window item does not belong to this project.');
+    }
+
+    // Generate a unique item name
+    // Always start with a number suffix since we're duplicating
+    const baseName = originalItem.itemName;
+    let newItemName = `${baseName} (2)`;
+    let counter = 2;
+    
+    // Check if the name already exists and find a unique name
+    // Exclude the original item from the check
+    while (true) {
+      const existingItem = await WindowItem.findOne({ 
+        projectId, 
+        itemName: newItemName,
+        _id: { $ne: itemId } // Exclude the original item being duplicated
+      });
+      
+      if (!existingItem) {
+        break; // Name is unique
+      }
+      
+      // Try with the next number suffix
+      counter++;
+      newItemName = `${baseName} (${counter})`;
+    }
+
+    // Create a duplicate item with the new name
+    const duplicatedItem = new WindowItem({
+      projectId: originalItem.projectId,
+      itemName: newItemName,
+      width: originalItem.width,
+      height: originalItem.height,
+      quantity: originalItem.quantity,
+      unitPrice: originalItem.unitPrice,
+      material: originalItem.material,
+      color: originalItem.color,
+      style: originalItem.style,
+      description: originalItem.description,
+      // totalPrice will be calculated automatically by the model
+    });
+
+    await duplicatedItem.save();
+    
+    res.redirect(`/projects/${projectId}`);
+
+  } catch (error) {
+    console.error("Error duplicating window item:", error);
+    res.status(500).send('Failed to duplicate window item.');
+  }
+});
+
 // NEW ROUTE: Delete a window item
 router.post('/projects/:projectId/items/:itemId/delete', isAuthenticated, async (req, res) => {
   try {
@@ -214,6 +430,17 @@ router.post('/projects/:projectId/items/:itemId/delete', isAuthenticated, async 
     const project = await Project.findOne({ _id: projectId, userId });
     if (!project) {
       return res.status(404).send('Project not found or access denied.');
+    }
+
+    // Find the window item and verify it belongs to this project
+    const windowItem = await WindowItem.findById(itemId);
+    if (!windowItem) {
+      return res.status(404).send('Window item not found.');
+    }
+
+    // Verify that the window item belongs to the specified project
+    if (windowItem.projectId.toString() !== projectId) {
+      return res.status(403).send('Window item does not belong to this project.');
     }
 
     // Delete the window item
@@ -552,6 +779,16 @@ Auto-Managed Accessories: ${autoManagedAccessories.length}
 ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     `.trim();
 
+    // Check if the item name already exists in this project
+    const existingItemWithName = await WindowItem.findOne({ 
+      projectId, 
+      itemName: windowRef 
+    });
+    
+    if (existingItemWithName) {
+      return res.status(400).send(`An item with the name "${windowRef}" already exists in this project. Please choose a different name.`);
+    }
+
     // Calculate unit price with validation
     const unitPrice = isNaN(finalPrice) || isNaN(windowQuantity) || windowQuantity === 0 
       ? 0 
@@ -571,7 +808,7 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     // Create window item (totalPrice will be calculated automatically by the model)
     const newWindowItem = new WindowItem({
       projectId,
-      itemName: `${windowRef} - ${windowSystem.type}`,
+      itemName: windowRef,
       width: isNaN(windowWidth) ? 0 : windowWidth,
       height: isNaN(windowHeight) ? 0 : windowHeight,
       quantity: isNaN(windowQuantity) ? 1 : windowQuantity,
@@ -940,9 +1177,20 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       throw new Error('Pricing calculation failed - invalid numeric values');
     }
 
+    // Check if the new item name is unique (excluding the current item)
+    const existingItemWithName = await WindowItem.findOne({ 
+      projectId, 
+      itemName: windowRef,
+      _id: { $ne: windowId } // Exclude the current item being edited
+    });
+    
+    if (existingItemWithName) {
+      return res.status(400).send(`An item with the name "${windowRef}" already exists in this project. Please choose a different name.`);
+    }
+
     // Update the existing window item
     await WindowItem.findByIdAndUpdate(windowId, {
-      itemName: `${windowRef} - ${windowSystem.type}`,
+      itemName: windowRef,
       width: isNaN(windowWidth) ? 0 : windowWidth,
       height: isNaN(windowHeight) ? 0 : windowHeight,
       quantity: isNaN(windowQuantity) ? 1 : windowQuantity,
@@ -1013,6 +1261,293 @@ router.post('/projects/:id/duplicate', isAuthenticated, async (req, res) => {
   } catch (error) {
     console.error("Error duplicating project:", error);
     res.status(500).send('Failed to duplicate project.');
+  }
+});
+
+// Route to export quote as PDF (for quote preview)
+router.get('/projects/:id/quote-pdf', isAuthenticated, async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.session.userId;
+    const PDFDocument = require('pdfkit');
+    const path = require('path');
+    const fs = require('fs');
+
+    // Get unit preference from query parameter (default to inches)
+    const unit = req.query.unit || 'inches';
+
+    // Find the project and ensure it belongs to the current user
+    const project = await Project.findOne({ _id: projectId, userId });
+
+    if (!project) {
+      return res.status(404).send('Project not found or access denied.');
+    }
+
+    // Get all window items for this project
+    const windowItems = await WindowItem.find({ projectId }).sort({ createdAt: -1 });
+
+    // Calculate total project value
+    const projectTotal = windowItems.reduce((total, item) => total + item.totalPrice, 0);
+    
+    // Helper function to format dimensions based on unit
+    const formatDimension = (widthInches, heightInches) => {
+      if (unit === 'mm') {
+        const widthMm = Math.round(widthInches * 25.4);
+        const heightMm = Math.round(heightInches * 25.4);
+        return `${widthMm} × ${heightMm}`;
+      } else {
+        return `${parseFloat(widthInches).toFixed(2)} × ${parseFloat(heightInches).toFixed(2)}`;
+      }
+    };
+    
+    const dimensionUnitLabel = unit === 'mm' ? 'mm' : 'in';
+
+    // Get company logo path from user's database record
+    const user = await User.findById(userId).lean();
+    let logoPath = null;
+    if (user?.companyLogo) {
+      // Convert the URL path to a file system path
+      const logoUrl = user.companyLogo;
+      // Remove leading slash and join with public directory
+      const relativePath = logoUrl.startsWith('/') ? logoUrl.substring(1) : logoUrl;
+      const fullPath = path.join(__dirname, '../public', relativePath);
+      if (fs.existsSync(fullPath)) {
+        logoPath = fullPath;
+      }
+    }
+
+    // Calculate dates
+    const quoteDate = new Date();
+    const validThroughDate = new Date(quoteDate);
+    validThroughDate.setMonth(validThroughDate.getMonth() + 1);
+
+    // Create PDF document
+    const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Quote_${project.projectName.replace(/[^a-z0-9]/gi, '_')}.pdf"`);
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // Header Section
+    let yPos = 50;
+    
+    // Logo (if available)
+    if (logoPath && fs.existsSync(logoPath)) {
+      try {
+        doc.image(logoPath, 50, yPos, { width: 100, height: 100, fit: [100, 100] });
+      } catch (e) {
+        console.error('Error loading logo:', e);
+      }
+    }
+    
+    // Title and project info
+    doc.fontSize(24).font('Helvetica-Bold')
+       .text(project.projectName, 450, yPos, { align: 'right', width: 100 });
+    
+    yPos += 30;
+    
+    if (project.clientName) {
+      doc.fontSize(14).font('Helvetica')
+         .text(`Client: ${project.clientName}`, 450, yPos, { align: 'right', width: 100 });
+      yPos += 20;
+    }
+    
+    // Dates
+    doc.fontSize(10).font('Helvetica')
+       .text(`Quote Date: ${quoteDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 450, yPos, { align: 'right', width: 100 });
+    yPos += 15;
+    doc.text(`Valid Through: ${validThroughDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 450, yPos, { align: 'right', width: 100 });
+    
+    yPos = 180;
+
+    // Window Items Table
+    if (windowItems.length > 0) {
+      doc.fontSize(18).font('Helvetica-Bold')
+         .text('Window Items', 50, yPos);
+      yPos += 30;
+
+      // Table headers
+      const tableTop = yPos;
+      const colWidths = [30, 180, 100, 60, 100, 100];
+      const tableLeft = 50;
+      
+      doc.fontSize(10).font('Helvetica-Bold');
+      doc.text('#', tableLeft, tableTop);
+      doc.text('Item Name', tableLeft + colWidths[0], tableTop);
+      doc.text(`Dimensions (${dimensionUnitLabel})`, tableLeft + colWidths[0] + colWidths[1], tableTop);
+      doc.text('Qty', tableLeft + colWidths[0] + colWidths[1] + colWidths[2], tableTop, { width: colWidths[3], align: 'center' });
+      doc.text('Unit Price', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], tableTop, { width: colWidths[4], align: 'right' });
+      doc.text('Total', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], tableTop, { width: colWidths[5], align: 'right' });
+      
+      // Draw header line
+      doc.moveTo(tableLeft, tableTop + 15)
+         .lineTo(tableLeft + colWidths.reduce((a, b) => a + b, 0), tableTop + 15)
+         .stroke();
+      
+      yPos = tableTop + 25;
+      doc.font('Helvetica');
+      
+      windowItems.forEach((item, index) => {
+        // Check if we need a new page
+        if (yPos > 700) {
+          doc.addPage();
+          yPos = 50;
+        }
+        
+        doc.fontSize(9);
+        doc.text((index + 1).toString(), tableLeft, yPos);
+        
+        // Item name with description if available
+        let itemText = item.itemName;
+        if (item.description && item.description.length > 60) {
+          itemText += '\n' + item.description.substring(0, 60) + '...';
+        } else if (item.description) {
+          itemText += '\n' + item.description;
+        }
+        doc.text(itemText, tableLeft + colWidths[0], yPos, { width: colWidths[1] });
+        
+        doc.text(formatDimension(item.width, item.height), 
+                 tableLeft + colWidths[0] + colWidths[1], yPos, { width: colWidths[2] });
+        doc.text(item.quantity.toString(), 
+                 tableLeft + colWidths[0] + colWidths[1] + colWidths[2], yPos, { width: colWidths[3], align: 'center' });
+        doc.text(`$${parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
+                 tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], yPos, { width: colWidths[4], align: 'right' });
+        doc.text(`$${parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
+                 tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], yPos, { width: colWidths[5], align: 'right' });
+        
+        // Calculate height needed for this row
+        const lines = item.description ? Math.ceil(item.description.length / 60) + 1 : 1;
+        yPos += (lines * 12) + 5;
+      });
+
+      // Total row
+      yPos += 10;
+      doc.moveTo(tableLeft, yPos)
+         .lineTo(tableLeft + colWidths.reduce((a, b) => a + b, 0), yPos)
+         .stroke();
+      
+      yPos += 15;
+      doc.fontSize(14).font('Helvetica-Bold');
+      doc.text('Total Project Value:', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], yPos, { width: colWidths[4], align: 'right' });
+      doc.fontSize(16);
+      doc.text(`$${parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
+               tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], yPos, { width: colWidths[5], align: 'right' });
+    } else {
+      doc.fontSize(12).text('No window items in this quote.', { align: 'center' });
+    }
+
+    // Footer
+    yPos = 750;
+    doc.fontSize(8).font('Helvetica')
+       .text('This is a preview of the quotation. For official quotes, please contact your representative.', 
+             50, yPos, { align: 'center', width: 500 });
+
+    // Finalize PDF
+    doc.end();
+
+  } catch (error) {
+    console.error("Error generating quote PDF:", error);
+    res.status(500).send('Failed to generate PDF.');
+  }
+});
+
+// Route to export project as PDF
+router.get('/projects/:id/export-pdf', isAuthenticated, async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.session.userId;
+    const PDFDocument = require('pdfkit');
+
+    // Find the project and ensure it belongs to the current user
+    const project = await Project.findOne({ _id: projectId, userId });
+
+    if (!project) {
+      return res.status(404).send('Project not found or access denied.');
+    }
+
+    // Get all window items for this project
+    const windowItems = await WindowItem.find({ projectId }).sort({ createdAt: -1 });
+
+    // Calculate total project value
+    const projectTotal = windowItems.reduce((total, item) => total + item.totalPrice, 0);
+
+    // Create PDF document
+    const doc = new PDFDocument({ margin: 50 });
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Project_${project.projectName.replace(/[^a-z0-9]/gi, '_')}.pdf"`);
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // Add content to PDF
+    doc.fontSize(20).text(project.projectName, { align: 'center' });
+    doc.moveDown();
+    
+    if (project.clientName) {
+      doc.fontSize(14).text(`Client: ${project.clientName}`, { align: 'center' });
+      doc.moveDown();
+    }
+    
+    doc.fontSize(12).text(`Created: ${project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}`);
+    doc.text(`Last Updated: ${project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : 'N/A'}`);
+    doc.moveDown();
+
+    // Add window items table
+    if (windowItems.length > 0) {
+      doc.fontSize(16).text('Window Items', { underline: true });
+      doc.moveDown(0.5);
+
+      // Table headers
+      const tableTop = doc.y;
+      let tableLeft = 50;
+      const colWidths = [150, 100, 50, 100, 100];
+      
+      doc.fontSize(10).font('Helvetica-Bold');
+      doc.text('Item Name', tableLeft, tableTop);
+      doc.text('Dimensions', tableLeft + colWidths[0], tableTop);
+      doc.text('Qty', tableLeft + colWidths[0] + colWidths[1], tableTop);
+      doc.text('Unit Price', tableLeft + colWidths[0] + colWidths[1] + colWidths[2], tableTop);
+      doc.text('Total', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], tableTop);
+      
+      let yPos = tableTop + 20;
+      doc.font('Helvetica');
+      
+      windowItems.forEach(item => {
+        if (yPos > 700) { // New page if needed
+          doc.addPage();
+          yPos = 50;
+        }
+        
+        doc.fontSize(9);
+        doc.text(item.itemName || 'N/A', tableLeft, yPos, { width: colWidths[0] });
+        doc.text(`${parseFloat(item.width).toFixed(2)} × ${parseFloat(item.height).toFixed(2)} in`, tableLeft + colWidths[0], yPos, { width: colWidths[1] });
+        doc.text(item.quantity.toString(), tableLeft + colWidths[0] + colWidths[1], yPos, { width: colWidths[2] });
+        doc.text(`$${parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, tableLeft + colWidths[0] + colWidths[1] + colWidths[2], yPos, { width: colWidths[3] });
+        doc.text(`$${parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], yPos, { width: colWidths[4] });
+        
+        yPos += 20;
+      });
+
+      // Total row
+      yPos += 10;
+      doc.font('Helvetica-Bold').fontSize(12);
+      doc.text('TOTAL:', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 50, yPos);
+      doc.text(`$${parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], yPos);
+    } else {
+      doc.fontSize(12).text('No window items added to this project yet.', { align: 'center' });
+    }
+
+    // Finalize PDF
+    doc.end();
+
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    res.status(500).send('Failed to generate PDF.');
   }
 });
 
