@@ -804,6 +804,15 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       console.error('unitPrice:', unitPrice, 'finalPrice:', finalPrice);
       throw new Error('Pricing calculation failed - invalid numeric values');
     }
+    
+    // Validate price is within reasonable bounds (prevent calculation errors)
+    // Maximum reasonable price: $1,000,000 per unit (adjust as needed)
+    const MAX_REASONABLE_UNIT_PRICE = 1000000;
+    if (unitPrice > MAX_REASONABLE_UNIT_PRICE) {
+      console.error('Unit price exceeds maximum reasonable value:', unitPrice);
+      console.error('This may indicate a calculation error. Please review the pricing components.');
+      return res.status(400).send(`Calculated unit price ($${unitPrice.toLocaleString()}) exceeds the maximum reasonable value. This may indicate a calculation error. Please check the window dimensions, glass type, profiles, and accessories.`);
+    }
 
     // Create window item (totalPrice will be calculated automatically by the model)
     const newWindowItem = new WindowItem({
@@ -1175,6 +1184,15 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       console.error('Invalid pricing calculation - cannot update window item');
       console.error('unitPrice:', unitPrice, 'finalPrice:', finalPrice);
       throw new Error('Pricing calculation failed - invalid numeric values');
+    }
+    
+    // Validate price is within reasonable bounds (prevent calculation errors)
+    // Maximum reasonable price: $1,000,000 per unit (adjust as needed)
+    const MAX_REASONABLE_UNIT_PRICE = 1000000;
+    if (unitPrice > MAX_REASONABLE_UNIT_PRICE) {
+      console.error('Unit price exceeds maximum reasonable value:', unitPrice);
+      console.error('This may indicate a calculation error. Please review the pricing components.');
+      return res.status(400).send(`Calculated unit price ($${unitPrice.toLocaleString()}) exceeds the maximum reasonable value. This may indicate a calculation error. Please check the window dimensions, glass type, profiles, and accessories.`);
     }
 
     // Check if the new item name is unique (excluding the current item)

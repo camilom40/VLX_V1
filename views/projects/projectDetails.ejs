@@ -73,32 +73,42 @@
     
     .data-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: white;
     }
     .data-table thead {
       background: linear-gradient(135deg, #1e40af, #3b82f6);
+      position: sticky;
+      top: 0;
+      z-index: 20;
     }
     .data-table th {
-      padding: 1rem 1.25rem;
+      padding: 0.875rem 1rem;
       text-align: left;
-      font-size: 0.75rem;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
       color: white;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
     }
-    .data-table th:first-child { border-top-left-radius: 0.75rem; }
-    .data-table th:last-child { border-top-right-radius: 0.75rem; }
-    
+    .data-table th:first-child { border-top-left-radius: 0.5rem; }
+    .data-table th:last-child { border-top-right-radius: 0.5rem; }
     .data-table tbody tr {
-      border-bottom: 1px solid #f1f5f9;
-      transition: background 0.15s ease;
+      border-bottom: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+      background: white;
     }
-    .data-table tbody tr:hover { background: #f8fafc; }
+    .data-table tbody tr:hover { 
+      background: #f8fafc; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
     .data-table tbody tr:last-child { border-bottom: none; }
-    
     .data-table td {
-      padding: 1rem 1.25rem;
+      padding: 1.25rem 1rem;
+      vertical-align: top;
+      background: inherit;
       font-size: 0.875rem;
       color: #374151;
     }
@@ -117,16 +127,47 @@
     .badge-green { background: #d1fae5; color: #065f46; }
     
     .action-btn {
-      padding: 0.5rem;
+      padding: 0.375rem;
       border-radius: 0.5rem;
       transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      min-width: 32px;
+      min-height: 32px;
     }
-    .action-btn.edit { color: #3b82f6; }
-    .action-btn.edit:hover { background: #eff6ff; color: #1d4ed8; }
-    .action-btn.duplicate { color: #6366f1; }
-    .action-btn.duplicate:hover { background: #eef2ff; color: #4f46e5; }
-    .action-btn.delete { color: #ef4444; }
-    .action-btn.delete:hover { background: #fef2f2; color: #b91c1c; }
+    .action-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    .action-btn.edit { 
+      color: #3b82f6; 
+      background: transparent;
+    }
+    .action-btn.edit:hover { 
+      background: #eff6ff; 
+      color: #1d4ed8; 
+      transform: scale(1.1);
+    }
+    .action-btn.duplicate { 
+      color: #6366f1; 
+      background: transparent;
+    }
+    .action-btn.duplicate:hover { 
+      background: #eef2ff; 
+      color: #4f46e5; 
+      transform: scale(1.1);
+    }
+    .action-btn.delete { 
+      color: #ef4444; 
+      background: transparent;
+    }
+    .action-btn.delete:hover { 
+      background: #fef2f2; 
+      color: #b91c1c; 
+      transform: scale(1.1);
+    }
     
     .item-card {
       background: white;
@@ -255,11 +296,28 @@
   <%- include('../partials/_header.ejs') %>
 
   <main role="main" class="container mx-auto mt-6 px-4 flex-grow mb-16">
+    <!-- Back to Dashboard Button -->
+    <div class="mb-4">
+      <a href="/dashboard" class="btn-secondary inline-flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Dashboard
+      </a>
+    </div>
+
     <!-- Project Header -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
-          <h2 class="text-3xl font-bold text-gray-800 mb-2"><%= project.projectName %></h2>
+          <div class="flex flex-wrap items-center gap-3 mb-2">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800"><%= project.projectName %></h2>
+            <% if (project.quoteNumber) { %>
+              <span class="px-4 py-1.5 text-sm font-bold bg-gray-800 text-white rounded border border-gray-700 whitespace-nowrap tracking-wide">
+                <%= project.quoteNumber %>
+              </span>
+            <% } %>
+          </div>
           <p class="text-gray-600 mb-4">
             <span class="font-medium">Client:</span> <%= project.clientName || 'Not specified' %>
           </p>
@@ -286,77 +344,35 @@
       </div>
     </div>
 
-    <!-- Main Content: Sidebar + Table Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <!-- Sidebar: Add New Window Form -->
-      <div class="lg:col-span-3">
-        <div class="main-card p-5 sticky top-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add New Window
-          </h3>
-          
-          <form action="/projects/<%= project._id %>/windows/new" method="GET" class="space-y-3">
-            <!-- Window Reference -->
-            <div>
-              <label for="windowRef" class="block text-sm font-medium text-gray-700 mb-1">
-                Window Reference <span class="text-red-500">*</span>
-              </label>
-              <input type="text" id="windowRef" name="windowRef" required 
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" 
-                     placeholder="e.g., V1, W1" maxlength="10">
-            </div>
-            
-            <!-- Window System Selection -->
-            <div>
-              <label for="windowSystemId" class="block text-sm font-medium text-gray-700 mb-1">
-                Window System <span class="text-red-500">*</span>
-              </label>
-              <select id="windowSystemId" name="windowSystemId" required 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                <option value="">Select System</option>
-                <% if (typeof windowSystems !== 'undefined' && windowSystems.length > 0) { %>
-                  <% windowSystems.forEach(system => { %>
-                    <option value="<%= system._id %>"><%= system.type %></option>
-                  <% }) %>
-                <% } else { %>
-                  <option value="" disabled>No systems available</option>
-                <% } %>
-              </select>
-            </div>
-            
-            <button type="submit" class="btn-primary w-full flex items-center justify-center text-sm py-2.5">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Add Window
-            </button>
-          </form>
-        </div>
-      </div>
-      
-      <!-- Main Content: Window Items Table -->
-      <div class="lg:col-span-9">
+    <!-- Main Content: Window Items Table -->
+    <div>
         <div class="main-card p-6">
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
             <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               </svg>
               Window Items (<%= windowItems.length %>)
             </h3>
-            <!-- Unit Toggle -->
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600">Units:</span>
-              <div class="flex bg-gray-100 rounded-lg p-1">
-                <button id="unitToggleInches" onclick="switchUnits('inches')" class="unit-toggle-btn active px-3 py-1 rounded text-sm font-medium transition-colors">
-                  in
-                </button>
-                <button id="unitToggleMm" onclick="switchUnits('mm')" class="unit-toggle-btn px-3 py-1 rounded text-sm font-medium transition-colors">
-                  mm
-                </button>
+            <div class="flex items-center gap-3">
+              <!-- Add Window Button -->
+              <button onclick="openAddWindowModal()" class="btn-primary flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Window
+              </button>
+              <!-- Unit Toggle -->
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600">Units:</span>
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                  <button id="unitToggleInches" onclick="switchUnits('inches')" class="unit-toggle-btn active px-3 py-1 rounded text-sm font-medium transition-colors">
+                    in
+                  </button>
+                  <button id="unitToggleMm" onclick="switchUnits('mm')" class="unit-toggle-btn px-3 py-1 rounded text-sm font-medium transition-colors">
+                    mm
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -452,8 +468,8 @@
             </div>
             
             <!-- Desktop view: Table -->
-            <div class="hidden lg:block overflow-x-auto">
-              <table class="data-table">
+            <div class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm" style="min-width: 100%; -webkit-overflow-scrolling: touch;">
+              <table class="data-table" style="min-width: 950px;">
                 <thead>
                   <tr>
                     <th>Item Name</th>
@@ -463,7 +479,7 @@
                     <th class="text-center">Qty</th>
                     <th class="text-right">Unit Price</th>
                     <th class="text-right">Total</th>
-                    <th class="text-center">Actions</th>
+                    <th class="text-center whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -490,8 +506,8 @@
                       </td>
                       <td>
                         <% if (item.description) { %>
-                          <div class="text-xs text-gray-600 max-w-xs" style="max-width: 300px;">
-                            <%= item.description.length > 100 ? item.description.substring(0, 100) + '...' : item.description %>
+                          <div class="text-xs text-gray-600 whitespace-pre-wrap break-words text-left" style="max-width: 400px; line-height: 1.6;">
+                            <%= item.description %>
                           </div>
                         <% } else { %>
                           <span class="text-gray-400 text-xs">—</span>
@@ -506,23 +522,23 @@
                       <td class="text-right">
                         <div class="text-sm font-medium text-green-600" data-price="<%= item.totalPrice %>">$<%= parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
                       </td>
-                      <td>
-                        <div class="flex items-center justify-center gap-1">
-                          <a href="/projects/<%= project._id %>/windows/<%= item._id %>/edit" class="action-btn edit" title="Edit">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <td class="whitespace-nowrap">
+                        <div class="flex items-center justify-center gap-1 flex-nowrap">
+                          <a href="/projects/<%= project._id %>/windows/<%= item._id %>/edit" class="action-btn edit flex-shrink-0" title="Edit">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </a>
-                          <form action="/projects/<%= project._id %>/items/<%= item._id %>/duplicate" method="POST" class="inline">
+                          <form action="/projects/<%= project._id %>/items/<%= item._id %>/duplicate" method="POST" class="inline flex-shrink-0">
                             <button type="submit" class="action-btn duplicate" title="Duplicate">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                               </svg>
                             </button>
                           </form>
-                          <form action="/projects/<%= project._id %>/items/<%= item._id %>/delete" method="POST" class="inline">
+                          <form action="/projects/<%= project._id %>/items/<%= item._id %>/delete" method="POST" class="inline flex-shrink-0">
                             <button type="submit" class="action-btn delete" onclick="return confirm('Are you sure you want to delete this item?')" title="Delete">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             </button>
@@ -533,8 +549,8 @@
                   <% }) %>
                   
                   <!-- Total Row -->
-                  <tr class="bg-indigo-50 font-medium">
-                    <td colspan="6" class="px-4 py-3 text-right text-gray-900">TOTAL:</td>
+                  <tr class="bg-gradient-to-r from-indigo-50 to-blue-50 font-medium border-t-2 border-indigo-200">
+                    <td colspan="6" class="px-4 py-3 text-right text-gray-900 font-semibold">TOTAL:</td>
                     <td class="px-4 py-3 text-right text-green-700 font-bold text-lg" data-price="<%= projectTotal %>">$<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                     <td class="px-4 py-3"></td>
                   </tr>
@@ -543,7 +559,70 @@
             </div>
           <% } %>
         </div>
+    </div>
+
+    <!-- Add Window Modal -->
+    <div id="addWindowModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add New Window
+            </h3>
+            <button onclick="closeAddWindowModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <form action="/projects/<%= project._id %>/windows/new" method="GET" class="space-y-4">
+            <!-- Window Reference -->
+            <div>
+              <label for="modalWindowRef" class="block text-sm font-medium text-gray-700 mb-1">
+                Window Reference <span class="text-red-500">*</span>
+              </label>
+              <input type="text" id="modalWindowRef" name="windowRef" required 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" 
+                     placeholder="e.g., V1, W1" maxlength="10">
+            </div>
+            
+            <!-- Window System Selection -->
+            <div>
+              <label for="modalWindowSystemId" class="block text-sm font-medium text-gray-700 mb-1">
+                Window System <span class="text-red-500">*</span>
+              </label>
+              <select id="modalWindowSystemId" name="windowSystemId" required 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                <option value="">Select System</option>
+                <% if (typeof windowSystems !== 'undefined' && windowSystems.length > 0) { %>
+                  <% windowSystems.forEach(system => { %>
+                    <option value="<%= system._id %>"><%= system.type %></option>
+                  <% }) %>
+                <% } else { %>
+                  <option value="" disabled>No systems available</option>
+                <% } %>
+              </select>
+            </div>
+            
+            <div class="flex gap-3 pt-2">
+              <button type="button" onclick="closeAddWindowModal()" class="btn-secondary flex-1">
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary flex-1 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Window
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
+    </div>
     </div>
     
     <!-- Optional Project Costs -->
@@ -616,29 +695,32 @@
     </div>
     
     <!-- Action Buttons -->
-    <div class="mt-6 flex flex-wrap justify-end gap-3">
-      <a href="/dashboard" class="btn-secondary">
+    <div class="mt-6 flex flex-col sm:flex-row flex-wrap justify-end gap-3">
+      <a href="/dashboard" class="btn-secondary w-full sm:w-auto">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
-        Back to Projects
+        <span class="hidden sm:inline">Back to Projects</span>
+        <span class="sm:hidden">Back</span>
       </a>
       
       <!-- Preview Quote Button -->
-      <button type="button" onclick="openQuotePreview('<%= project._id %>')" class="btn-secondary">
+      <button type="button" onclick="openQuotePreview('<%= project._id %>')" class="btn-secondary w-full sm:w-auto">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
-        Preview Quote
+        <span class="hidden sm:inline">Preview Quote</span>
+        <span class="sm:hidden">Preview</span>
       </button>
       
       <!-- PDF Export Button -->
-      <a href="/projects/<%= project._id %>/quote-pdf?unit=inches" class="btn-primary">
+      <a href="/projects/<%= project._id %>/quote-pdf?unit=inches" class="btn-primary w-full sm:w-auto">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        Export as PDF
+        <span class="hidden sm:inline">Export as PDF</span>
+        <span class="sm:hidden">Export PDF</span>
       </a>
     </div>
   </main>
@@ -735,26 +817,61 @@
       // Format existing prices with commas
       formatExistingPrices();
       
+      // Modal functions
+      function openAddWindowModal() {
+        const modal = document.getElementById('addWindowModal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        }
+      }
+      
+      function closeAddWindowModal() {
+        const modal = document.getElementById('addWindowModal');
+        if (modal) {
+          modal.classList.add('hidden');
+          document.body.style.overflow = '';
+          // Reset form
+          const form = modal.querySelector('form');
+          if (form) {
+            form.reset();
+            // Remove error classes
+            const inputs = form.querySelectorAll('input, select');
+            inputs.forEach(input => input.classList.remove('border-red-500'));
+          }
+        }
+      }
+      
+      // Close modal when clicking outside
+      const modal = document.getElementById('addWindowModal');
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeAddWindowModal();
+          }
+        });
+      }
+      
       // Simple form validation for window reference and system selection
       const addWindowForm = document.querySelector('form[action*="/windows/new"]');
-      const windowRefInput = document.getElementById('windowRef');
-      const windowSystemSelect = document.getElementById('windowSystemId');
+      const windowRefInput = document.getElementById('modalWindowRef');
+      const windowSystemSelect = document.getElementById('modalWindowSystemId');
       
       if (addWindowForm) {
         addWindowForm.addEventListener('submit', (e) => {
           let isValid = true;
           
           // Validate window reference
-          if (!windowRefInput.value.trim()) {
-            windowRefInput.classList.add('border-red-500');
+          if (!windowRefInput || !windowRefInput.value.trim()) {
+            if (windowRefInput) windowRefInput.classList.add('border-red-500');
             isValid = false;
           } else {
             windowRefInput.classList.remove('border-red-500');
           }
           
           // Validate window system selection
-          if (!windowSystemSelect.value) {
-            windowSystemSelect.classList.add('border-red-500');
+          if (!windowSystemSelect || !windowSystemSelect.value) {
+            if (windowSystemSelect) windowSystemSelect.classList.add('border-red-500');
             isValid = false;
           } else {
             windowSystemSelect.classList.remove('border-red-500');
@@ -782,6 +899,10 @@
           }
         });
       }
+      
+      // Make functions globally available
+      window.openAddWindowModal = openAddWindowModal;
+      window.closeAddWindowModal = closeAddWindowModal;
       
       // Render window previews
       function renderWindowPreviews() {
