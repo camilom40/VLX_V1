@@ -466,7 +466,10 @@
           <span class="mr-3 text-lg font-bold">3</span> Accessories
         </div>
         <div id="step4-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
-          <span class="mr-3 text-lg font-bold">4</span> Muntins
+          <span class="mr-3 text-lg font-bold">4</span> Missile Type
+        </div>
+        <div id="step5-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
+          <span class="mr-3 text-lg font-bold">5</span> Others
         </div>
       </div>
     </div>
@@ -947,10 +950,117 @@
           </div>
         </div>
         
-        <!-- Step 4: Muntin Configuration -->
+        <!-- Step 4: Missile Type Configuration -->
         <div id="step4-section" class="form-section">
           <div class="section-header">
-            <h2>Step 4: Muntin Configuration</h2>
+            <h2>Step 4: Missile Type Configuration</h2>
+            <p class="text-green-100 text-sm">Configure missile impact types and select available glasses for each type</p>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-lg border border-gray-200">
+            <div class="p-6">
+              <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Select Missile Impact Types</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-red-200">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="checkbox" id="missile-lmi" name="missileLMI" class="h-5 w-5 text-red-600 focus:ring-red-500 border-gray-300 rounded" onchange="toggleMissileType('LMI')">
+                      <div class="ml-3">
+                        <span class="text-sm font-medium text-gray-700">Large Missile Impact (LMI)</span>
+                        <p class="text-xs text-gray-500">Window system supports large missile impact resistance</p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  <div class="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-red-200">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="checkbox" id="missile-smi" name="missileSMI" class="h-5 w-5 text-red-600 focus:ring-red-500 border-gray-300 rounded" onchange="toggleMissileType('SMI')">
+                      <div class="ml-3">
+                        <span class="text-sm font-medium text-gray-700">Small Missile Impact (SMI)</span>
+                        <p class="text-xs text-gray-500">Window system supports small missile impact resistance</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- LMI Glass Selection -->
+              <div id="lmi-glass-section" class="mb-6" style="display: none;">
+                <div class="p-4 bg-red-50 border border-red-200 rounded-xl mb-4">
+                  <h4 class="text-sm font-semibold text-red-800 mb-2">Large Missile Impact (LMI) - Available Glasses</h4>
+                  <p class="text-xs text-red-700">Select which glasses are available for LMI. Users will only see these glasses when they select LMI.</p>
+                </div>
+                <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-white">
+                  <% if (typeof glasses !== 'undefined' && glasses.length > 0) { %>
+                    <% glasses.forEach(glass => { %>
+                      <label class="flex items-center py-2 px-3 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" name="lmiGlasses[]" value="<%= glass._id %>" class="lmi-glass-checkbox h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                        <div class="ml-3">
+                          <span class="text-sm font-medium text-gray-700"><%= glass.glass_type %></span>
+                          <p class="text-xs text-gray-500"><%= glass.description %></p>
+                        </div>
+                      </label>
+                    <% }) %>
+                  <% } else { %>
+                    <p class="text-sm text-gray-500">No glasses available. Please add glasses first.</p>
+                  <% } %>
+                </div>
+              </div>
+              
+              <!-- SMI Glass Selection -->
+              <div id="smi-glass-section" class="mb-6" style="display: none;">
+                <div class="p-4 bg-red-50 border border-red-200 rounded-xl mb-4">
+                  <h4 class="text-sm font-semibold text-red-800 mb-2">Small Missile Impact (SMI) - Available Glasses</h4>
+                  <p class="text-xs text-red-700">Select which glasses are available for SMI. Users will only see these glasses when they select SMI.</p>
+                </div>
+                <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-white">
+                  <% if (typeof glasses !== 'undefined' && glasses.length > 0) { %>
+                    <% glasses.forEach(glass => { %>
+                      <label class="flex items-center py-2 px-3 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" name="smiGlasses[]" value="<%= glass._id %>" class="smi-glass-checkbox h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                        <div class="ml-3">
+                          <span class="text-sm font-medium text-gray-700"><%= glass.glass_type %></span>
+                          <p class="text-xs text-gray-500"><%= glass.description %></p>
+                        </div>
+                      </label>
+                    <% }) %>
+                  <% } else { %>
+                    <p class="text-sm text-gray-500">No glasses available. Please add glasses first.</p>
+                  <% } %>
+                </div>
+              </div>
+              
+              <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div class="flex items-start">
+                  <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-600"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-semibold text-blue-800 mb-1">How it works</h4>
+                    <p class="text-xs text-blue-700">
+                      Enable the missile impact types this window system supports, then select which glasses are available for each type. When users quote, they'll select a missile type and only see the glasses you've configured for that type.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-8 flex justify-between items-center">
+            <button type="button" id="back-to-step3-btn" class="btn-secondary px-6 py-3">
+              <i class="fas fa-arrow-left mr-2"></i>Previous Step
+            </button>
+            <button type="button" id="to-step5-btn" class="btn-primary px-6 py-3">
+              Next Step
+              <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Step 5: Others (Muntin Configuration) -->
+        <div id="step5-section" class="form-section">
+          <div class="section-header">
+            <h2>Step 5: Others</h2>
           </div>
           
           <!-- Final Step Banner -->
@@ -1164,7 +1274,7 @@
           </div>
           
           <div class="mt-8 flex justify-between items-center">
-            <button type="button" id="back-to-step3-btn" class="btn-secondary px-6 py-3">
+            <button type="button" id="back-to-step4-btn" class="btn-secondary px-6 py-3">
               <i class="fas fa-arrow-left mr-2"></i>Previous Step
             </button>
             <button type="submit" class="btn-success px-8 py-3 text-lg font-bold">
@@ -1235,6 +1345,9 @@
         document.getElementById('step2-section').style.display = 'none';
         document.getElementById('step3-section').style.display = 'none';
         document.getElementById('step4-section').style.display = 'none';
+        if (document.getElementById('step5-section')) {
+          document.getElementById('step5-section').style.display = 'none';
+        }
         
         // Call goToStep to set up indicators
         goToStep(1);
@@ -2534,6 +2647,70 @@
       isTrimable: false
     };
     
+    let missileImpactConfiguration = {
+      supportsLMI: false,
+      supportsSMI: false,
+      lmiGlasses: [],
+      smiGlasses: []
+    };
+    
+    // Toggle missile type glass selection sections
+    function toggleMissileType(type) {
+      const checkbox = document.getElementById(`missile-${type.toLowerCase()}`);
+      const section = document.getElementById(`${type.toLowerCase()}-glass-section`);
+      
+      if (checkbox.checked) {
+        section.style.display = 'block';
+        if (type === 'LMI') {
+          missileImpactConfiguration.supportsLMI = true;
+        } else {
+          missileImpactConfiguration.supportsSMI = true;
+        }
+      } else {
+        section.style.display = 'none';
+        if (type === 'LMI') {
+          missileImpactConfiguration.supportsLMI = false;
+          missileImpactConfiguration.lmiGlasses = [];
+          // Uncheck all LMI glass checkboxes
+          document.querySelectorAll('.lmi-glass-checkbox').forEach(cb => cb.checked = false);
+        } else {
+          missileImpactConfiguration.supportsSMI = false;
+          missileImpactConfiguration.smiGlasses = [];
+          // Uncheck all SMI glass checkboxes
+          document.querySelectorAll('.smi-glass-checkbox').forEach(cb => cb.checked = false);
+        }
+      }
+    }
+    
+    // Update glass selections when checkboxes change
+    document.addEventListener('DOMContentLoaded', function() {
+      // LMI glass checkboxes
+      document.querySelectorAll('.lmi-glass-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+          if (this.checked) {
+            if (!missileImpactConfiguration.lmiGlasses.includes(this.value)) {
+              missileImpactConfiguration.lmiGlasses.push(this.value);
+            }
+          } else {
+            missileImpactConfiguration.lmiGlasses = missileImpactConfiguration.lmiGlasses.filter(id => id !== this.value);
+          }
+        });
+      });
+      
+      // SMI glass checkboxes
+      document.querySelectorAll('.smi-glass-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+          if (this.checked) {
+            if (!missileImpactConfiguration.smiGlasses.includes(this.value)) {
+              missileImpactConfiguration.smiGlasses.push(this.value);
+            }
+          } else {
+            missileImpactConfiguration.smiGlasses = missileImpactConfiguration.smiGlasses.filter(id => id !== this.value);
+          }
+        });
+      });
+    });
+    
     let muntinConfiguration = {
       enabled: false,
       muntinProfile: null,
@@ -2690,6 +2867,22 @@
           });
         }
         
+        // Step 4 to Step 5
+        const toStep5Btn = document.getElementById('to-step5-btn');
+        if (toStep5Btn) {
+          toStep5Btn.addEventListener('click', function() {
+            goToStep(5);
+          });
+        }
+        
+        // Step 5 to Step 4
+        const backToStep4Btn = document.getElementById('back-to-step4-btn');
+        if (backToStep4Btn) {
+          backToStep4Btn.addEventListener('click', function() {
+            goToStep(4);
+          });
+        }
+        
       } catch (error) {
         console.error('Error in setupStepNavigation:', error);
       }
@@ -2703,6 +2896,9 @@
       document.getElementById('step2-section').style.display = 'none';
       document.getElementById('step3-section').style.display = 'none';
       document.getElementById('step4-section').style.display = 'none';
+      if (document.getElementById('step5-section')) {
+        document.getElementById('step5-section').style.display = 'none';
+      }
       
       // Show only the current step
       const currentSection = document.getElementById(`step${step}-section`);
@@ -2711,8 +2907,8 @@
         currentSection.style.display = 'block';
       }
       
-      // Update step indicators (now only 4 steps)
-      for (let i = 1; i <= 4; i++) {
+      // Update step indicators (5 steps)
+      for (let i = 1; i <= 5; i++) {
         const indicator = document.getElementById(`step${i}-indicator`);
         if (indicator) {
           if (i < step) {
@@ -3368,13 +3564,24 @@
         flangeConfiguration.isTrimable = document.getElementById('flange-trimable').checked;
       }
       
+      // Update missile impact configuration before submission
+      missileImpactConfiguration.supportsLMI = document.getElementById('missile-lmi').checked;
+      missileImpactConfiguration.supportsSMI = document.getElementById('missile-smi').checked;
+      
+      // Collect selected glass IDs for each missile type
+      const lmiGlassCheckboxes = document.querySelectorAll('.lmi-glass-checkbox:checked');
+      missileImpactConfiguration.lmiGlasses = Array.from(lmiGlassCheckboxes).map(cb => cb.value);
+      
+      const smiGlassCheckboxes = document.querySelectorAll('.smi-glass-checkbox:checked');
+      missileImpactConfiguration.smiGlasses = Array.from(smiGlassCheckboxes).map(cb => cb.value);
+      
       // Add hidden fields
       const form = event.target;
       
       // Clear existing hidden inputs if any
       const existingInputs = form.querySelectorAll('input[type="hidden"]');
       existingInputs.forEach(input => {
-        if (['profiles', 'accessories', 'muntinConfiguration', 'flangeConfiguration'].includes(input.name)) {
+        if (['profiles', 'accessories', 'muntinConfiguration', 'flangeConfiguration', 'missileImpactConfiguration'].includes(input.name)) {
           input.remove();
         }
       });
@@ -3433,6 +3640,13 @@
       flangeConfigurationInput.name = 'flangeConfiguration';
       flangeConfigurationInput.value = JSON.stringify(flangeConfiguration);
       form.appendChild(flangeConfigurationInput);
+      
+      // Add missile impact configuration
+      const missileImpactConfigurationInput = document.createElement('input');
+      missileImpactConfigurationInput.type = 'hidden';
+      missileImpactConfigurationInput.name = 'missileImpactConfiguration';
+      missileImpactConfigurationInput.value = JSON.stringify(missileImpactConfiguration);
+      form.appendChild(missileImpactConfigurationInput);
       
       // Submit the form
       form.submit();

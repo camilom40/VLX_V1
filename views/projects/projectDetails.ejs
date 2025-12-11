@@ -337,9 +337,20 @@
           </div>
         </div>
         
-        <div class="mt-4 md:mt-0 bg-blue-50 rounded-lg px-6 py-4 border border-blue-100" data-project-total="<%= projectTotal %>">
-          <div class="text-blue-800 text-xl font-bold" id="displayTotal">$<%= projectTotal %></div>
-          <div class="text-blue-600 text-sm">Total Project Value</div>
+        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div class="bg-blue-50 rounded-lg px-6 py-4 border border-blue-100 flex-1" data-project-total="<%= projectTotal %>">
+            <div class="text-blue-800 text-xl font-bold" id="displayTotal">$<%= projectTotal %></div>
+            <div class="text-blue-600 text-sm">Total Project Value</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 font-medium">Currency:</span>
+            <button id="currencyToggle" class="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <span id="currencyLabel">COP</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -580,7 +591,7 @@
                           
                           <div class="flex items-start gap-2">
                             <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Flanged:</span>
-                            <span class="text-xs text-gray-700"><%= flangeSize %></span>
+                            <span class="text-xs <%= flangeSize === 'N/A' ? 'text-gray-400' : 'text-gray-700' %>"><%= flangeSize %></span>
                           </div>
                         </div>
                       </td>
@@ -807,26 +818,85 @@
       administrativeExpenses: 8.0
     };
     
+    // Exchange rate from server (default to 4000 if not provided)
+    <% if (typeof exchangeRate !== 'undefined' && exchangeRate) { %>
+    const exchangeRate = <%= exchangeRate %>;
+    <% } else { %>
+    const exchangeRate = 4000;
+    <% } %>
+    
+    // Currency state (default to COP, stored in localStorage)
+    let currentCurrency = localStorage.getItem('projectCurrency') || 'COP';
+    
     // Get project total from data attribute (initialized after DOM loads)
     let baseProjectTotal = 0;
     
-    // Format numbers with commas
-    function formatCurrency(amount) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(amount);
+    // Format numbers with commas based on current currency
+    // IMPORTANT: amount is in USD (stored in database), convert for display
+    function formatCurrency(amount, currency = null) {
+      const currencyToUse = currency || currentCurrency;
+      
+      if (currencyToUse === 'USD') {
+        // Amount is already in USD, display as-is
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(amount);
+      } else {
+        // Convert USD to COP for display
+        const amountCOP = amount * exchangeRate;
+        return new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(amountCOP);
+      }
+    }
+    
+    // Toggle currency between COP and USD
+    function toggleCurrency() {
+      currentCurrency = currentCurrency === 'COP' ? 'USD' : 'COP';
+      localStorage.setItem('projectCurrency', currentCurrency);
+      
+      // Update button label
+      document.getElementById('currencyLabel').textContent = currentCurrency;
+      
+      // Update all prices
+      updateAllPrices();
+    }
+    
+    // Update all price displays on the page
+    function updateAllPrices() {
+      // Update project total display
+      const projectTotalElement = document.querySelector('[data-project-total]');
+      if (projectTotalElement) {
+        const total = parseFloat(projectTotalElement.getAttribute('data-project-total')) || 0;
+        document.getElementById('displayTotal').textContent = formatCurrency(total);
+      }
+      
+      // Update all price elements with data-price attribute
+      const itemPrices = document.querySelectorAll('[data-price]');
+      itemPrices.forEach(element => {
+        const price = parseFloat(element.getAttribute('data-price'));
+        if (!isNaN(price)) {
+          element.textContent = formatCurrency(price);
+        }
+      });
+      
+      // Recalculate project total with optional costs
+      calculateProjectTotal();
     }
     
     // Calculate project total with optional costs
     function calculateProjectTotal() {
       let total = baseProjectTotal;
       
-      const includeSeaFreight = document.getElementById('includeSeaFreight').checked;
-      const includeLandFreight = document.getElementById('includeLandFreight').checked;
-      const includeAdminExpenses = document.getElementById('includeAdminExpenses').checked;
+      const includeSeaFreight = document.getElementById('includeSeaFreight')?.checked;
+      const includeLandFreight = document.getElementById('includeLandFreight')?.checked;
+      const includeAdminExpenses = document.getElementById('includeAdminExpenses')?.checked;
       
       let seaFreightAmount = 0;
       let landFreightAmount = 0;
@@ -835,45 +905,61 @@
       if (includeSeaFreight) {
         seaFreightAmount = total * (costSettings.seaFreight / 100);
         total += seaFreightAmount;
-        document.getElementById('seaFreightRow').style.display = 'flex';
-        document.getElementById('seaFreightAmount').textContent = formatCurrency(seaFreightAmount);
+        const seaFreightRow = document.getElementById('seaFreightRow');
+        const seaFreightAmountEl = document.getElementById('seaFreightAmount');
+        if (seaFreightRow) seaFreightRow.style.display = 'flex';
+        if (seaFreightAmountEl) seaFreightAmountEl.textContent = formatCurrency(seaFreightAmount);
       } else {
-        document.getElementById('seaFreightRow').style.display = 'none';
+        const seaFreightRow = document.getElementById('seaFreightRow');
+        if (seaFreightRow) seaFreightRow.style.display = 'none';
       }
       
       if (includeLandFreight) {
         landFreightAmount = total * (costSettings.landFreight / 100);
         total += landFreightAmount;
-        document.getElementById('landFreightRow').style.display = 'flex';
-        document.getElementById('landFreightAmount').textContent = formatCurrency(landFreightAmount);
+        const landFreightRow = document.getElementById('landFreightRow');
+        const landFreightAmountEl = document.getElementById('landFreightAmount');
+        if (landFreightRow) landFreightRow.style.display = 'flex';
+        if (landFreightAmountEl) landFreightAmountEl.textContent = formatCurrency(landFreightAmount);
       } else {
-        document.getElementById('landFreightRow').style.display = 'none';
+        const landFreightRow = document.getElementById('landFreightRow');
+        if (landFreightRow) landFreightRow.style.display = 'none';
       }
       
       if (includeAdminExpenses) {
         adminExpensesAmount = total * (costSettings.administrativeExpenses / 100);
         total += adminExpensesAmount;
-        document.getElementById('adminExpensesRow').style.display = 'flex';
-        document.getElementById('adminExpensesAmount').textContent = formatCurrency(adminExpensesAmount);
+        const adminExpensesRow = document.getElementById('adminExpensesRow');
+        const adminExpensesAmountEl = document.getElementById('adminExpensesAmount');
+        if (adminExpensesRow) adminExpensesRow.style.display = 'flex';
+        if (adminExpensesAmountEl) adminExpensesAmountEl.textContent = formatCurrency(adminExpensesAmount);
       } else {
-        document.getElementById('adminExpensesRow').style.display = 'none';
+        const adminExpensesRow = document.getElementById('adminExpensesRow');
+        if (adminExpensesRow) adminExpensesRow.style.display = 'none';
       }
       
       // Update displays
-      document.getElementById('displayTotal').textContent = formatCurrency(total);
-      document.getElementById('finalProjectTotal').textContent = formatCurrency(total);
+      const displayTotal = document.getElementById('displayTotal');
+      const finalProjectTotal = document.getElementById('finalProjectTotal');
+      if (displayTotal) displayTotal.textContent = formatCurrency(total);
+      if (finalProjectTotal) finalProjectTotal.textContent = formatCurrency(total);
     }
     
     // Format all existing prices on page load
     function formatExistingPrices() {
       // Format base project cost
-      document.getElementById('baseProjectCost').textContent = formatCurrency(baseProjectTotal);
+      const baseProjectCostEl = document.getElementById('baseProjectCost');
+      if (baseProjectCostEl) {
+        baseProjectCostEl.textContent = formatCurrency(baseProjectTotal);
+      }
       
       // Format individual item prices
       const itemPrices = document.querySelectorAll('[data-price]');
       itemPrices.forEach(element => {
         const price = parseFloat(element.getAttribute('data-price'));
-        element.textContent = formatCurrency(price);
+        if (!isNaN(price)) {
+          element.textContent = formatCurrency(price);
+        }
       });
       
       // Initial calculation
@@ -884,6 +970,12 @@
       // Get project total from data attribute
       const projectTotalElement = document.querySelector('[data-project-total]');
       baseProjectTotal = projectTotalElement ? parseFloat(projectTotalElement.getAttribute('data-project-total')) || 0 : 0;
+      
+      // Set initial currency label
+      document.getElementById('currencyLabel').textContent = currentCurrency;
+      
+      // Add event listener to currency toggle button
+      document.getElementById('currencyToggle').addEventListener('click', toggleCurrency);
       
       // Format existing prices with commas
       formatExistingPrices();

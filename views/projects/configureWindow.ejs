@@ -130,7 +130,18 @@
       <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center">
         <div>
           <div class="flex items-center space-x-2 mb-2">
-            <h2 class="text-2xl font-bold text-gray-800"><%= (typeof isEdit !== 'undefined' && isEdit) ? 'Edit' : 'Configure' %> Window: <span class="text-blue-600"><%= windowRef %></span></h2>
+            <div class="flex justify-between items-center">
+              <h2 class="text-2xl font-bold text-gray-800"><%= (typeof isEdit !== 'undefined' && isEdit) ? 'Edit' : 'Configure' %> Window: <span class="text-blue-600"><%= windowRef %></span></h2>
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600 font-medium">Currency:</span>
+                <button type="button" id="currencyToggle" class="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
+                  <span id="currencyLabel">COP</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
             <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"><%= selectedWindowSystem.type %></span>
           </div>
           <p class="text-gray-600">Project: <span class="font-medium"><%= project.projectName %></span></p>
@@ -228,23 +239,147 @@
                          class="form-input w-full" onchange="calculatePricing()">
                 </div>
                 <div>
-                  <label for="glassType" class="form-label">Glass Type *</label>
-                  <select id="glassType" name="glassType" required class="form-input w-full" onchange="calculatePricing()">
-                    <option value="">Select Glass Type</option>
-                    <% allGlasses.forEach(glass => { %>
-                      <% 
-                        let isSelected = false;
-                        if ((typeof isEdit !== 'undefined' && isEdit) && existingWindow && existingWindow.description) {
-                          // Try to match glass type from description
+                  <!-- Missile Type Selection (if window system supports missile types) - Must be selected first -->
+                  <% 
+                    // Show missile type selection if the window system supports LMI or SMI
+                    // We check supportsLMI/supportsSMI flags, and optionally if glasses are configured
+                    const hasMissileTypes = selectedWindowSystem.missileImpactConfiguration && 
+                                           (selectedWindowSystem.missileImpactConfiguration.supportsLMI || 
+                                            selectedWindowSystem.missileImpactConfiguration.supportsSMI);
+                    
+                    // In edit mode, try to determine the missile type from the selected glass
+                    // Declare these outside the conditional block so they're available later
+                    let preSelectedMissileType = '';
+                    let preSelectedGlassId = '';
+                    
+                    if (hasMissileTypes && typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.description) {
+                        // Try to extract glass type from description - multiple patterns
+                        let glassTypeFromDesc = '';
+                        const patterns = [
+                          /Glass Type:\s*([^-]+?)(?:\s*-|$)/,  // "Glass Type: TYPE - description"
+                          /Glass Type:\s*([^\n]+)/,             // "Glass Type: TYPE\n"
+                          /Glass:\s*([^-]+?)(?:\s*-|$)/,       // "Glass: TYPE - description"
+                        ];
+                        
+                        for (const pattern of patterns) {
+                          const match = existingWindow.description.match(pattern);
+                          if (match) {
+                            glassTypeFromDesc = match[1].trim();
+                            break;
+                          }
+                        }
+                        
+                        if (glassTypeFromDesc) {
+                          // Find the glass in allGlasses - try exact match first, then partial
+                          let selectedGlassObj = allGlasses.find(g => g.glass_type === glassTypeFromDesc);
+                          if (!selectedGlassObj) {
+                            // Try partial match
+                            selectedGlassObj = allGlasses.find(g => glassTypeFromDesc.includes(g.glass_type) || g.glass_type.includes(glassTypeFromDesc));
+                          }
+                          
+                          if (selectedGlassObj) {
+                            preSelectedGlassId = selectedGlassObj._id.toString();
+                            const glassIdStr = selectedGlassObj._id.toString();
+                            
+                            // Check if this glass is in LMI or SMI arrays
+                            const isLMI = selectedWindowSystem.missileImpactConfiguration && 
+                                         selectedWindowSystem.missileImpactConfiguration.lmiGlasses &&
+                                         selectedWindowSystem.missileImpactConfiguration.lmiGlasses.some(g => {
+                                           const gId = (g && g._id) ? g._id.toString() : g.toString();
+                                           return gId === glassIdStr;
+                                         });
+                            const isSMI = selectedWindowSystem.missileImpactConfiguration && 
+                                         selectedWindowSystem.missileImpactConfiguration.smiGlasses &&
+                                         selectedWindowSystem.missileImpactConfiguration.smiGlasses.some(g => {
+                                           const gId = (g && g._id) ? g._id.toString() : g.toString();
+                                           return gId === glassIdStr;
+                                         });
+                            
+                            if (isLMI && !isSMI) {
+                              preSelectedMissileType = 'LMI';
+                            } else if (isSMI && !isLMI) {
+                              preSelectedMissileType = 'SMI';
+                            } else if (isLMI && isSMI) {
+                              // Glass is in both - check description for missile type hint
+                              if (existingWindow.description.includes('LMI') || existingWindow.description.includes('Large Missile')) {
+                                preSelectedMissileType = 'LMI';
+                              } else if (existingWindow.description.includes('SMI') || existingWindow.description.includes('Small Missile')) {
+                                preSelectedMissileType = 'SMI';
+                              }
+                            }
+                          }
+                        }
+                    }
+                  %>
+                  <% if (hasMissileTypes) { %>
+                    <label for="missileType" class="form-label">Missile Impact Type *</label>
+                    <select id="missileType" name="missileType" required class="form-input w-full" onchange="filterGlassesByMissileType()">
+                      <option value="">Select Missile Type First</option>
+                      <% if (selectedWindowSystem.missileImpactConfiguration && selectedWindowSystem.missileImpactConfiguration.supportsLMI) { %>
+                        <option value="LMI" <%= preSelectedMissileType === 'LMI' ? 'selected' : '' %>>Large Missile Impact (LMI)</option>
+                      <% } %>
+                      <% if (selectedWindowSystem.missileImpactConfiguration && selectedWindowSystem.missileImpactConfiguration.supportsSMI) { %>
+                        <option value="SMI" <%= preSelectedMissileType === 'SMI' ? 'selected' : '' %>>Small Missile Impact (SMI)</option>
+                      <% } %>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Select missile type to see available glasses</p>
+                  <% } else { %>
+                    <!-- Placeholder to maintain grid layout when no missile types -->
+                    <div></div>
+                  <% } %>
+                </div>
+              </div>
+              
+              <!-- Glass Type Selection - Below Missile Type -->
+              <div class="mt-4">
+                <label for="glassType" class="form-label">Glass Type *</label>
+                <%
+                  // Determine if glass should be disabled
+                  const glassDisabled = hasMissileTypes && !preSelectedMissileType;
+                %>
+                <select id="glassType" name="glassType" required class="form-input w-full" onchange="calculatePricing()"
+                        <%= glassDisabled ? 'disabled' : '' %>>
+                  <option value="">
+                    <%= glassDisabled 
+                        ? 'Please select missile type first' 
+                        : 'Select Glass Type' %>
+                  </option>
+                  <% allGlasses.forEach(glass => { %>
+                    <% 
+                      let isSelected = false;
+                      if ((typeof isEdit !== 'undefined' && isEdit) && existingWindow) {
+                        // Use pre-selected glass ID if available, otherwise try to match from description
+                        if (preSelectedGlassId && glass._id.toString() === preSelectedGlassId) {
+                          isSelected = true;
+                        } else if (existingWindow.description) {
+                          // Fallback: try to match glass type from description
                           isSelected = existingWindow.description.includes(glass.glass_type);
                         }
-                      %>
-                      <option value="<%= glass._id %>" data-price="<%= glass.pricePerSquareMeter %>" data-type="<%= glass.glass_type %>" <%= isSelected ? 'selected' : '' %>>
-                        <%= glass.glass_type %> - <%= glass.description %>
-                      </option>
-                    <% }) %>
-                  </select>
-                </div>
+                      }
+                      // Add data attributes for missile type filtering
+                      const glassIdStr = glass._id.toString();
+                      const isLMI = selectedWindowSystem.missileImpactConfiguration && 
+                                   selectedWindowSystem.missileImpactConfiguration.lmiGlasses &&
+                                   selectedWindowSystem.missileImpactConfiguration.lmiGlasses.some(g => g && g._id && g._id.toString() === glassIdStr);
+                      const isSMI = selectedWindowSystem.missileImpactConfiguration && 
+                                   selectedWindowSystem.missileImpactConfiguration.smiGlasses &&
+                                   selectedWindowSystem.missileImpactConfiguration.smiGlasses.some(g => g && g._id && g._id.toString() === glassIdStr);
+                    %>
+                    <option value="<%= glass._id %>" 
+                            data-price="<%= glass.pricePerSquareMeter %>" 
+                            data-type="<%= glass.glass_type %>"
+                            data-lmi="<%= isLMI ? 'true' : 'false' %>"
+                            data-smi="<%= isSMI ? 'true' : 'false' %>"
+                            <%= isSelected ? 'selected' : '' %>>
+                      <%= glass.glass_type %> - <%= glass.description %>
+                    </option>
+                  <% }) %>
+                </select>
+                <% if (selectedWindowSystem.missileImpactConfiguration && 
+                       (selectedWindowSystem.missileImpactConfiguration.supportsLMI || 
+                        selectedWindowSystem.missileImpactConfiguration.supportsSMI)) { %>
+                  <p class="text-xs text-gray-500 mt-1">Glass options will appear after selecting a missile type</p>
+                <% } %>
               </div>
               
               <!-- Flange Option (if trimable) -->
@@ -787,21 +922,205 @@
     const showLogo = panelConfiguration.showLogo !== false;
     const frenchDoorConfig = panelConfiguration.frenchDoor || null;
 
-    // Currency conversion function
+    // Store all original glass options
+    let allGlassOptions = [];
+    
+    // Initialize glass options storage when DOM is ready
+    function initializeGlassOptions() {
+      const glassSelect = document.getElementById('glassType');
+      if (glassSelect && allGlassOptions.length === 0) {
+        // Store all original options (excluding the placeholder)
+        allGlassOptions = Array.from(glassSelect.options)
+          .filter(opt => opt.value !== '')
+          .map(opt => ({
+            value: opt.value,
+            text: opt.text,
+            price: opt.getAttribute('data-price'),
+            type: opt.getAttribute('data-type'),
+            lmi: opt.getAttribute('data-lmi'),
+            smi: opt.getAttribute('data-smi'),
+            selected: opt.selected
+          }));
+        console.log('Initialized glass options:', allGlassOptions.length);
+      }
+    }
+    
+    // Run initialization when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        initializeGlassOptions();
+        // If in edit mode and missile type is pre-selected, filter glasses automatically
+        handleEditModeMissileType();
+      });
+    } else {
+      // DOM is already ready
+      initializeGlassOptions();
+      // If in edit mode and missile type is pre-selected, filter glasses automatically
+      handleEditModeMissileType();
+    }
+    
+    // Handle edit mode: if missile type is pre-selected, filter glasses
+    function handleEditModeMissileType() {
+      const missileTypeSelect = document.getElementById('missileType');
+      const glassSelect = document.getElementById('glassType');
+      
+      if (missileTypeSelect && missileTypeSelect.value && glassSelect) {
+        // Missile type is already selected (edit mode), filter glasses
+        // Store the currently selected glass before filtering
+        const currentSelectedValue = glassSelect.value;
+        
+        // Filter glasses based on pre-selected missile type
+        filterGlassesByMissileType();
+        
+        // After filtering, restore the selection if it exists
+        setTimeout(() => {
+          if (currentSelectedValue && glassSelect.querySelector(`option[value="${currentSelectedValue}"]`)) {
+            glassSelect.value = currentSelectedValue;
+            calculatePricing(); // Recalculate with restored selection
+          }
+        }, 100);
+      }
+    }
+    
+    // Filter glasses based on selected missile type
+    function filterGlassesByMissileType() {
+      const missileTypeSelect = document.getElementById('missileType');
+      const missileType = missileTypeSelect?.value;
+      const glassSelect = document.getElementById('glassType');
+      
+      if (!glassSelect) return;
+      
+      // Check if missile type selection is required (window system supports missile types)
+      const missileTypeRequired = missileTypeSelect !== null;
+      
+      if (missileTypeRequired) {
+        // Store the currently selected glass value before filtering (for edit mode)
+        const currentSelectedGlass = glassSelect.value;
+        
+        // Enable/disable glass select based on missile type selection
+        if (!missileType) {
+          glassSelect.disabled = true;
+          glassSelect.innerHTML = '<option value="">Please select missile type first</option>';
+          calculatePricing(); // Recalculate with no glass
+          return;
+        }
+        
+        // Enable the glass select
+        glassSelect.disabled = false;
+        
+        // Clear current options
+        glassSelect.innerHTML = '<option value="">Select Glass Type</option>';
+        
+        // Ensure we have stored options
+        if (allGlassOptions.length === 0) {
+          initializeGlassOptions();
+        }
+        
+        // If still no options, try to get from current DOM as fallback
+        if (allGlassOptions.length === 0) {
+          // Try to reconstruct from any remaining options in the DOM
+          const remainingOptions = document.querySelectorAll('#glassType option[data-lmi]');
+          if (remainingOptions.length > 0) {
+            allGlassOptions = Array.from(remainingOptions).map(opt => ({
+              value: opt.value,
+              text: opt.text,
+              price: opt.getAttribute('data-price'),
+              type: opt.getAttribute('data-type'),
+              lmi: opt.getAttribute('data-lmi'),
+              smi: opt.getAttribute('data-smi')
+            }));
+          }
+        }
+        
+        // Filter and add options based on missile type
+        allGlassOptions.forEach(optionData => {
+          if (!optionData.value) return; // Skip placeholder
+          
+          // Check if this glass is available for the selected missile type
+          const isAvailable = optionData[missileType.toLowerCase()] === 'true';
+          if (isAvailable) {
+            const newOption = document.createElement('option');
+            newOption.value = optionData.value;
+            newOption.textContent = optionData.text;
+            newOption.setAttribute('data-price', optionData.price || '0');
+            newOption.setAttribute('data-type', optionData.type || '');
+            newOption.setAttribute('data-lmi', optionData.lmi || 'false');
+            newOption.setAttribute('data-smi', optionData.smi || 'false');
+            
+            // Restore selection if this was the previously selected glass (edit mode)
+            if (currentSelectedGlass && optionData.value === currentSelectedGlass) {
+              newOption.selected = true;
+            }
+            
+            glassSelect.appendChild(newOption);
+          }
+        });
+      } else {
+        // No missile type required - glass select should already be enabled and populated
+        // Just ensure it's enabled
+        glassSelect.disabled = false;
+      }
+      
+      // Recalculate pricing
+      calculatePricing();
+    }
+    
+    // Currency conversion functions
+    // ALL INTERNAL CALCULATIONS MUST BE IN USD
+    function convertToUSD(price, currency, exchangeRate) {
+      if (currency === 'USD') return price;
+      if (currency === 'COP') return price / exchangeRate;
+      return price; // fallback
+    }
+    
     function convertToCOP(price, currency, exchangeRate) {
       if (currency === 'COP') return price;
       if (currency === 'USD') return price * exchangeRate;
       return price; // fallback
     }
 
-    // Format numbers with commas
-    function formatCurrency(amount) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(amount);
+    // Exchange rate from server (default to 4000 if not provided)
+    // Note: exchangeRateValue is already defined above, so we use that
+    // const exchangeRate = <%= exchangeRate || 4000 %>; // Already defined as exchangeRateValue
+    
+    // Currency state (default to COP, stored in localStorage)
+    let currentCurrency = localStorage.getItem('windowCurrency') || 'COP';
+    
+      // Format numbers with commas based on current currency
+      // IMPORTANT: amount is in USD (internal calculation), convert for display
+    function formatCurrency(amount, currency = null) {
+      const currencyToUse = currency || currentCurrency;
+      
+      if (currencyToUse === 'USD') {
+        // Amount is already in USD, display as-is
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(amount);
+      } else {
+        // Convert USD to COP for display
+        const amountCOP = amount * exchangeRate;
+        return new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(amountCOP);
+      }
+    }
+    
+    // Toggle currency between COP and USD
+    function toggleCurrency() {
+      currentCurrency = currentCurrency === 'COP' ? 'USD' : 'COP';
+      localStorage.setItem('windowCurrency', currentCurrency);
+      
+      // Update button label
+      document.getElementById('currencyLabel').textContent = currentCurrency;
+      
+      // Recalculate and update all prices
+      calculatePricing();
     }
 
     function calculatePricing() {
@@ -813,25 +1132,26 @@
       const areaInches = width * height;
       const areaSquareMeters = areaInches / 1550;
       
+      // ALL INTERNAL CALCULATIONS IN USD
       let totalCost = 0;
       
-      // Glass cost
+      // Glass cost - CONVERT TO USD
       const glassSelect = document.getElementById('glassType');
       const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
       const glassPrice = parseFloat(selectedGlass?.getAttribute('data-price')) || 0;
       const glassCurrency = selectedGlass?.getAttribute('data-currency') || 'COP';
-      const glassPriceCOP = convertToCOP(glassPrice, glassCurrency, exchangeRateValue);
-      const glassCost = glassPriceCOP * areaSquareMeters;
+      const glassPriceUSD = convertToUSD(glassPrice, glassCurrency, exchangeRateValue);
+      const glassCost = glassPriceUSD * areaSquareMeters;
       totalCost += glassCost;
       
-      // Profile costs
+      // Profile costs - CONVERT TO USD
       let profilesCost = 0;
       const profileSelects = document.querySelectorAll('.profile-select');
       profileSelects.forEach((select, index) => {
         const selectedProfile = select.options[select.selectedIndex];
         const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
         const profileCurrency = selectedProfile?.getAttribute('data-currency') || 'COP';
-        const pricePerMeterCOP = convertToCOP(pricePerMeter, profileCurrency, exchangeRateValue);
+        const pricePerMeterUSD = convertToUSD(pricePerMeter, profileCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
         const lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
         
@@ -840,11 +1160,11 @@
         const perimeterMeters = perimeterInches * 0.0254; // Convert inches to meters
         const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
         
-        profilesCost += pricePerMeterCOP * adjustedLength * qty;
+        profilesCost += pricePerMeterUSD * adjustedLength * qty;
       });
       totalCost += profilesCost;
       
-      // Accessory costs
+      // Accessory costs - CONVERT TO USD
       let accessoriesCost = 0;
       
       // Individual accessories (dropdown selects)
@@ -853,9 +1173,9 @@
         const selectedAccessory = select.options[select.selectedIndex];
         const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
         const accessoryCurrency = selectedAccessory?.getAttribute('data-currency') || 'COP';
-        const priceCOP = convertToCOP(price, accessoryCurrency, exchangeRateValue);
+        const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        accessoriesCost += priceCOP * qty;
+        accessoriesCost += priceUSD * qty;
       });
       
       // Choice group accessories (radio buttons and checkboxes)
@@ -876,22 +1196,22 @@
         if (priceInput && quantityInput) {
           const price = parseFloat(priceInput.value) || 0;
           const accessoryCurrency = currencyInput?.value || 'COP';
-          const priceCOP = convertToCOP(price, accessoryCurrency, exchangeRateValue);
+          const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
           const qty = parseInt(quantityInput.value) || 1;
-          accessoriesCost += priceCOP * qty;
+          accessoriesCost += priceUSD * qty;
         }
       });
       
       totalCost += accessoriesCost;
       
-      // Muntin costs
+      // Muntin costs - CONVERT TO USD
       let muntinCost = 0;
       const muntinProfileSelect = document.getElementById('muntinProfile');
       if (muntinProfileSelect) {
         const selectedMuntinProfile = muntinProfileSelect.options[muntinProfileSelect.selectedIndex];
         const muntinPricePerMeter = parseFloat(selectedMuntinProfile?.getAttribute('data-price')) || 0;
         const muntinCurrency = selectedMuntinProfile?.getAttribute('data-currency') || 'COP';
-        const muntinPricePerMeterCOP = convertToCOP(muntinPricePerMeter, muntinCurrency, exchangeRateValue);
+        const muntinPricePerMeterUSD = convertToUSD(muntinPricePerMeter, muntinCurrency, exchangeRateValue);
         
         // Calculate muntin length based on divisions
         const horizontalDivisions = parseInt(document.getElementById('muntinHorizontal')?.value) || 0;
@@ -906,7 +1226,7 @@
           const verticalLength = verticalMuntins * height * 0.0254; // Convert to meters
           
           const totalMuntinLength = horizontalLength + verticalLength;
-          muntinCost = muntinPricePerMeterCOP * totalMuntinLength;
+          muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
         }
       }
       totalCost += muntinCost;
@@ -944,7 +1264,13 @@
     }
 
     // Current unit state
-    let currentUnit = 'inches';
+    // In edit mode, always start with inches since stored values are in inches
+    // In new mode, check localStorage for preference
+    <% if (typeof isEdit !== 'undefined' && isEdit) { %>
+    let currentUnit = 'inches'; // Always inches in edit mode
+    <% } else { %>
+    let currentUnit = localStorage.getItem('windowUnit') || 'inches';
+    <% } %>
     
     // Unit conversion functions
     function inchesToMm(inches) {
@@ -1058,36 +1384,64 @@
     
     // Modified calculatePricing function to handle unit conversion
     function calculatePricingWithUnits() {
-      // Get values in current unit
-      let width = parseFloat(document.getElementById('width').value) || 0;
-      let height = parseFloat(document.getElementById('height').value) || 0;
+      // Get values from input fields
+      // CRITICAL: In edit mode, when page first loads, values are in inches (from database)
+      // The currentUnit variable tells us how the user is currently viewing/entering values
+      const widthInput = document.getElementById('width');
+      const heightInput = document.getElementById('height');
+      let width = parseFloat(widthInput?.value) || 0;
+      let height = parseFloat(heightInput?.value) || 0;
       const quantity = parseInt(document.getElementById('quantity').value) || 1;
       
+      // Debug logging
+      <% if (typeof isEdit !== 'undefined' && isEdit) { %>
+      console.log('=== calculatePricing DEBUG ===');
+      console.log('currentUnit:', currentUnit);
+      console.log('width input value:', widthInput?.value, 'parsed:', width);
+      console.log('height input value:', heightInput?.value, 'parsed:', height);
+      <% } %>
+      
       // Convert to inches for calculations (since backend expects inches)
+      // If currentUnit is 'mm', the input values are in mm (user entered them in mm), so convert them
+      // If currentUnit is 'inches', the input values are already in inches
       if (currentUnit === 'mm') {
+        const widthBefore = width;
+        const heightBefore = height;
         width = mmToInches(width);
         height = mmToInches(height);
+        <% if (typeof isEdit !== 'undefined' && isEdit) { %>
+        console.log('Converted from mm: width', widthBefore, '->', width, 'inches, height', heightBefore, '->', height, 'inches');
+        <% } %>
+      } else {
+        <% if (typeof isEdit !== 'undefined' && isEdit) { %>
+        console.log('Using inches directly: width', width, 'inches, height', height, 'inches');
+        <% } %>
       }
       
       // Calculate square footage (convert inches to square meters: 1 sqm = 1550 sq inches)
       const areaInches = width * height;
       const areaSquareMeters = areaInches / 1550;
       
+      // ALL INTERNAL CALCULATIONS IN USD
       let totalCost = 0;
       
-      // Glass cost
+      // Glass cost - CONVERT TO USD
       const glassSelect = document.getElementById('glassType');
       const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
       const glassPrice = parseFloat(selectedGlass?.getAttribute('data-price')) || 0;
-      const glassCost = glassPrice * areaSquareMeters;
+      const glassCurrency = selectedGlass?.getAttribute('data-currency') || 'COP';
+      const glassPriceUSD = convertToUSD(glassPrice, glassCurrency, exchangeRateValue);
+      const glassCost = glassPriceUSD * areaSquareMeters;
       totalCost += glassCost;
       
-      // Profile costs
+      // Profile costs - CONVERT TO USD
       let profilesCost = 0;
       const profileSelects = document.querySelectorAll('.profile-select');
       profileSelects.forEach((select, index) => {
         const selectedProfile = select.options[select.selectedIndex];
         const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
+        const profileCurrency = selectedProfile?.getAttribute('data-currency') || 'COP';
+        const pricePerMeterUSD = convertToUSD(pricePerMeter, profileCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
         let lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
         
@@ -1101,11 +1455,11 @@
         const perimeterMeters = perimeterInches * 0.0254; // Convert inches to meters
         const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
         
-        profilesCost += pricePerMeter * adjustedLength * qty;
+        profilesCost += pricePerMeterUSD * adjustedLength * qty;
       });
       totalCost += profilesCost;
       
-      // Accessory costs (same as before)
+      // Accessory costs - CONVERT TO USD
       let accessoriesCost = 0;
       
       // Individual accessories (dropdown selects)
@@ -1113,8 +1467,10 @@
       accessorySelects.forEach(select => {
         const selectedAccessory = select.options[select.selectedIndex];
         const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
+        const accessoryCurrency = selectedAccessory?.getAttribute('data-currency') || 'COP';
+        const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        accessoriesCost += price * qty;
+        accessoriesCost += priceUSD * qty;
       });
       
       // Choice group accessories (radio buttons and checkboxes)
@@ -1127,19 +1483,24 @@
         // Find the corresponding price and quantity inputs
         const priceInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_price"]`;
         const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
+        const currencyInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_currency"]`;
         const priceInput = document.querySelector(priceInputSelector);
         const quantityInput = document.querySelector(quantityInputSelector);
+        const currencyInput = document.querySelector(currencyInputSelector);
         
         if (priceInput && quantityInput) {
           const price = parseFloat(priceInput.value) || 0;
+          const accessoryCurrency = currencyInput?.value || 'COP';
+          const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
           const qty = parseInt(quantityInput.value) || 1;
-          accessoriesCost += price * qty;
+          accessoriesCost += priceUSD * qty;
         }
       });
       
       totalCost += accessoriesCost;
       
       // Apply per-window cost settings (as percentages)
+      // All costs are in USD at this point
       const baseCost = totalCost;
       const additionalCosts = baseCost * (
         (costSettings.packaging / 100) +
@@ -1148,9 +1509,9 @@
       );
       
       totalCost += additionalCosts;
-      const finalTotal = totalCost * quantity;
+      const finalTotal = totalCost * quantity; // finalTotal is in USD
       
-      // Update displays with comma formatting
+      // Update displays with comma formatting (formatCurrency will convert USD to display currency)
       document.getElementById('totalPrice').textContent = formatCurrency(finalTotal);
       document.getElementById('baseMaterialsCost').textContent = formatCurrency(profilesCost);
       document.getElementById('glassCost').textContent = formatCurrency(glassCost);
@@ -2000,10 +2361,66 @@
     
     // Initialize calculations
     document.addEventListener('DOMContentLoaded', function() {
+      // Initialize currency toggle
+      const currencyLabel = document.getElementById('currencyLabel');
+      const currencyToggle = document.getElementById('currencyToggle');
+      if (currencyLabel) {
+        currencyLabel.textContent = currentCurrency;
+      }
+      if (currencyToggle) {
+        currencyToggle.addEventListener('click', toggleCurrency);
+      }
+      
+      // In edit mode, ensure we're in inches and update UI accordingly
+      <% if (typeof isEdit !== 'undefined' && isEdit) { %>
+      // Force inches mode in edit mode BEFORE any calculations
+      currentUnit = 'inches';
+      const currentUnitInput = document.getElementById('currentUnit');
+      if (currentUnitInput) currentUnitInput.value = 'inches';
+      
+      // Update unit toggle buttons to show inches as active
+      const inchesBtn = document.getElementById('inchesBtn');
+      const mmBtn = document.getElementById('mmBtn');
+      if (inchesBtn) {
+        inchesBtn.classList.add('active');
+        inchesBtn.classList.remove('text-gray-700');
+        inchesBtn.classList.add('bg-indigo-600', 'text-white');
+      }
+      if (mmBtn) {
+        mmBtn.classList.remove('active');
+        mmBtn.classList.remove('bg-indigo-600', 'text-white');
+        mmBtn.classList.add('text-gray-700');
+      }
+      
+      // Update unit labels
+      const widthUnitSpan = document.getElementById('widthUnit');
+      const heightUnitSpan = document.getElementById('heightUnit');
+      if (widthUnitSpan) widthUnitSpan.textContent = 'in';
+      if (heightUnitSpan) heightUnitSpan.textContent = 'in';
+      
+      // CRITICAL: Ensure width and height inputs contain inch values (they should already, but verify)
+      // The stored values are in inches, so they should be displayed as-is
+      const widthInput = document.getElementById('width');
+      const heightInput = document.getElementById('height');
+      if (widthInput && widthInput.value) {
+        // Value is already in inches from database, no conversion needed
+        console.log('Edit mode: Width loaded as', widthInput.value, 'inches');
+      }
+      if (heightInput && heightInput.value) {
+        // Value is already in inches from database, no conversion needed
+        console.log('Edit mode: Height loaded as', heightInput.value, 'inches');
+      }
+      <% } %>
+      
       initializeChoiceGroups();
       renderWindowPreview(); // Render the panel preview based on configuration
-      calculatePricing();
-      updateWindowPreview(); // Update dimensions
+      
+      // Calculate pricing AFTER unit is properly set
+      // Use setTimeout to ensure all initialization is complete
+      setTimeout(function() {
+        calculatePricing();
+        updateWindowPreview(); // Update dimensions
+      }, 100);
       
       // Initialize muntin preview if muntin configuration exists
       if (document.getElementById('muntinPreviewGrid')) {

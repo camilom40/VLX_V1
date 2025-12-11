@@ -67,6 +67,67 @@ Once you have muntin profiles in your database, you can:
 
 If you prefer to create profiles manually through the admin interface:
 
+## migratePricesToUSD.js
+
+This script migrates all existing window item prices from COP to USD.
+
+### What it does:
+- Converts all `unitPrice` and `totalPrice` values from COP to USD
+- Uses the current exchange rate from the system
+- Preserves all other data (dimensions, descriptions, etc.)
+- Provides a summary of migrated items
+
+### When to run:
+- **After updating the codebase** to use USD internally instead of COP
+- **Before using the new pricing system** to ensure all existing data is compatible
+
+### How to run:
+
+1. **Make sure MongoDB is running** and accessible
+2. **Ensure your .env file** has the correct `DATABASE_URL`
+3. **Run the script**:
+   ```bash
+   node scripts/migratePricesToUSD.js
+   ```
+
+### What happens:
+- The script will:
+  1. Connect to your database
+  2. Get the current exchange rate
+  3. Find all window items
+  4. Convert each item's prices: `USD = COP / exchangeRate`
+  5. Save the updated prices
+  6. Display a summary
+
+### Example output:
+```
+✅ Connected to MongoDB
+📊 Current exchange rate: 1 USD = 4000 COP
+   Converting prices by dividing by 4000
+
+📦 Found 15 window items to migrate
+
+✓ Migrated: Window-1 - Unit: 1,200,000 COP → $300.00 USD
+✓ Migrated: Window-2 - Unit: 800,000 COP → $200.00 USD
+...
+
+📊 Migration Summary:
+   ✅ Successfully migrated: 15 items
+   📈 Exchange rate used: 4000
+✅ Migration completed!
+```
+
+### Important Notes:
+- **Backup your database** before running this script
+- This script is **idempotent** - running it multiple times will keep dividing by the exchange rate (which is wrong)
+- **Only run this once** after switching to USD
+- If you need to revert, you would need to multiply by the exchange rate (create a reverse script)
+
+### Troubleshooting:
+- **"DATABASE_URL not found"**: Check your .env file
+- **"No window items to migrate"**: Your database is already migrated or empty
+- **"Connection failed"**: Ensure MongoDB is running
+
 1. Go to Profile Management
 2. Create a new profile or edit existing one
 3. Set `isMuntin` to `true`

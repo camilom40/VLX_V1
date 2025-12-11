@@ -37,6 +37,14 @@ const flangeConfigurationSchema = new Schema({
   isTrimable: { type: Boolean, default: false } // Whether the flange can be trimmed/removed by user
 }, { _id: false });
 
+// Missile impact configuration sub-schema
+const missileImpactConfigurationSchema = new Schema({
+  supportsLMI: { type: Boolean, default: false }, // Supports Large Missile Impact
+  supportsSMI: { type: Boolean, default: false }, // Supports Small Missile Impact
+  lmiGlasses: [{ type: Schema.Types.ObjectId, ref: 'Glass' }], // Available glasses for LMI
+  smiGlasses: [{ type: Schema.Types.ObjectId, ref: 'Glass' }] // Available glasses for SMI
+}, { _id: false });
+
 
 // Panel configuration for dynamic preview (e.g., OXXO, OX, XOX)
 const panelConfigurationSchema = new Schema({
@@ -90,7 +98,8 @@ const windowSchema = new Schema({
   glassRestrictions: [glassRestrictionSchema], // Embedded glass restrictions
   muntinConfiguration: muntinConfigurationSchema, // Muntin configuration
   panelConfiguration: panelConfigurationSchema, // Panel layout for dynamic preview
-  flangeConfiguration: flangeConfigurationSchema // Flange configuration
+  flangeConfiguration: flangeConfigurationSchema, // Flange configuration
+  missileImpactConfiguration: missileImpactConfigurationSchema // Missile impact capability
 });
 
 module.exports = mongoose.model('Window', windowSchema);

@@ -147,8 +147,8 @@
             <div class="main-card p-6 mb-5">
                 <form id="editGlassForm" action="/admin/glasses/update/<%= glass._id %>" method="POST">
                     
-                    <!-- Row 1: Glass Type and Missile Type -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <!-- Row 1: Glass Type -->
+                    <div class="mb-4">
                         <!-- Glass Type field -->
                         <div class="form-section">
                             <div class="flex items-center gap-2.5 mb-3">
@@ -172,34 +172,6 @@
                                     placeholder="e.g., TemperedGlass" maxlength="50">
                             </div>
                             <p class="help-text">Enter a unique identifier for this glass type</p>
-                        </div>
-
-                        <!-- Missile Type field -->
-                        <div class="form-section">
-                            <div class="flex items-center gap-2.5 mb-3">
-                                <div class="section-icon bg-purple-100 text-purple-600">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <label for="missile_type" class="font-semibold text-gray-800 text-sm">Missile Type</label>
-                                    <span class="required-badge">Required</span>
-                                </div>
-                            </div>
-                            <div class="input-with-icon">
-                                <div class="input-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                </div>
-                                <select id="missile_type" name="missile_type" required class="form-input">
-                                    <option value="">Select a missile type</option>
-                                    <option value="LMI" <%= glass.missile_type === 'LMI' ? 'selected' : '' %>>LMI (Large Missile Impact)</option>
-                                    <option value="SMI" <%= glass.missile_type === 'SMI' ? 'selected' : '' %>>SMI (Small Missile Impact)</option>
-                                </select>
-                            </div>
-                            <p class="help-text">Specify the missile impact rating</p>
                         </div>
                     </div>
 

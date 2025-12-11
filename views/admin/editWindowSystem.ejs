@@ -350,7 +350,11 @@
         </div>
         <div class="step-item" data-step="4" onclick="goToStep(4)">
           <span class="step-number">4</span>
-          <span>Muntins</span>
+          <span>Missile Type</span>
+        </div>
+        <div class="step-item" data-step="5" onclick="goToStep(5)">
+          <span class="step-number">5</span>
+          <span>Others</span>
         </div>
       </div>
       <button type="button" onclick="saveAndExit()" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg shadow-green-500/30 transition-all flex items-center gap-2">
@@ -692,13 +696,132 @@
             <i class="fas fa-arrow-left mr-2"></i>Previous
           </button>
           <button type="button" onclick="goToStep(4)" class="btn-primary">
-            Next: Muntins <i class="fas fa-arrow-right ml-2"></i>
+            Next: Missile Type <i class="fas fa-arrow-right ml-2"></i>
           </button>
         </div>
       </div>
       
-      <!-- Step 4: Muntins -->
+      <!-- Step 4: Missile Type Configuration -->
       <div id="step4-section" class="form-section">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Missile Type Configuration</h2>
+            <p class="text-gray-600 mb-6">Configure missile impact types and select available glasses for each type</p>
+            
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">Select Missile Impact Types</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-red-200">
+                  <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="missile-lmi" name="missileLMI" class="h-5 w-5 text-red-600 focus:ring-red-500 border-gray-300 rounded" onchange="toggleMissileType('LMI')"
+                           <%= windowSystem.missileImpactConfiguration && windowSystem.missileImpactConfiguration.supportsLMI ? 'checked' : '' %>>
+                    <div class="ml-3">
+                      <span class="text-sm font-medium text-gray-700">Large Missile Impact (LMI)</span>
+                      <p class="text-xs text-gray-500">Window system supports large missile impact resistance</p>
+                    </div>
+                  </label>
+                </div>
+                
+                <div class="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-red-200">
+                  <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="missile-smi" name="missileSMI" class="h-5 w-5 text-red-600 focus:ring-red-500 border-gray-300 rounded" onchange="toggleMissileType('SMI')"
+                           <%= windowSystem.missileImpactConfiguration && windowSystem.missileImpactConfiguration.supportsSMI ? 'checked' : '' %>>
+                    <div class="ml-3">
+                      <span class="text-sm font-medium text-gray-700">Small Missile Impact (SMI)</span>
+                      <p class="text-xs text-gray-500">Window system supports small missile impact resistance</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- LMI Glass Selection -->
+            <div id="lmi-glass-section" class="mb-6" style="display: <%= windowSystem.missileImpactConfiguration && windowSystem.missileImpactConfiguration.supportsLMI ? 'block' : 'none' %>;">
+              <div class="p-4 bg-red-50 border border-red-200 rounded-xl mb-4">
+                <h4 class="text-sm font-semibold text-red-800 mb-2">Large Missile Impact (LMI) - Available Glasses</h4>
+                <p class="text-xs text-red-700">Select which glasses are available for LMI. Users will only see these glasses when they select LMI.</p>
+              </div>
+              <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-white">
+                <% if (glasses && glasses.length > 0) { %>
+                  <% 
+                    const lmiGlassIds = windowSystem.missileImpactConfiguration && windowSystem.missileImpactConfiguration.lmiGlasses 
+                      ? windowSystem.missileImpactConfiguration.lmiGlasses.map(g => g && g._id ? g._id.toString() : g.toString())
+                      : [];
+                  %>
+                  <% glasses.forEach(glass => { %>
+                    <label class="flex items-center py-2 px-3 hover:bg-gray-50 rounded cursor-pointer">
+                      <input type="checkbox" name="lmiGlasses[]" value="<%= glass._id %>" class="lmi-glass-checkbox h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                             <%= lmiGlassIds.includes(glass._id.toString()) ? 'checked' : '' %>>
+                      <div class="ml-3">
+                        <span class="text-sm font-medium text-gray-700"><%= glass.glass_type %></span>
+                        <p class="text-xs text-gray-500"><%= glass.description %></p>
+                      </div>
+                    </label>
+                  <% }) %>
+                <% } else { %>
+                  <p class="text-sm text-gray-500">No glasses available. Please add glasses first.</p>
+                <% } %>
+              </div>
+            </div>
+            
+            <!-- SMI Glass Selection -->
+            <div id="smi-glass-section" class="mb-6" style="display: <%= windowSystem.missileImpactConfiguration && windowSystem.missileImpactConfiguration.supportsSMI ? 'block' : 'none' %>;">
+              <div class="p-4 bg-red-50 border border-red-200 rounded-xl mb-4">
+                <h4 class="text-sm font-semibold text-red-800 mb-2">Small Missile Impact (SMI) - Available Glasses</h4>
+                <p class="text-xs text-red-700">Select which glasses are available for SMI. Users will only see these glasses when they select SMI.</p>
+              </div>
+              <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-white">
+                <% if (glasses && glasses.length > 0) { %>
+                  <% 
+                    const smiGlassIds = windowSystem.missileImpactConfiguration && windowSystem.missileImpactConfiguration.smiGlasses 
+                      ? windowSystem.missileImpactConfiguration.smiGlasses.map(g => g && g._id ? g._id.toString() : g.toString())
+                      : [];
+                  %>
+                  <% glasses.forEach(glass => { %>
+                    <label class="flex items-center py-2 px-3 hover:bg-gray-50 rounded cursor-pointer">
+                      <input type="checkbox" name="smiGlasses[]" value="<%= glass._id %>" class="smi-glass-checkbox h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                             <%= smiGlassIds.includes(glass._id.toString()) ? 'checked' : '' %>>
+                      <div class="ml-3">
+                        <span class="text-sm font-medium text-gray-700"><%= glass.glass_type %></span>
+                        <p class="text-xs text-gray-500"><%= glass.description %></p>
+                      </div>
+                    </label>
+                  <% }) %>
+                <% } else { %>
+                  <p class="text-sm text-gray-500">No glasses available. Please add glasses first.</p>
+                <% } %>
+              </div>
+            </div>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div class="flex items-start">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                  <i class="fas fa-info-circle text-blue-600"></i>
+                </div>
+                <div>
+                  <h4 class="text-sm font-semibold text-blue-800 mb-1">How it works</h4>
+                  <p class="text-xs text-blue-700">
+                    Enable the missile impact types this window system supports, then select which glasses are available for each type. When users quote, they'll select a missile type and only see the glasses you've configured for that type.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step Navigation -->
+        <div class="mt-6 flex justify-between items-center">
+          <button type="button" onclick="goToStep(3)" class="btn-secondary">
+            <i class="fas fa-arrow-left mr-2"></i>Previous
+          </button>
+          <button type="button" onclick="goToStep(5)" class="btn-primary">
+            Next: Others <i class="fas fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Step 5: Others (Muntins & Flange) -->
+      <div id="step5-section" class="form-section">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           
           <!-- Final Step Banner -->
@@ -709,7 +832,7 @@
               </div>
               <div>
                 <h3 class="font-bold text-lg">Final Step!</h3>
-                <p class="text-green-100 text-sm">Configure muntins and save your changes</p>
+                <p class="text-green-100 text-sm">Configure muntins and flange, then save your changes</p>
               </div>
             </div>
           </div>
@@ -727,14 +850,15 @@
                 </div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="muntin-enabled" onchange="toggleMuntinConfiguration()">
+                <input type="checkbox" id="muntin-enabled" onchange="toggleMuntinConfiguration()"
+                       <%= windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled ? 'checked' : '' %>>
                 <span class="toggle-slider"></span>
               </label>
             </div>
           </div>
           
           <!-- Muntin Config (hidden by default) -->
-          <div id="muntin-config-section" style="display: none;">
+          <div id="muntin-config-section" style="display: <%= windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled ? 'block' : 'none' %>;">
             <div class="p-6 bg-gray-50 border-b border-gray-100">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -744,16 +868,18 @@
                   <select id="muntin-profile" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-amber-500 focus:outline-none">
                     <option value="">Select Muntin Profile</option>
                     <% profiles.forEach(profile => { %>
-                      <% if (profile.isMuntin) { %>
-                        <option value="<%= profile._id %>"><%= profile.name %></option>
-                      <% } %>
+                      <option value="<%= profile._id %>"
+                              <%= windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.muntinProfile && windowSystem.muntinConfiguration.muntinProfile.toString() === profile._id.toString() ? 'selected' : '' %>>
+                        <%= profile.name %>
+                      </option>
                     <% }); %>
                   </select>
                 </div>
                 <div class="flex items-center">
                   <div class="p-4 bg-white rounded-xl border-2 border-dashed border-amber-200 w-full">
                     <label class="flex items-center cursor-pointer">
-                      <input type="checkbox" id="muntin-show-to-user" class="h-5 w-5 text-amber-600 rounded">
+                      <input type="checkbox" id="muntin-show-to-user" class="h-5 w-5 text-amber-600 rounded"
+                             <%= windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.showToUser ? 'checked' : '' %>>
                       <div class="ml-3">
                         <span class="text-sm font-medium text-gray-700">User Configurable</span>
                         <p class="text-xs text-gray-500">Users can customize divisions when quoting</p>
@@ -801,7 +927,7 @@
           </div>
           
           <!-- Disabled State -->
-          <div id="muntin-disabled-message" class="p-8 text-center">
+          <div id="muntin-disabled-message" class="p-8 text-center" style="display: <%= windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled ? 'none' : 'block' %>;">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <i class="fas fa-th-large text-gray-400 text-2xl"></i>
             </div>
@@ -809,11 +935,77 @@
             <p class="text-sm text-gray-500 max-w-md mx-auto">Toggle the switch above to add decorative muntin grids.</p>
           </div>
           
+          <!-- Flange Configuration Section -->
+          <div class="bg-white rounded-xl shadow-lg border border-gray-200 mt-6">
+            <div class="p-6 border-b border-gray-100">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                    <i class="fas fa-border-style text-blue-600 text-xl"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Flange Configuration</h3>
+                    <p class="text-sm text-gray-500">Configure window flange options</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="flange-enabled" class="sr-only peer" onchange="toggleFlangeConfiguration()"
+                         <%= windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.hasFlange ? 'checked' : '' %>>
+                  <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500"></div>
+                  <span id="flange-toggle-label" class="ml-3 text-sm font-medium <%= windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.hasFlange ? 'text-blue-600 font-semibold' : 'text-gray-500' %>">
+                    <%= windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.hasFlange ? 'Enabled' : 'No Flange' %>
+                  </span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Flange Configuration (Hidden by default) -->
+            <div id="flange-config-section" style="display: <%= windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.hasFlange ? 'block' : 'none' %>;">
+              <div class="p-6 bg-gray-50 border-b border-gray-100">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="flange-size" class="block text-sm font-semibold text-gray-700 mb-2">
+                      <i class="fas fa-ruler text-blue-500 mr-2"></i>Flange Size <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="flange-size" class="form-control w-full" placeholder="e.g., 1/2, 3/4, 1" maxlength="10"
+                           value="<%= windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.flangeSize ? windowSystem.flangeConfiguration.flangeSize : '' %>"
+                           <%= windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.hasFlange ? 'required' : '' %>>
+                    <p class="text-xs text-gray-500 mt-2">Enter flange size (e.g., 1/2&quot;, 3/4&quot;, 1&quot;)</p>
+                  </div>
+                  
+                  <div class="flex items-center">
+                    <div class="p-4 bg-white rounded-xl border-2 border-dashed border-blue-200 w-full">
+                      <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="flange-trimable" class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                               <%= windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.isTrimable ? 'checked' : '' %>>
+                        <div class="ml-3">
+                          <span class="text-sm font-medium text-gray-700">Trimable</span>
+                          <p class="text-xs text-gray-500">Users can choose to remove flange when quoting</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Disabled State Message -->
+            <div id="flange-disabled-message" class="p-8 text-center" style="display: <%= windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.hasFlange ? 'none' : 'block' %>;">
+              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-border-none text-gray-400 text-2xl"></i>
+              </div>
+              <h4 class="text-gray-600 font-medium mb-2">No Flange</h4>
+              <p class="text-sm text-gray-500 max-w-md mx-auto">
+                This window system will not have a flange. Toggle the switch above to add flange configuration.
+              </p>
+            </div>
+          </div>
+          
         </div>
         
         <!-- Final Actions -->
         <div class="mt-6 flex justify-between items-center">
-          <button type="button" onclick="goToStep(3)" class="btn-secondary">
+          <button type="button" onclick="goToStep(4)" class="btn-secondary">
             <i class="fas fa-arrow-left mr-2"></i>Previous
           </button>
           <button type="submit" class="btn-success text-lg px-8">
@@ -1549,6 +1741,52 @@
       }
     }
     
+    // Missile Type Configuration
+    function toggleMissileType(type) {
+      const checkbox = document.getElementById(`missile-${type.toLowerCase()}`);
+      const section = document.getElementById(`${type.toLowerCase()}-glass-section`);
+      
+      if (checkbox && section) {
+        section.style.display = checkbox.checked ? 'block' : 'none';
+      }
+    }
+    
+    // Flange Configuration
+    function toggleFlangeConfiguration() {
+      const enabled = document.getElementById('flange-enabled').checked;
+      const configSection = document.getElementById('flange-config-section');
+      const disabledMessage = document.getElementById('flange-disabled-message');
+      const toggleLabel = document.getElementById('flange-toggle-label');
+      const flangeSizeInput = document.getElementById('flange-size');
+      
+      if (enabled) {
+        configSection.style.display = 'block';
+        disabledMessage.style.display = 'none';
+        // Make flange size required when enabled
+        if (flangeSizeInput) {
+          flangeSizeInput.setAttribute('required', 'required');
+        }
+        if (toggleLabel) {
+          toggleLabel.textContent = 'Enabled';
+          toggleLabel.classList.remove('text-gray-500');
+          toggleLabel.classList.add('text-blue-600', 'font-semibold');
+        }
+      } else {
+        configSection.style.display = 'none';
+        disabledMessage.style.display = 'block';
+        // Remove required attribute when disabled
+        if (flangeSizeInput) {
+          flangeSizeInput.removeAttribute('required');
+          flangeSizeInput.value = ''; // Clear the value when disabled
+        }
+        if (toggleLabel) {
+          toggleLabel.textContent = 'No Flange';
+          toggleLabel.classList.remove('text-blue-600', 'font-semibold');
+          toggleLabel.classList.add('text-gray-500');
+        }
+      }
+    }
+    
     // Form Submission
     document.getElementById('window-form').addEventListener('submit', function(e) {
       console.log('=== Form Submit Started ===');
@@ -1559,6 +1797,8 @@
       form.querySelectorAll('input[name="profiles"]').forEach(el => el.remove());
       form.querySelectorAll('input[name="accessories"]').forEach(el => el.remove());
       form.querySelectorAll('input[name="muntinConfiguration"]').forEach(el => el.remove());
+      form.querySelectorAll('input[name="flangeConfiguration"]').forEach(el => el.remove());
+      form.querySelectorAll('input[name="missileImpactConfiguration"]').forEach(el => el.remove());
       form.querySelectorAll('input[name="glassRestrictions"]').forEach(el => el.remove());
       
       // Get current values from the form
@@ -1631,6 +1871,46 @@
       muntinInput.name = 'muntinConfiguration';
       muntinInput.value = JSON.stringify(muntinConfiguration);
       form.appendChild(muntinInput);
+      
+      // Flange configuration
+      const hasFlange = document.getElementById('flange-enabled').checked;
+      const flangeSize = document.getElementById('flange-size').value || null;
+      
+      // Validate flange size is provided when flange is enabled
+      if (hasFlange && !flangeSize) {
+        alert('Please enter a flange size when flange configuration is enabled.');
+        e.preventDefault();
+        return false;
+      }
+      
+      const flangeConfiguration = {
+        hasFlange: hasFlange,
+        flangeSize: flangeSize,
+        isTrimable: document.getElementById('flange-trimable').checked
+      };
+      
+      const flangeInput = document.createElement('input');
+      flangeInput.type = 'hidden';
+      flangeInput.name = 'flangeConfiguration';
+      flangeInput.value = JSON.stringify(flangeConfiguration);
+      form.appendChild(flangeInput);
+      
+      // Missile impact configuration
+      const lmiGlassCheckboxes = document.querySelectorAll('.lmi-glass-checkbox:checked');
+      const smiGlassCheckboxes = document.querySelectorAll('.smi-glass-checkbox:checked');
+      
+      const missileImpactConfiguration = {
+        supportsLMI: document.getElementById('missile-lmi').checked,
+        supportsSMI: document.getElementById('missile-smi').checked,
+        lmiGlasses: Array.from(lmiGlassCheckboxes).map(cb => cb.value),
+        smiGlasses: Array.from(smiGlassCheckboxes).map(cb => cb.value)
+      };
+      
+      const missileInput = document.createElement('input');
+      missileInput.type = 'hidden';
+      missileInput.name = 'missileImpactConfiguration';
+      missileInput.value = JSON.stringify(missileImpactConfiguration);
+      form.appendChild(missileInput);
       
       // Empty glass restrictions for now
       const glassInput = document.createElement('input');

@@ -42,7 +42,7 @@ router.post('/add', isAdmin, async (req, res) => {
     const newGlass = new Glass({ 
       glass_type, 
       description, 
-      missile_type, 
+      missile_type: missile_type || '', 
       pricePerSquareMeter, 
       currency, 
       weight,
@@ -82,7 +82,7 @@ router.post('/update/:id', isAdmin, async (req, res) => {
     await Glass.findByIdAndUpdate(req.params.id, { 
       glass_type, 
       description, 
-      missile_type, 
+      missile_type: missile_type || '', 
       pricePerSquareMeter, 
       currency, 
       weight,
@@ -193,11 +193,11 @@ router.post('/import-glasses', isAdmin, upload.single('file'), async (req, res) 
       const [_, glass_type, description, missile_type, pricePerSquareMeter, weight] = row.values;
       
       // Validate the data
-      if (glass_type && description && missile_type && pricePerSquareMeter !== undefined) {
+      if (glass_type && description && pricePerSquareMeter !== undefined) {
         glasses.push({ 
           glass_type, 
           description, 
-          missile_type, 
+          missile_type: missile_type || '', 
           pricePerSquareMeter: parseFloat(pricePerSquareMeter) || 0, 
           weight: weight ? parseFloat(weight) : null 
         });
@@ -209,7 +209,7 @@ router.post('/import-glasses', isAdmin, upload.single('file'), async (req, res) 
     logger.info('Validating glass data...');
     // Validate required fields
     const invalidGlasses = glasses.filter(glass => 
-      !glass.glass_type || !glass.description || !glass.missile_type || glass.pricePerSquareMeter === undefined
+      !glass.glass_type || !glass.description || glass.pricePerSquareMeter === undefined
     );
     
     if (invalidGlasses.length > 0) {

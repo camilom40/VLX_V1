@@ -19,7 +19,9 @@ router.get('/compose-window', isAdmin, async (req, res) => {
     const accessories = await Accessory.find({});
     const ComponentGroup = require('../../models/ComponentGroup');
     const componentGroups = await ComponentGroup.find({ isActive: true }).sort({ sortOrder: 1, displayName: 1 });
-    res.render('admin/composeWindow', { profiles, accessories, componentGroups, session: req.session });
+    const Glass = require('../../models/Glass');
+    const glasses = await Glass.find({}).sort({ glass_type: 1 });
+    res.render('admin/composeWindow', { profiles, accessories, componentGroups, glasses, session: req.session });
   } catch (error) {
     console.error('Failed to fetch profiles and accessories:', error.message);
     res.status(500).json({ error: error.message });
@@ -494,6 +496,14 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       console.error('Error parsing flangeConfiguration:', e);
       flangeConfiguration = { hasFlange: false, flangeSize: null, isTrimable: false };
     }
+    
+    let missileImpactConfiguration;
+    try {
+      missileImpactConfiguration = JSON.parse(req.body.missileImpactConfiguration || '{}');
+    } catch (e) {
+      console.error('Error parsing missileImpactConfiguration:', e);
+      missileImpactConfiguration = { supportsLMI: false, supportsSMI: false };
+    }
 
     const { type } = req.body;
     
@@ -561,6 +571,12 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
         flangeSize: flangeConfiguration.flangeSize || null,
         isTrimable: Boolean(flangeConfiguration.isTrimable),
       },
+      missileImpactConfiguration: {
+        supportsLMI: Boolean(missileImpactConfiguration.supportsLMI),
+        supportsSMI: Boolean(missileImpactConfiguration.supportsSMI),
+        lmiGlasses: Array.isArray(missileImpactConfiguration.lmiGlasses) ? missileImpactConfiguration.lmiGlasses : [],
+        smiGlasses: Array.isArray(missileImpactConfiguration.smiGlasses) ? missileImpactConfiguration.smiGlasses : [],
+      },
     });
 
     await newWindow.save();
@@ -589,12 +605,18 @@ router.get('/list-window-systems', async (req, res) => {
 // Route to render the edit form
 router.get('/edit/:id', isAdmin, async (req, res) => {
   try {
-    const windowSystem = await WindowSystem.findById(req.params.id).populate('profiles.profile accessories.accessory');
+    const windowSystem = await WindowSystem.findById(req.params.id)
+      .populate('profiles.profile')
+      .populate('accessories.accessory')
+      .populate('missileImpactConfiguration.lmiGlasses')
+      .populate('missileImpactConfiguration.smiGlasses');
     const profiles = await Profile.find({});
     const accessories = await Accessory.find({});
+    const Glass = require('../../models/Glass');
+    const glasses = await Glass.find({}).sort({ glass_type: 1 });
     const ComponentGroup = require('../../models/ComponentGroup');
     const componentGroups = await ComponentGroup.find({ isActive: true }).sort({ sortOrder: 1, displayName: 1 });
-    res.render('admin/editWindowSystem', { windowSystem, profiles, accessories, componentGroups, session: req.session });
+    res.render('admin/editWindowSystem', { windowSystem, profiles, accessories, glasses, componentGroups, session: req.session });
   } catch (error) {
     console.error('Failed to fetch window system:', error.message);
     res.status(500).json({ error: error.message });
@@ -652,6 +674,24 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       console.error('Error parsing panelConfiguration:', e);
       panelConfigurationData = { panels: ['O', 'O'], orientation: 'horizontal', operationType: 'sliding' };
     }
+    
+    // Parse flange configuration
+    let flangeConfigurationData = {};
+    try {
+      flangeConfigurationData = JSON.parse(req.body.flangeConfiguration || '{}');
+    } catch (e) {
+      console.error('Error parsing flangeConfiguration:', e);
+      flangeConfigurationData = { hasFlange: false, flangeSize: null, isTrimable: false };
+    }
+    
+    // Parse missile impact configuration
+    let missileImpactConfigurationData = {};
+    try {
+      missileImpactConfigurationData = JSON.parse(req.body.missileImpactConfiguration || '{}');
+    } catch (e) {
+      console.error('Error parsing missileImpactConfiguration:', e);
+      missileImpactConfigurationData = { supportsLMI: false, supportsSMI: false, lmiGlasses: [], smiGlasses: [] };
+    }
 
     // Prepare update object
     const updateData = {
@@ -674,6 +714,17 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
         mullionWidth: panelConfigurationData.mullionWidth || 2,
         showLogo: panelConfigurationData.showLogo !== false,
         frenchDoor: panelConfigurationData.frenchDoor || null,
+      },
+      flangeConfiguration: {
+        hasFlange: Boolean(flangeConfigurationData.hasFlange),
+        flangeSize: flangeConfigurationData.flangeSize || null,
+        isTrimable: Boolean(flangeConfigurationData.isTrimable),
+      },
+      missileImpactConfiguration: {
+        supportsLMI: Boolean(missileImpactConfigurationData.supportsLMI),
+        supportsSMI: Boolean(missileImpactConfigurationData.supportsSMI),
+        lmiGlasses: Array.isArray(missileImpactConfigurationData.lmiGlasses) ? missileImpactConfigurationData.lmiGlasses : [],
+        smiGlasses: Array.isArray(missileImpactConfigurationData.smiGlasses) ? missileImpactConfigurationData.smiGlasses : [],
       },
     };
 

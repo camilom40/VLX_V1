@@ -11,8 +11,8 @@ const glassSchema = new mongoose.Schema({
   },
   missile_type: {
     type: String,
-    required: true,
-    enum: ['LMI', 'SMI'] // Ensure only 'LMI' or 'SMI' are allowed
+    required: false,
+    default: ''
   },
   pricePerSquareMeter: {
     type: Number,
