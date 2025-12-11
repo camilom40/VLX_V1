@@ -1613,9 +1613,20 @@
         
         catProfiles.forEach((profile, idx) => {
           const globalIdx = profiles.indexOf(profile);
-          const displayValue = profile.lengthDiscountDisplay || profile.lengthDiscount;
-          const displayUnit = profile.lengthUnit || 'in';
-          const discountDisplay = displayValue ? `${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}` : `0 ${displayUnit === 'mm' ? 'mm' : 'in.'}`;
+          // Use global unit preference for display
+          const globalUnit = window.globalPreferences?.unit || 'inches';
+          const displayUnit = globalUnit === 'mm' ? 'mm' : 'in';
+          
+          // Convert stored inches value to display unit
+          const storedInches = parseFloat(profile.lengthDiscount || 0);
+          let displayValue;
+          if (displayUnit === 'mm') {
+            displayValue = (storedInches * 25.4).toFixed(2);
+          } else {
+            displayValue = storedInches.toFixed(4);
+          }
+          
+          const discountDisplay = `${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}`;
           html += `
             <tr>
               <td class="font-medium">${profile.profileName}</td>
@@ -1924,6 +1935,28 @@
     document.addEventListener('DOMContentLoaded', function() {
       try {
         initializeFromData();
+        
+        // Initialize length discount unit from global preference (if not locked)
+        const unitSelect = document.getElementById('profile-length-unit');
+        if (unitSelect && window.globalPreferences) {
+          const globalUnit = window.globalPreferences.unit || 'inches';
+          const unitValue = globalUnit === 'mm' ? 'mm' : 'in';
+          
+          // Only set if not locked
+          if (!lockedLengthUnit) {
+            unitSelect.value = unitValue;
+          }
+          
+          // Listen to global unit changes and re-render table
+          window.addEventListener('unitChanged', (event) => {
+            const newUnit = event.detail.unit === 'mm' ? 'mm' : 'in';
+            if (!lockedLengthUnit) { // Only update if not locked
+              unitSelect.value = newUnit;
+            }
+            // Re-render table to update displayed units
+            renderProfilesTable();
+          });
+        }
       } catch (e) {
         console.error('Initialization error:', e);
       }

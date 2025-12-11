@@ -121,7 +121,11 @@
   </style>
 </head>
 
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col" 
+      data-cost-settings="<%= typeof costSettings !== 'undefined' ? JSON.stringify(costSettings) : '{}' %>"
+      data-exchange-rate="<%= typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate : 4000 %>"
+      data-panel-configuration="<%= typeof selectedWindowSystem !== 'undefined' && selectedWindowSystem.panelConfiguration ? JSON.stringify(selectedWindowSystem.panelConfiguration) : '{}' %>"
+      data-is-edit="<%= typeof isEdit !== 'undefined' && isEdit ? 'true' : 'false' %>">
   <%- include('../partials/_header.ejs') %>
 
   <main role="main" class="container mx-auto mt-6 px-4 flex-grow mb-16">
@@ -132,15 +136,6 @@
           <div class="flex items-center space-x-2 mb-2">
             <div class="flex justify-between items-center">
               <h2 class="text-2xl font-bold text-gray-800"><%= (typeof isEdit !== 'undefined' && isEdit) ? 'Edit' : 'Configure' %> Window: <span class="text-blue-600"><%= windowRef %></span></h2>
-              <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-600 font-medium">Currency:</span>
-                <button type="button" id="currencyToggle" class="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
-                  <span id="currencyLabel">COP</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                </button>
-              </div>
             </div>
             <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"><%= selectedWindowSystem.type %></span>
           </div>
@@ -148,9 +143,17 @@
           <p class="text-sm text-gray-500">Client: <%= project.clientName || 'Not specified' %></p>
         </div>
         
-        <div class="mt-4 lg:mt-0 bg-green-50 rounded-lg px-6 py-4 border border-green-100">
-          <div class="text-green-800 text-xl font-bold" id="totalPrice">$0.00</div>
-          <div class="text-green-600 text-sm">Estimated Total</div>
+        <div class="mt-4 lg:mt-0 flex flex-col gap-2">
+          <div class="bg-green-50 rounded-lg px-6 py-4 border border-green-100">
+            <div class="text-green-800 text-xl font-bold" id="totalPrice">$0.00</div>
+            <div class="text-green-600 text-sm">Estimated Total</div>
+          </div>
+          <button type="button" onclick="showCalculationDetails()" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            Show Calculation Details
+          </button>
         </div>
       </div>
     </div>
@@ -199,17 +202,7 @@
               
               <!-- Unit Toggle Switch -->
               <div class="flex items-center space-x-3">
-                <span class="text-sm text-gray-600">Units:</span>
-                <div class="relative">
-                  <div class="flex bg-gray-100 rounded-lg p-1">
-                    <button type="button" id="inchesBtn" class="unit-toggle active px-3 py-1 text-sm font-medium rounded-md transition-all" onclick="switchUnits('inches')">
-                      Inches
-                    </button>
-                    <button type="button" id="mmBtn" class="unit-toggle px-3 py-1 text-sm font-medium rounded-md transition-all" onclick="switchUnits('mm')">
-                      mm
-                    </button>
-                  </div>
-                </div>
+                <span class="text-sm text-gray-600">Current Unit: <span id="currentUnitDisplay" class="font-semibold">in</span></span>
               </div>
             </div>
             
@@ -220,14 +213,14 @@
                   <input type="number" id="width" name="width" step="0.01" min="0" required 
                          class="form-input w-full" placeholder="0.00" 
                          value="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow.width : '' %>"
-                         onchange="calculatePricing(); updateWindowPreview()">
+                         onchange="if(typeof window.calculatePricing==='function')window.calculatePricing(); updateWindowPreview()">
                 </div>
                 <div>
                   <label for="height" class="form-label">Height (<span id="heightUnit">in</span>) *</label>
                   <input type="number" id="height" name="height" step="0.01" min="0" required 
                          class="form-input w-full" placeholder="0.00" 
                          value="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow.height : '' %>"
-                         onchange="calculatePricing(); updateWindowPreview()">
+                         onchange="if(typeof window.calculatePricing==='function')window.calculatePricing(); updateWindowPreview()">
                 </div>
               </div>
               
@@ -236,7 +229,7 @@
                   <label for="quantity" class="form-label">Quantity *</label>
                   <input type="number" id="quantity" name="quantity" min="1" 
                          value="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow.quantity : '1' %>" required 
-                         class="form-input w-full" onchange="calculatePricing()">
+                         class="form-input w-full" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()">
                 </div>
                 <div>
                   <!-- Missile Type Selection (if window system supports missile types) - Must be selected first -->
@@ -253,6 +246,25 @@
                     let preSelectedGlassId = '';
                     
                     if (hasMissileTypes && typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.description) {
+                        // First, try to extract missile type from description
+                        const missilePatterns = [
+                          /Missile Impact:\s*Large Missile Impact \(LMI\)/i,  // "Missile Impact: Large Missile Impact (LMI)"
+                          /Missile Impact:\s*Small Missile Impact \(SMI\)/i,  // "Missile Impact: Small Missile Impact (SMI)"
+                          /Missile Impact:\s*LMI/i,                            // "Missile Impact: LMI"
+                          /Missile Impact:\s*SMI/i,                            // "Missile Impact: SMI"
+                        ];
+                        
+                        for (const pattern of missilePatterns) {
+                          if (pattern.test(existingWindow.description)) {
+                            if (pattern.source.includes('LMI') || pattern.source.includes('Large')) {
+                              preSelectedMissileType = 'LMI';
+                            } else if (pattern.source.includes('SMI') || pattern.source.includes('Small')) {
+                              preSelectedMissileType = 'SMI';
+                            }
+                            break;
+                          }
+                        }
+                        
                         // Try to extract glass type from description - multiple patterns
                         let glassTypeFromDesc = '';
                         const patterns = [
@@ -337,7 +349,7 @@
                   // Determine if glass should be disabled
                   const glassDisabled = hasMissileTypes && !preSelectedMissileType;
                 %>
-                <select id="glassType" name="glassType" required class="form-input w-full" onchange="calculatePricing()"
+                <select id="glassType" name="glassType" required class="form-input w-full" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()"
                         <%= glassDisabled ? 'disabled' : '' %>>
                   <option value="">
                     <%= glassDisabled 
@@ -451,15 +463,7 @@
           
           <!-- Unit Toggle for Preview -->
           <div class="flex items-center space-x-2">
-            <span class="text-sm text-gray-600">Units:</span>
-            <div class="flex bg-gray-100 rounded-lg p-1">
-              <button type="button" id="previewInchesBtn" class="unit-toggle active px-3 py-1.5 text-sm font-medium rounded-md transition-all" onclick="switchUnitsFromPreview('inches')">
-                <i class="fas fa-ruler-horizontal mr-1"></i> Imperial
-              </button>
-              <button type="button" id="previewMmBtn" class="unit-toggle px-3 py-1.5 text-sm font-medium rounded-md transition-all" onclick="switchUnitsFromPreview('mm')">
-                <i class="fas fa-ruler mr-1"></i> Metric
-              </button>
-            </div>
+            <span class="text-sm text-gray-600">Units: <span id="previewUnitDisplay" class="font-semibold">in</span></span>
           </div>
         </div>
         
@@ -566,7 +570,7 @@
                   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                       <label class="form-label">Profile</label>
-                      <select name="profiles[<%= index %>][profileId]" class="form-input w-full profile-select" onchange="calculatePricing()">
+                      <select name="profiles[<%= index %>][profileId]" class="form-input w-full profile-select" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()">
                         <% allProfiles.forEach(profile => { %>
                           <option value="<%= profile._id %>" 
                                   data-price="<%= profile.pricePerMeter %>"
@@ -580,7 +584,7 @@
                     <div>
                       <label class="form-label">Quantity</label>
                       <input type="number" name="profiles[<%= index %>][quantity]" value="1" 
-                             min="1" class="form-input w-full" onchange="calculatePricing()">
+                             min="1" class="form-input w-full" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()">
                     </div>
                     <div>
                       <label class="form-label">Orientation</label>
@@ -679,8 +683,8 @@
                                    value="1" 
                                    min="1" 
                                    class="form-input w-full text-sm" 
-                                   onchange="calculatePricing()" 
-                                   oninput="calculatePricing()">
+                                   onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()" 
+                                   oninput="if(typeof window.calculatePricing==='function')window.calculatePricing()">
                           </div>
                           
                           <!-- Hidden fields to store accessory info -->
@@ -703,7 +707,7 @@
                         <div>
                           <label class="form-label">Accessory</label>
                           <div class="relative">
-                            <select name="accessories[<%= index %>][accessoryId]" class="form-input w-full accessory-select" data-index="<%= index %>" onchange="calculatePricing(); updateAccessoryInfo(this)">
+                            <select name="accessories[<%= index %>][accessoryId]" class="form-input w-full accessory-select" data-index="<%= index %>" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing(); updateAccessoryInfo(this)">
                               <% allAccessories.forEach(accessory => { %>
                                 <option value="<%= accessory._id %>" 
                                         data-price="<%= accessory.price %>"
@@ -732,7 +736,7 @@
                         <div>
                           <label class="form-label">Quantity</label>
                           <input type="number" name="accessories[<%= index %>][quantity]" value="1" 
-                                 min="1" class="form-input w-full" onchange="calculatePricing()">
+                                 min="1" class="form-input w-full" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()">
                         </div>
                         <div>
                           <label class="form-label">Unit</label>
@@ -868,6 +872,10 @@
                 <span class="font-medium" id="additionalCosts">$0.00</span>
               </div>
               <hr class="border-gray-300">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Unit Price:</span>
+                <span class="font-medium" id="unitPriceDisplay">$0.00</span>
+              </div>
               <div class="flex justify-between text-lg font-bold">
                 <span class="text-gray-800">Total Price:</span>
                 <span class="text-green-600" id="finalTotalPrice">$0.00</span>
@@ -909,12 +917,16 @@
   <%- include('../partials/_footer.ejs') %>
 
   <script>
-    // Initialize variables from server data
-    const costSettings = <%- JSON.stringify(costSettings) %>;
-    const exchangeRateValue = <%= exchangeRate || 4000 %>;
+    // Initialize variables from server data (read from data attributes to avoid EJS syntax in JavaScript)
+    const costSettingsElement = document.querySelector('[data-cost-settings]');
+    const costSettings = costSettingsElement ? JSON.parse(costSettingsElement.getAttribute('data-cost-settings')) : {};
+    
+    const exchangeRateElement = document.querySelector('[data-exchange-rate]');
+    const exchangeRateValue = exchangeRateElement ? parseFloat(exchangeRateElement.getAttribute('data-exchange-rate')) : 4000;
     
     // Panel configuration from the window system
-    const panelConfiguration = <%- JSON.stringify(selectedWindowSystem.panelConfiguration || {}) %>;
+    const panelConfigElement = document.querySelector('[data-panel-configuration]');
+    const panelConfiguration = panelConfigElement ? JSON.parse(panelConfigElement.getAttribute('data-panel-configuration')) : {};
     const panelConfig = panelConfiguration.panels || ['O', 'O'];
     const panelRatios = panelConfiguration.panelRatios || panelConfig.map(() => 1);
     const orientation = panelConfiguration.orientation || 'horizontal';
@@ -964,7 +976,12 @@
       const missileTypeSelect = document.getElementById('missileType');
       const glassSelect = document.getElementById('glassType');
       
-      if (missileTypeSelect && missileTypeSelect.value && glassSelect) {
+      if (!missileTypeSelect || !glassSelect) return;
+      
+      // Check if a missile type option is selected (has selected attribute or value)
+      const hasSelectedValue = missileTypeSelect.value && missileTypeSelect.value !== '';
+      
+      if (hasSelectedValue) {
         // Missile type is already selected (edit mode), filter glasses
         // Store the currently selected glass before filtering
         const currentSelectedValue = glassSelect.value;
@@ -976,7 +993,7 @@
         setTimeout(() => {
           if (currentSelectedValue && glassSelect.querySelector(`option[value="${currentSelectedValue}"]`)) {
             glassSelect.value = currentSelectedValue;
-            calculatePricing(); // Recalculate with restored selection
+            if(typeof window.calculatePricing==='function')window.calculatePricing(); // Recalculate with restored selection
           }
         }, 100);
       }
@@ -1001,7 +1018,7 @@
         if (!missileType) {
           glassSelect.disabled = true;
           glassSelect.innerHTML = '<option value="">Please select missile type first</option>';
-          calculatePricing(); // Recalculate with no glass
+          if(typeof window.calculatePricing==='function')window.calculatePricing(); // Recalculate with no glass
           return;
         }
         
@@ -1083,8 +1100,13 @@
     // Note: exchangeRateValue is already defined above, so we use that
     // const exchangeRate = <%= exchangeRate || 4000 %>; // Already defined as exchangeRateValue
     
-    // Currency state (default to COP, stored in localStorage)
-    let currentCurrency = localStorage.getItem('windowCurrency') || 'COP';
+    // Use global currency preference from header
+    let currentCurrency = window.globalPreferences?.currency || 'COP';
+    
+    // Set exchange rate in global preferences if available
+    if (window.globalPreferences) {
+      window.globalPreferences.exchangeRate = exchangeRateValue;
+    }
     
       // Format numbers with commas based on current currency
       // IMPORTANT: amount is in USD (internal calculation), convert for display
@@ -1111,166 +1133,21 @@
       }
     }
     
-    // Toggle currency between COP and USD
-    function toggleCurrency() {
-      currentCurrency = currentCurrency === 'COP' ? 'USD' : 'COP';
-      localStorage.setItem('windowCurrency', currentCurrency);
-      
-      // Update button label
-      document.getElementById('currencyLabel').textContent = currentCurrency;
-      
-      // Recalculate and update all prices
-      calculatePricing();
+    // Update currency when global preference changes
+    function updateCurrencyFromGlobal() {
+      if (window.globalPreferences) {
+        currentCurrency = window.globalPreferences.currency || 'COP';
+        if(typeof window.calculatePricing==='function')window.calculatePricing();
+      }
     }
 
-    function calculatePricing() {
-      const width = parseFloat(document.getElementById('width').value) || 0;
-      const height = parseFloat(document.getElementById('height').value) || 0;
-      const quantity = parseInt(document.getElementById('quantity').value) || 1;
-      
-      // Calculate square footage (convert inches to square meters: 1 sqm = 1550 sq inches)
-      const areaInches = width * height;
-      const areaSquareMeters = areaInches / 1550;
-      
-      // ALL INTERNAL CALCULATIONS IN USD
-      let totalCost = 0;
-      
-      // Glass cost - CONVERT TO USD
-      const glassSelect = document.getElementById('glassType');
-      const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
-      const glassPrice = parseFloat(selectedGlass?.getAttribute('data-price')) || 0;
-      const glassCurrency = selectedGlass?.getAttribute('data-currency') || 'COP';
-      const glassPriceUSD = convertToUSD(glassPrice, glassCurrency, exchangeRateValue);
-      const glassCost = glassPriceUSD * areaSquareMeters;
-      totalCost += glassCost;
-      
-      // Profile costs - CONVERT TO USD
-      let profilesCost = 0;
-      const profileSelects = document.querySelectorAll('.profile-select');
-      profileSelects.forEach((select, index) => {
-        const selectedProfile = select.options[select.selectedIndex];
-        const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
-        const profileCurrency = selectedProfile?.getAttribute('data-currency') || 'COP';
-        const pricePerMeterUSD = convertToUSD(pricePerMeter, profileCurrency, exchangeRateValue);
-        const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        const lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
-        
-        // Estimate profile length based on window perimeter
-        const perimeterInches = 2 * (width + height);
-        const perimeterMeters = perimeterInches * 0.0254; // Convert inches to meters
-        const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
-        
-        profilesCost += pricePerMeterUSD * adjustedLength * qty;
-      });
-      totalCost += profilesCost;
-      
-      // Accessory costs - CONVERT TO USD
-      let accessoriesCost = 0;
-      
-      // Individual accessories (dropdown selects)
-      const accessorySelects = document.querySelectorAll('.accessory-select');
-      accessorySelects.forEach(select => {
-        const selectedAccessory = select.options[select.selectedIndex];
-        const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
-        const accessoryCurrency = selectedAccessory?.getAttribute('data-currency') || 'COP';
-        const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
-        const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        accessoriesCost += priceUSD * qty;
-      });
-      
-      // Choice group accessories (radio buttons and checkboxes)
-      const checkedChoices = document.querySelectorAll('input[name^="choiceGroup_"]:checked');
-      
-      checkedChoices.forEach(choice => {
-        const accessoryId = choice.value;
-        const groupName = choice.name.replace('choiceGroup_', '');
-        
-        // Find the corresponding price and quantity inputs
-        const priceInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_price"]`;
-        const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
-        const currencyInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_currency"]`;
-        const priceInput = document.querySelector(priceInputSelector);
-        const quantityInput = document.querySelector(quantityInputSelector);
-        const currencyInput = document.querySelector(currencyInputSelector);
-        
-        if (priceInput && quantityInput) {
-          const price = parseFloat(priceInput.value) || 0;
-          const accessoryCurrency = currencyInput?.value || 'COP';
-          const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
-          const qty = parseInt(quantityInput.value) || 1;
-          accessoriesCost += priceUSD * qty;
-        }
-      });
-      
-      totalCost += accessoriesCost;
-      
-      // Muntin costs - CONVERT TO USD
-      let muntinCost = 0;
-      const muntinProfileSelect = document.getElementById('muntinProfile');
-      if (muntinProfileSelect) {
-        const selectedMuntinProfile = muntinProfileSelect.options[muntinProfileSelect.selectedIndex];
-        const muntinPricePerMeter = parseFloat(selectedMuntinProfile?.getAttribute('data-price')) || 0;
-        const muntinCurrency = selectedMuntinProfile?.getAttribute('data-currency') || 'COP';
-        const muntinPricePerMeterUSD = convertToUSD(muntinPricePerMeter, muntinCurrency, exchangeRateValue);
-        
-        // Calculate muntin length based on divisions
-        const horizontalDivisions = parseInt(document.getElementById('muntinHorizontal')?.value) || 0;
-        const verticalDivisions = parseInt(document.getElementById('muntinVertical')?.value) || 0;
-        
-        if (horizontalDivisions > 0 && verticalDivisions > 0) {
-          // Calculate total muntin length
-          const horizontalMuntins = horizontalDivisions - 1; // Number of horizontal bars
-          const verticalMuntins = verticalDivisions - 1; // Number of vertical bars
-          
-          const horizontalLength = horizontalMuntins * width * 0.0254; // Convert to meters
-          const verticalLength = verticalMuntins * height * 0.0254; // Convert to meters
-          
-          const totalMuntinLength = horizontalLength + verticalLength;
-          muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
-        }
-      }
-      totalCost += muntinCost;
-      
-      // Apply per-window cost settings (as percentages)
-      const baseCost = totalCost;
-      const additionalCosts = baseCost * (
-        (costSettings.packaging / 100) +
-        (costSettings.labor / 100) +
-        (costSettings.indirectCosts / 100)
-      );
-      
-      totalCost += additionalCosts;
-      const finalTotal = totalCost * quantity;
-      
-      // Update displays with comma formatting
-      document.getElementById('totalPrice').textContent = formatCurrency(finalTotal);
-      document.getElementById('baseMaterialsCost').textContent = formatCurrency(profilesCost);
-      document.getElementById('glassCost').textContent = formatCurrency(glassCost);
-      document.getElementById('accessoriesCost').textContent = formatCurrency(accessoriesCost);
-      
-      // Show/hide muntin cost row and update value
-      const muntinCostRow = document.getElementById('muntinCostRow');
-      if (muntinCostRow) {
-        if (muntinCost > 0) {
-          muntinCostRow.style.display = 'flex';
-          document.getElementById('muntinCost').textContent = formatCurrency(muntinCost);
-        } else {
-          muntinCostRow.style.display = 'none';
-        }
-      }
-      
-      document.getElementById('additionalCosts').textContent = formatCurrency(additionalCosts);
-      document.getElementById('finalTotalPrice').textContent = formatCurrency(finalTotal);
-    }
+    // OLD calculatePricing function removed - using calculatePricingWithUnits instead
 
-    // Current unit state
+    // Current unit state - use global preference
     // In edit mode, always start with inches since stored values are in inches
-    // In new mode, check localStorage for preference
-    <% if (typeof isEdit !== 'undefined' && isEdit) { %>
-    let currentUnit = 'inches'; // Always inches in edit mode
-    <% } else { %>
-    let currentUnit = localStorage.getItem('windowUnit') || 'inches';
-    <% } %>
+    // In new mode, use global preference
+    const isEditMode = document.body.getAttribute('data-is-edit') === 'true';
+    let currentUnit = isEditMode ? 'inches' : (window.globalPreferences?.unit || 'inches');
     
     // Unit conversion functions
     function inchesToMm(inches) {
@@ -1281,31 +1158,30 @@
       return mm / 25.4;
     }
     
-    // Switch units from preview button (syncs with main toggle)
-    function switchUnitsFromPreview(newUnit) {
-      // Update preview buttons
-      const previewInchesBtn = document.getElementById('previewInchesBtn');
-      const previewMmBtn = document.getElementById('previewMmBtn');
-      
-      if (previewInchesBtn && previewMmBtn) {
-        previewInchesBtn.classList.toggle('active', newUnit === 'inches');
-        previewMmBtn.classList.toggle('active', newUnit === 'mm');
-      }
-      
-      // Call the main switch function
-      switchUnits(newUnit);
+    // Update units from global preference
+    function updateUnitsFromGlobal(eventUnit = null) {
+      // Use event unit if provided, otherwise get from global preferences
+      const newUnit = eventUnit || window.globalPreferences?.unit || 'inches';
+      switchUnits(newUnit, false); // false = don't update global preference (it's already set)
     }
     
-    // Switch between units
-    function switchUnits(newUnit) {
+    // Switch between units (called from global preference changes or internally)
+    function switchUnits(newUnit, updateGlobal = false) {
+      // In edit mode, we still allow unit display changes for the UI,
+      // but we need to track that values are stored in inches
+      // Values are stored in inches, but we can display them in the selected unit
+      // Don't prevent the unit change, just handle conversion properly
+      
+      if (updateGlobal && window.setGlobalUnit) {
+        window.setGlobalUnit(newUnit);
+      }
       const widthInput = document.getElementById('width');
       const heightInput = document.getElementById('height');
       const widthUnitSpan = document.getElementById('widthUnit');
       const heightUnitSpan = document.getElementById('heightUnit');
       const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
-      
-      const inchesBtn = document.getElementById('inchesBtn');
-      const mmBtn = document.getElementById('mmBtn');
+      const currentUnitDisplay = document.getElementById('currentUnitDisplay');
+      const previewUnitDisplay = document.getElementById('previewUnitDisplay');
       
       // Get current values
       const currentWidth = parseFloat(widthInput.value) || 0;
@@ -1349,8 +1225,20 @@
       
       // Update unit labels
       const unitAbbr = newUnit === 'inches' ? 'in' : 'mm';
-      widthUnitSpan.textContent = unitAbbr;
-      heightUnitSpan.textContent = unitAbbr;
+      if (widthUnitSpan) widthUnitSpan.textContent = unitAbbr;
+      if (heightUnitSpan) heightUnitSpan.textContent = unitAbbr;
+      if (currentUnitDisplay) currentUnitDisplay.textContent = unitAbbr;
+      if (previewUnitDisplay) previewUnitDisplay.textContent = unitAbbr;
+      
+      // Update preview unit labels
+      const widthUnitLabels = document.querySelectorAll('#widthUnitLabel');
+      const heightUnitLabels = document.querySelectorAll('#heightUnitLabel');
+      widthUnitLabels.forEach(label => {
+        label.textContent = unitAbbr;
+      });
+      heightUnitLabels.forEach(label => {
+        label.textContent = unitAbbr;
+      });
       
       // Update length discount labels
       const lengthDiscountLabels = document.querySelectorAll('label[for*="lengthDiscount"], .form-label');
@@ -1360,26 +1248,24 @@
         }
       });
       
-      // Update button states (main toggle)
-      inchesBtn.classList.toggle('active', newUnit === 'inches');
-      mmBtn.classList.toggle('active', newUnit === 'mm');
-      
-      // Sync preview toggle buttons
-      const previewInchesBtn = document.getElementById('previewInchesBtn');
-      const previewMmBtn = document.getElementById('previewMmBtn');
-      if (previewInchesBtn && previewMmBtn) {
-        previewInchesBtn.classList.toggle('active', newUnit === 'inches');
-        previewMmBtn.classList.toggle('active', newUnit === 'mm');
-      }
-      
       // Update current unit
       currentUnit = newUnit;
       
       // Update hidden input
-      document.getElementById('currentUnit').value = newUnit;
+      const currentUnitInput = document.getElementById('currentUnit');
+      if (currentUnitInput) {
+        currentUnitInput.value = newUnit;
+      }
+      
+      // Update preview to reflect unit changes
+      if (typeof updateWindowPreview === 'function') {
+        updateWindowPreview();
+      }
       
       // Recalculate pricing
-      calculatePricing();
+      if (typeof window.calculatePricing === 'function') {
+        window.calculatePricing();
+      }
     }
     
     // Modified calculatePricing function to handle unit conversion
@@ -1393,13 +1279,17 @@
       let height = parseFloat(heightInput?.value) || 0;
       const quantity = parseInt(document.getElementById('quantity').value) || 1;
       
-      // Debug logging
-      <% if (typeof isEdit !== 'undefined' && isEdit) { %>
-      console.log('=== calculatePricing DEBUG ===');
-      console.log('currentUnit:', currentUnit);
-      console.log('width input value:', widthInput?.value, 'parsed:', width);
-      console.log('height input value:', heightInput?.value, 'parsed:', height);
-      <% } %>
+      // Store display values for modal
+      const widthDisplay = widthInput?.value || '0';
+      const heightDisplay = heightInput?.value || '0';
+      
+      // Debug logging (only in edit mode)
+      if (isEditMode) {
+        console.log('=== calculatePricing DEBUG ===');
+        console.log('currentUnit:', currentUnit);
+        console.log('width input value:', widthInput?.value, 'parsed:', width);
+        console.log('height input value:', heightInput?.value, 'parsed:', height);
+      }
       
       // Convert to inches for calculations (since backend expects inches)
       // If currentUnit is 'mm', the input values are in mm (user entered them in mm), so convert them
@@ -1409,18 +1299,20 @@
         const heightBefore = height;
         width = mmToInches(width);
         height = mmToInches(height);
-        <% if (typeof isEdit !== 'undefined' && isEdit) { %>
-        console.log('Converted from mm: width', widthBefore, '->', width, 'inches, height', heightBefore, '->', height, 'inches');
-        <% } %>
+        if (isEditMode) {
+          console.log('Converted from mm: width', widthBefore, '->', width, 'inches, height', heightBefore, '->', height, 'inches');
+        }
       } else {
-        <% if (typeof isEdit !== 'undefined' && isEdit) { %>
-        console.log('Using inches directly: width', width, 'inches, height', height, 'inches');
-        <% } %>
+        if (isEditMode) {
+          console.log('Using inches directly: width', width, 'inches, height', height, 'inches');
+        }
       }
       
       // Calculate square footage (convert inches to square meters: 1 sqm = 1550 sq inches)
       const areaInches = width * height;
       const areaSquareMeters = areaInches / 1550;
+      const perimeterInches = 2 * (width + height);
+      const perimeterMeters = perimeterInches * 0.0254;
       
       // ALL INTERNAL CALCULATIONS IN USD
       let totalCost = 0;
@@ -1430,17 +1322,20 @@
       const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
       const glassPrice = parseFloat(selectedGlass?.getAttribute('data-price')) || 0;
       const glassCurrency = selectedGlass?.getAttribute('data-currency') || 'COP';
+      const glassName = selectedGlass?.text || 'N/A';
       const glassPriceUSD = convertToUSD(glassPrice, glassCurrency, exchangeRateValue);
       const glassCost = glassPriceUSD * areaSquareMeters;
       totalCost += glassCost;
       
       // Profile costs - CONVERT TO USD
       let profilesCost = 0;
+      const profileDetails = [];
       const profileSelects = document.querySelectorAll('.profile-select');
       profileSelects.forEach((select, index) => {
         const selectedProfile = select.options[select.selectedIndex];
         const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
         const profileCurrency = selectedProfile?.getAttribute('data-currency') || 'COP';
+        const profileName = selectedProfile?.text || `Profile ${index + 1}`;
         const pricePerMeterUSD = convertToUSD(pricePerMeter, profileCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
         let lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
@@ -1451,16 +1346,27 @@
         }
         
         // Estimate profile length based on window perimeter
-        const perimeterInches = 2 * (width + height);
-        const perimeterMeters = perimeterInches * 0.0254; // Convert inches to meters
         const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
+        const profileCost = pricePerMeterUSD * adjustedLength * qty;
+        profilesCost += profileCost;
         
-        profilesCost += pricePerMeterUSD * adjustedLength * qty;
+        profileDetails.push({
+          name: profileName,
+          priceOriginal: pricePerMeter,
+          currency: profileCurrency,
+          priceUSD: pricePerMeterUSD,
+          quantity: qty,
+          lengthDiscount: lengthDiscount,
+          perimeterMeters: perimeterMeters,
+          adjustedLength: adjustedLength,
+          cost: profileCost
+        });
       });
       totalCost += profilesCost;
       
       // Accessory costs - CONVERT TO USD
       let accessoriesCost = 0;
+      const accessoryDetails = [];
       
       // Individual accessories (dropdown selects)
       const accessorySelects = document.querySelectorAll('.accessory-select');
@@ -1468,9 +1374,20 @@
         const selectedAccessory = select.options[select.selectedIndex];
         const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
         const accessoryCurrency = selectedAccessory?.getAttribute('data-currency') || 'COP';
+        const accessoryName = selectedAccessory?.text || 'Accessory';
         const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        accessoriesCost += priceUSD * qty;
+        const accessoryCost = priceUSD * qty;
+        accessoriesCost += accessoryCost;
+        
+        accessoryDetails.push({
+          name: accessoryName,
+          priceOriginal: price,
+          currency: accessoryCurrency,
+          priceUSD: priceUSD,
+          quantity: qty,
+          cost: accessoryCost
+        });
       });
       
       // Choice group accessories (radio buttons and checkboxes)
@@ -1493,11 +1410,65 @@
           const accessoryCurrency = currencyInput?.value || 'COP';
           const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
           const qty = parseInt(quantityInput.value) || 1;
-          accessoriesCost += priceUSD * qty;
+          const accessoryCost = priceUSD * qty;
+          accessoriesCost += accessoryCost;
+          
+          // Try to get accessory name from label or nearby element
+          const label = document.querySelector(`label[for="${choice.id}"]`) || choice.closest('label');
+          const accessoryName = label?.textContent?.trim() || `Accessory ${accessoryId}`;
+          
+          accessoryDetails.push({
+            name: accessoryName,
+            priceOriginal: price,
+            currency: accessoryCurrency,
+            priceUSD: priceUSD,
+            quantity: qty,
+            cost: accessoryCost
+          });
         }
       });
       
       totalCost += accessoriesCost;
+      
+      // Muntin costs - CONVERT TO USD
+      let muntinCost = 0;
+      let muntinDetails = null;
+      const muntinProfileSelect = document.getElementById('muntinProfile');
+      if (muntinProfileSelect) {
+        const selectedMuntinProfile = muntinProfileSelect.options[muntinProfileSelect.selectedIndex];
+        const muntinPricePerMeter = parseFloat(selectedMuntinProfile?.getAttribute('data-price')) || 0;
+        const muntinCurrency = selectedMuntinProfile?.getAttribute('data-currency') || 'COP';
+        const muntinName = selectedMuntinProfile?.text || 'N/A';
+        const muntinPricePerMeterUSD = convertToUSD(muntinPricePerMeter, muntinCurrency, exchangeRateValue);
+        
+        // Calculate muntin length based on divisions
+        const horizontalDivisions = parseInt(document.getElementById('muntinHorizontal')?.value) || 0;
+        const verticalDivisions = parseInt(document.getElementById('muntinVertical')?.value) || 0;
+        
+        if (horizontalDivisions > 0 && verticalDivisions > 0) {
+          // Calculate total muntin length
+          const horizontalMuntins = horizontalDivisions - 1; // Number of horizontal bars
+          const verticalMuntins = verticalDivisions - 1; // Number of vertical bars
+          
+          const horizontalLength = horizontalMuntins * width * 0.0254; // Convert to meters
+          const verticalLength = verticalMuntins * height * 0.0254; // Convert to meters
+          
+          const totalMuntinLength = horizontalLength + verticalLength;
+          muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
+          
+          muntinDetails = {
+            name: muntinName,
+            priceOriginal: muntinPricePerMeter,
+            currency: muntinCurrency,
+            priceUSD: muntinPricePerMeterUSD,
+            horizontal: horizontalDivisions,
+            vertical: verticalDivisions,
+            length: totalMuntinLength,
+            cost: muntinCost
+          };
+        }
+      }
+      totalCost += muntinCost;
       
       // Apply per-window cost settings (as percentages)
       // All costs are in USD at this point
@@ -1509,7 +1480,68 @@
       );
       
       totalCost += additionalCosts;
+      const costPerWindow = totalCost;
       const finalTotal = totalCost * quantity; // finalTotal is in USD
+      
+      // Debug logging
+      console.log('=== FRONTEND PRICING CALCULATION ===');
+      console.log('glassCost:', glassCost);
+      console.log('profilesCost:', profilesCost);
+      console.log('accessoriesCost:', accessoriesCost);
+      console.log('muntinCost:', muntinCost);
+      console.log('baseCost:', baseCost);
+      console.log('additionalCosts:', additionalCosts);
+      console.log('costPerWindow:', costPerWindow);
+      console.log('quantity:', quantity);
+      console.log('finalTotal:', finalTotal);
+      console.log('=== END FRONTEND CALCULATION ===');
+      
+      // Store calculation details for modal
+      calculationDetails = {
+        exchangeRate: exchangeRateValue,
+        widthInches: width,
+        heightInches: height,
+        widthDisplay: widthDisplay + (currentUnit === 'mm' ? ' mm' : ' in'),
+        heightDisplay: heightDisplay + (currentUnit === 'mm' ? ' mm' : ' in'),
+        quantity: quantity,
+        areaInches: areaInches,
+        areaSquareMeters: areaSquareMeters,
+        perimeterInches: perimeterInches,
+        perimeterMeters: perimeterMeters,
+        glassName: glassName,
+        glassPriceOriginal: glassPrice,
+        glassCurrency: glassCurrency,
+        glassPriceUSD: glassPriceUSD,
+        glassCost: glassCost,
+        profiles: profileDetails,
+        profilesCost: profilesCost,
+        accessories: accessoryDetails,
+        accessoriesCost: accessoriesCost,
+        muntinCost: muntinCost,
+        muntinDetails: muntinDetails,
+        baseCost: baseCost,
+        costSettings: {
+          packaging: costSettings.packaging,
+          labor: costSettings.labor,
+          indirectCosts: costSettings.indirectCosts
+        },
+        additionalCosts: additionalCosts,
+        costPerWindow: costPerWindow,
+        finalTotal: finalTotal,
+        displayCurrency: currentCurrency,
+        displayTotal: formatCurrency(finalTotal)
+      };
+      
+      // Show/hide muntin cost row and update value
+      const muntinCostRow = document.getElementById('muntinCostRow');
+      if (muntinCostRow) {
+        if (muntinCost > 0) {
+          muntinCostRow.style.display = 'flex';
+          document.getElementById('muntinCost').textContent = formatCurrency(muntinCost);
+        } else {
+          muntinCostRow.style.display = 'none';
+        }
+      }
       
       // Update displays with comma formatting (formatCurrency will convert USD to display currency)
       document.getElementById('totalPrice').textContent = formatCurrency(finalTotal);
@@ -1518,6 +1550,12 @@
       document.getElementById('accessoriesCost').textContent = formatCurrency(accessoriesCost);
       document.getElementById('additionalCosts').textContent = formatCurrency(additionalCosts);
       document.getElementById('finalTotalPrice').textContent = formatCurrency(finalTotal);
+      // Also display unit price (cost per window) - this should match the table's unit price column
+      const unitPrice = quantity > 0 ? finalTotal / quantity : 0;
+      const unitPriceDisplayEl = document.getElementById('unitPriceDisplay');
+      if (unitPriceDisplayEl) {
+        unitPriceDisplayEl.textContent = formatCurrency(unitPrice);
+      }
     }
     
     // Override the original calculatePricing function
@@ -2301,7 +2339,7 @@
       document.getElementById('width').value = width;
       document.getElementById('height').value = height;
       updateWindowPreview();
-      calculatePricing();
+      if(typeof window.calculatePricing==='function')window.calculatePricing();
     }
     
     // Override the original calculatePricing function to also update preview
@@ -2356,61 +2394,80 @@
       previewText.textContent = `${horizontal}x${vertical} ${typeLabel} Grid`;
       
       // Update pricing when muntin settings change
-      calculatePricing();
+      if(typeof window.calculatePricing==='function')window.calculatePricing();
     }
     
     // Initialize calculations
     document.addEventListener('DOMContentLoaded', function() {
-      // Initialize currency toggle
-      const currencyLabel = document.getElementById('currencyLabel');
-      const currencyToggle = document.getElementById('currencyToggle');
-      if (currencyLabel) {
-        currencyLabel.textContent = currentCurrency;
-      }
-      if (currencyToggle) {
-        currencyToggle.addEventListener('click', toggleCurrency);
+      // In edit mode, convert stored inch values to display unit based on global preference FIRST
+      if (isEditMode) {
+        // Values are stored in inches in the database
+        // Get the global unit preference and convert for display
+        const globalUnit = window.globalPreferences?.unit || 'inches';
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        
+        if (widthInput && widthInput.value && globalUnit === 'mm') {
+          // Convert stored inches to mm for display
+          const widthInches = parseFloat(widthInput.value);
+          widthInput.value = inchesToMm(widthInches).toFixed(2);
+        }
+        
+        if (heightInput && heightInput.value && globalUnit === 'mm') {
+          // Convert stored inches to mm for display
+          const heightInches = parseFloat(heightInput.value);
+          heightInput.value = inchesToMm(heightInches).toFixed(2);
+        }
+        
+        // Set currentUnit to match global preference (for display)
+        currentUnit = globalUnit;
+        const currentUnitInput = document.getElementById('currentUnit');
+        if (currentUnitInput) {
+          currentUnitInput.value = globalUnit;
+        }
+        
+        // Update unit labels based on global preference
+        const unitAbbr = globalUnit === 'inches' ? 'in' : 'mm';
+        const widthUnitSpan = document.getElementById('widthUnit');
+        const heightUnitSpan = document.getElementById('heightUnit');
+        const currentUnitDisplay = document.getElementById('currentUnitDisplay');
+        const previewUnitDisplay = document.getElementById('previewUnitDisplay');
+        if (widthUnitSpan) widthUnitSpan.textContent = unitAbbr;
+        if (heightUnitSpan) heightUnitSpan.textContent = unitAbbr;
+        if (currentUnitDisplay) currentUnitDisplay.textContent = unitAbbr;
+        if (previewUnitDisplay) previewUnitDisplay.textContent = unitAbbr;
+        
+        // Update preview unit labels
+        const widthUnitLabels = document.querySelectorAll('#widthUnitLabel');
+        const heightUnitLabels = document.querySelectorAll('#heightUnitLabel');
+        widthUnitLabels.forEach(label => {
+          label.textContent = unitAbbr;
+        });
+        heightUnitLabels.forEach(label => {
+          label.textContent = unitAbbr;
+        });
+      } else {
+        // Initialize from global preferences (new mode)
+        updateCurrencyFromGlobal();
+        updateUnitsFromGlobal();
       }
       
-      // In edit mode, ensure we're in inches and update UI accordingly
-      <% if (typeof isEdit !== 'undefined' && isEdit) { %>
-      // Force inches mode in edit mode BEFORE any calculations
-      currentUnit = 'inches';
-      const currentUnitInput = document.getElementById('currentUnit');
-      if (currentUnitInput) currentUnitInput.value = 'inches';
-      
-      // Update unit toggle buttons to show inches as active
-      const inchesBtn = document.getElementById('inchesBtn');
-      const mmBtn = document.getElementById('mmBtn');
-      if (inchesBtn) {
-        inchesBtn.classList.add('active');
-        inchesBtn.classList.remove('text-gray-700');
-        inchesBtn.classList.add('bg-indigo-600', 'text-white');
-      }
-      if (mmBtn) {
-        mmBtn.classList.remove('active');
-        mmBtn.classList.remove('bg-indigo-600', 'text-white');
-        mmBtn.classList.add('text-gray-700');
+      // Initialize from global preferences (after edit mode setup if applicable)
+      if (isEditMode) {
+        updateCurrencyFromGlobal();
       }
       
-      // Update unit labels
-      const widthUnitSpan = document.getElementById('widthUnit');
-      const heightUnitSpan = document.getElementById('heightUnit');
-      if (widthUnitSpan) widthUnitSpan.textContent = 'in';
-      if (heightUnitSpan) heightUnitSpan.textContent = 'in';
+      // Listen to global preference changes
+      window.addEventListener('currencyChanged', (event) => {
+        currentCurrency = event.detail.currency;
+        if(typeof window.calculatePricing==='function')window.calculatePricing();
+      });
       
-      // CRITICAL: Ensure width and height inputs contain inch values (they should already, but verify)
-      // The stored values are in inches, so they should be displayed as-is
-      const widthInput = document.getElementById('width');
-      const heightInput = document.getElementById('height');
-      if (widthInput && widthInput.value) {
-        // Value is already in inches from database, no conversion needed
-        console.log('Edit mode: Width loaded as', widthInput.value, 'inches');
-      }
-      if (heightInput && heightInput.value) {
-        // Value is already in inches from database, no conversion needed
-        console.log('Edit mode: Height loaded as', heightInput.value, 'inches');
-      }
-      <% } %>
+      window.addEventListener('unitChanged', (event) => {
+        // Get the unit from the event detail
+        const newUnit = event.detail.unit || 'inches';
+        updateUnitsFromGlobal(newUnit);
+      });
       
       initializeChoiceGroups();
       renderWindowPreview(); // Render the panel preview based on configuration
@@ -2418,13 +2475,244 @@
       // Calculate pricing AFTER unit is properly set
       // Use setTimeout to ensure all initialization is complete
       setTimeout(function() {
-        calculatePricing();
+        if(typeof window.calculatePricing==='function')window.calculatePricing();
         updateWindowPreview(); // Update dimensions
       }, 100);
       
       // Initialize muntin preview if muntin configuration exists
       if (document.getElementById('muntinPreviewGrid')) {
         updateMuntinPreview();
+      }
+    });
+
+    // Store calculation details for the modal
+    let calculationDetails = null;
+
+    // Function to show calculation details modal
+    function showCalculationDetails() {
+      // Always run calculation first to ensure details are up-to-date
+      if (typeof window.calculatePricing === 'function') {
+        window.calculatePricing();
+        // Wait a moment for calculation to complete and populate calculationDetails
+        setTimeout(() => {
+          if (!calculationDetails) {
+            // Check if window has minimum required data
+            const width = parseFloat(document.getElementById('width')?.value) || 0;
+            const height = parseFloat(document.getElementById('height')?.value) || 0;
+            if (width === 0 || height === 0) {
+              alert('Please enter window dimensions (width and height) first to see calculation details.');
+              return;
+            }
+            // If calculation still didn't populate, show error
+            alert('Unable to calculate pricing. Please check that all required fields are filled.');
+            return;
+          }
+          const modal = document.getElementById('calculationModal');
+          if (modal) {
+            modal.classList.remove('hidden');
+            populateCalculationModal();
+          } else {
+            alert('Calculation modal not found. Please refresh the page.');
+          }
+        }, 200);
+      } else {
+        alert('Calculation function not available. Please refresh the page.');
+      }
+    }
+    
+    // Make showCalculationDetails globally accessible
+    window.showCalculationDetails = showCalculationDetails;
+
+    // Function to close the modal
+    function closeCalculationModal() {
+      const modal = document.getElementById('calculationModal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // Function to populate the modal with calculation details
+    function populateCalculationModal() {
+      if (!calculationDetails) return;
+
+      const details = calculationDetails;
+      const modalContent = document.getElementById('calculationModalContent');
+      
+      let html = `
+        <div class="space-y-4">
+          <!-- Exchange Rate -->
+          <div class="bg-blue-50 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-blue-800 mb-2">Exchange Rate</div>
+            <div class="text-sm text-gray-700">1 USD = ${details.exchangeRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} COP</div>
+          </div>
+
+          <!-- Dimensions -->
+          <div class="bg-gray-50 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-gray-800 mb-2">Dimensions (Internal Calculation in Inches)</div>
+            <div class="text-sm text-gray-700 space-y-1">
+              <div>Width: ${details.widthInches.toFixed(2)} in (${details.widthDisplay})</div>
+              <div>Height: ${details.heightInches.toFixed(2)} in (${details.heightDisplay})</div>
+              <div>Quantity: ${details.quantity}</div>
+            </div>
+          </div>
+
+          <!-- Area Calculations -->
+          <div class="bg-gray-50 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-gray-800 mb-2">Area Calculations</div>
+            <div class="text-sm text-gray-700 space-y-1">
+              <div>Area (sq inches): ${details.areaInches.toFixed(2)}</div>
+              <div>Area (sq meters): ${details.areaSquareMeters.toFixed(4)}</div>
+              <div>Perimeter (inches): ${details.perimeterInches.toFixed(2)}</div>
+              <div>Perimeter (meters): ${details.perimeterMeters.toFixed(4)}</div>
+            </div>
+          </div>
+
+          <!-- Glass Cost -->
+          <div class="bg-green-50 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-green-800 mb-2">Glass Cost</div>
+            <div class="text-sm text-gray-700 space-y-1">
+              <div>Glass Type: ${details.glassName || 'N/A'}</div>
+              <div>Price (${details.glassCurrency}): ${details.glassPriceOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div>Price (USD): $${details.glassPriceUSD.toFixed(2)}</div>
+              <div>Area (sq m): ${details.areaSquareMeters.toFixed(4)}</div>
+              <div class="font-semibold">Glass Cost (USD): $${details.glassCost.toFixed(2)}</div>
+              <div class="text-xs text-gray-600">Formula: ${details.glassPriceUSD.toFixed(2)} × ${details.areaSquareMeters.toFixed(4)} = $${details.glassCost.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <!-- Profile Costs -->
+          <div class="bg-purple-50 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-purple-800 mb-2">Profile Costs</div>
+            <div class="text-sm text-gray-700 space-y-2">
+              ${details.profiles.map((profile, idx) => `
+                <div class="border-b border-purple-200 pb-2 ${idx === details.profiles.length - 1 ? 'border-b-0 pb-0' : ''}">
+                  <div class="font-medium">Profile ${idx + 1}: ${profile.name}</div>
+                  <div class="ml-4 space-y-1 text-xs">
+                    <div>Price (${profile.currency}): ${profile.priceOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div>Price (USD): $${profile.priceUSD.toFixed(2)}</div>
+                    <div>Quantity: ${profile.quantity}</div>
+                    <div>Length Discount: ${profile.lengthDiscount.toFixed(2)} in</div>
+                    <div>Perimeter: ${profile.perimeterMeters.toFixed(4)} m</div>
+                    <div>Adjusted Length: ${profile.adjustedLength.toFixed(4)} m</div>
+                    <div class="font-semibold">Cost (USD): $${profile.cost.toFixed(2)}</div>
+                    <div class="text-xs text-gray-600">Formula: $${profile.priceUSD.toFixed(2)} × ${profile.adjustedLength.toFixed(4)} × ${profile.quantity} = $${profile.cost.toFixed(2)}</div>
+                  </div>
+                </div>
+              `).join('')}
+              <div class="font-semibold mt-2 pt-2 border-t border-purple-300">Total Profiles Cost (USD): $${details.profilesCost.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <!-- Accessory Costs -->
+          <div class="bg-yellow-50 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-yellow-800 mb-2">Accessory Costs</div>
+            <div class="text-sm text-gray-700 space-y-2">
+              ${details.accessories.length > 0 ? details.accessories.map((acc, idx) => `
+                <div class="border-b border-yellow-200 pb-2 ${idx === details.accessories.length - 1 ? 'border-b-0 pb-0' : ''}">
+                  <div class="font-medium">${acc.name}</div>
+                  <div class="ml-4 space-y-1 text-xs">
+                    <div>Price (${acc.currency}): ${acc.priceOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div>Price (USD): $${acc.priceUSD.toFixed(2)}</div>
+                    <div>Quantity: ${acc.quantity}</div>
+                    <div class="font-semibold">Cost (USD): $${acc.cost.toFixed(2)}</div>
+                    <div class="text-xs text-gray-600">Formula: $${acc.priceUSD.toFixed(2)} × ${acc.quantity} = $${acc.cost.toFixed(2)}</div>
+                  </div>
+                </div>
+              `).join('') : '<div class="text-gray-500 italic">No accessories selected</div>'}
+              <div class="font-semibold mt-2 pt-2 border-t border-yellow-300">Total Accessories Cost (USD): $${details.accessoriesCost.toFixed(2)}</div>
+            </div>
+          </div>
+
+          ${details.muntinCost > 0 && details.muntinDetails ? `
+          <!-- Muntin Cost -->
+          <div class="bg-indigo-50 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-indigo-800 mb-2">Muntin Cost</div>
+            <div class="text-sm text-gray-700 space-y-1">
+              <div>Muntin Profile: ${details.muntinDetails.name || 'N/A'}</div>
+              <div>Price (${details.muntinDetails.currency}): ${details.muntinDetails.priceOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div>Price (USD): $${details.muntinDetails.priceUSD.toFixed(2)}</div>
+              <div>Horizontal Divisions: ${details.muntinDetails.horizontal}</div>
+              <div>Vertical Divisions: ${details.muntinDetails.vertical}</div>
+              <div>Total Muntin Length: ${details.muntinDetails.length.toFixed(4)} m</div>
+              <div class="font-semibold">Muntin Cost (USD): $${details.muntinDetails.cost.toFixed(2)}</div>
+              <div class="text-xs text-gray-600">Formula: $${details.muntinDetails.priceUSD.toFixed(2)} × ${details.muntinDetails.length.toFixed(4)} = $${details.muntinDetails.cost.toFixed(2)}</div>
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Base Cost Summary -->
+          <div class="bg-gray-100 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-gray-800 mb-2">Base Cost Summary (USD)</div>
+            <div class="text-sm text-gray-700 space-y-1">
+              <div>Glass Cost: $${details.glassCost.toFixed(2)}</div>
+              <div>Profiles Cost: $${details.profilesCost.toFixed(2)}</div>
+              <div>Accessories Cost: $${details.accessoriesCost.toFixed(2)}</div>
+              ${details.muntinCost > 0 ? `<div>Muntin Cost: $${details.muntinCost.toFixed(2)}</div>` : ''}
+              <div class="font-semibold pt-2 border-t border-gray-300">Base Cost (USD): $${details.baseCost.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <!-- Additional Costs -->
+          <div class="bg-orange-50 p-3 rounded-lg">
+            <div class="text-sm font-semibold text-orange-800 mb-2">Additional Costs (Percentages)</div>
+            <div class="text-sm text-gray-700 space-y-1">
+              <div>Packaging: ${details.costSettings.packaging}%</div>
+              <div>Labor: ${details.costSettings.labor}%</div>
+              <div>Indirect Costs: ${details.costSettings.indirectCosts}%</div>
+              <div>Total Percentage: ${(details.costSettings.packaging + details.costSettings.labor + details.costSettings.indirectCosts).toFixed(2)}%</div>
+              <div class="font-semibold">Additional Costs (USD): $${details.additionalCosts.toFixed(2)}</div>
+              <div class="text-xs text-gray-600">Formula: $${details.baseCost.toFixed(2)} × ${((details.costSettings.packaging + details.costSettings.labor + details.costSettings.indirectCosts) / 100).toFixed(4)} = $${details.additionalCosts.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <!-- Final Totals -->
+          <div class="bg-green-100 p-3 rounded-lg border-2 border-green-300">
+            <div class="text-sm font-semibold text-green-800 mb-2">Final Calculation</div>
+            <div class="text-sm text-gray-700 space-y-1">
+              <div>Base Cost (USD): $${details.baseCost.toFixed(2)}</div>
+              <div>Additional Costs (USD): $${details.additionalCosts.toFixed(2)}</div>
+              <div>Cost per Window (USD): $${details.costPerWindow.toFixed(2)}</div>
+              <div>Quantity: ${details.quantity}</div>
+              <div class="font-bold text-lg pt-2 border-t border-green-400">Total Price (USD): $${details.finalTotal.toFixed(2)}</div>
+              <div class="text-xs text-gray-600">Formula: $${details.costPerWindow.toFixed(2)} × ${details.quantity} = $${details.finalTotal.toFixed(2)}</div>
+              <div class="text-xs text-gray-500 mt-2">Display Currency: ${details.displayCurrency}</div>
+              <div class="text-xs text-gray-500">Display Total: ${details.displayTotal}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modalContent.innerHTML = html;
+    }
+  </script>
+
+  <!-- Calculation Details Modal -->
+  <div id="calculationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+        <h2 class="text-xl font-bold">Detailed Calculation Breakdown</h2>
+        <button onclick="closeCalculationModal()" class="text-white hover:text-gray-200 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="overflow-y-auto p-6 flex-1" id="calculationModalContent">
+        <!-- Content will be populated by JavaScript -->
+      </div>
+      <div class="bg-gray-100 px-6 py-4 flex justify-end">
+        <button onclick="closeCalculationModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Close modal when clicking outside -->
+  <script>
+    document.getElementById('calculationModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeCalculationModal();
       }
     });
   </script>

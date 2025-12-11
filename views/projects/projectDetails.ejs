@@ -292,7 +292,7 @@
   </style>
 </head>
 
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col" data-exchange-rate="<%= typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate : 4000 %>">
   <%- include('../partials/_header.ejs') %>
 
   <main role="main" class="container mx-auto mt-6 px-4 flex-grow mb-16">
@@ -337,19 +337,10 @@
           </div>
         </div>
         
-        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div class="bg-blue-50 rounded-lg px-6 py-4 border border-blue-100 flex-1" data-project-total="<%= projectTotal %>">
+        <div class="mt-4 md:mt-0">
+          <div class="bg-blue-50 rounded-lg px-6 py-4 border border-blue-100" data-project-total="<%= projectTotal %>">
             <div class="text-blue-800 text-xl font-bold" id="displayTotal">$<%= projectTotal %></div>
             <div class="text-blue-600 text-sm">Total Project Value</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-600 font-medium">Currency:</span>
-            <button id="currencyToggle" class="px-4 py-2 bg-white border-2 border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
-              <span id="currencyLabel">COP</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            </button>
           </div>
         </div>
       </div>
@@ -373,18 +364,6 @@
                 </svg>
                 Add Window
               </button>
-              <!-- Unit Toggle -->
-              <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-600">Units:</span>
-                <div class="flex bg-gray-100 rounded-lg p-1">
-                  <button id="unitToggleInches" onclick="switchUnits('inches')" class="unit-toggle-btn active px-3 py-1 rounded text-sm font-medium transition-colors">
-                    in
-                  </button>
-                  <button id="unitToggleMm" onclick="switchUnits('mm')" class="unit-toggle-btn px-3 py-1 rounded text-sm font-medium transition-colors">
-                    mm
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
           
@@ -405,7 +384,7 @@
                     <div class="flex justify-between items-center">
                       <h4 class="font-medium text-gray-800"><%= item.itemName %></h4>
                       <div class="text-right">
-                        <span class="font-bold text-green-600" data-price="<%= item.totalPrice %>">$<%= parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></span>
+                        <span class="font-bold text-green-600" data-price="<%= item.totalPrice %>"><!-- Price will be formatted by JavaScript --></span>
                       </div>
                     </div>
                   </div>
@@ -435,7 +414,7 @@
                       <div class="text-gray-800"><%= item.quantity %></div>
                       
                       <div class="text-gray-500">Unit Price:</div>
-                      <div class="text-gray-800" data-price="<%= item.unitPrice %>">$<%= parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
+                      <div class="text-gray-800" data-price="<%= item.unitPrice %>"><!-- Price will be formatted by JavaScript --></div>
                       
                       <% if (item.material) { %>
                         <div class="text-gray-500">Material:</div>
@@ -599,10 +578,10 @@
                         <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-blue-100 text-blue-800 font-semibold text-sm"><%= item.quantity %></span>
                       </td>
                       <td class="text-right py-3">
-                        <div class="text-sm font-medium text-gray-900" data-price="<%= item.unitPrice %>">$<%= parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
+                        <div class="text-sm font-medium text-gray-900" data-price="<%= item.unitPrice %>"><!-- Price will be formatted by JavaScript --></div>
                       </td>
                       <td class="text-right py-3">
-                        <div class="text-sm font-bold text-green-700" data-price="<%= item.totalPrice %>">$<%= parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
+                        <div class="text-sm font-bold text-green-700" data-price="<%= item.totalPrice %>"><!-- Price will be formatted by JavaScript --></div>
                       </td>
                       <td class="whitespace-nowrap">
                         <div class="flex items-center justify-center gap-1 flex-nowrap">
@@ -819,14 +798,16 @@
     };
     
     // Exchange rate from server (default to 4000 if not provided)
-    <% if (typeof exchangeRate !== 'undefined' && exchangeRate) { %>
-    const exchangeRate = <%= exchangeRate %>;
-    <% } else { %>
-    const exchangeRate = 4000;
-    <% } %>
+    const exchangeRateElement = document.querySelector('[data-exchange-rate]');
+    const exchangeRate = exchangeRateElement ? parseFloat(exchangeRateElement.getAttribute('data-exchange-rate')) : 4000;
     
-    // Currency state (default to COP, stored in localStorage)
-    let currentCurrency = localStorage.getItem('projectCurrency') || 'COP';
+    // Use global currency preference from header
+    let currentCurrency = window.globalPreferences?.currency || 'COP';
+    
+    // Set exchange rate in global preferences if available
+    if (window.globalPreferences) {
+      window.globalPreferences.exchangeRate = exchangeRate;
+    }
     
     // Get project total from data attribute (initialized after DOM loads)
     let baseProjectTotal = 0;
@@ -856,16 +837,12 @@
       }
     }
     
-    // Toggle currency between COP and USD
-    function toggleCurrency() {
-      currentCurrency = currentCurrency === 'COP' ? 'USD' : 'COP';
-      localStorage.setItem('projectCurrency', currentCurrency);
-      
-      // Update button label
-      document.getElementById('currencyLabel').textContent = currentCurrency;
-      
-      // Update all prices
-      updateAllPrices();
+    // Update currency when global preference changes
+    function updateCurrencyFromGlobal() {
+      if (window.globalPreferences) {
+        currentCurrency = window.globalPreferences.currency || 'COP';
+        updateAllPrices();
+      }
     }
     
     // Update all price displays on the page
@@ -971,14 +948,7 @@
       const projectTotalElement = document.querySelector('[data-project-total]');
       baseProjectTotal = projectTotalElement ? parseFloat(projectTotalElement.getAttribute('data-project-total')) || 0 : 0;
       
-      // Set initial currency label
-      document.getElementById('currencyLabel').textContent = currentCurrency;
-      
-      // Add event listener to currency toggle button
-      document.getElementById('currencyToggle').addEventListener('click', toggleCurrency);
-      
-      // Format existing prices with commas
-      formatExistingPrices();
+      // Format existing prices with commas (already called above)
       
       // Modal functions
       function openAddWindowModal() {
@@ -1284,30 +1254,13 @@
       return mm / 25.4;
     }
     
-    // Switch between units (global scope - accessible from onclick)
-    window.switchUnits = function(unit) {
-      // Update toggle buttons
-      const inchesBtn = document.getElementById('unitToggleInches');
-      const mmBtn = document.getElementById('unitToggleMm');
-      // Dimensions header removed - dimensions now in description column
+    // Update dimensions based on global unit preference
+    function updateDimensionsFromGlobal() {
+      const unit = window.globalPreferences?.unit || 'inches';
       const mobileUnit = document.getElementById('mobileDimensionsUnit');
       
-      if (!inchesBtn || !mmBtn) return; // Exit if buttons don't exist
-      
-      if (unit === 'inches') {
-        inchesBtn.classList.add('active', 'bg-indigo-600', 'text-white');
-        inchesBtn.classList.remove('text-gray-700');
-        mmBtn.classList.remove('active', 'bg-indigo-600', 'text-white');
-        mmBtn.classList.add('text-gray-700');
-        // Dimensions header removed
-        if (mobileUnit) mobileUnit.textContent = '(in)';
-      } else {
-        mmBtn.classList.add('active', 'bg-indigo-600', 'text-white');
-        mmBtn.classList.remove('text-gray-700');
-        inchesBtn.classList.remove('active', 'bg-indigo-600', 'text-white');
-        inchesBtn.classList.add('text-gray-700');
-        // Dimensions header removed
-        if (mobileUnit) mobileUnit.textContent = '(mm)';
+      if (mobileUnit) {
+        mobileUnit.textContent = unit === 'inches' ? '(in)' : '(mm)';
       }
       
       // Update all dimension displays
@@ -1320,7 +1273,6 @@
         
         if (isMobile) {
           // Mobile format: "X × Y unit"
-          const unitSpan = display.querySelector('.dimension-unit');
           if (unit === 'inches') {
             display.innerHTML = `${widthInches.toFixed(2)} × ${heightInches.toFixed(2)} <span class="dimension-unit">in</span>`;
           } else {
@@ -1362,22 +1314,34 @@
           }
         }
       });
-      
-      // Save preference
-      localStorage.setItem('dimensionUnit', unit);
-    };
+    }
     
-    // Load saved unit preference on page load
+    // Initialize and listen to global preference changes
     document.addEventListener('DOMContentLoaded', () => {
-      const savedUnit = localStorage.getItem('dimensionUnit') || 'inches';
-      if (savedUnit) {
-        // Small delay to ensure DOM is ready
-        setTimeout(() => {
-          if (window.switchUnits) {
-            window.switchUnits(savedUnit);
-          }
-        }, 100);
+      // Wait for global preferences to be available
+      function initializePrices() {
+        if (window.globalPreferences) {
+          currentCurrency = window.globalPreferences.currency || 'COP';
+          updateAllPrices();
+        } else {
+          // Wait a bit and try again
+          setTimeout(initializePrices, 100);
+        }
       }
+      
+      // Initialize from global preferences
+      initializePrices();
+      updateDimensionsFromGlobal();
+      
+      // Listen to global preference changes
+      window.addEventListener('currencyChanged', (event) => {
+        currentCurrency = event.detail.currency;
+        updateAllPrices();
+      });
+      
+      window.addEventListener('unitChanged', (event) => {
+        updateDimensionsFromGlobal();
+      });
     });
   </script>
 </body>

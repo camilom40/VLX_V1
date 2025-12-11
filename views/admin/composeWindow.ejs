@@ -3201,6 +3201,24 @@
     document.addEventListener('DOMContentLoaded', function() {
       initWindowNameValidation();
       initProfileSearch();
+      
+      // Initialize length discount unit from global preference
+      const unitSelect = document.getElementById('profile-length-unit');
+      if (unitSelect && window.globalPreferences) {
+        const globalUnit = window.globalPreferences.unit || 'inches';
+        const unitValue = globalUnit === 'mm' ? 'mm' : 'in';
+        unitSelect.value = unitValue;
+        
+        // Listen to global unit changes and re-render table
+        window.addEventListener('unitChanged', (event) => {
+          if (!lockedLengthUnit) { // Only update if not locked
+            const newUnit = event.detail.unit === 'mm' ? 'mm' : 'in';
+            unitSelect.value = newUnit;
+          }
+          // Re-render table to update displayed units
+          renderProfilesTable();
+        });
+      }
     });
     
     // Profile functions
@@ -3342,8 +3360,19 @@
             '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Configurable</span>' : 
             '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto-managed</span>';
           
-          const displayValue = profile.lengthDiscountDisplay || profile.lengthDiscount;
-          const displayUnit = profile.lengthUnit || 'in';
+          // Use global unit preference for display
+          const globalUnit = window.globalPreferences?.unit || 'inches';
+          const displayUnit = globalUnit === 'mm' ? 'mm' : 'in';
+          
+          // Convert stored inches value to display unit
+          const storedInches = parseFloat(profile.lengthDiscount || 0);
+          let displayValue;
+          if (displayUnit === 'mm') {
+            displayValue = (storedInches * 25.4).toFixed(2);
+          } else {
+            displayValue = storedInches.toFixed(4);
+          }
+          
           const icon = getProfileTypeIcon(profile.profileName);
           
           const row = `

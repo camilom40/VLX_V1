@@ -21,6 +21,32 @@
           </svg>
           <span id="currentTime" class="text-blue-100"></span>
         </div>
+        <div class="mx-4 h-4 w-px bg-blue-600"></div>
+        <!-- Global Currency Toggle -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-blue-200">Currency:</span>
+          <div class="flex bg-blue-800 rounded-lg p-0.5">
+            <button id="headerCurrencyCOP" onclick="window.setGlobalCurrency('COP')" class="header-toggle-btn active px-3 py-1 rounded text-xs font-medium transition-colors">
+              COP
+            </button>
+            <button id="headerCurrencyUSD" onclick="window.setGlobalCurrency('USD')" class="header-toggle-btn px-3 py-1 rounded text-xs font-medium transition-colors">
+              USD
+            </button>
+          </div>
+        </div>
+        <div class="mx-4 h-4 w-px bg-blue-600"></div>
+        <!-- Global Unit Toggle -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-blue-200">Units:</span>
+          <div class="flex bg-blue-800 rounded-lg p-0.5">
+            <button id="headerUnitInches" onclick="window.setGlobalUnit('inches')" class="header-toggle-btn active px-3 py-1 rounded text-xs font-medium transition-colors">
+              in
+            </button>
+            <button id="headerUnitMm" onclick="window.setGlobalUnit('mm')" class="header-toggle-btn px-3 py-1 rounded text-xs font-medium transition-colors">
+              mm
+            </button>
+          </div>
+        </div>
       </div>
       
       <!-- Mobile menu button -->
@@ -81,9 +107,72 @@
   </div>
 </nav>
 
+<style>
+  .header-toggle-btn {
+    color: #bfdbfe;
+    background-color: transparent;
+    transition: all 0.2s;
+  }
+  .header-toggle-btn:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  .header-toggle-btn.active {
+    color: #ffffff;
+    background-color: #3b82f6;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+</style>
+
 <script>
-  // Mobile menu toggle
+  // Global preferences - stored in localStorage
+  window.globalPreferences = {
+    currency: localStorage.getItem('globalCurrency') || 'COP',
+    unit: localStorage.getItem('globalUnit') || 'inches',
+    exchangeRate: null // Will be set by pages that need it
+  };
+
+  // Set global currency preference
+  window.setGlobalCurrency = function(currency) {
+    if (currency !== 'COP' && currency !== 'USD') return;
+    
+    window.globalPreferences.currency = currency;
+    localStorage.setItem('globalCurrency', currency);
+    
+    // Update header buttons
+    const copBtn = document.getElementById('headerCurrencyCOP');
+    const usdBtn = document.getElementById('headerCurrencyUSD');
+    if (copBtn && usdBtn) {
+      copBtn.classList.toggle('active', currency === 'COP');
+      usdBtn.classList.toggle('active', currency === 'USD');
+    }
+    
+    // Dispatch custom event for pages to listen to
+    window.dispatchEvent(new CustomEvent('currencyChanged', { detail: { currency } }));
+  };
+
+  // Set global unit preference
+  window.setGlobalUnit = function(unit) {
+    if (unit !== 'inches' && unit !== 'mm') return;
+    
+    window.globalPreferences.unit = unit;
+    localStorage.setItem('globalUnit', unit);
+    
+    // Update header buttons
+    const inchesBtn = document.getElementById('headerUnitInches');
+    const mmBtn = document.getElementById('headerUnitMm');
+    if (inchesBtn && mmBtn) {
+      inchesBtn.classList.toggle('active', unit === 'inches');
+      mmBtn.classList.toggle('active', unit === 'mm');
+    }
+    
+    // Dispatch custom event for pages to listen to
+    window.dispatchEvent(new CustomEvent('unitChanged', { detail: { unit } }));
+  };
+
+  // Initialize header toggles on page load
   document.addEventListener('DOMContentLoaded', function() {
+    // Mobile menu toggle
     const menuButton = document.getElementById('mobile-menu-button');
     if (menuButton) {
       menuButton.addEventListener('click', function() {
@@ -105,7 +194,10 @@
         month: 'long', 
         day: 'numeric'
       };
-      document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', dateOptions);
+      const dateEl = document.getElementById('currentDate');
+      if (dateEl) {
+        dateEl.textContent = now.toLocaleDateString('en-US', dateOptions);
+      }
       
       // Format time
       const timeOptions = {
@@ -114,11 +206,32 @@
         second: '2-digit',
         hour12: true
       };
-      document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', timeOptions);
+      const timeEl = document.getElementById('currentTime');
+      if (timeEl) {
+        timeEl.textContent = now.toLocaleTimeString('en-US', timeOptions);
+      }
     }
     
     // Update immediately and then every second
     updateDateTime();
     setInterval(updateDateTime, 1000);
+
+    // Initialize header toggle states from localStorage
+    const currency = window.globalPreferences.currency;
+    const unit = window.globalPreferences.unit;
+    
+    const copBtn = document.getElementById('headerCurrencyCOP');
+    const usdBtn = document.getElementById('headerCurrencyUSD');
+    if (copBtn && usdBtn) {
+      copBtn.classList.toggle('active', currency === 'COP');
+      usdBtn.classList.toggle('active', currency === 'USD');
+    }
+    
+    const inchesBtn = document.getElementById('headerUnitInches');
+    const mmBtn = document.getElementById('headerUnitMm');
+    if (inchesBtn && mmBtn) {
+      inchesBtn.classList.toggle('active', unit === 'inches');
+      mmBtn.classList.toggle('active', unit === 'mm');
+    }
   });
 </script>

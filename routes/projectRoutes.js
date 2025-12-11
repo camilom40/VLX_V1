@@ -680,10 +680,11 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
             
             // Find the accessory to get its currency
             const accessory = allAccessories.find(a => a._id.toString() === accessoryId);
-            const priceCOP = convertToCOP(price, accessory?.currency || 'COP', exchangeRate);
+            // Convert to USD for internal calculations
+            const priceUSD = convertToUSD(price, accessory?.currency || 'COP', exchangeRate);
             
-            choiceGroupAccessories.push({ accessoryId, quantity, price: priceCOP });
-            accessoryCostTotal += priceCOP * quantity;
+            choiceGroupAccessories.push({ accessoryId, quantity, price: priceUSD });
+            accessoryCostTotal += priceUSD * quantity;
           }
         });
       }
@@ -717,8 +718,9 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
           }
         }
         
-        const accessoryCostCOP = convertToCOP(accessoryDoc.price, accessoryDoc.currency || 'COP', exchangeRate);
-        accessoryCostTotal += accessoryCostCOP * quantity;
+        // Convert to USD for internal calculations
+        const accessoryCostUSD = convertToUSD(accessoryDoc.price, accessoryDoc.currency || 'COP', exchangeRate);
+        accessoryCostTotal += accessoryCostUSD * quantity;
       }
     });
 
@@ -736,7 +738,8 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
         if (muntinProfile) {
           const muntinPricePerMeter = parseFloat(muntinProfile.pricePerMeter) || 0;
           const muntinCurrency = muntinProfile.currency || 'COP';
-          const muntinPricePerMeterCOP = convertToCOP(muntinPricePerMeter, muntinCurrency, exchangeRate);
+          // Convert to USD for internal calculations
+          const muntinPricePerMeterUSD = convertToUSD(muntinPricePerMeter, muntinCurrency, exchangeRate);
           
           // Calculate total muntin length based on divisions
           const horizontalMuntins = muntinHorizontal - 1; // Number of horizontal bars
@@ -746,7 +749,7 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
           const verticalLength = verticalMuntins * windowHeight * 0.0254; // Convert to meters
           
           const totalMuntinLength = horizontalLength + verticalLength;
-          muntinCost = muntinPricePerMeterCOP * totalMuntinLength;
+          muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
         }
       }
     }
@@ -807,10 +810,18 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       }
     }
     
+    // Add missile impact type to description
+    let missileInfo = '';
+    const missileType = req.body.missileType;
+    if (missileType && (missileType === 'LMI' || missileType === 'SMI')) {
+      const missileTypeLabel = missileType === 'LMI' ? 'Large Missile Impact (LMI)' : 'Small Missile Impact (SMI)';
+      missileInfo = `Missile Impact: ${missileTypeLabel}\n`;
+    }
+    
     const description = `
 Window System: ${windowSystem.type}
 Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}
-${flangeInfo}User-Configured Profiles: ${userConfigurableProfiles.length}
+${missileInfo}${flangeInfo}User-Configured Profiles: ${userConfigurableProfiles.length}
 Auto-Managed Profiles: ${autoManagedProfiles.length}
 User-Configured Accessories: ${userConfigurableAccessories.length}
 Auto-Managed Accessories: ${autoManagedAccessories.length}
@@ -832,24 +843,28 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       ? 0 
       : parseFloat((finalPrice / windowQuantity).toFixed(2));
     
+    // Use finalPrice as totalPrice to avoid rounding errors
+    // The finalPrice is the total cost for all units, so it should be used directly
+    // The unitPrice is calculated from finalPrice/quantity for display purposes
+    const totalPrice = finalPrice;
+    
     console.log('Final calculations before save:');
     console.log('unitPrice:', unitPrice);
     console.log('finalPrice:', finalPrice);
+    console.log('totalPrice:', totalPrice);
+    console.log('windowQuantity:', windowQuantity);
     
     // Validate all numeric fields before creating WindowItem
-    if (isNaN(unitPrice) || isNaN(finalPrice)) {
+    if (isNaN(unitPrice) || isNaN(finalPrice) || isNaN(totalPrice)) {
       console.error('Invalid pricing calculation - cannot save window item');
-      console.error('unitPrice:', unitPrice, 'finalPrice:', finalPrice);
+      console.error('unitPrice:', unitPrice, 'finalPrice:', finalPrice, 'totalPrice:', totalPrice);
       throw new Error('Pricing calculation failed - invalid numeric values');
     }
     
     // Validate price is within reasonable bounds (prevent calculation errors)
-    // Maximum reasonable price: $1,000,000 USD per unit
-    // Since prices are in COP, convert the limit: 1,000,000 USD * exchange rate
-    // Using a conservative exchange rate of 4000 COP/USD, limit is 4,000,000,000 COP
-    // Add 50% buffer for exchange rate fluctuations: 6,000,000,000 COP
-    const MAX_REASONABLE_UNIT_PRICE_COP = 6000000000; // 6 billion COP (~$1.5M USD at 4000 COP/USD)
-    if (unitPrice > MAX_REASONABLE_UNIT_PRICE_COP) {
+    // Maximum reasonable price: $1,500,000 USD per unit (prices are stored in USD)
+    const MAX_REASONABLE_UNIT_PRICE_USD = 1500000; // $1.5M USD
+    if (unitPrice > MAX_REASONABLE_UNIT_PRICE_USD) {
       console.error('Unit price exceeds maximum reasonable value:', unitPrice);
       console.error('This may indicate a calculation error. Please review the pricing components.');
       console.error('Pricing breakdown:', {
@@ -866,7 +881,7 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       return res.status(400).send(`Calculated unit price ($${unitPrice.toLocaleString()}) exceeds the maximum reasonable value. This may indicate a calculation error. Please check the window dimensions, glass type, profiles, and accessories.`);
     }
 
-    // Create window item (totalPrice will be calculated automatically by the model)
+    // Create window item with explicit totalPrice to maintain accuracy
     const newWindowItem = new WindowItem({
       projectId,
       itemName: windowRef,
@@ -874,6 +889,7 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       height: isNaN(windowHeight) ? 0 : windowHeight,
       quantity: isNaN(windowQuantity) ? 1 : windowQuantity,
       unitPrice: unitPrice,
+      totalPrice: totalPrice, // Use finalPrice directly to maintain accuracy
       material: 'Aluminum/Glass',
       color: 'Various',
       style: windowSystem.type,
@@ -1131,10 +1147,11 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
             
             // Find the accessory to get its currency
             const accessory = allAccessories.find(a => a._id.toString() === accessoryId);
-            const priceCOP = convertToCOP(price, accessory?.currency || 'COP', exchangeRate);
+            // Convert to USD for internal calculations
+            const priceUSD = convertToUSD(price, accessory?.currency || 'COP', exchangeRate);
             
-            choiceGroupAccessories.push({ accessoryId, quantity, price: priceCOP });
-            accessoryCostTotal += priceCOP * quantity;
+            choiceGroupAccessories.push({ accessoryId, quantity, price: priceUSD });
+            accessoryCostTotal += priceUSD * quantity;
           }
         });
       }
@@ -1178,8 +1195,9 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
           }
         }
         
-        const accessoryCostCOP = convertToCOP(accessoryDoc.price, accessoryDoc.currency || 'COP', exchangeRate);
-        accessoryCostTotal += accessoryCostCOP * quantity;
+        // Convert to USD for internal calculations
+        const accessoryCostUSD = convertToUSD(accessoryDoc.price, accessoryDoc.currency || 'COP', exchangeRate);
+        accessoryCostTotal += accessoryCostUSD * quantity;
       }
     });
 
@@ -1197,7 +1215,8 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
         if (muntinProfile) {
           const muntinPricePerMeter = parseFloat(muntinProfile.pricePerMeter) || 0;
           const muntinCurrency = muntinProfile.currency || 'COP';
-          const muntinPricePerMeterCOP = convertToCOP(muntinPricePerMeter, muntinCurrency, exchangeRate);
+          // Convert to USD for internal calculations
+          const muntinPricePerMeterUSD = convertToUSD(muntinPricePerMeter, muntinCurrency, exchangeRate);
           
           // Calculate total muntin length based on divisions
           const horizontalMuntins = muntinHorizontal - 1; // Number of horizontal bars
@@ -1207,7 +1226,7 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
           const verticalLength = verticalMuntins * windowHeight * 0.0254; // Convert to meters
           
           const totalMuntinLength = horizontalLength + verticalLength;
-          muntinCost = muntinPricePerMeterCOP * totalMuntinLength;
+          muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
         }
       }
     }
@@ -1231,7 +1250,13 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     const totalCost = (isNaN(baseCost) ? 0 : baseCost) + (isNaN(additionalCosts) ? 0 : additionalCosts);
     const finalPrice = (isNaN(totalCost) ? 0 : totalCost) * (isNaN(windowQuantity) ? 1 : windowQuantity);
     
-    console.log('finalPrice:', finalPrice, 'windowQuantity:', windowQuantity);
+    console.log('=== UPDATE PRICING CALCULATION ===');
+    console.log('baseCost:', baseCost);
+    console.log('additionalCosts:', additionalCosts);
+    console.log('totalCost (per window):', totalCost);
+    console.log('windowQuantity:', windowQuantity);
+    console.log('finalPrice (total for all):', finalPrice);
+    console.log('calculated unitPrice will be:', finalPrice / windowQuantity);
     console.log('=== END UPDATE DEBUG ===');
 
     // Create updated description
@@ -1262,10 +1287,18 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       }
     }
     
+    // Add missile impact type to description
+    let missileInfo = '';
+    const missileType = req.body.missileType;
+    if (missileType && (missileType === 'LMI' || missileType === 'SMI')) {
+      const missileTypeLabel = missileType === 'LMI' ? 'Large Missile Impact (LMI)' : 'Small Missile Impact (SMI)';
+      missileInfo = `Missile Impact: ${missileTypeLabel}\n`;
+    }
+    
     const description = `
 Window System: ${windowSystem.type}
 Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}
-${flangeInfo}User-Configured Profiles: ${userConfigurableProfiles.length}
+${missileInfo}${flangeInfo}User-Configured Profiles: ${userConfigurableProfiles.length}
 Auto-Managed Profiles: ${autoManagedProfiles.length}
 User-Configured Accessories: ${userConfigurableAccessories.length}
 Auto-Managed Accessories: ${autoManagedAccessories.length}
@@ -1277,10 +1310,12 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       ? 0 
       : parseFloat((finalPrice / windowQuantity).toFixed(2));
     
-    console.log('Update calculations before save:');
-    console.log('unitPrice:', unitPrice);
-    console.log('finalPrice:', finalPrice);
+    console.log('=== FINAL UPDATE CALCULATIONS ===');
+    console.log('finalPrice (total for all windows):', finalPrice);
     console.log('windowQuantity:', windowQuantity);
+    console.log('calculated unitPrice:', unitPrice);
+    console.log('This unitPrice will be saved to database');
+    console.log('=== END FINAL UPDATE ===');
     
     // Validate all numeric fields before updating
     if (isNaN(unitPrice)) {

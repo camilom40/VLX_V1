@@ -244,18 +244,6 @@
     <% if (windowItems.length > 0) { %>
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-gray-800">Window Items</h2>
-        <!-- Unit Toggle -->
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-600">Units:</span>
-          <div class="flex bg-gray-100 rounded-lg p-1">
-            <button id="unitToggleInches" onclick="switchUnits('inches')" class="unit-toggle-btn active px-3 py-1 rounded text-sm font-medium transition-colors">
-              in
-            </button>
-            <button id="unitToggleMm" onclick="switchUnits('mm')" class="unit-toggle-btn px-3 py-1 rounded text-sm font-medium transition-colors">
-              mm
-            </button>
-          </div>
-        </div>
       </div>
       <table class="quote-table">
         <thead>
@@ -446,27 +434,13 @@
       return mm / 25.4;
     }
     
-    // Switch between units (global scope - accessible from onclick)
-    window.switchUnits = function(unit) {
-      // Update toggle buttons
-      const inchesBtn = document.getElementById('unitToggleInches');
-      const mmBtn = document.getElementById('unitToggleMm');
+    // Update dimensions based on global unit preference
+    function updateDimensionsFromGlobal() {
+      const unit = window.globalPreferences?.unit || 'inches';
       const dimensionsHeader = document.getElementById('dimensionsHeader');
       
-      if (!inchesBtn || !mmBtn) return; // Exit if buttons don't exist
-      
-      if (unit === 'inches') {
-        inchesBtn.classList.add('active', 'bg-indigo-600', 'text-white');
-        inchesBtn.classList.remove('text-gray-700');
-        mmBtn.classList.remove('active', 'bg-indigo-600', 'text-white');
-        mmBtn.classList.add('text-gray-700');
-        if (dimensionsHeader) dimensionsHeader.textContent = 'Dimensions (in)';
-      } else {
-        mmBtn.classList.add('active', 'bg-indigo-600', 'text-white');
-        mmBtn.classList.remove('text-gray-700');
-        inchesBtn.classList.remove('active', 'bg-indigo-600', 'text-white');
-        inchesBtn.classList.add('text-gray-700');
-        if (dimensionsHeader) dimensionsHeader.textContent = 'Dimensions (mm)';
+      if (dimensionsHeader) {
+        dimensionsHeader.textContent = unit === 'inches' ? 'Dimensions (in)' : 'Dimensions (mm)';
       }
       
       // Update all dimension displays
@@ -485,28 +459,25 @@
         }
       });
       
-      // Save preference
-      localStorage.setItem('dimensionUnit', unit);
-      
       // Update PDF download link to match current unit
       const downloadLink = document.getElementById('downloadPdfLink');
       if (downloadLink) {
-        const projectId = downloadLink.href.match(/\/projects\/([^\/]+)\/quote-pdf/)[1];
-        downloadLink.href = `/projects/${projectId}/quote-pdf?unit=${unit}`;
+        const projectId = downloadLink.href.match(/\/projects\/([^\/]+)\/quote-pdf/)?.[1];
+        if (projectId) {
+          downloadLink.href = `/projects/${projectId}/quote-pdf?unit=${unit}`;
+        }
       }
-    };
+    }
     
-    // Load saved unit preference on page load
+    // Initialize and listen to global preference changes
     document.addEventListener('DOMContentLoaded', () => {
-      const savedUnit = localStorage.getItem('dimensionUnit') || 'inches';
-      if (savedUnit) {
-        // Small delay to ensure DOM is ready
-        setTimeout(() => {
-          if (window.switchUnits) {
-            window.switchUnits(savedUnit);
-          }
-        }, 100);
-      }
+      // Initialize from global preferences
+      updateDimensionsFromGlobal();
+      
+      // Listen to global preference changes
+      window.addEventListener('unitChanged', (event) => {
+        updateDimensionsFromGlobal();
+      });
     });
   </script>
 </body>

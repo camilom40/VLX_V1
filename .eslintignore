@@ -1,0 +1,5 @@
+# Ignore EJS template files - they contain server-side template syntax
+# that the JavaScript linter cannot parse correctly
+**/*.ejs
+views/**/*.ejs
+

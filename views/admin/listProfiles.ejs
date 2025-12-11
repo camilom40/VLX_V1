@@ -239,15 +239,6 @@
                 
                 <!-- Right Actions -->
                 <div class="flex items-center gap-3">
-                    <!-- Currency Toggle -->
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-gray-500">Currency:</span>
-                        <div class="currency-toggle">
-                            <button id="copBtn" class="currency-btn active">COP</button>
-                            <button id="usdBtn" class="currency-btn">USD</button>
-                        </div>
-                    </div>
-                    
                     <!-- Weight Unit Toggle -->
                     <div class="flex items-center gap-2">
                         <span class="text-xs text-gray-500">Weight:</span>
@@ -448,16 +439,12 @@
             });
         }
 
-        // Handle currency toggle
-        function switchCurrency(currency) {
-            currentDisplayCurrency = currency;
-            
-            // Update button states
-            document.getElementById('copBtn').classList.toggle('active', currency === 'COP');
-            document.getElementById('usdBtn').classList.toggle('active', currency === 'USD');
-            
-            // Update all prices
-            updatePriceDisplays();
+        // Use global currency preference
+        function updateCurrencyFromGlobal() {
+            if (window.globalPreferences) {
+                currentDisplayCurrency = window.globalPreferences.currency || 'COP';
+                updatePriceDisplays();
+            }
         }
         
         // Weight unit conversion
@@ -711,9 +698,23 @@
                 location.reload();
             });
 
-            // Initialize event listeners
-            document.getElementById('copBtn').addEventListener('click', () => switchCurrency('COP'));
-            document.getElementById('usdBtn').addEventListener('click', () => switchCurrency('USD'));
+            // Initialize from global preferences and listen to changes
+            if (window.globalPreferences) {
+                updateCurrencyFromGlobal();
+            } else {
+                // Wait for global preferences to be available
+                const checkGlobalPrefs = setInterval(() => {
+                    if (window.globalPreferences) {
+                        updateCurrencyFromGlobal();
+                        clearInterval(checkGlobalPrefs);
+                    }
+                }, 100);
+                setTimeout(() => clearInterval(checkGlobalPrefs), 2000);
+            }
+            window.addEventListener('currencyChanged', (event) => {
+                currentDisplayCurrency = event.detail.currency;
+                updatePriceDisplays();
+            });
             
             // Weight unit toggle event listeners
             document.getElementById('kgBtn').addEventListener('click', () => switchWeightUnit('kg'));

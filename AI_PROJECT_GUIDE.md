@@ -846,5 +846,102 @@ npm run dev
 
 ---
 
-*Last Updated: December 2025 - Glass Model Enhancements & Project Details Table Reorganization*
+## December 2025 - Global Preferences, Pricing Fixes & Window System Enhancements
+
+### What We Worked On
+
+1. **Global Currency and Unit Toggle System**
+   - **Header Toggles**: Added persistent currency (COP/USD) and unit (inches/mm) toggle buttons in the main header (`_header.ejs`)
+   - **Global Preferences**: Preferences stored in `localStorage` with keys `globalCurrency` and `globalUnit`
+   - **Event System**: Custom events (`currencyChanged`, `unitChanged`) dispatched when toggles change
+   - **Consistent Display**: All pages listen to global events and update displays accordingly
+   - **Removed Local Toggles**: Removed redundant currency/unit toggles from individual pages:
+     - `projectDetails.ejs` - Removed local currency toggle
+     - `configureWindow.ejs` - Removed local currency and unit toggles
+     - `quotePreview.ejs` - Removed local unit toggle
+     - Admin list pages - Removed local currency toggles
+   - **Integration**: All admin pages (list glasses, profiles, accessories) and window system creation/editing pages now use global preferences
+
+2. **Pricing Calculation System Overhaul**
+   - **Currency Consistency**: All internal calculations now performed in USD
+   - **Database Storage**: All prices stored in USD in database (`unitPrice`, `totalPrice`)
+   - **Currency Conversion Fix**: Fixed critical bug where accessories and muntins were using `convertToCOP` instead of `convertToUSD`, causing calculation mismatches
+   - **Explicit totalPrice**: Set `totalPrice` explicitly in save/update routes to avoid rounding issues from pre-save hooks
+   - **Calculation Matching**: Frontend and backend calculations now match exactly
+   - **Unit Price Display**: Added "Unit Price" field in pricing summary on edit window page to match table display
+   - **Validation**: Updated price validation to use USD-based limits ($1.5M USD per unit)
+
+3. **Window System Enhancements**
+   - **Flange Configuration**: 
+     - Added flange options to window system creation (`composeWindow.ejs`)
+     - Fields: `hasFlange` (boolean), `flangeSize` (string, e.g., "1/2"), `isTrimable` (boolean)
+     - Flange size required when flange is enabled
+     - Displayed in window item description as "Flanged: 1/2""
+     - Shown on project details page below "Low E" (grayed out if "N/A")
+   - **Missile Impact Configuration**:
+     - Moved from glass-level to window system level
+     - Window systems can specify which glass types are compatible with Large Missile Impact (LMI) and Small Missile Impact (SMI)
+     - Multi-select dropdowns for LMI and SMI compatible glasses
+     - Step 4 in window system creation: "Missile Type Configuration"
+     - Step 5 renamed to "Others" (contains Muntins and Flange)
+   - **Glass Model Update**: 
+     - `missile_type` field in Glass model made optional (no longer required)
+     - Removed missile type from glass management pages (add, edit, list)
+
+4. **Window Configuration Flow**
+   - **Missile Type Selection**: Users must select missile type (LMI or SMI) before selecting glass type
+   - **Dynamic Glass Filtering**: Glass type dropdown populated only with glasses compatible with selected missile type
+   - **Edit Mode**: Missile type and glass type pre-selected based on window item description
+   - **Description Updates**: Missile impact type included in window item description
+
+5. **Project Details Page Improvements**
+   - **Dimension Separator**: Changed from "|" to "×" for dimension display
+   - **Column Width Adjustments**: 
+     - Item column: Reduced from `w-24` to `w-16`
+     - Description column: Reduced from `min-w-96` to `min-w-48`
+     - Preview column: Increased from `w-32` to `w-48`
+   - **Preview Image Size**: Increased from 100×75px to 160×120px
+   - **Flange Display**: Shows flange size below "Low E" (grayed out if "N/A")
+   - **Price Formatting**: Prices formatted based on global currency preference
+   - **Unit Display**: Dimensions formatted based on global unit preference
+
+6. **Pricing Summary & Calculation Details**
+   - **Calculation Breakdown Modal**: "Show Calculation Details" button displays detailed breakdown
+   - **Pricing Summary**: Shows unit price and total price in pricing summary section
+   - **Consistent Calculations**: All pricing calculations use same logic (frontend and backend)
+
+#### Key Files Modified
+- `views/partials/_header.ejs` - Added global currency and unit toggle buttons with event system
+- `views/projects/projectDetails.ejs` - Removed local toggles, integrated global preferences, improved layout, added flange display
+- `views/projects/configureWindow.ejs` - Removed local toggles, integrated global preferences, added unit price display, fixed pricing calculations
+- `views/projects/quotePreview.ejs` - Removed local unit toggle, integrated global preferences
+- `views/admin/composeWindow.ejs` - Added flange and missile impact configuration, integrated global unit preferences for length discounts
+- `views/admin/editWindowSystem.ejs` - Added flange and missile impact configuration, integrated global unit preferences
+- `views/admin/listGlasses.ejs` - Removed missile type column, integrated global currency preferences
+- `views/admin/listProfiles.ejs` - Integrated global currency preferences
+- `views/admin/listAccessories.ejs` - Integrated global currency preferences
+- `routes/projectRoutes.js` - Fixed currency conversion (all calculations in USD), explicit totalPrice setting, added flange and missile type to description
+- `routes/admin/windowRoutes.js` - Added flange and missile impact configuration handling
+- `models/Window.js` - Added `flangeConfiguration` and `missileImpactConfiguration` schemas
+- `models/Glass.js` - Made `missile_type` optional
+- `utils/currencyConverter.js` - Enhanced with `convertToUSD` function
+
+#### Technical Notes
+- **Global Preferences**: Stored in `window.globalPreferences` object, initialized on `DOMContentLoaded`
+- **Event System**: Custom events allow pages to react to preference changes without direct coupling
+- **Currency Conversion**: All input prices converted to USD using `convertToUSD()` before calculations
+- **Price Storage**: All prices stored in USD in database, converted for display using `formatCurrency()`
+- **Unit Conversion**: Frontend displays in selected unit, but all values converted to inches before sending to backend
+- **Flange Display**: Extracted from description using regex, displayed with single inch symbol (")
+- **Missile Impact**: Window systems define compatible glasses, users select missile type first, then compatible glasses are filtered
+- **Calculation Consistency**: Frontend `calculatePricingWithUnits()` matches backend calculation logic exactly
+
+#### Migration Notes
+- **Price Migration**: Existing prices in database may need migration from COP to USD (script: `scripts/migratePricesToUSD.js`)
+- **Window Systems**: Existing window systems may need to be updated with new flange and missile impact configurations
+- **Glass Types**: Existing glass types with `missile_type` field will continue to work (field is now optional)
+
+---
+
+*Last Updated: December 2025 - Global Preferences, Pricing Fixes & Window System Enhancements*
 
