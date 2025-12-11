@@ -490,6 +490,7 @@
                     let lowE = 'NO';
                     let missileType = '—';
                     let glassDescription = '';
+                    let flangeSize = 'N/A';
                     
                     if (item.description) {
                       // Extract Glass Type
@@ -502,6 +503,14 @@
                       const glassDescMatch = item.description.match(/Glass Type:\s*[^-]+-\s*(.+?)(?:\n|$)/);
                       if (glassDescMatch) {
                         glassDescription = glassDescMatch[1].trim();
+                      }
+                      
+                      // Extract Flange information
+                      const flangeMatch = item.description.match(/Flanged:\s*([^\n]+)/);
+                      if (flangeMatch) {
+                        flangeSize = flangeMatch[1].trim().replace(/\n/g, '').trim();
+                        // Remove any trailing quotes and add a single quote
+                        flangeSize = flangeSize.replace(/"+$/, '') + '"';
                       }
                     }
                     
@@ -567,6 +576,11 @@
                           <div class="flex items-start gap-2">
                             <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Low E:</span>
                             <span class="text-xs text-gray-700"><%= lowE %></span>
+                          </div>
+                          
+                          <div class="flex items-start gap-2">
+                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Flanged:</span>
+                            <span class="text-xs text-gray-700"><%= flangeSize %></span>
                           </div>
                         </div>
                       </td>

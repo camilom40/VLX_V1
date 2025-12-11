@@ -1103,6 +1103,66 @@
             
           </div>
           
+          <!-- Flange Configuration Section -->
+          <div class="bg-white rounded-xl shadow-lg border border-gray-200 mt-6">
+            <div class="p-6 border-b border-gray-100">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+                    <i class="fas fa-border-style text-blue-600 text-xl"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Flange Configuration</h3>
+                    <p class="text-sm text-gray-500">Configure window flange options</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="flange-enabled" class="sr-only peer" onchange="toggleFlangeConfiguration()">
+                  <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500"></div>
+                  <span id="flange-toggle-label" class="ml-3 text-sm font-medium text-gray-500">No Flange</span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Flange Configuration (Hidden by default) -->
+            <div id="flange-config-section" style="display: none;">
+              <div class="p-6 bg-gray-50 border-b border-gray-100">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="flange-size" class="block text-sm font-semibold text-gray-700 mb-2">
+                      <i class="fas fa-ruler text-blue-500 mr-2"></i>Flange Size
+                    </label>
+                    <input type="text" id="flange-size" class="form-control w-full" placeholder="e.g., 1/2, 3/4, 1" maxlength="10">
+                    <p class="text-xs text-gray-500 mt-2">Enter flange size (e.g., 1/2&quot;, 3/4&quot;, 1&quot;)</p>
+                  </div>
+                  
+                  <div class="flex items-center">
+                    <div class="p-4 bg-white rounded-xl border-2 border-dashed border-blue-200 w-full">
+                      <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="flange-trimable" class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <div class="ml-3">
+                          <span class="text-sm font-medium text-gray-700">Trimable</span>
+                          <p class="text-xs text-gray-500">Users can choose to remove flange when quoting</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Disabled State Message -->
+            <div id="flange-disabled-message" class="p-8 text-center">
+              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-border-none text-gray-400 text-2xl"></i>
+              </div>
+              <h4 class="text-gray-600 font-medium mb-2">No Flange</h4>
+              <p class="text-sm text-gray-500 max-w-md mx-auto">
+                This window system will not have a flange. Toggle the switch above to add flange configuration.
+              </p>
+            </div>
+          </div>
+          
           <div class="mt-8 flex justify-between items-center">
             <button type="button" id="back-to-step3-btn" class="btn-secondary px-6 py-3">
               <i class="fas fa-arrow-left mr-2"></i>Previous Step
@@ -2468,12 +2528,43 @@
     });
     
     // Muntin Configuration
+    let flangeConfiguration = {
+      hasFlange: false,
+      flangeSize: null,
+      isTrimable: false
+    };
+    
     let muntinConfiguration = {
       enabled: false,
       muntinProfile: null,
       showToUser: true
     };
 
+    function toggleFlangeConfiguration() {
+      const enabled = document.getElementById('flange-enabled').checked;
+      const configSection = document.getElementById('flange-config-section');
+      const disabledMessage = document.getElementById('flange-disabled-message');
+      const toggleLabel = document.getElementById('flange-toggle-label');
+      
+      if (enabled) {
+        configSection.style.display = 'block';
+        disabledMessage.style.display = 'none';
+        toggleLabel.textContent = 'Enabled';
+        toggleLabel.classList.remove('text-gray-500');
+        toggleLabel.classList.add('text-blue-600', 'font-semibold');
+        flangeConfiguration.hasFlange = true;
+      } else {
+        configSection.style.display = 'none';
+        disabledMessage.style.display = 'block';
+        toggleLabel.textContent = 'No Flange';
+        toggleLabel.classList.remove('text-blue-600', 'font-semibold');
+        toggleLabel.classList.add('text-gray-500');
+        flangeConfiguration.hasFlange = false;
+        flangeConfiguration.flangeSize = null;
+        flangeConfiguration.isTrimable = false;
+      }
+    }
+    
     function toggleMuntinConfiguration() {
       const enabled = document.getElementById('muntin-enabled').checked;
       const configSection = document.getElementById('muntin-config-section');
@@ -3271,13 +3362,19 @@
       // Update muntin configuration before submission
       updateMuntinConfiguration();
       
+      // Update flange configuration before submission
+      if (flangeConfiguration.hasFlange) {
+        flangeConfiguration.flangeSize = document.getElementById('flange-size').value.trim() || null;
+        flangeConfiguration.isTrimable = document.getElementById('flange-trimable').checked;
+      }
+      
       // Add hidden fields
       const form = event.target;
       
       // Clear existing hidden inputs if any
       const existingInputs = form.querySelectorAll('input[type="hidden"]');
       existingInputs.forEach(input => {
-        if (['profiles', 'accessories', 'muntinConfiguration'].includes(input.name)) {
+        if (['profiles', 'accessories', 'muntinConfiguration', 'flangeConfiguration'].includes(input.name)) {
           input.remove();
         }
       });
@@ -3329,6 +3426,13 @@
       panelConfigurationInput.name = 'panelConfiguration';
       panelConfigurationInput.value = JSON.stringify(panelConfiguration);
       form.appendChild(panelConfigurationInput);
+      
+      // Add flange configuration
+      const flangeConfigurationInput = document.createElement('input');
+      flangeConfigurationInput.type = 'hidden';
+      flangeConfigurationInput.name = 'flangeConfiguration';
+      flangeConfigurationInput.value = JSON.stringify(flangeConfiguration);
+      form.appendChild(flangeConfigurationInput);
       
       // Submit the form
       form.submit();

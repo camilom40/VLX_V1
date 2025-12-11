@@ -30,6 +30,13 @@ const frenchDoorConfigSchema = new Schema({
   showLogo: { type: Boolean, default: true }
 }, { _id: false });
 
+// Flange configuration sub-schema
+const flangeConfigurationSchema = new Schema({
+  hasFlange: { type: Boolean, default: false }, // Whether the window has a flange
+  flangeSize: { type: String, default: null }, // Flange size (e.g., "1/2", "3/4", "1")
+  isTrimable: { type: Boolean, default: false } // Whether the flange can be trimmed/removed by user
+}, { _id: false });
+
 
 // Panel configuration for dynamic preview (e.g., OXXO, OX, XOX)
 const panelConfigurationSchema = new Schema({
@@ -82,7 +89,8 @@ const windowSchema = new Schema({
   }],
   glassRestrictions: [glassRestrictionSchema], // Embedded glass restrictions
   muntinConfiguration: muntinConfigurationSchema, // Muntin configuration
-  panelConfiguration: panelConfigurationSchema // Panel layout for dynamic preview
+  panelConfiguration: panelConfigurationSchema, // Panel layout for dynamic preview
+  flangeConfiguration: flangeConfigurationSchema // Flange configuration
 });
 
 module.exports = mongoose.model('Window', windowSchema);

@@ -246,6 +246,21 @@
                   </select>
                 </div>
               </div>
+              
+              <!-- Flange Option (if trimable) -->
+              <% if (selectedWindowSystem.flangeConfiguration && selectedWindowSystem.flangeConfiguration.hasFlange && selectedWindowSystem.flangeConfiguration.isTrimable) { %>
+                <div class="mt-4">
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" id="includeFlange" name="includeFlange" 
+                           class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                           <%= (typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.description && existingWindow.description.includes('Flanged')) ? 'checked' : 'checked' %>>
+                    <div>
+                      <span class="text-sm font-medium text-gray-700">Include Flange</span>
+                      <p class="text-xs text-gray-500">Flanged: <%= selectedWindowSystem.flangeConfiguration.flangeSize || 'N/A' %>&quot;</p>
+                    </div>
+                  </label>
+                </div>
+              <% } %>
             </div>
           </div>
           

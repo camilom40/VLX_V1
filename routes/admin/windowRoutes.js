@@ -486,6 +486,14 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       console.error('Error parsing panelConfiguration:', e);
       panelConfiguration = { panels: ['O', 'O'], orientation: 'horizontal', operationType: 'sliding' };
     }
+    
+    let flangeConfiguration;
+    try {
+      flangeConfiguration = JSON.parse(req.body.flangeConfiguration || '{}');
+    } catch (e) {
+      console.error('Error parsing flangeConfiguration:', e);
+      flangeConfiguration = { hasFlange: false, flangeSize: null, isTrimable: false };
+    }
 
     const { type } = req.body;
     
@@ -547,6 +555,11 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
         mullionWidth: panelConfiguration.mullionWidth || 2,
         showLogo: panelConfiguration.showLogo !== false,
         frenchDoor: panelConfiguration.frenchDoor || null,
+      },
+      flangeConfiguration: {
+        hasFlange: Boolean(flangeConfiguration.hasFlange),
+        flangeSize: flangeConfiguration.flangeSize || null,
+        isTrimable: Boolean(flangeConfiguration.isTrimable),
       },
     });
 

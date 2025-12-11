@@ -558,7 +558,8 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       glassType,
       profiles,
       accessories,
-      notes
+      notes,
+      includeFlange
     } = req.body;
 
     // Verify project ownership
@@ -769,10 +770,24 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       muntinInfo = `Muntins: ${muntinHorizontal}x${muntinVertical} ${muntinType.charAt(0).toUpperCase() + muntinType.slice(1)} Grid`;
     }
     
+    // Add flange information to description
+    let flangeInfo = '';
+    if (windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.hasFlange) {
+      // If trimable, only include if user checked the box
+      // If not trimable, always include
+      const shouldIncludeFlange = windowSystem.flangeConfiguration.isTrimable 
+        ? includeFlange === 'on' || includeFlange === true
+        : true;
+      
+      if (shouldIncludeFlange && windowSystem.flangeConfiguration.flangeSize) {
+        flangeInfo = `Flanged: ${windowSystem.flangeConfiguration.flangeSize}"\n`;
+      }
+    }
+    
     const description = `
 Window System: ${windowSystem.type}
 Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}
-User-Configured Profiles: ${userConfigurableProfiles.length}
+${flangeInfo}User-Configured Profiles: ${userConfigurableProfiles.length}
 Auto-Managed Profiles: ${autoManagedProfiles.length}
 User-Configured Accessories: ${userConfigurableAccessories.length}
 Auto-Managed Accessories: ${autoManagedAccessories.length}
@@ -951,7 +966,8 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       glassType,
       profiles,
       accessories,
-      notes
+      notes,
+      includeFlange
     } = req.body;
 
     // Verify project ownership
@@ -1160,10 +1176,24 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       muntinInfo = `Muntins: ${muntinHorizontal}x${muntinVertical} ${muntinType.charAt(0).toUpperCase() + muntinType.slice(1)} Grid`;
     }
     
+    // Add flange information to description
+    let flangeInfo = '';
+    if (windowSystem.flangeConfiguration && windowSystem.flangeConfiguration.hasFlange) {
+      // If trimable, only include if user checked the box
+      // If not trimable, always include
+      const shouldIncludeFlange = windowSystem.flangeConfiguration.isTrimable 
+        ? includeFlange === 'on' || includeFlange === true
+        : true;
+      
+      if (shouldIncludeFlange && windowSystem.flangeConfiguration.flangeSize) {
+        flangeInfo = `Flanged: ${windowSystem.flangeConfiguration.flangeSize}"\n`;
+      }
+    }
+    
     const description = `
 Window System: ${windowSystem.type}
 Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}
-User-Configured Profiles: ${userConfigurableProfiles.length}
+${flangeInfo}User-Configured Profiles: ${userConfigurableProfiles.length}
 Auto-Managed Profiles: ${autoManagedProfiles.length}
 User-Configured Accessories: ${userConfigurableAccessories.length}
 Auto-Managed Accessories: ${autoManagedAccessories.length}
