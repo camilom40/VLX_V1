@@ -575,9 +575,11 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       return res.status(404).send('Project not found or access denied.');
     }
 
-    // Get window system for reference
+    // Get window system for reference (populate profiles and accessories)
     const WindowSystem = require('../models/Window');
-    const windowSystem = await WindowSystem.findById(windowSystemId);
+    const windowSystem = await WindowSystem.findById(windowSystemId)
+      .populate('profiles.profile')
+      .populate('accessories.accessory');
     if (!windowSystem) {
       return res.status(404).send('Window system not found.');
     }
@@ -626,11 +628,48 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     const userConfigurableProfiles = windowSystem.profiles.filter(p => p.showToUser);
     
     // Add user-configurable profile costs
-    for (const profileItem of userConfigurableProfiles) {
+    // Read user-selected profiles from form submission
+    const userSelectedProfiles = Array.isArray(profiles) ? profiles : [];
+    
+    for (let i = 0; i < userConfigurableProfiles.length; i++) {
+      const profileItem = userConfigurableProfiles[i];
       // profileItem.profile is the populated Profile document
       const profileDoc = profileItem.profile;
       if (!profileDoc) continue;
       
+      // Get user-selected profile data (if provided)
+      let selectedProfileId = profileDoc._id.toString();
+      let selectedQuantity = profileItem.quantity || 1;
+      let lengthDiscount = 0; // Default no discount
+      
+      if (userSelectedProfiles[i]) {
+        // User selected a different profile
+        if (userSelectedProfiles[i].profileId) {
+          selectedProfileId = userSelectedProfiles[i].profileId;
+          // Find the selected profile document
+          const selectedProfileDoc = allProfiles.find(p => p._id.toString() === selectedProfileId);
+          if (selectedProfileDoc) {
+            const profileCostUSD = convertToUSD(selectedProfileDoc.pricePerMeter, selectedProfileDoc.currency || 'COP', exchangeRate);
+            selectedQuantity = parseInt(userSelectedProfiles[i].quantity) || profileItem.quantity || 1;
+            lengthDiscount = parseFloat(userSelectedProfiles[i].lengthDiscount) || 0;
+            
+            // Convert length discount from inches to meters
+            const lengthDiscountMeters = lengthDiscount * 0.0254;
+            const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
+            
+            const profileCost = profileCostUSD * adjustedLength * selectedQuantity;
+            profileCostTotal += profileCost;
+            profileCosts.push({
+              name: selectedProfileDoc.name,
+              cost: profileCost,
+              isUserConfigurable: true
+            });
+            continue;
+          }
+        }
+      }
+      
+      // Fallback to default profile if no user selection
       const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'COP', exchangeRate);
       const profileQuantity = profileItem.quantity || 1;
       const profileCost = profileCostUSD * perimeterMeters * profileQuantity;
@@ -810,9 +849,11 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       }
     }
     
+    // Extract missile type (used for both description and storage)
+    const missileType = req.body.missileType || '';
+    
     // Add missile impact type to description
     let missileInfo = '';
-    const missileType = req.body.missileType;
     if (missileType && (missileType === 'LMI' || missileType === 'SMI')) {
       const missileTypeLabel = missileType === 'LMI' ? 'Large Missile Impact (LMI)' : 'Small Missile Impact (SMI)';
       missileInfo = `Missile Impact: ${missileTypeLabel}\n`;
@@ -881,6 +922,84 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       return res.status(400).send(`Calculated unit price ($${unitPrice.toLocaleString()}) exceeds the maximum reasonable value. This may indicate a calculation error. Please check the window dimensions, glass type, profiles, and accessories.`);
     }
 
+    // Extract selected profiles and accessories from form data
+    const selectedProfiles = [];
+    if (profiles && Array.isArray(profiles)) {
+      profiles.forEach((profileData, index) => {
+        if (profileData.profileId && userConfigurableProfiles[index]) {
+          selectedProfiles.push({
+            profileId: profileData.profileId,
+            quantity: parseInt(profileData.quantity) || userConfigurableProfiles[index].quantity || 1,
+            lengthDiscount: parseFloat(profileData.lengthDiscount) || 0,
+            orientation: profileData.orientation || userConfigurableProfiles[index].orientation || 'horizontal'
+          });
+        }
+      });
+    }
+    
+    // Extract selected accessories from form data
+    const selectedAccessories = [];
+    
+    // Process choice group accessories
+    Object.keys(req.body).forEach(key => {
+      if (key.startsWith('choiceGroup_')) {
+        const groupName = key.replace('choiceGroup_', '');
+        const selectedAccessoryIds = Array.isArray(req.body[key]) ? req.body[key] : [req.body[key]];
+        
+        selectedAccessoryIds.forEach(accessoryId => {
+          if (accessoryId) {
+            const quantityKey = `accessories_choice_${groupName}_${accessoryId}_quantity`;
+            const quantity = parseInt(req.body[quantityKey]) || 1;
+            
+            // Find the accessory item to get selection type
+            const accessoryItem = userConfigurableAccessories.find(a => 
+              a.accessory && (a.accessory._id ? a.accessory._id.toString() : a.accessory.toString()) === accessoryId
+            );
+            
+            selectedAccessories.push({
+              accessoryId: accessoryId,
+              quantity: quantity,
+              componentGroup: groupName,
+              selectionType: accessoryItem?.selectionType || 'quantity'
+            });
+          }
+        });
+      }
+    });
+    
+    // Process individual quantity-based accessories
+    if (accessories && Array.isArray(accessories)) {
+      accessories.forEach(accessoryData => {
+        if (accessoryData.accessoryId) {
+          // Check if already added from choice groups
+          const alreadyAdded = selectedAccessories.some(sa => 
+            sa.accessoryId.toString() === accessoryData.accessoryId.toString()
+          );
+          
+          if (!alreadyAdded) {
+            selectedAccessories.push({
+              accessoryId: accessoryData.accessoryId,
+              quantity: parseInt(accessoryData.quantity) || 1,
+              componentGroup: null,
+              selectionType: 'quantity'
+            });
+          }
+        }
+      });
+    }
+    
+    // Extract muntin configuration if applicable
+    let muntinConfig = null;
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+      muntinConfig = {
+        muntinType: req.body.muntinType || windowSystem.muntinConfiguration.muntinType || null,
+        horizontalDivisions: parseInt(req.body.muntinHorizontal) || windowSystem.muntinConfiguration.horizontalDivisions || null,
+        verticalDivisions: parseInt(req.body.muntinVertical) || windowSystem.muntinConfiguration.verticalDivisions || null,
+        spacing: parseFloat(req.body.muntinSpacing) || windowSystem.muntinConfiguration.spacing || null,
+        muntinProfileId: windowSystem.muntinConfiguration.muntinProfile || null
+      };
+    }
+    
     // Create window item with explicit totalPrice to maintain accuracy
     const newWindowItem = new WindowItem({
       projectId,
@@ -893,7 +1012,15 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       material: 'Aluminum/Glass',
       color: 'Various',
       style: windowSystem.type,
-      description: description
+      description: description,
+      windowSystemId: windowSystemId,
+      selectedGlassId: glassType,
+      missileType: missileType,
+      includeFlange: includeFlange === 'on' || includeFlange === true,
+      selectedProfiles: selectedProfiles,
+      selectedAccessories: selectedAccessories,
+      muntinConfiguration: muntinConfig,
+      notes: notes || ''
     });
 
     await newWindowItem.save();
@@ -963,8 +1090,34 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
     ]);
 
     // Filter user-configurable items
-    const userConfigurableProfiles = selectedWindowSystem.profiles.filter(profile => profile.showToUser);
+    let userConfigurableProfiles = selectedWindowSystem.profiles.filter(profile => profile.showToUser);
     const userConfigurableAccessories = selectedWindowSystem.accessories.filter(accessory => accessory.showToUser);
+
+    // Restore saved profile selections if they exist
+    if (existingWindow.selectedProfiles && existingWindow.selectedProfiles.length > 0) {
+      // Map saved selections to user-configurable profiles
+      userConfigurableProfiles = userConfigurableProfiles.map((profileItem, index) => {
+        const savedProfile = existingWindow.selectedProfiles[index];
+        if (savedProfile && savedProfile.profileId) {
+          // Find the saved profile in allProfiles
+          const savedProfileDoc = allProfiles.find(p => 
+            p._id.toString() === savedProfile.profileId.toString()
+          );
+          
+          if (savedProfileDoc) {
+            // Create a modified profile item with saved selections
+            return {
+              ...profileItem.toObject ? profileItem.toObject() : profileItem,
+              profile: savedProfileDoc,
+              quantity: savedProfile.quantity || profileItem.quantity || 1,
+              lengthDiscount: savedProfile.lengthDiscount || profileItem.lengthDiscount || 0,
+              orientation: savedProfile.orientation || profileItem.orientation || 'horizontal'
+            };
+          }
+        }
+        return profileItem;
+      });
+    }
 
     // Group accessories by component groups for choice selection
     const accessoryChoiceGroups = {};
@@ -985,6 +1138,21 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
         individualAccessories.push(accessoryItem);
       }
     });
+    
+    // Restore saved accessory selections
+    const savedAccessorySelections = {};
+    if (existingWindow.selectedAccessories && existingWindow.selectedAccessories.length > 0) {
+      existingWindow.selectedAccessories.forEach(savedAcc => {
+        const accId = savedAcc.accessoryId ? savedAcc.accessoryId.toString() : null;
+        if (accId) {
+          savedAccessorySelections[accId] = {
+            quantity: savedAcc.quantity || 1,
+            componentGroup: savedAcc.componentGroup,
+            selectionType: savedAcc.selectionType || 'quantity'
+          };
+        }
+      });
+    }
 
     res.render('projects/configureWindow', {
       project,
@@ -1000,6 +1168,7 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       costSettings: costSettings || {},
       exchangeRate: await getExchangeRate(),
       existingWindow, // Pass existing window data for pre-filling form
+      savedAccessorySelections, // Pass saved accessory selections for restoration
       isEdit: true    // Flag to indicate this is edit mode
     });
 
@@ -1093,11 +1262,48 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     const userConfigurableProfiles = windowSystem.profiles.filter(p => p.showToUser);
     
     // Add user-configurable profile costs
-    for (const profileItem of userConfigurableProfiles) {
+    // Read user-selected profiles from form submission
+    const userSelectedProfiles = Array.isArray(profiles) ? profiles : [];
+    
+    for (let i = 0; i < userConfigurableProfiles.length; i++) {
+      const profileItem = userConfigurableProfiles[i];
       // profileItem.profile is the populated Profile document
       const profileDoc = profileItem.profile;
       if (!profileDoc) continue;
       
+      // Get user-selected profile data (if provided)
+      let selectedProfileId = profileDoc._id.toString();
+      let selectedQuantity = profileItem.quantity || 1;
+      let lengthDiscount = 0; // Default no discount
+      
+      if (userSelectedProfiles[i]) {
+        // User selected a different profile
+        if (userSelectedProfiles[i].profileId) {
+          selectedProfileId = userSelectedProfiles[i].profileId;
+          // Find the selected profile document
+          const selectedProfileDoc = allProfiles.find(p => p._id.toString() === selectedProfileId);
+          if (selectedProfileDoc) {
+            const profileCostUSD = convertToUSD(selectedProfileDoc.pricePerMeter, selectedProfileDoc.currency || 'COP', exchangeRate);
+            selectedQuantity = parseInt(userSelectedProfiles[i].quantity) || profileItem.quantity || 1;
+            lengthDiscount = parseFloat(userSelectedProfiles[i].lengthDiscount) || 0;
+            
+            // Convert length discount from inches to meters
+            const lengthDiscountMeters = lengthDiscount * 0.0254;
+            const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
+            
+            const profileCost = profileCostUSD * adjustedLength * selectedQuantity;
+            profileCostTotal += profileCost;
+            profileCosts.push({
+              name: selectedProfileDoc.name,
+              cost: profileCost,
+              isUserConfigurable: true
+            });
+            continue;
+          }
+        }
+      }
+      
+      // Fallback to default profile if no user selection
       const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'COP', exchangeRate);
       const profileQuantity = profileItem.quantity || 1;
       const profileCost = profileCostUSD * perimeterMeters * profileQuantity;
@@ -1287,9 +1493,11 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       }
     }
     
+    // Extract missile type (used for both description and storage)
+    const missileType = req.body.missileType || '';
+    
     // Add missile impact type to description
     let missileInfo = '';
-    const missileType = req.body.missileType;
     if (missileType && (missileType === 'LMI' || missileType === 'SMI')) {
       const missileTypeLabel = missileType === 'LMI' ? 'Large Missile Impact (LMI)' : 'Small Missile Impact (SMI)';
       missileInfo = `Missile Impact: ${missileTypeLabel}\n`;
@@ -1344,6 +1552,84 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       return res.status(400).send(`An item with the name "${windowRef}" already exists in this project. Please choose a different name.`);
     }
 
+    // Extract selected profiles and accessories from form data (same as save route)
+    const selectedProfiles = [];
+    if (profiles && Array.isArray(profiles)) {
+      profiles.forEach((profileData, index) => {
+        if (profileData.profileId && userConfigurableProfiles[index]) {
+          selectedProfiles.push({
+            profileId: profileData.profileId,
+            quantity: parseInt(profileData.quantity) || userConfigurableProfiles[index].quantity || 1,
+            lengthDiscount: parseFloat(profileData.lengthDiscount) || 0,
+            orientation: profileData.orientation || userConfigurableProfiles[index].orientation || 'horizontal'
+          });
+        }
+      });
+    }
+    
+    // Extract selected accessories from form data
+    const selectedAccessories = [];
+    
+    // Process choice group accessories
+    Object.keys(req.body).forEach(key => {
+      if (key.startsWith('choiceGroup_')) {
+        const groupName = key.replace('choiceGroup_', '');
+        const selectedAccessoryIds = Array.isArray(req.body[key]) ? req.body[key] : [req.body[key]];
+        
+        selectedAccessoryIds.forEach(accessoryId => {
+          if (accessoryId) {
+            const quantityKey = `accessories_choice_${groupName}_${accessoryId}_quantity`;
+            const quantity = parseInt(req.body[quantityKey]) || 1;
+            
+            // Find the accessory item to get selection type
+            const accessoryItem = userConfigurableAccessories.find(a => 
+              a.accessory && (a.accessory._id ? a.accessory._id.toString() : a.accessory.toString()) === accessoryId
+            );
+            
+            selectedAccessories.push({
+              accessoryId: accessoryId,
+              quantity: quantity,
+              componentGroup: groupName,
+              selectionType: accessoryItem?.selectionType || 'quantity'
+            });
+          }
+        });
+      }
+    });
+    
+    // Process individual quantity-based accessories
+    if (accessories && Array.isArray(accessories)) {
+      accessories.forEach(accessoryData => {
+        if (accessoryData.accessoryId) {
+          // Check if already added from choice groups
+          const alreadyAdded = selectedAccessories.some(sa => 
+            sa.accessoryId.toString() === accessoryData.accessoryId.toString()
+          );
+          
+          if (!alreadyAdded) {
+            selectedAccessories.push({
+              accessoryId: accessoryData.accessoryId,
+              quantity: parseInt(accessoryData.quantity) || 1,
+              componentGroup: null,
+              selectionType: 'quantity'
+            });
+          }
+        }
+      });
+    }
+    
+    // Extract muntin configuration if applicable
+    let muntinConfig = null;
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+      muntinConfig = {
+        muntinType: req.body.muntinType || windowSystem.muntinConfiguration.muntinType || null,
+        horizontalDivisions: parseInt(req.body.muntinHorizontal) || windowSystem.muntinConfiguration.horizontalDivisions || null,
+        verticalDivisions: parseInt(req.body.muntinVertical) || windowSystem.muntinConfiguration.verticalDivisions || null,
+        spacing: parseFloat(req.body.muntinSpacing) || windowSystem.muntinConfiguration.spacing || null,
+        muntinProfileId: windowSystem.muntinConfiguration.muntinProfile || null
+      };
+    }
+    
     // Use finalPrice as totalPrice to avoid rounding errors
     // The finalPrice is the total cost for all units, so it should be used directly
     // The unitPrice is calculated from finalPrice/quantity for display purposes
@@ -1363,7 +1649,15 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       material: 'Aluminum/Glass',
       color: 'Various',
       style: windowSystem.type,
-      description: description
+      description: description,
+      windowSystemId: windowSystemId,
+      selectedGlassId: glassType,
+      missileType: missileType,
+      includeFlange: includeFlange === 'on' || includeFlange === true,
+      selectedProfiles: selectedProfiles,
+      selectedAccessories: selectedAccessories,
+      muntinConfiguration: muntinConfig,
+      notes: notes || ''
     });
 
     console.log(`Window ${windowRef} updated for project ${projectId}`);

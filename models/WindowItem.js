@@ -61,6 +61,53 @@ const windowItemSchema = new Schema({
       const quantity = isNaN(this.quantity) ? 1 : this.quantity;
       return unitPrice * quantity;
     }
+  },
+  // Store selected configurations for restoration in edit mode
+  windowSystemId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Window',
+    default: null
+  },
+  selectedGlassId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Glass',
+    default: null
+  },
+  missileType: {
+    type: String,
+    enum: ['LMI', 'SMI', ''],
+    default: ''
+  },
+  includeFlange: {
+    type: Boolean,
+    default: false
+  },
+  // Store user-selected profiles (for user-configurable profiles only)
+  selectedProfiles: [{
+    profileId: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
+    quantity: { type: Number, required: true, default: 1 },
+    lengthDiscount: { type: Number, default: 0 }, // Stored in inches
+    orientation: { type: String, enum: ['horizontal', 'vertical'], default: 'horizontal' }
+  }],
+  // Store user-selected accessories
+  selectedAccessories: [{
+    accessoryId: { type: Schema.Types.ObjectId, ref: 'Accessory', required: true },
+    quantity: { type: Number, required: true, default: 1 },
+    componentGroup: { type: String, default: null }, // For choice groups
+    selectionType: { type: String, enum: ['single', 'multiple', 'quantity'], default: 'quantity' }
+  }],
+  // Store muntin configuration if applicable
+  muntinConfiguration: {
+    muntinType: { type: String, enum: ['colonial', 'geometric', 'custom'], default: null },
+    horizontalDivisions: { type: Number, default: null },
+    verticalDivisions: { type: Number, default: null },
+    spacing: { type: Number, default: null },
+    muntinProfileId: { type: Schema.Types.ObjectId, ref: 'Profile', default: null }
+  },
+  notes: {
+    type: String,
+    trim: true,
+    default: ''
   }
 }, {
   timestamps: true
