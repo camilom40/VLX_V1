@@ -415,8 +415,9 @@
                       <div class="text-gray-500">Dimensions <span id="mobileDimensionsUnit">(in)</span>:</div>
                       <div class="text-gray-800 dimension-display" 
                            data-width-inches="<%= item.width %>" 
-                           data-height-inches="<%= item.height %>">
-                        <%= parseFloat(item.width).toFixed(2) %> × <%= parseFloat(item.height).toFixed(2) %>
+                           data-height-inches="<%= item.height %>"
+                           data-mobile="true">
+                        <%= parseFloat(item.width).toFixed(2) %> × <%= parseFloat(item.height).toFixed(2) %> <span class="dimension-unit">in</span>
                       </div>
                       
                       <div class="text-gray-500">Quantity:</div>
@@ -472,9 +473,9 @@
               <table class="data-table" style="min-width: 1200px;">
                 <thead>
                   <tr>
-                    <th class="w-24">Item</th>
-                    <th class="w-32">Preview</th>
-                    <th class="min-w-96">Description</th>
+                    <th class="w-16">Item</th>
+                    <th class="w-48">Preview</th>
+                    <th class="min-w-48">Description</th>
                     <th class="text-center w-20">Qty</th>
                     <th class="text-right w-32">Unit Price</th>
                     <th class="text-right w-32">Total</th>
@@ -520,7 +521,7 @@
                              data-width="<%= item.width %>"
                              data-height="<%= item.height %>"
                              data-panel-config="<%= item.windowSystem && item.windowSystem.panelConfiguration ? JSON.stringify(item.windowSystem.panelConfiguration) : '{}' %>"
-                             style="width: 100px; height: 75px; margin: 0 auto;">
+                             style="width: 160px; height: 120px; margin: 0 auto;">
                         </div>
                       </td>
                       <td class="py-3">
@@ -530,9 +531,9 @@
                             <span class="text-xs font-medium text-gray-900 dimension-display" 
                                   data-width-inches="<%= item.width %>" 
                                   data-height-inches="<%= item.height %>">
-                              <span>Width: <%= parseFloat(item.width).toFixed(2) %></span>
-                              <span class="mx-1.5 text-gray-400">|</span>
-                              <span>Height: <%= parseFloat(item.height).toFixed(2) %></span>
+                              <span>Width: <%= parseFloat(item.width).toFixed(2) %> <span class="dimension-unit">in</span></span>
+                              <span class="mx-1.5 text-gray-400">×</span>
+                              <span>Height: <%= parseFloat(item.height).toFixed(2) %> <span class="dimension-unit">in</span></span>
                             </span>
                           </div>
                           
@@ -548,13 +549,15 @@
                           
                           <div class="flex items-start gap-2">
                             <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Glass Type:</span>
-                            <div class="flex-1">
-                              <span class="text-xs text-gray-700"><%= glassType %></span>
-                              <% if (glassDescription) { %>
-                                <div class="text-xs text-gray-600 mt-0.5"><%= glassDescription %></div>
-                              <% } %>
-                            </div>
+                            <span class="text-xs text-gray-700"><%= glassType %></span>
                           </div>
+                          
+                          <% if (glassDescription) { %>
+                          <div class="flex items-start gap-2">
+                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Glass Description:</span>
+                            <span class="text-xs text-gray-700"><%= glassDescription %></span>
+                          </div>
+                          <% } %>
                           
                           <div class="flex items-start gap-2">
                             <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Glass Color:</span>
@@ -1205,21 +1208,52 @@
       document.querySelectorAll('.dimension-display').forEach(display => {
         const widthInches = parseFloat(display.dataset.widthInches);
         const heightInches = parseFloat(display.dataset.heightInches);
+        const isMobile = display.dataset.mobile === 'true';
         
         if (isNaN(widthInches) || isNaN(heightInches)) return;
         
-        // Find width and height spans within the dimension-display container
-        const widthSpan = display.querySelector('span:first-of-type');
-        const heightSpan = display.querySelector('span:last-of-type');
-        
-        if (unit === 'inches') {
-          if (widthSpan) widthSpan.textContent = `Width: ${widthInches.toFixed(2)}`;
-          if (heightSpan) heightSpan.textContent = `Height: ${heightInches.toFixed(2)}`;
+        if (isMobile) {
+          // Mobile format: "X × Y unit"
+          const unitSpan = display.querySelector('.dimension-unit');
+          if (unit === 'inches') {
+            display.innerHTML = `${widthInches.toFixed(2)} × ${heightInches.toFixed(2)} <span class="dimension-unit">in</span>`;
+          } else {
+            const widthMm = inchesToMm(widthInches);
+            const heightMm = inchesToMm(heightInches);
+            display.innerHTML = `${Math.round(widthMm)} × ${Math.round(heightMm)} <span class="dimension-unit">mm</span>`;
+          }
         } else {
-          const widthMm = inchesToMm(widthInches);
-          const heightMm = inchesToMm(heightInches);
-          if (widthSpan) widthSpan.textContent = `Width: ${Math.round(widthMm)}`;
-          if (heightSpan) heightSpan.textContent = `Height: ${Math.round(heightMm)}`;
+          // Desktop format: <span>Width: ... <span class="dimension-unit">in</span></span> | <span>Height: ... <span class="dimension-unit">in</span></span>
+          const allSpans = Array.from(display.children);
+          let widthSpan = null;
+          let heightSpan = null;
+          
+          // Find spans that contain "Width:" or "Height:" text
+          allSpans.forEach(span => {
+            if (span.textContent && span.textContent.trim().startsWith('Width:')) {
+              widthSpan = span;
+            } else if (span.textContent && span.textContent.trim().startsWith('Height:')) {
+              heightSpan = span;
+            }
+          });
+          
+          if (unit === 'inches') {
+            if (widthSpan) {
+              widthSpan.innerHTML = `Width: ${widthInches.toFixed(2)} <span class="dimension-unit">in</span>`;
+            }
+            if (heightSpan) {
+              heightSpan.innerHTML = `Height: ${heightInches.toFixed(2)} <span class="dimension-unit">in</span>`;
+            }
+          } else {
+            const widthMm = inchesToMm(widthInches);
+            const heightMm = inchesToMm(heightInches);
+            if (widthSpan) {
+              widthSpan.innerHTML = `Width: ${Math.round(widthMm)} <span class="dimension-unit">mm</span>`;
+            }
+            if (heightSpan) {
+              heightSpan.innerHTML = `Height: ${Math.round(heightMm)} <span class="dimension-unit">mm</span>`;
+            }
+          }
         }
       });
       
