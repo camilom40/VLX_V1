@@ -199,6 +199,8 @@
                maxlength="50"
                value="<%= windowRef %>">
         <p class="text-xs text-gray-500 mt-1.5">Enter a unique reference name for this window item</p>
+        <div id="nameError" class="text-xs text-red-600 mt-1.5 hidden"></div>
+        <div id="nameSuccess" class="text-xs text-green-600 mt-1.5 hidden">✓ Name is available</div>
       </div>
       
       <!-- Edit Mode Notice -->
@@ -1781,8 +1783,187 @@
     // Override the original calculatePricing function
     window.calculatePricing = calculatePricingWithUnits;
 
-    // Form submission handler to ensure backend gets inches
-    document.getElementById('windowConfigForm').addEventListener('submit', function(e) {
+    // Real-time name validation
+    let nameCheckTimeout;
+    const windowRefInput = document.getElementById('windowRef');
+    const nameErrorDiv = document.getElementById('nameError');
+    const nameSuccessDiv = document.getElementById('nameSuccess');
+    const submitButton = document.querySelector('#windowConfigForm button[type="submit"]') || 
+                         document.querySelector('#windowConfigForm input[type="submit"]') ||
+                         document.querySelector('button[type="submit"]');
+    let isNameValid = true;
+    
+    <% if (typeof isEdit !== 'undefined' && isEdit && existingWindow) { %>
+    const currentWindowId = '<%= existingWindow._id %>';
+    <% } else { %>
+    const currentWindowId = null;
+    <% } %>
+    const projectId = '<%= project._id %>';
+    
+    if (windowRefInput) {
+      windowRefInput.addEventListener('input', function() {
+        const name = this.value.trim();
+        
+        // Clear previous timeout
+        clearTimeout(nameCheckTimeout);
+        
+        // Hide messages while typing
+        if (nameErrorDiv) nameErrorDiv.classList.add('hidden');
+        if (nameSuccessDiv) nameSuccessDiv.classList.add('hidden');
+        
+        // Reset validation state
+        isNameValid = true;
+        if (submitButton) submitButton.disabled = false;
+        if (windowRefInput) windowRefInput.classList.remove('border-red-500');
+        
+        // If name is empty, don't check
+        if (!name) {
+          return;
+        }
+        
+        // Debounce: wait 500ms after user stops typing
+        nameCheckTimeout = setTimeout(async function() {
+          try {
+            const excludeParam = currentWindowId ? `&excludeId=${currentWindowId}` : '';
+            const response = await fetch(`/projects/${projectId}/check-item-name?name=${encodeURIComponent(name)}${excludeParam}`);
+            const data = await response.json();
+            
+            if (data.exists) {
+              // Name already exists
+              isNameValid = false;
+              if (nameErrorDiv) {
+                nameErrorDiv.textContent = data.message || `An item with the name "${name}" already exists in this project.`;
+                nameErrorDiv.classList.remove('hidden');
+              }
+              if (nameSuccessDiv) nameSuccessDiv.classList.add('hidden');
+              if (windowRefInput) {
+                windowRefInput.classList.add('border-red-500');
+                // Scroll to the input field and focus it
+                windowRefInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => windowRefInput.focus(), 300);
+              }
+              if (submitButton) submitButton.disabled = true;
+            } else {
+              // Name is available
+              isNameValid = true;
+              if (nameErrorDiv) nameErrorDiv.classList.add('hidden');
+              if (nameSuccessDiv) nameSuccessDiv.classList.remove('hidden');
+              if (windowRefInput) windowRefInput.classList.remove('border-red-500');
+              if (submitButton) submitButton.disabled = false;
+            }
+          } catch (error) {
+            console.error('Error checking name:', error);
+            // On error, allow submission (server will validate)
+            isNameValid = true;
+            if (nameErrorDiv) nameErrorDiv.classList.add('hidden');
+            if (nameSuccessDiv) nameSuccessDiv.classList.add('hidden');
+            if (submitButton) submitButton.disabled = false;
+          }
+        }, 500);
+      });
+    }
+    
+    // Form submission handler to ensure backend gets inches and validate name
+    let isSubmitting = false;
+    const form = document.getElementById('windowConfigForm');
+    const formSubmitHandler = function(e) {
+      // If we're already in the process of submitting after validation, allow it
+      if (isSubmitting) {
+        return true;
+      }
+      
+      // Prevent submission if name is invalid
+      if (!isNameValid) {
+        e.preventDefault();
+        // Scroll to the top of the page first to show the error
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+          // Show error message
+          if (nameErrorDiv) {
+            nameErrorDiv.classList.remove('hidden');
+          }
+          // Then scroll to the name field and focus it
+          if (windowRefInput) {
+            windowRefInput.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => {
+              windowRefInput.focus();
+            }, 200);
+          }
+        }, 100);
+        return false;
+      }
+      
+      // Double-check name one more time before submitting (in case validation hasn't completed)
+      const name = windowRefInput ? windowRefInput.value.trim() : '';
+      if (name) {
+        // Cancel submission and check name
+        e.preventDefault();
+        const excludeParam = currentWindowId ? `&excludeId=${currentWindowId}` : '';
+        fetch(`/projects/${projectId}/check-item-name?name=${encodeURIComponent(name)}${excludeParam}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.exists) {
+              // Name exists, show error and scroll to top
+              isNameValid = false;
+              if (nameErrorDiv) {
+                nameErrorDiv.textContent = data.message || `An item with the name "${name}" already exists in this project.`;
+                nameErrorDiv.classList.remove('hidden');
+              }
+              if (nameSuccessDiv) nameSuccessDiv.classList.add('hidden');
+              if (windowRefInput) {
+                windowRefInput.classList.add('border-red-500');
+                // Scroll to top of page first to show the error
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setTimeout(() => {
+                  // Then scroll to the name field and focus it
+                  windowRefInput.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  setTimeout(() => {
+                    windowRefInput.focus();
+                  }, 200);
+                }, 100);
+              }
+              if (submitButton) submitButton.disabled = true;
+            } else {
+              // Name is valid, proceed with submission
+              isNameValid = true;
+              isSubmitting = true;
+              
+              // Convert measurements if needed before submitting
+              const widthInput = document.getElementById('width');
+              const heightInput = document.getElementById('height');
+              const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
+              
+              if (currentUnit === 'mm') {
+                if (widthInput && widthInput.value) {
+                  widthInput.value = mmToInches(parseFloat(widthInput.value)).toFixed(2);
+                }
+                if (heightInput && heightInput.value) {
+                  heightInput.value = mmToInches(parseFloat(heightInput.value)).toFixed(2);
+                }
+                lengthDiscountInputs.forEach(input => {
+                  if (input.value) {
+                    input.value = mmToInches(parseFloat(input.value)).toFixed(2);
+                  }
+                });
+                document.getElementById('currentUnit').value = 'inches';
+              }
+              
+              // Remove event listener temporarily to prevent loop, then submit
+              form.removeEventListener('submit', formSubmitHandler);
+              form.submit();
+            }
+          })
+          .catch(error => {
+            console.error('Error checking name:', error);
+            // On error, allow submission (server will validate)
+            isSubmitting = true;
+            form.removeEventListener('submit', formSubmitHandler);
+            form.submit();
+          });
+        return false;
+      }
+      
+      // If no name validation needed, just convert measurements
       const widthInput = document.getElementById('width');
       const heightInput = document.getElementById('height');
       const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
@@ -1790,10 +1971,10 @@
       // Convert all measurements to inches if currently in mm
       if (currentUnit === 'mm') {
         // Convert width and height
-        if (widthInput.value) {
+        if (widthInput && widthInput.value) {
           widthInput.value = mmToInches(parseFloat(widthInput.value)).toFixed(2);
         }
-        if (heightInput.value) {
+        if (heightInput && heightInput.value) {
           heightInput.value = mmToInches(parseFloat(heightInput.value)).toFixed(2);
         }
         
@@ -1807,7 +1988,9 @@
         // Update the unit tracker to inches so backend knows it's receiving inches
         document.getElementById('currentUnit').value = 'inches';
       }
-    });
+    };
+    
+    form.addEventListener('submit', formSubmitHandler);
 
     // Choice group functions
     function selectChoice(choiceCard) {

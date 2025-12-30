@@ -528,13 +528,32 @@ router.post('/projects/:projectId/items/:itemId/duplicate', isAuthenticated, asy
     }
 
     // Generate a unique item name
-    // Always start with a number suffix since we're duplicating
-    const baseName = originalItem.itemName;
-    let newItemName = `${baseName} (2)`;
-    let counter = 2;
+    // Extract base name (remove any existing number suffix like " (2)", " (3)", etc.)
+    let baseName = originalItem.itemName;
+    const suffixMatch = baseName.match(/^(.+?)\s*\(\d+\)\s*$/);
+    if (suffixMatch) {
+      baseName = suffixMatch[1].trim(); // Remove the existing suffix
+    }
     
-    // Check if the name already exists and find a unique name
-    // Exclude the original item from the check
+    // Find all items with the same base name pattern to determine the next number
+    const allItems = await WindowItem.find({ 
+      projectId,
+      itemName: { $regex: `^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\(\\d+\\)\\s*$` }
+    });
+    
+    // Extract all numbers from existing items
+    const existingNumbers = allItems
+      .map(item => {
+        const match = item.itemName.match(/\((\d+)\)/);
+        return match ? parseInt(match[1]) : 0;
+      })
+      .filter(num => num > 0);
+    
+    // Find the next available number
+    let counter = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 2;
+    let newItemName = `${baseName} (${counter})`;
+    
+    // Double-check the name is unique (safety check)
     while (true) {
       const existingItem = await WindowItem.findOne({ 
         projectId, 
@@ -601,6 +620,101 @@ router.post('/projects/:projectId/items/:itemId/duplicate', isAuthenticated, asy
   } catch (error) {
     console.error("Error duplicating window item:", error);
     res.status(500).send('Failed to duplicate window item.');
+  }
+});
+
+// API endpoint to check if item name already exists in project
+router.get('/projects/:projectId/check-item-name', isAuthenticated, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { name, excludeId } = req.query;
+    const userId = req.session.userId;
+
+    // Verify project ownership
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) {
+      return res.status(404).json({ exists: false, error: 'Project not found or access denied.' });
+    }
+
+    if (!name || !name.trim()) {
+      return res.json({ exists: false });
+    }
+
+    // Build query with case-insensitive comparison
+    const trimmedName = name.trim();
+    const query = { 
+      projectId, 
+      itemName: { $regex: new RegExp(`^${trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    };
+
+    // Exclude current item if editing
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    const existingItem = await WindowItem.findOne(query);
+
+    res.json({ 
+      exists: !!existingItem,
+      message: existingItem ? `An item with the name "${name.trim()}" already exists in this project.` : null
+    });
+  } catch (error) {
+    console.error('Error checking item name:', error);
+    res.status(500).json({ error: error.message, exists: false });
+  }
+});
+
+// API endpoint to update item name
+router.patch('/projects/:projectId/items/:itemId/name', isAuthenticated, async (req, res) => {
+  try {
+    const { projectId, itemId } = req.params;
+    const { itemName } = req.body;
+    const userId = req.session.userId;
+
+    // Verify project ownership
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found or access denied.' });
+    }
+
+    // Validate item name
+    if (!itemName || !itemName.trim()) {
+      return res.status(400).json({ error: 'Item name is required.' });
+    }
+
+    const trimmedName = itemName.trim();
+
+    // Check if the new item name already exists (excluding the current item) - case-insensitive
+    const existingItemWithName = await WindowItem.findOne({ 
+      projectId, 
+      itemName: { $regex: new RegExp(`^${trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      _id: { $ne: itemId }
+    });
+    
+    if (existingItemWithName) {
+      return res.status(400).json({ 
+        error: `An item with the name "${trimmedName}" already exists in this project. Please choose a different name.`
+      });
+    }
+
+    // Find and update the item
+    const windowItem = await WindowItem.findOne({ _id: itemId, projectId });
+    if (!windowItem) {
+      return res.status(404).json({ error: 'Window item not found.' });
+    }
+
+    // Update the item name
+    windowItem.itemName = trimmedName;
+    await windowItem.save();
+
+    res.json({ 
+      success: true, 
+      itemName: trimmedName,
+      message: 'Item name updated successfully.'
+    });
+  } catch (error) {
+    console.error('Error updating item name:', error);
+    res.status(500).json({ error: 'Failed to update item name.' });
   }
 });
 
@@ -1048,10 +1162,10 @@ Auto-Managed Accessories: ${autoManagedAccessories.length}
 ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     `.trim();
 
-    // Check if the item name already exists in this project
+    // Check if the item name already exists in this project (case-insensitive)
     const existingItemWithName = await WindowItem.findOne({ 
       projectId, 
-      itemName: windowRef 
+      itemName: { $regex: new RegExp(`^${windowRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
     });
     
     if (existingItemWithName) {
@@ -1737,14 +1851,22 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       return res.status(400).send(`Calculated unit price ($${unitPrice.toLocaleString()}) exceeds the maximum reasonable value. This may indicate a calculation error. Please check the window dimensions, glass type, profiles, and accessories.`);
     }
 
-    // Check if the new item name is unique (excluding the current item)
+    // Check if the new item name is unique (excluding the current item) - case-insensitive
     const existingItemWithName = await WindowItem.findOne({ 
       projectId, 
-      itemName: windowRef,
+      itemName: { $regex: new RegExp(`^${windowRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
       _id: { $ne: windowId } // Exclude the current item being edited
     });
     
     if (existingItemWithName) {
+      // Check if request expects JSON (AJAX) or HTML
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(400).json({ 
+          error: `An item with the name "${windowRef}" already exists in this project. Please choose a different name.`,
+          field: 'windowRef'
+        });
+      }
+      // For regular form submissions, redirect back with error
       return res.status(400).send(`An item with the name "${windowRef}" already exists in this project. Please choose a different name.`);
     }
 

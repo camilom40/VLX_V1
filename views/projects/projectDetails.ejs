@@ -382,7 +382,15 @@
                 <div class="item-card">
                   <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
                     <div class="flex justify-between items-center">
-                      <h4 class="font-medium text-gray-800"><%= item.itemName %></h4>
+                      <h4 class="font-medium text-gray-800 inline-edit-name" 
+                          data-item-id="<%= item._id %>" 
+                          data-project-id="<%= project._id %>"
+                          data-original-name="<%= item.itemName %>"
+                          style="cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s;"
+                          onmouseover="this.style.backgroundColor='#f3f4f6'"
+                          onmouseout="if(!this.querySelector('input')) this.style.backgroundColor='transparent'">
+                        <span class="item-name-display"><%= item.itemName %></span>
+                      </h4>
                       <div class="text-right">
                         <span class="font-bold text-green-600" data-price="<%= item.totalPrice %>"><!-- Price will be formatted by JavaScript --></span>
                       </div>
@@ -512,7 +520,15 @@
                   %>
                     <tr>
                       <td class="py-3">
-                        <div class="text-sm font-semibold text-gray-900"><%= item.itemName %></div>
+                        <div class="text-sm font-semibold text-gray-900 inline-edit-name" 
+                             data-item-id="<%= item._id %>" 
+                             data-project-id="<%= project._id %>"
+                             data-original-name="<%= item.itemName %>"
+                             style="cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s;"
+                             onmouseover="this.style.backgroundColor='#f3f4f6'"
+                             onmouseout="if(!this.querySelector('input')) this.style.backgroundColor='transparent'">
+                          <span class="item-name-display"><%= item.itemName %></span>
+                        </div>
                       </td>
                       <td class="py-3">
                         <div class="window-preview-mini" 
@@ -1343,6 +1359,174 @@
       
       window.addEventListener('unitChanged', (event) => {
         updateDimensionsFromGlobal();
+      });
+    });
+
+    // Inline editing for item names
+    document.addEventListener('DOMContentLoaded', function() {
+      const editableNames = document.querySelectorAll('.inline-edit-name');
+      
+      editableNames.forEach(element => {
+        element.addEventListener('click', function(e) {
+          // Don't start editing if already editing or if clicking on an input
+          if (this.querySelector('input')) {
+            return;
+          }
+          
+          const itemId = this.getAttribute('data-item-id');
+          const projectId = this.getAttribute('data-project-id');
+          const originalName = this.getAttribute('data-original-name');
+          const displaySpan = this.querySelector('.item-name-display');
+          const currentName = displaySpan ? displaySpan.textContent.trim() : originalName;
+          
+          // Create input field
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = currentName;
+          input.className = 'font-semibold';
+          input.style.cssText = `
+            width: 100%;
+            min-width: 125px;
+            max-width: 200px;
+            font-size: 1rem !important;
+            color: #111827 !important;
+            background-color: #ffffff !important;
+            border: 2px solid #3b82f6 !important;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem !important;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            line-height: 1.5;
+          `;
+          input.maxLength = 50;
+          
+          // Replace display with input
+          if (displaySpan) {
+            displaySpan.style.display = 'none';
+          }
+          this.appendChild(input);
+          input.focus();
+          input.select();
+          
+          // Error message container
+          let errorDiv = null;
+          
+          // Save on blur or Enter key
+          const saveName = async () => {
+            const newName = input.value.trim();
+            
+            // Remove input and error
+            input.remove();
+            if (errorDiv) errorDiv.remove();
+            
+            if (newName === currentName) {
+              // No change, just restore display
+              if (displaySpan) displaySpan.style.display = '';
+              this.style.backgroundColor = 'transparent';
+              return;
+            }
+            
+            if (!newName) {
+              // Empty name, restore original
+              if (displaySpan) {
+                displaySpan.textContent = currentName;
+                displaySpan.style.display = '';
+              }
+              this.style.backgroundColor = 'transparent';
+              return;
+            }
+            
+            // Show loading state
+            if (displaySpan) {
+              displaySpan.textContent = 'Saving...';
+              displaySpan.style.display = '';
+            }
+            this.style.backgroundColor = '#fef3c7';
+            
+            try {
+              const response = await fetch(`/projects/${projectId}/items/${itemId}/name`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ itemName: newName })
+              });
+              
+              const data = await response.json();
+              
+              if (response.ok && data.success) {
+                // Success - update display
+                if (displaySpan) {
+                  displaySpan.textContent = data.itemName;
+                  displaySpan.style.display = '';
+                }
+                this.setAttribute('data-original-name', data.itemName);
+                this.style.backgroundColor = '#d1fae5';
+                setTimeout(() => {
+                  this.style.backgroundColor = 'transparent';
+                }, 1000);
+              } else {
+                // Error - show message and restore
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'text-xs text-red-600 mt-1';
+                errorDiv.textContent = data.error || 'Failed to update name';
+                this.appendChild(errorDiv);
+                
+                if (displaySpan) {
+                  displaySpan.textContent = currentName;
+                  displaySpan.style.display = '';
+                }
+                this.style.backgroundColor = '#fee2e2';
+                
+                // Remove error after 3 seconds
+                setTimeout(() => {
+                  if (errorDiv) {
+                    errorDiv.remove();
+                    errorDiv = null;
+                  }
+                  this.style.backgroundColor = 'transparent';
+                }, 3000);
+              }
+            } catch (error) {
+              console.error('Error updating item name:', error);
+              errorDiv = document.createElement('div');
+              errorDiv.className = 'text-xs text-red-600 mt-1';
+              errorDiv.textContent = 'Failed to update name. Please try again.';
+              this.appendChild(errorDiv);
+              
+              if (displaySpan) {
+                displaySpan.textContent = currentName;
+                displaySpan.style.display = '';
+              }
+              this.style.backgroundColor = '#fee2e2';
+              
+              setTimeout(() => {
+                if (errorDiv) {
+                  errorDiv.remove();
+                  errorDiv = null;
+                }
+                this.style.backgroundColor = 'transparent';
+              }, 3000);
+            }
+          };
+          
+          // Save on Enter
+          input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              saveName();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              input.remove();
+              if (errorDiv) errorDiv.remove();
+              if (displaySpan) displaySpan.style.display = '';
+              element.style.backgroundColor = 'transparent';
+            }
+          });
+          
+          // Save on blur
+          input.addEventListener('blur', saveName);
+        });
       });
     });
   </script>
