@@ -599,13 +599,13 @@
                         </div>
                       </td>
                       <td class="text-center py-3">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-blue-100 text-blue-800 font-semibold text-sm inline-edit-quantity" 
+                        <span class="inline-flex items-center justify-center font-semibold text-sm inline-edit-quantity" 
                               data-item-id="<%= item._id %>" 
                               data-project-id="<%= project._id %>"
                               data-original-quantity="<%= item.quantity %>"
-                              style="cursor: pointer; transition: all 0.2s;"
-                              onmouseover="this.style.backgroundColor='#93c5fd'"
-                              onmouseout="if(!this.querySelector('input')) this.style.backgroundColor='#dbeafe'">
+                              style="cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s;"
+                              onmouseover="this.style.backgroundColor='#f3f4f6'"
+                              onmouseout="if(!this.querySelector('input')) this.style.backgroundColor='transparent'">
                           <span class="quantity-display"><%= item.quantity %></span>
                         </span>
                       </td>

@@ -329,7 +329,7 @@
                                     </div>
                                     <div class="bg-purple-50 rounded-lg p-2">
                                         <div class="text-xs text-gray-600 mb-1">Value</div>
-                                        <div class="text-lg font-bold text-purple-600">$<%= (project.projectValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
+                                        <div class="text-lg font-bold text-purple-600 project-value-display" data-value-usd="<%= project.projectValue || 0 %>">$<%= (project.projectValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
                                     </div>
                                 </div>
                                 
@@ -436,7 +436,7 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-semibold text-gray-900">
+                                        <div class="text-sm font-semibold text-gray-900 project-value-display" data-value-usd="<%= project.projectValue || 0 %>">
                                             $<%= (project.projectValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
                                         </div>
                                     </td>
@@ -695,8 +695,64 @@
             window.location.href = '/dashboard/export-projects';
         }
 
-        // Initialize
+        // Currency conversion
+        // Exchange rate from server (default to 4000 if not provided)
+        const exchangeRate = <%= typeof exchangeRate !== 'undefined' ? exchangeRate : 4000 %>;
+        
+        // Use global currency preference from header
+        let currentCurrency = window.globalPreferences?.currency || 'COP';
+        
+        // Set exchange rate in global preferences if available
+        if (window.globalPreferences) {
+            window.globalPreferences.exchangeRate = exchangeRate;
+        }
+        
+        // Format currency - amounts are stored in USD, convert for display
+        function formatCurrency(amount, currency = null) {
+            const currencyToUse = currency || currentCurrency;
+            
+            if (currencyToUse === 'USD') {
+                // Amount is already in USD, display as-is
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(amount);
+            } else {
+                // Convert USD to COP for display
+                const amountCOP = amount * exchangeRate;
+                return new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amountCOP);
+            }
+        }
+        
+        // Update all project value displays
+        function updateProjectValues() {
+            const projectValueElements = document.querySelectorAll('.project-value-display');
+            projectValueElements.forEach(element => {
+                const valueUSD = parseFloat(element.getAttribute('data-value-usd')) || 0;
+                element.textContent = formatCurrency(valueUSD);
+            });
+        }
+        
+        // Listen to currency changes from header
+        window.addEventListener('currencyChanged', (event) => {
+            currentCurrency = event.detail.currency;
+            updateProjectValues();
+        });
+        
+        // Initialize currency on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize from global preferences
+            if (window.globalPreferences) {
+                currentCurrency = window.globalPreferences.currency || 'COP';
+            }
+            updateProjectValues();
             sortProjects();
             filterProjects();
         });

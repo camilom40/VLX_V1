@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Project = require('../models/Project');
 const WindowItem = require('../models/WindowItem');
 const ExcelJS = require('exceljs');
+const { getExchangeRate } = require('../utils/currencyConverter');
 
 router.get('/', isAuthenticated, async (req, res) => {
     try {
@@ -51,6 +52,9 @@ router.get('/', isAuthenticated, async (req, res) => {
         // Get the company logo from user's database record (NOT from file system)
         const companyLogo = user.companyLogo || null;
 
+        // Get exchange rate for currency conversion
+        const exchangeRate = await getExchangeRate();
+
         // Pass data to the view
         res.render('dashboard', {
             user: {
@@ -59,6 +63,7 @@ router.get('/', isAuthenticated, async (req, res) => {
             },
             projects: projectsWithStats,
             companyLogo: companyLogo,
+            exchangeRate: exchangeRate,
             stats: {
                 totalProjects,
                 totalWindows,
