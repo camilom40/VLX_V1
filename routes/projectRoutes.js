@@ -718,6 +718,50 @@ router.patch('/projects/:projectId/items/:itemId/name', isAuthenticated, async (
   }
 });
 
+// API endpoint to update item quantity
+router.patch('/projects/:projectId/items/:itemId/quantity', isAuthenticated, async (req, res) => {
+  try {
+    const { projectId, itemId } = req.params;
+    const { quantity } = req.body;
+    const userId = req.session.userId;
+
+    // Verify project ownership
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found or access denied.' });
+    }
+
+    // Validate quantity
+    const quantityNum = parseInt(quantity, 10);
+    if (isNaN(quantityNum) || quantityNum < 1) {
+      return res.status(400).json({ error: 'Quantity must be a positive integer.' });
+    }
+
+    // Find and update the item
+    const windowItem = await WindowItem.findOne({ _id: itemId, projectId });
+    if (!windowItem) {
+      return res.status(404).json({ error: 'Window item not found.' });
+    }
+
+    // Update the quantity and recalculate total price
+    // Keep unit price the same, only update total price
+    const unitPrice = windowItem.unitPrice || 0;
+    windowItem.quantity = quantityNum;
+    windowItem.totalPrice = unitPrice * quantityNum;
+    await windowItem.save();
+
+    res.json({ 
+      success: true, 
+      quantity: quantityNum,
+      totalPrice: windowItem.totalPrice,
+      message: 'Quantity updated successfully.'
+    });
+  } catch (error) {
+    console.error('Error updating item quantity:', error);
+    res.status(500).json({ error: 'Failed to update item quantity.' });
+  }
+});
+
 // NEW ROUTE: Delete a window item
 router.post('/projects/:projectId/items/:itemId/delete', isAuthenticated, async (req, res) => {
   try {

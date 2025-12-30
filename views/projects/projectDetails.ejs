@@ -419,7 +419,15 @@
                       </div>
                       
                       <div class="text-gray-500">Quantity:</div>
-                      <div class="text-gray-800"><%= item.quantity %></div>
+                      <div class="text-gray-800 inline-edit-quantity" 
+                           data-item-id="<%= item._id %>" 
+                           data-project-id="<%= project._id %>"
+                           data-original-quantity="<%= item.quantity %>"
+                           style="cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s;"
+                           onmouseover="this.style.backgroundColor='#f3f4f6'"
+                           onmouseout="if(!this.querySelector('input')) this.style.backgroundColor='transparent'">
+                        <span class="quantity-display"><%= item.quantity %></span>
+                      </div>
                       
                       <div class="text-gray-500">Unit Price:</div>
                       <div class="text-gray-800" data-price="<%= item.unitPrice %>"><!-- Price will be formatted by JavaScript --></div>
@@ -591,7 +599,15 @@
                         </div>
                       </td>
                       <td class="text-center py-3">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-blue-100 text-blue-800 font-semibold text-sm"><%= item.quantity %></span>
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-blue-100 text-blue-800 font-semibold text-sm inline-edit-quantity" 
+                              data-item-id="<%= item._id %>" 
+                              data-project-id="<%= project._id %>"
+                              data-original-quantity="<%= item.quantity %>"
+                              style="cursor: pointer; transition: all 0.2s;"
+                              onmouseover="this.style.backgroundColor='#93c5fd'"
+                              onmouseout="if(!this.querySelector('input')) this.style.backgroundColor='#dbeafe'">
+                          <span class="quantity-display"><%= item.quantity %></span>
+                        </span>
                       </td>
                       <td class="text-right py-3">
                         <div class="text-sm font-medium text-gray-900" data-price="<%= item.unitPrice %>"><!-- Price will be formatted by JavaScript --></div>
@@ -1526,6 +1542,198 @@
           
           // Save on blur
           input.addEventListener('blur', saveName);
+        });
+      });
+
+      // Inline editing for quantity
+      const editableQuantities = document.querySelectorAll('.inline-edit-quantity');
+      
+      editableQuantities.forEach(element => {
+        element.addEventListener('click', function(e) {
+          // Don't start editing if already editing or if clicking on an input
+          if (this.querySelector('input')) {
+            return;
+          }
+          
+          const itemId = this.getAttribute('data-item-id');
+          const projectId = this.getAttribute('data-project-id');
+          const originalQuantity = parseInt(this.getAttribute('data-original-quantity'), 10);
+          const displaySpan = this.querySelector('.quantity-display');
+          const currentQuantity = displaySpan ? parseInt(displaySpan.textContent.trim(), 10) : originalQuantity;
+          
+          // Create input field
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.value = currentQuantity;
+          input.min = '1';
+          input.className = 'font-semibold';
+          input.style.cssText = `
+            width: 100%;
+            min-width: 60px;
+            max-width: 100px;
+            font-size: 1rem !important;
+            color: #111827 !important;
+            background-color: #ffffff !important;
+            border: 2px solid #3b82f6 !important;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem !important;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            line-height: 1.5;
+            text-align: center;
+          `;
+          
+          // Replace display with input
+          if (displaySpan) {
+            displaySpan.style.display = 'none';
+          }
+          this.appendChild(input);
+          input.focus();
+          input.select();
+          
+          // Error message container
+          let errorDiv = null;
+          
+          // Save on blur or Enter key
+          const saveQuantity = async () => {
+            const newQuantity = parseInt(input.value, 10);
+            
+            // Remove input and error
+            input.remove();
+            if (errorDiv) errorDiv.remove();
+            
+            if (isNaN(newQuantity) || newQuantity < 1) {
+              // Invalid quantity, restore original
+              if (displaySpan) {
+                displaySpan.textContent = currentQuantity;
+                displaySpan.style.display = '';
+              }
+              this.style.backgroundColor = 'transparent';
+              return;
+            }
+            
+            if (newQuantity === currentQuantity) {
+              // No change, just restore display
+              if (displaySpan) displaySpan.style.display = '';
+              this.style.backgroundColor = 'transparent';
+              return;
+            }
+            
+            // Show loading state
+            if (displaySpan) {
+              displaySpan.textContent = 'Saving...';
+              displaySpan.style.display = '';
+            }
+            this.style.backgroundColor = '#fef3c7';
+            
+            try {
+              const response = await fetch(`/projects/${projectId}/items/${itemId}/quantity`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ quantity: newQuantity })
+              });
+              
+              const data = await response.json();
+              
+              if (response.ok && data.success) {
+                // Success - update display
+                if (displaySpan) {
+                  displaySpan.textContent = data.quantity;
+                  displaySpan.style.display = '';
+                }
+                this.setAttribute('data-original-quantity', data.quantity);
+                this.style.backgroundColor = '#d1fae5';
+                
+                // Update the total price display for this item and project total
+                const row = this.closest('tr') || this.closest('.item-card');
+                if (row) {
+                  // Find the total price element (has text-green-700 or text-green-600 class, not unit price)
+                  const totalPriceElement = row.querySelector('.text-green-700[data-price], .text-green-600[data-price]');
+                  if (totalPriceElement) {
+                    // Update the data-price attribute with new total
+                    totalPriceElement.setAttribute('data-price', data.totalPrice);
+                    // Trigger price update if function exists
+                    if (window.updateAllPrices) {
+                      setTimeout(() => {
+                        window.updateAllPrices();
+                      }, 100);
+                    }
+                  }
+                }
+                
+                // Recalculate project total
+                if (window.calculateProjectTotal) {
+                  setTimeout(() => {
+                    window.calculateProjectTotal();
+                  }, 200);
+                }
+                
+                setTimeout(() => {
+                  this.style.backgroundColor = 'transparent';
+                }, 1000);
+              } else {
+                // Error - show message and restore
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'text-xs text-red-600 mt-1';
+                errorDiv.textContent = data.error || 'Failed to update quantity';
+                this.appendChild(errorDiv);
+                
+                if (displaySpan) {
+                  displaySpan.textContent = currentQuantity;
+                  displaySpan.style.display = '';
+                }
+                this.style.backgroundColor = '#fee2e2';
+                
+                // Remove error after 3 seconds
+                setTimeout(() => {
+                  if (errorDiv) {
+                    errorDiv.remove();
+                    errorDiv = null;
+                  }
+                  this.style.backgroundColor = 'transparent';
+                }, 3000);
+              }
+            } catch (error) {
+              console.error('Error updating item quantity:', error);
+              errorDiv = document.createElement('div');
+              errorDiv.className = 'text-xs text-red-600 mt-1';
+              errorDiv.textContent = 'Failed to update quantity. Please try again.';
+              this.appendChild(errorDiv);
+              
+              if (displaySpan) {
+                displaySpan.textContent = currentQuantity;
+                displaySpan.style.display = '';
+              }
+              this.style.backgroundColor = '#fee2e2';
+              
+              setTimeout(() => {
+                if (errorDiv) {
+                  errorDiv.remove();
+                  errorDiv = null;
+                }
+                this.style.backgroundColor = 'transparent';
+              }, 3000);
+            }
+          };
+          
+          // Save on Enter
+          input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              saveQuantity();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              input.remove();
+              if (errorDiv) errorDiv.remove();
+              if (displaySpan) displaySpan.style.display = '';
+              element.style.backgroundColor = 'transparent';
+            }
+          });
+          
+          // Save on blur
+          input.addEventListener('blur', saveQuantity);
         });
       });
     });
