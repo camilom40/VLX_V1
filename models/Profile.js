@@ -18,7 +18,7 @@ const profileSchema = new mongoose.Schema({
   },
   weight: {
     type: Number,
-    required: true,
+    required: false,
   },
   color: {
     type: String,
@@ -31,7 +31,7 @@ const profileSchema = new mongoose.Schema({
   ammaCertification: {
     type: String,
     required: true,
-    enum: ['2603', '2604', '2605'],
+    enum: ['2603', '2604', '2605', 'No Certification', 'none'],
   },
   // Muntin support
   isMuntin: {

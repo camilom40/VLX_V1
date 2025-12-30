@@ -1154,6 +1154,22 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       });
     }
 
+    // Restore saved profile selections
+    const savedProfileSelections = {};
+    if (existingWindow.selectedProfiles && existingWindow.selectedProfiles.length > 0) {
+      existingWindow.selectedProfiles.forEach((savedProfile, index) => {
+        const profileId = savedProfile.profileId ? savedProfile.profileId.toString() : null;
+        if (profileId) {
+          savedProfileSelections[index] = {
+            profileId: profileId,
+            quantity: savedProfile.quantity || 1,
+            lengthDiscount: savedProfile.lengthDiscount || 0,
+            orientation: savedProfile.orientation || 'horizontal'
+          };
+        }
+      });
+    }
+
     res.render('projects/configureWindow', {
       project,
       windowRef,
@@ -1169,6 +1185,7 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       exchangeRate: await getExchangeRate(),
       existingWindow, // Pass existing window data for pre-filling form
       savedAccessorySelections, // Pass saved accessory selections for restoration
+      savedProfileSelections, // Pass saved profile selections for restoration
       isEdit: true    // Flag to indicate this is edit mode
     });
 

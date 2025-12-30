@@ -26,7 +26,7 @@ const glassSchema = new mongoose.Schema({
   },
   weight: {
     type: Number,
-    required: true
+    required: false
   },
   isLowE: {
     type: Boolean,

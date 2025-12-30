@@ -125,6 +125,27 @@
       data-cost-settings="<%= typeof costSettings !== 'undefined' ? JSON.stringify(costSettings) : '{}' %>"
       data-exchange-rate="<%= typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate : 4000 %>"
       data-panel-configuration="<%= typeof selectedWindowSystem !== 'undefined' && selectedWindowSystem.panelConfiguration ? JSON.stringify(selectedWindowSystem.panelConfiguration) : '{}' %>"
+      data-window-system="<%= typeof selectedWindowSystem !== 'undefined' ? JSON.stringify({
+        profiles: selectedWindowSystem.profiles.map(p => ({
+          profileId: p.profile ? p.profile._id.toString() : null,
+          profileName: p.profile ? p.profile.name : null,
+          pricePerMeter: p.profile ? p.profile.pricePerMeter : 0,
+          currency: p.profile ? (p.profile.currency || 'USD') : 'USD',
+          quantity: p.quantity || 1,
+          orientation: p.orientation || 'horizontal',
+          lengthDiscount: p.lengthDiscount || 0,
+          showToUser: p.showToUser || false
+        })),
+        accessories: selectedWindowSystem.accessories.map(a => ({
+          accessoryId: a.accessory ? a.accessory._id.toString() : null,
+          accessoryName: a.accessory ? a.accessory.name : null,
+          price: a.accessory ? a.accessory.price : 0,
+          currency: a.accessory ? (a.accessory.currency || 'USD') : 'USD',
+          unit: a.unit || 'piece',
+          quantity: a.quantity || 1,
+          showToUser: a.showToUser || false
+        }))
+      }) : '{}' %>"
       data-is-edit="<%= typeof isEdit !== 'undefined' && isEdit ? 'true' : 'false' %>">
   <%- include('../partials/_header.ejs') %>
 
@@ -578,11 +599,23 @@
                     <div>
                       <label class="form-label">Profile</label>
                       <select name="profiles[<%= index %>][profileId]" class="form-input w-full profile-select" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()">
+                        <% 
+                          // Determine which profile should be selected
+                          let selectedProfileId = null;
+                          if (typeof isEdit !== 'undefined' && isEdit && typeof savedProfileSelections !== 'undefined' && savedProfileSelections && savedProfileSelections[index]) {
+                            // Use saved profile selection from existingWindow
+                            selectedProfileId = savedProfileSelections[index].profileId;
+                          } else if (profileItem.profile && profileItem.profile._id) {
+                            // Fallback to default profile from window system
+                            selectedProfileId = profileItem.profile._id.toString();
+                          }
+                        %>
                         <% allProfiles.forEach(profile => { %>
                           <option value="<%= profile._id %>" 
                                   data-price="<%= profile.pricePerMeter %>"
+                                  data-currency="<%= profile.currency || 'USD' %>"
                                   data-weight="<%= profile.weight %>"
-                                  <%= profileItem.profile && profileItem.profile._id.toString() === profile._id.toString() ? 'selected' : '' %>>
+                                  <%= selectedProfileId && selectedProfileId === profile._id.toString() ? 'selected' : '' %>>
                             <%= profile.name %> - <%= profile.color %>
                           </option>
                         <% }) %>
@@ -590,21 +623,45 @@
                     </div>
                     <div>
                       <label class="form-label">Quantity</label>
+                      <% 
+                        let profileQuantity = 1;
+                        if (typeof isEdit !== 'undefined' && isEdit && typeof savedProfileSelections !== 'undefined' && savedProfileSelections && savedProfileSelections[index]) {
+                          profileQuantity = savedProfileSelections[index].quantity || 1;
+                        } else if (profileItem.quantity) {
+                          profileQuantity = profileItem.quantity;
+                        }
+                      %>
                       <input type="number" name="profiles[<%= index %>][quantity]" 
-                             value="<%= (typeof isEdit !== 'undefined' && isEdit && profileItem.quantity) ? profileItem.quantity : '1' %>" 
+                             value="<%= profileQuantity %>" 
                              min="1" class="form-input w-full" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()">
                     </div>
                     <div>
                       <label class="form-label">Orientation</label>
+                      <% 
+                        let profileOrientation = 'horizontal';
+                        if (typeof isEdit !== 'undefined' && isEdit && typeof savedProfileSelections !== 'undefined' && savedProfileSelections && savedProfileSelections[index]) {
+                          profileOrientation = savedProfileSelections[index].orientation || 'horizontal';
+                        } else if (profileItem.orientation) {
+                          profileOrientation = profileItem.orientation;
+                        }
+                      %>
                       <select name="profiles[<%= index %>][orientation]" class="form-input w-full">
-                        <option value="horizontal" <%= profileItem.orientation === 'horizontal' ? 'selected' : '' %>>Horizontal</option>
-                        <option value="vertical" <%= profileItem.orientation === 'vertical' ? 'selected' : '' %>>Vertical</option>
+                        <option value="horizontal" <%= profileOrientation === 'horizontal' ? 'selected' : '' %>>Horizontal</option>
+                        <option value="vertical" <%= profileOrientation === 'vertical' ? 'selected' : '' %>>Vertical</option>
                       </select>
                     </div>
                     <div>
                       <label class="form-label">Length Discount (in)</label>
-                      <input type="number" name="profiles[<%= index %>][lengthDiscount]" value="<%= profileItem.lengthDiscount %>" 
-                             step="0.01" class="form-input w-full" onchange="calculatePricing()">
+                      <% 
+                        let profileLengthDiscount = 0;
+                        if (typeof isEdit !== 'undefined' && isEdit && typeof savedProfileSelections !== 'undefined' && savedProfileSelections && savedProfileSelections[index]) {
+                          profileLengthDiscount = savedProfileSelections[index].lengthDiscount || 0;
+                        } else if (profileItem.lengthDiscount !== undefined) {
+                          profileLengthDiscount = profileItem.lengthDiscount;
+                        }
+                      %>
+                      <input type="number" name="profiles[<%= index %>][lengthDiscount]" value="<%= profileLengthDiscount %>" 
+                             step="0.01" class="form-input w-full" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()">
                     </div>
                   </div>
                 </div>
@@ -1353,6 +1410,9 @@
     
     // Modified calculatePricing function to handle unit conversion
     function calculatePricingWithUnits() {
+      // Get window system data from data attribute
+      const windowSystemData = JSON.parse(document.body.getAttribute('data-window-system') || '{}');
+      
       // Get values from input fields
       // CRITICAL: In edit mode, when page first loads, values are in inches (from database)
       // The currentUnit variable tells us how the user is currently viewing/entering values
@@ -1401,14 +1461,28 @@
       let totalCost = 0;
       
       // Glass cost - CONVERT TO USD
+      let glassCost = 0;
+      let glassName = 'N/A';
+      let glassPrice = 0;
+      let glassCurrency = 'USD';
+      let glassPriceUSD = 0;
+      
       const glassSelect = document.getElementById('glassType');
-      const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
-      const glassPrice = parseFloat(selectedGlass?.getAttribute('data-price')) || 0;
-      const glassCurrency = selectedGlass?.getAttribute('data-currency') || 'COP';
-      const glassName = selectedGlass?.text || 'N/A';
-      const glassPriceUSD = convertToUSD(glassPrice, glassCurrency, exchangeRateValue);
-      const glassCost = glassPriceUSD * areaSquareMeters;
-      totalCost += glassCost;
+      if (glassSelect && glassSelect.value) {
+        const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
+        if (selectedGlass) {
+          glassPrice = parseFloat(selectedGlass.getAttribute('data-price')) || 0;
+          glassCurrency = selectedGlass.getAttribute('data-currency') || 'USD';
+          glassName = selectedGlass.text || 'N/A';
+          
+          // Only calculate if glass has a valid price
+          if (glassPrice > 0) {
+            glassPriceUSD = convertToUSD(glassPrice, glassCurrency, exchangeRateValue);
+            glassCost = glassPriceUSD * areaSquareMeters;
+            totalCost += glassCost;
+          }
+        }
+      }
       
       // Profile costs - CONVERT TO USD
       let profilesCost = 0;
@@ -1445,18 +1519,50 @@
           cost: profileCost
         });
       });
+      
+      // Add auto-managed profiles (from window system, showToUser: false)
+      if (windowSystemData.profiles && Array.isArray(windowSystemData.profiles)) {
+        windowSystemData.profiles.forEach((profileItem) => {
+          if (!profileItem.showToUser && profileItem.profileId && profileItem.pricePerMeter > 0) {
+            const pricePerMeterUSD = convertToUSD(profileItem.pricePerMeter, profileItem.currency || 'USD', exchangeRateValue);
+            const qty = profileItem.quantity || 1;
+            let lengthDiscount = profileItem.lengthDiscount || 0;
+            
+            // Length discount is already in inches from the window system
+            const lengthDiscountMeters = lengthDiscount * 0.0254; // Convert inches to meters
+            const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
+            const profileCost = pricePerMeterUSD * adjustedLength * qty;
+            profilesCost += profileCost;
+            
+            profileDetails.push({
+              name: profileItem.profileName || 'Auto Profile',
+              priceOriginal: profileItem.pricePerMeter,
+              currency: profileItem.currency || 'USD',
+              priceUSD: pricePerMeterUSD,
+              quantity: qty,
+              lengthDiscount: lengthDiscount,
+              perimeterMeters: perimeterMeters,
+              adjustedLength: adjustedLength,
+              cost: profileCost,
+              isUserConfigurable: false
+            });
+          }
+        });
+      }
+      
       totalCost += profilesCost;
       
       // Accessory costs - CONVERT TO USD
+      // Include both user-configurable (from dropdowns/choices) and auto-managed (from window system)
       let accessoriesCost = 0;
       const accessoryDetails = [];
       
-      // Individual accessories (dropdown selects)
+      // 1. Individual accessories (dropdown selects)
       const accessorySelects = document.querySelectorAll('.accessory-select');
       accessorySelects.forEach(select => {
         const selectedAccessory = select.options[select.selectedIndex];
         const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
-        const accessoryCurrency = selectedAccessory?.getAttribute('data-currency') || 'COP';
+        const accessoryCurrency = selectedAccessory?.getAttribute('data-currency') || 'USD';
         const accessoryName = selectedAccessory?.text || 'Accessory';
         const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
@@ -1469,7 +1575,8 @@
           currency: accessoryCurrency,
           priceUSD: priceUSD,
           quantity: qty,
-          cost: accessoryCost
+          cost: accessoryCost,
+          isUserConfigurable: true
         });
       });
       
@@ -1506,10 +1613,33 @@
             currency: accessoryCurrency,
             priceUSD: priceUSD,
             quantity: qty,
-            cost: accessoryCost
+            cost: accessoryCost,
+            isUserConfigurable: true
           });
         }
       });
+      
+      // Add auto-managed accessories (from window system, showToUser: false)
+      if (windowSystemData.accessories && Array.isArray(windowSystemData.accessories)) {
+        windowSystemData.accessories.forEach((accessoryItem) => {
+          if (!accessoryItem.showToUser && accessoryItem.accessoryId && accessoryItem.price > 0) {
+            const priceUSD = convertToUSD(accessoryItem.price, accessoryItem.currency || 'USD', exchangeRateValue);
+            const qty = accessoryItem.quantity || 1;
+            const accessoryCost = priceUSD * qty;
+            accessoriesCost += accessoryCost;
+            
+            accessoryDetails.push({
+              name: accessoryItem.accessoryName || 'Auto Accessory',
+              priceOriginal: accessoryItem.price,
+              currency: accessoryItem.currency || 'USD',
+              priceUSD: priceUSD,
+              quantity: qty,
+              cost: accessoryCost,
+              isUserConfigurable: false
+            });
+          }
+        });
+      }
       
       totalCost += accessoriesCost;
       
@@ -1628,13 +1758,15 @@
       
       // Update displays with comma formatting (formatCurrency will convert USD to display currency)
       document.getElementById('totalPrice').textContent = formatCurrency(finalTotal);
+      // Base Materials should show the total of profiles (not including glass/accessories separately shown)
+      // Or we could show total base cost - for now, showing profiles cost as "Base Materials"
       document.getElementById('baseMaterialsCost').textContent = formatCurrency(profilesCost);
       document.getElementById('glassCost').textContent = formatCurrency(glassCost);
       document.getElementById('accessoriesCost').textContent = formatCurrency(accessoriesCost);
       document.getElementById('additionalCosts').textContent = formatCurrency(additionalCosts);
       document.getElementById('finalTotalPrice').textContent = formatCurrency(finalTotal);
       // Also display unit price (cost per window) - this should match the table's unit price column
-      const unitPrice = quantity > 0 ? finalTotal / quantity : 0;
+      const unitPrice = quantity > 0 ? costPerWindow : 0;
       const unitPriceDisplayEl = document.getElementById('unitPriceDisplay');
       if (unitPriceDisplayEl) {
         unitPriceDisplayEl.textContent = formatCurrency(unitPrice);
@@ -2602,10 +2734,34 @@
       // In edit mode, calculate with restored selections to verify they match saved values
       // Use setTimeout to ensure all initialization is complete
       setTimeout(function() {
-        // Always calculate pricing - in edit mode, it should match saved values if selections are restored correctly
-        if(typeof window.calculatePricing==='function')window.calculatePricing();
-        updateWindowPreview(); // Update dimensions
-      }, 200); // Increased timeout to ensure all form elements are populated
+        // In edit mode, verify that selections are restored before calculating
+        if (isEditMode) {
+          // Check if profile selects have valid selections
+          const profileSelects = document.querySelectorAll('.profile-select');
+          let allProfilesSelected = true;
+          profileSelects.forEach(select => {
+            if (!select.value || select.value === '') {
+              allProfilesSelected = false;
+            }
+          });
+          
+          // Only calculate if selections are restored, otherwise wait a bit more
+          if (allProfilesSelected || profileSelects.length === 0) {
+            if(typeof window.calculatePricing==='function')window.calculatePricing();
+            updateWindowPreview(); // Update dimensions
+          } else {
+            // Wait a bit more for selections to be restored
+            setTimeout(function() {
+              if(typeof window.calculatePricing==='function')window.calculatePricing();
+              updateWindowPreview();
+            }, 300);
+          }
+        } else {
+          // In new mode, calculate immediately
+          if(typeof window.calculatePricing==='function')window.calculatePricing();
+          updateWindowPreview(); // Update dimensions
+        }
+      }, 200); // Initial timeout to ensure all form elements are populated
       
       // Initialize muntin preview if muntin configuration exists
       if (document.getElementById('muntinPreviewGrid')) {
