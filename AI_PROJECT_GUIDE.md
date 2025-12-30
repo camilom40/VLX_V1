@@ -943,5 +943,70 @@ npm run dev
 
 ---
 
-*Last Updated: December 2025 - Global Preferences, Pricing Fixes & Window System Enhancements*
+## December 2025 - Inline Editing & Validation Enhancements
+
+### What We Worked On
+
+1. **Inline Editing for Item Names**
+   - **Click-to-Edit**: Item names on the project details page can now be edited directly by clicking on them
+   - **Real-time Validation**: Checks for duplicate names (case-insensitive) as user types
+   - **Visual Feedback**: 
+     - Yellow background while saving
+     - Green background on success
+     - Red background on error with error message
+   - **API Endpoint**: `PATCH /projects/:projectId/items/:itemId/name`
+   - **Case-Insensitive Validation**: "V1" and "v1" are considered the same name
+   - **Works on Both Views**: Mobile card view and desktop table view
+
+2. **Inline Editing for Quantity**
+   - **Click-to-Edit**: Quantity values can be edited directly on the project details page
+   - **Automatic Price Recalculation**: When quantity changes, the item's total price is automatically recalculated (unitPrice × quantity)
+   - **Project Total Update**: Project total is automatically updated when quantity changes
+   - **Validation**: Only accepts positive integers
+   - **API Endpoint**: `PATCH /projects/:projectId/items/:itemId/quantity`
+   - **Price Display Updates**: Both unit price and total price displays update correctly
+
+3. **Real-time Name Validation in Configure Window Form**
+   - **Debounced Validation**: Checks for duplicate names 500ms after user stops typing
+   - **Error Display**: Shows error message immediately below the input field
+   - **Form Submission Prevention**: Prevents form submission if name is duplicate
+   - **Scroll to Error**: When form is submitted with duplicate name, page scrolls to top and highlights the error
+   - **Edit Mode Support**: Excludes current item when checking for duplicates in edit mode
+   - **API Endpoint**: `GET /projects/:projectId/check-item-name` (excludes current item if editing)
+
+4. **Case-Insensitive Item Name Validation**
+   - **All Validation Points Updated**: Item name validation now case-insensitive throughout the application
+   - **Regex Pattern**: Uses MongoDB regex with `i` flag for case-insensitive matching
+   - **Updated Routes**:
+     - `POST /projects/:projectId/windows/save` - New window creation
+     - `POST /projects/:projectId/windows/:windowId/update` - Window update
+     - `PATCH /projects/:projectId/items/:itemId/name` - Name update
+     - `GET /projects/:projectId/check-item-name` - Name validation check
+
+5. **UI/UX Improvements**
+   - **Hover Effects**: Item names and quantities show hover effects to indicate they're editable
+   - **Input Field Styling**: Larger, more visible input fields with proper padding and font size
+   - **Focus Management**: Input fields are automatically focused and selected when editing starts
+   - **Keyboard Support**: 
+     - Enter key to save
+     - Escape key to cancel
+     - Click outside (blur) to save
+   - **Loading States**: Shows "Saving..." while updating
+   - **Error Messages**: Clear error messages displayed below input fields
+
+#### Key Files Modified
+- `routes/projectRoutes.js` - Added PATCH endpoints for name and quantity updates, updated all name validation to be case-insensitive
+- `views/projects/projectDetails.ejs` - Added inline editing JavaScript for item names and quantities, updated HTML to support editing
+- `views/projects/configureWindow.ejs` - Added real-time name validation, scroll-to-error functionality
+
+#### Technical Notes
+- **Case-Insensitive Validation**: Uses MongoDB regex pattern `new RegExp(\`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$\`, 'i')` to match names regardless of case
+- **API Response Format**: All API endpoints return JSON with `success`, `error`, and relevant data fields
+- **Price Recalculation**: Quantity updates trigger automatic total price recalculation on the server, frontend updates displays accordingly
+- **Event Handling**: Uses event delegation and debouncing for efficient real-time validation
+- **Total Price Update**: When quantity changes, the element with class `text-green-700[data-price]` or `text-green-600[data-price]` is specifically targeted to update total price display
+
+---
+
+*Last Updated: December 2025 - Inline Editing & Validation Enhancements*
 
