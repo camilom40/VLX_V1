@@ -6,24 +6,47 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+    .pattern-bg {
+      background-color: #f8fafc;
+      background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    
+    body { font-family: 'DM Sans', sans-serif; }
     
     .main-card {
       background: white;
-      border-radius: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.05);
-      border: 1px solid rgba(226,232,240,0.8);
+      border-radius: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .main-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, #3b82f6, #60a5fa);
     }
     
     .form-section {
-      background: linear-gradient(to right, #fafbfc, #fff);
-      border-radius: 1rem;
+      background: white;
+      border-radius: 0.75rem;
       padding: 1.25rem;
       margin-bottom: 1rem;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #e5e7eb;
       transition: all 0.3s ease;
     }
-    .form-section:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .form-section:hover { 
+      border-color: #cbd5e1; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
     .form-section.!mb-0 { margin-bottom: 0; }
     
     .section-icon {
@@ -35,16 +58,16 @@
     
     .form-input {
       width: 100%;
-      padding: 0.75rem 1rem 0.75rem 2.75rem;
-      border-radius: 0.625rem;
-      border: 2px solid #e2e8f0;
-      background: #f8fafc;
-      color: #1e293b;
+      padding: 0.75rem 2.5rem 0.75rem 2.75rem;
+      border-radius: 0.5rem;
+      border: 2px solid #e5e7eb;
+      background: #f9fafb;
+      color: #1f2937;
       font-size: 0.9rem;
       transition: all 0.2s ease;
     }
-    .form-input:hover { border-color: #cbd5e1; background: #fff; }
-    .form-input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    .form-input:hover { border-color: #d1d5db; background: #fff; }
+    .form-input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
     
     .input-with-icon { position: relative; width: 100%; }
     .input-icon {
@@ -53,6 +76,11 @@
     }
     .input-with-icon:focus-within .input-icon { color: #3b82f6; }
     .input-icon svg { width: 1.125rem; height: 1.125rem; }
+    .currency-suffix {
+      position: absolute; right: 0.875rem; top: 50%; transform: translateY(-50%);
+      color: #64748b; pointer-events: none; z-index: 10; font-size: 0.9rem; font-weight: 500;
+    }
+    .input-with-icon:focus-within .currency-suffix { color: #3b82f6; }
     
     select.form-input {
       appearance: none; cursor: pointer; padding-right: 2.5rem;
@@ -61,20 +89,30 @@
     }
     
     .btn-primary {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
       color: white; font-weight: 600; padding: 0.75rem 1.75rem;
-      border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(59,130,246,0.4);
+      border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(59,130,246,0.3);
       transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+      border: none;
     }
-    .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 6px 20px rgba(59,130,246,0.5); transform: translateY(-2px); }
+    .btn-primary:hover { 
+      background: linear-gradient(135deg, #2563eb, #3b82f6); 
+      box-shadow: 0 10px 15px -3px rgba(59,130,246,0.4); 
+      transform: translateY(-2px); 
+    }
     
     .btn-secondary {
-      background: #f1f5f9; color: #475569; font-weight: 600;
-      padding: 0.75rem 1.25rem; border-radius: 0.625rem;
-      border: 2px solid #e2e8f0; transition: all 0.3s ease;
+      background: white; color: #4b5563; font-weight: 600;
+      padding: 0.75rem 1.25rem; border-radius: 0.5rem;
+      border: 2px solid #e5e7eb; transition: all 0.3s ease;
       display: inline-flex; align-items: center; gap: 0.5rem;
     }
-    .btn-secondary:hover { background: #e2e8f0; border-color: #cbd5e1; }
+    .btn-secondary:hover { 
+      background: #f9fafb; 
+      border-color: #d1d5db; 
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
     
     .required-badge {
       background: linear-gradient(135deg, #fef3c7, #fde68a);
@@ -86,67 +124,135 @@
     .help-text { color: #64748b; font-size: 0.75rem; margin-top: 0.375rem; }
     
     .currency-display {
-      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
       border: 2px solid #3b82f6;
-      border-radius: 0.875rem;
+      border-radius: 0.75rem;
       padding: 1rem;
+      box-shadow: 0 2px 4px rgba(59,130,246,0.1);
     }
   </style>
   <script>
     // Server data passed to client
     var currentExchangeRateValue = <%= currentExchangeRate || 4000 %>;
-    var currentCurrencyValue = '<%= costSettings.currency || "COP" %>';
+    // Database stores all values in USD
+    var valuesInUSD = {
+      seaFreight: <%= costSettings ? (costSettings.seaFreight || 0) : 0 %>,
+      landFreight: <%= costSettings ? (costSettings.landFreight || 0) : 0 %>,
+      packaging: <%= costSettings ? (costSettings.packaging || 0) : 0 %>,
+      labor: <%= costSettings ? (costSettings.labor || 0) : 0 %>,
+      indirectCosts: <%= costSettings ? (costSettings.indirectCosts || 0) : 0 %>,
+      administrativeExpenses: <%= costSettings ? (costSettings.administrativeExpenses || 0) : 0 %>
+    };
     
-    // Simple currency update function
+    // Store current USD values (will be updated when user edits)
+    window.storedUSDValues = JSON.parse(JSON.stringify(valuesInUSD));
+    
+    // Helper function to format numbers with commas
+    function formatNumberWithCommas(number, isPercentage = false) {
+      if (isPercentage) {
+        return number.toString();
+      }
+      // Format with commas, handling decimals
+      const numStr = number.toString();
+      const parts = numStr.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return parts.join('.');
+    }
+    
+    // Simple currency update function - uses global currency preference
+    // Database stores values in USD, so we convert for display
     function updateCurrencyLabels() {
-      console.log('=== updateCurrencyLabels called ===');
-      var currencySelect = document.getElementById('currency');
-      if (!currencySelect) {
-        console.log('Currency select not found!');
-        return;
+      // Get currency from global preference
+      var currency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'COP';
+      var exchangeRate = currentExchangeRateValue;
+      var previousCurrency = window.lastSelectedCurrency;
+      
+      // Initialize previousCurrency if not set
+      if (!previousCurrency) {
+        previousCurrency = currency;
       }
       
-      var currency = currencySelect.value;
-      var exchangeRate = currentExchangeRateValue;
-      var previousCurrency = window.lastSelectedCurrency || currentCurrencyValue;
+      // Update hidden currency field
+      var currencyInput = document.getElementById('currency');
+      if (currencyInput) {
+        currencyInput.value = currency;
+      }
       
-      console.log('Currency:', currency, 'Previous:', previousCurrency);
+      // Update labels and convert values
+      var currencyFields = ['seaFreight', 'landFreight', 'administrativeExpenses'];
+      var percentageFields = ['packaging', 'labor', 'indirectCosts'];
       
-      // Update labels
-      var fields = ['seaFreight', 'landFreight', 'packaging', 'labor', 'indirectCosts', 'administrativeExpenses'];
-      
-      for (var i = 0; i < fields.length; i++) {
-        var fieldId = fields[i];
-        var input = document.getElementById(fieldId);
+      // Update labels for all fields
+      var allFields = currencyFields.concat(percentageFields);
+      for (var i = 0; i < allFields.length; i++) {
+        var fieldId = allFields[i];
         var label = document.getElementById(fieldId + '-currency');
+        var suffix = document.getElementById(fieldId + '-suffix');
+        var isPercentage = percentageFields.includes(fieldId);
         
         if (label) {
-          var newText = 'Enter amount in ' + currency;
-          label.textContent = newText;
+          // For percentage fields, don't show currency
+          if (isPercentage) {
+            label.textContent = 'Enter percentage value';
+          } else {
+            label.textContent = 'Enter amount in ' + currency;
+          }
         }
         
-        // Convert values if currency changed
-        if (input && input.value && previousCurrency !== currency) {
-          var currentValue = parseFloat(input.value.replace(/[^0-9.-]/g, ''));
-          if (!isNaN(currentValue) && currentValue > 0) {
-            var convertedValue;
+        // Update currency suffix in input field
+        if (suffix && !isPercentage) {
+          suffix.textContent = currency;
+        } else if (suffix && isPercentage) {
+          suffix.textContent = '%';
+        }
+      }
+      
+      // Only convert currency fields when currency changes
+      if (previousCurrency !== currency) {
+        for (var i = 0; i < currencyFields.length; i++) {
+          var fieldId = currencyFields[i];
+          var input = document.getElementById(fieldId);
+          
+          if (input) {
+            // Get current displayed value
+            var currentDisplayValue = parseFloat(input.value.replace(/[^0-9.-]/g, ''));
             
-            if (previousCurrency === 'COP' && currency === 'USD') {
-              convertedValue = currentValue / exchangeRate;
-            } else if (previousCurrency === 'USD' && currency === 'COP') {
-              convertedValue = currentValue * exchangeRate;
-            } else {
-              convertedValue = currentValue;
+            // If we have a valid value, first convert it back to USD
+            if (!isNaN(currentDisplayValue) && currentDisplayValue > 0) {
+              var valueInUSD;
+              
+              // Convert current displayed value back to USD
+              if (previousCurrency === 'COP') {
+                valueInUSD = currentDisplayValue / exchangeRate;
+              } else {
+                valueInUSD = currentDisplayValue;
+              }
+              
+              // Update stored USD value
+              window.storedUSDValues[fieldId] = valueInUSD;
             }
             
-            if (currency === 'USD') {
-              input.value = convertedValue.toFixed(2);
+            // Now convert from USD to display currency
+            var usdValue = window.storedUSDValues[fieldId] || 0;
+            var displayValue;
+            
+            if (currency === 'COP') {
+              displayValue = usdValue * exchangeRate;
             } else {
-              input.value = Math.round(convertedValue).toString();
+              displayValue = usdValue;
+            }
+            
+            // Update input with converted value (formatted with commas)
+            if (currency === 'USD') {
+              input.value = formatNumberWithCommas(displayValue.toFixed(2), false);
+            } else {
+              input.value = formatNumberWithCommas(Math.round(displayValue).toString(), false);
             }
           }
         }
       }
+      
+      // Percentage fields are NEVER converted - they stay exactly as they are
       
       // Show notification
       if (previousCurrency !== currency) {
@@ -163,6 +269,17 @@
       }
       
       window.lastSelectedCurrency = currency;
+      updateCostImpact();
+    }
+    
+    // Update stored USD values when user edits fields
+    function updateStoredUSDValue(fieldId, displayValue, currency) {
+      var exchangeRate = currentExchangeRateValue;
+      if (currency === 'COP') {
+        window.storedUSDValues[fieldId] = displayValue / exchangeRate;
+      } else {
+        window.storedUSDValues[fieldId] = displayValue;
+      }
     }
 
     function updateTime() {
@@ -174,43 +291,301 @@
     }
 
     function formatCurrency(value) {
-      const number = parseFloat(value.replace(/[^0-9.-]+/g, "")).toFixed(2);
-      return isNaN(number) ? '' : number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      if (!value || value === '') return '';
+      const number = parseFloat(value.toString().replace(/[^0-9.-]+/g, ""));
+      if (isNaN(number)) return '';
+      return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
     function formatInput(event) {
       const input = event.target;
-      const value = input.value.replace(/[^0-9.]/g, '');
-      const formattedValue = formatCurrency(value);
-      input.value = formattedValue;
+      // Remove commas and other non-numeric characters except decimal point
+      let value = input.value.replace(/[^0-9.]/g, '');
+      
+      // Prevent multiple decimal points
+      const parts = value.split('.');
+      if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+      }
+      
+      // Update the input value (allows multi-digit input, no commas while typing)
+      input.value = value;
+      
+      // Update stored USD value (only for currency fields, not percentages)
+      const numericValue = parseFloat(value);
+      if (!isNaN(numericValue)) {
+        const isPercentage = ['packaging', 'labor', 'indirectCosts'].includes(input.id);
+        if (!isPercentage) {
+          const currency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'COP';
+          updateStoredUSDValue(input.id, numericValue, currency);
+        } else {
+          // For percentage fields, store directly (they're already in the correct format)
+          window.storedUSDValues[input.id] = numericValue;
+        }
+      }
+      
+      // Update cost impact when value changes
+      updateCostImpact();
     }
-
+    
+    function formatInputOnBlur(event) {
+      const input = event.target;
+      const value = input.value.replace(/[^0-9.-]+/g, '');
+      if (value && value !== '') {
+        const number = parseFloat(value);
+        if (!isNaN(number)) {
+          // For percentage fields (packaging, labor, indirectCosts), don't add commas
+          const isPercentage = ['packaging', 'labor', 'indirectCosts'].includes(input.id);
+          if (isPercentage) {
+            input.value = number.toString();
+          } else {
+            // Format with commas for currency fields
+            // Handle decimal places
+            const parts = number.toString().split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            input.value = parts.join('.');
+          }
+        }
+      }
+    }
+    
     function cleanCurrency(value) {
       return parseFloat(value.replace(/[$,]/g, ''));
     }
 
     function cleanFormValues() {
-      const fields = ['seaFreight', 'landFreight', 'packaging', 'labor', 'indirectCosts', 'administrativeExpenses'];
-      fields.forEach(field => {
+      // Convert currency fields to USD before submitting
+      const currencyFields = ['seaFreight', 'landFreight', 'administrativeExpenses'];
+      const percentageFields = ['packaging', 'labor', 'indirectCosts'];
+      const currency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'COP';
+      const exchangeRate = currentExchangeRateValue;
+      
+      // Convert currency fields to USD
+      currencyFields.forEach(field => {
         const input = document.getElementById(field);
         if (input) {
-          input.value = cleanCurrency(input.value);
+          // Get current displayed value
+          const displayValue = parseFloat(input.value.replace(/[^0-9.-]/g, ''));
+          
+          if (!isNaN(displayValue)) {
+            // Convert to USD
+            let usdValue;
+            if (currency === 'COP') {
+              usdValue = displayValue / exchangeRate;
+            } else {
+              usdValue = displayValue;
+            }
+            
+            // Set the USD value in the form (will be submitted)
+            input.value = usdValue.toString();
+          } else {
+            input.value = cleanCurrency(input.value);
+          }
+        }
+      });
+      
+      // Percentage fields stay as-is (no conversion needed)
+      percentageFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) {
+          // Just clean the value (remove commas)
+          const value = input.value.replace(/[^0-9.-]/g, '');
+          input.value = value;
         }
       });
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-      var currencySelect = document.getElementById('currency');
-      if (!currencySelect) return;
+    // Cost impact calculator - shows general cost impact
+    function calculateCostImpact() {
+      // Get current cost settings (remove commas and parse)
+      function getNumericValue(id) {
+        const el = document.getElementById(id);
+        if (!el) return 0;
+        const value = el.value.toString().replace(/[^0-9.-]+/g, '');
+        return parseFloat(value) || 0;
+      }
       
-      // Initialize
-      window.lastSelectedCurrency = currencySelect.value;
+      const packaging = getNumericValue('packaging');
+      const labor = getNumericValue('labor');
+      const indirectCosts = getNumericValue('indirectCosts');
+      const seaFreight = getNumericValue('seaFreight');
+      const landFreight = getNumericValue('landFreight');
+      const administrativeExpenses = getNumericValue('administrativeExpenses');
+      
+      return {
+        packagingPercent: packaging,
+        laborPercent: labor,
+        indirectPercent: indirectCosts,
+        seaFreight: seaFreight,
+        landFreight: landFreight,
+        administrativeExpenses: administrativeExpenses,
+        totalPercentage: packaging + labor + indirectCosts
+      };
+    }
+    
+    function updateCostImpact() {
+      const impact = calculateCostImpact();
+      const currency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'COP';
+      
+      // Update packaging impact
+      const packagingImpactEl = document.getElementById('packaging-impact');
+      const packagingContainer = document.getElementById('packaging-impact-container');
+      if (packagingImpactEl && packagingContainer) {
+        if (impact.packagingPercent > 0) {
+          packagingImpactEl.textContent = `Adds ${impact.packagingPercent}% to base cost of each window`;
+          packagingContainer.style.display = 'block';
+        } else {
+          packagingContainer.style.display = 'none';
+        }
+      }
+      
+      // Update labor impact
+      const laborImpactEl = document.getElementById('labor-impact');
+      const laborContainer = document.getElementById('labor-impact-container');
+      if (laborImpactEl && laborContainer) {
+        if (impact.laborPercent > 0) {
+          laborImpactEl.textContent = `Adds ${impact.laborPercent}% to base cost of each window`;
+          laborContainer.style.display = 'block';
+        } else {
+          laborContainer.style.display = 'none';
+        }
+      }
+      
+      // Update indirect costs impact
+      const indirectImpactEl = document.getElementById('indirect-impact');
+      const indirectContainer = document.getElementById('indirect-impact-container');
+      if (indirectImpactEl && indirectContainer) {
+        if (impact.indirectPercent > 0) {
+          indirectImpactEl.textContent = `Adds ${impact.indirectPercent}% to base cost of each window`;
+          indirectContainer.style.display = 'block';
+        } else {
+          indirectContainer.style.display = 'none';
+        }
+      }
+      
+      // Update total impact summary
+      const totalImpactEl = document.getElementById('total-impact');
+      if (totalImpactEl) {
+        let summaryHtml = '<div class="text-sm text-gray-700 mb-2 font-semibold">Cost Settings Summary:</div>';
+        
+        // Per-Window Percentages Section
+        summaryHtml += `<div class="text-xs text-gray-600 mb-3 pl-2 border-l-2 border-blue-300">
+          <div class="font-semibold mb-1 text-blue-700">Per-Window Costs (Percentages):</div>`;
+        
+        if (impact.packagingPercent > 0 || impact.laborPercent > 0 || impact.indirectPercent > 0) {
+          if (impact.packagingPercent > 0) {
+            summaryHtml += `<div>• Packaging: <span class="font-semibold">${impact.packagingPercent}%</span> of base cost</div>`;
+          }
+          if (impact.laborPercent > 0) {
+            summaryHtml += `<div>• Labor: <span class="font-semibold">${impact.laborPercent}%</span> of base cost</div>`;
+          }
+          if (impact.indirectPercent > 0) {
+            summaryHtml += `<div>• Indirect Costs: <span class="font-semibold">${impact.indirectPercent}%</span> of base cost</div>`;
+          }
+          if (impact.totalPercentage > 0) {
+            summaryHtml += `<div class="font-semibold mt-1 text-blue-800">Total: ${impact.totalPercentage}% added to each window's base cost</div>`;
+          }
+        } else {
+          summaryHtml += `<div class="text-gray-400 italic">No percentages set</div>`;
+        }
+        
+        summaryHtml += `</div>`;
+        
+        // Per-Container Dollar Amounts Section
+        summaryHtml += `<div class="text-xs text-gray-600 mb-2 pl-2 border-l-2 border-green-300">
+          <div class="font-semibold mb-1 text-green-700">Per-Container Costs (Fixed Amounts):</div>`;
+        
+        if (impact.seaFreight > 0 || impact.landFreight > 0 || impact.administrativeExpenses > 0) {
+          if (impact.seaFreight > 0) {
+            const formatted = formatNumberWithCommas(Math.round(impact.seaFreight));
+            summaryHtml += `<div>• Sea Freight: <span class="font-semibold">${formatted} ${currency}</span> per container</div>`;
+          }
+          if (impact.landFreight > 0) {
+            const formatted = formatNumberWithCommas(Math.round(impact.landFreight));
+            summaryHtml += `<div>• Land Freight: <span class="font-semibold">${formatted} ${currency}</span> per container</div>`;
+          }
+          if (impact.administrativeExpenses > 0) {
+            const formatted = formatNumberWithCommas(Math.round(impact.administrativeExpenses));
+            summaryHtml += `<div>• Administrative Expenses: <span class="font-semibold">${formatted} ${currency}</span> per container</div>`;
+          }
+        } else {
+          summaryHtml += `<div class="text-gray-400 italic">No amounts set</div>`;
+        }
+        
+        summaryHtml += `</div>`;
+        
+        summaryHtml += `<div class="text-xs text-gray-500 mt-2 italic border-t pt-2">These settings apply to all window quotations.</div>`;
+        
+        totalImpactEl.innerHTML = summaryHtml;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize with global currency preference
+      var currency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'COP';
+      
+      // Convert initial values from USD to display currency
+      var exchangeRate = currentExchangeRateValue;
+      var currencyFields = ['seaFreight', 'landFreight', 'administrativeExpenses'];
+      var percentageFields = ['packaging', 'labor', 'indirectCosts'];
+      
+      // Convert currency fields
+      currencyFields.forEach(function(fieldId) {
+        var input = document.getElementById(fieldId);
+        if (input) {
+          var usdValue = window.storedUSDValues[fieldId] || 0;
+          var displayValue;
+          
+          if (currency === 'COP') {
+            displayValue = usdValue * exchangeRate;
+          } else {
+            displayValue = usdValue;
+          }
+          
+          // Set display value (formatted with commas)
+          if (currency === 'USD') {
+            input.value = formatNumberWithCommas(displayValue.toFixed(2), false);
+          } else {
+            input.value = formatNumberWithCommas(Math.round(displayValue).toString(), false);
+          }
+        }
+      });
+      
+      // Display percentage fields as-is (no conversion, use stored value directly)
+      percentageFields.forEach(function(fieldId) {
+        var input = document.getElementById(fieldId);
+        if (input) {
+          // Get the stored value (which is the percentage, not USD)
+          var value = window.storedUSDValues[fieldId];
+          // If value exists and is not zero, use it; otherwise keep what's in the input
+          if (value !== undefined && value !== null && value !== '') {
+            input.value = value.toString();
+          }
+          // If input already has a value, don't overwrite it
+        }
+      });
+      
+      window.lastSelectedCurrency = currency;
       updateCurrencyLabels();
       
-      // Add event listener
-      currencySelect.addEventListener('change', function() {
+      // Listen to global currency changes
+      window.addEventListener('currencyChanged', function(event) {
+        var newCurrency = event.detail.currency;
         updateCurrencyLabels();
       });
+      
+      // Add blur handlers for formatting
+      const inputs = ['packaging', 'labor', 'indirectCosts', 'seaFreight', 'landFreight', 'administrativeExpenses'];
+      inputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+          input.addEventListener('blur', formatInputOnBlur);
+          input.addEventListener('input', formatInput);
+        }
+      });
+      
+      // Initialize cost impact
+      updateCostImpact();
       
       // Initialize time display
       updateTime();
@@ -268,30 +643,35 @@
     }
   </script>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="pattern-bg min-h-screen flex flex-col">
   <%- include('../partials/_header.ejs') %>
   
-  <main class="flex-grow container mx-auto px-4 py-8">
+  <main class="flex-grow container mx-auto px-4 py-10">
     <div class="max-w-4xl mx-auto">
       <!-- Page Header -->
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="text-center mb-8">
+        <div class="flex justify-center mb-4">
+          <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg transform rotate-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <div>
-            <h1 class="text-2xl font-bold text-gray-800">Global Cost Settings</h1>
-            <p class="text-gray-500 text-sm">Configure system-wide pricing and currency settings</p>
-          </div>
         </div>
+        <h1 class="text-4xl font-bold text-gray-800 mb-2" style="position: relative; display: inline-block;">
+          Global Cost Settings
+          <span style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 80px; height: 4px; background: linear-gradient(to right, #3b82f6, #60a5fa); border-radius: 2px;"></span>
+        </h1>
+        <p class="mt-6 text-gray-600 max-w-xl mx-auto">Configure system-wide pricing and currency settings</p>
+      </div>
+      
+      <!-- Back Button -->
+      <div class="flex justify-end mb-6">
         <a href="/admin" class="btn-secondary">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Back
+          Back to Admin Console
         </a>
       </div>
 
@@ -337,36 +717,11 @@
       <!-- Main Form Card -->
       <div class="main-card p-6 mb-5">
         <form method="POST" action="/admin/settings" onsubmit="cleanFormValues()">
+          <!-- Hidden currency field - uses global currency preference -->
+          <input type="hidden" id="currency" name="currency" value="<%= costSettings.currency || 'COP' %>">
           
           <!-- Currency Settings Row -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <!-- Currency Selection -->
-            <div class="form-section !mb-0">
-              <div class="flex items-center gap-2.5 mb-3">
-                <div class="section-icon bg-blue-100 text-blue-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <div>
-                  <label for="currency" class="font-semibold text-gray-800 text-sm">Currency Selection</label>
-                  <span class="required-badge">Required</span>
-                </div>
-              </div>
-              <div class="input-with-icon">
-                <div class="input-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <select id="currency" name="currency" required class="form-input">
-                  <option value="COP" <%= (costSettings.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP - Colombian Peso</option>
-                  <option value="USD" <%= (costSettings.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD - US Dollar</option>
-                </select>
-              </div>
-              <p class="help-text">Changing currency will automatically convert all existing values</p>
-            </div>
-            
             <!-- Exchange Rate Display -->
             <div class="form-section !mb-0">
               <div class="flex items-center gap-2.5 mb-3">
@@ -402,7 +757,7 @@
               <div class="flex items-center gap-2.5 mb-3">
                 <div class="section-icon bg-cyan-100 text-cyan-600">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 10l2-4h14l2 4M3 10v8h18v-8M5 18h2m10 0h2" />
                   </svg>
                 </div>
                 <div>
@@ -416,7 +771,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
                 </div>
-                <input type="text" id="seaFreight" name="seaFreight" value="<%= costSettings ? costSettings.seaFreight : '' %>" required class="form-input" oninput="formatInput(event)">
+                <input type="text" id="seaFreight" name="seaFreight" value="<%= costSettings ? costSettings.seaFreight : '' %>" required class="form-input">
               </div>
               <p class="help-text">Cost of shipping one container by sea</p>
               <p id="seaFreight-currency" class="text-xs text-blue-600 font-medium mt-1">Enter amount in <%= costSettings.currency || 'COP' %></p>
@@ -427,7 +782,7 @@
               <div class="flex items-center gap-2.5 mb-3">
                 <div class="section-icon bg-cyan-100 text-cyan-600">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 0a2 2 0 100 4m0-4v10m0 0H6a2 2 0 01-2-2V9a2 2 0 012-2h2m8 0v10m0 0h2a2 2 0 002-2V9a2 2 0 00-2-2h-2" />
                   </svg>
                 </div>
                 <div>
@@ -441,7 +796,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
                 </div>
-                <input type="text" id="landFreight" name="landFreight" value="<%= costSettings ? costSettings.landFreight : '' %>" required class="form-input" oninput="formatInput(event)">
+                <input type="text" id="landFreight" name="landFreight" value="<%= costSettings ? costSettings.landFreight : '' %>" required class="form-input">
+                <span id="landFreight-suffix" class="currency-suffix"></span>
               </div>
               <p class="help-text">Cost of transporting one container by land</p>
               <p id="landFreight-currency" class="text-xs text-blue-600 font-medium mt-1">Enter amount in <%= costSettings.currency || 'COP' %></p>
@@ -455,7 +811,7 @@
               <div class="flex items-center gap-2.5 mb-3">
                 <div class="section-icon bg-green-100 text-green-600">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
                 <div>
@@ -464,15 +820,17 @@
                 </div>
               </div>
               <div class="input-with-icon">
-                <div class="input-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
+                <div class="input-icon" style="font-size: 1rem; font-weight: 600; color: #64748b;">
+                  %
                 </div>
-                <input type="text" id="packaging" name="packaging" value="<%= costSettings ? costSettings.packaging : '' %>" required class="form-input" oninput="formatInput(event)">
+                <input type="text" id="packaging" name="packaging" value="<%= costSettings ? costSettings.packaging : '' %>" required class="form-input">
               </div>
-              <p class="help-text">Cost of packaging materials per window unit</p>
-              <p id="packaging-currency" class="text-xs text-blue-600 font-medium mt-1">Enter amount in <%= costSettings.currency || 'COP' %></p>
+              <p class="help-text">Percentage of base cost added for packaging (e.g., 5 = 5%)</p>
+              <p id="packaging-currency" class="text-xs text-blue-600 font-medium mt-1">Enter percentage value</p>
+              <div id="packaging-impact-container" class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs" style="display: none;">
+                <span class="font-semibold text-blue-800">Cost Impact: </span>
+                <span id="packaging-impact" class="text-blue-600"></span>
+              </div>
             </div>
             
             <!-- Labor -->
@@ -480,7 +838,8 @@
               <div class="flex items-center gap-2.5 mb-3">
                 <div class="section-icon bg-green-100 text-green-600">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
                 <div>
@@ -489,15 +848,17 @@
                 </div>
               </div>
               <div class="input-with-icon">
-                <div class="input-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
+                <div class="input-icon" style="font-size: 1rem; font-weight: 600; color: #64748b;">
+                  %
                 </div>
-                <input type="text" id="labor" name="labor" value="<%= costSettings ? costSettings.labor : '' %>" required class="form-input" oninput="formatInput(event)">
+                <input type="text" id="labor" name="labor" value="<%= costSettings ? costSettings.labor : '' %>" required class="form-input">
               </div>
-              <p class="help-text">Manufacturing labor cost per window unit</p>
-              <p id="labor-currency" class="text-xs text-blue-600 font-medium mt-1">Enter amount in <%= costSettings.currency || 'COP' %></p>
+              <p class="help-text">Percentage of base cost added for labor (e.g., 15 = 15%)</p>
+              <p id="labor-currency" class="text-xs text-blue-600 font-medium mt-1">Enter percentage value</p>
+              <div id="labor-impact-container" class="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs" style="display: none;">
+                <span class="font-semibold text-green-800">Cost Impact: </span>
+                <span id="labor-impact" class="text-green-600"></span>
+              </div>
             </div>
           </div>
 
@@ -508,7 +869,7 @@
               <div class="flex items-center gap-2.5 mb-3">
                 <div class="section-icon bg-green-100 text-green-600">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <div>
@@ -517,15 +878,17 @@
                 </div>
               </div>
               <div class="input-with-icon">
-                <div class="input-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
+                <div class="input-icon" style="font-size: 1rem; font-weight: 600; color: #64748b;">
+                  %
                 </div>
-                <input type="text" id="indirectCosts" name="indirectCosts" value="<%= costSettings ? costSettings.indirectCosts : '' %>" required class="form-input" oninput="formatInput(event)">
+                <input type="text" id="indirectCosts" name="indirectCosts" value="<%= costSettings ? costSettings.indirectCosts : '' %>" required class="form-input">
               </div>
-              <p class="help-text">Additional fabrication costs per window unit</p>
-              <p id="indirectCosts-currency" class="text-xs text-blue-600 font-medium mt-1">Enter amount in <%= costSettings.currency || 'COP' %></p>
+              <p class="help-text">Percentage of base cost added for indirect costs (e.g., 10 = 10%)</p>
+              <p id="indirectCosts-currency" class="text-xs text-blue-600 font-medium mt-1">Enter percentage value</p>
+              <div id="indirect-impact-container" class="mt-2 p-2 bg-purple-50 border border-purple-200 rounded text-xs" style="display: none;">
+                <span class="font-semibold text-purple-800">Cost Impact: </span>
+                <span id="indirect-impact" class="text-purple-600"></span>
+              </div>
             </div>
             
             <!-- Administrative Expenses -->
@@ -547,11 +910,30 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
                 </div>
-                <input type="text" id="administrativeExpenses" name="administrativeExpenses" value="<%= costSettings ? costSettings.administrativeExpenses : '' %>" required class="form-input" oninput="formatInput(event)">
+                <input type="text" id="administrativeExpenses" name="administrativeExpenses" value="<%= costSettings ? costSettings.administrativeExpenses : '' %>" required class="form-input">
+                <span id="administrativeExpenses-suffix" class="currency-suffix"></span>
               </div>
               <p class="help-text">Administrative and overhead costs per container</p>
               <p id="administrativeExpenses-currency" class="text-xs text-blue-600 font-medium mt-1">Enter amount in <%= costSettings.currency || 'COP' %></p>
             </div>
+          </div>
+
+          <!-- Total Cost Impact Summary -->
+          <div class="form-section bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 mb-4">
+            <div class="flex items-center gap-2.5 mb-3">
+              <div class="section-icon bg-blue-500 text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <label class="font-semibold text-gray-800 text-base">Total Cost Impact Preview</label>
+              </div>
+            </div>
+            <div id="total-impact" class="p-3 bg-white rounded-lg border border-blue-200">
+              <div class="text-sm text-gray-600">Enter values above to see cost impact</div>
+            </div>
+            <p class="help-text mt-2">These general cost settings will be applied to all window quotations</p>
           </div>
 
           <!-- Form Actions -->

@@ -789,12 +789,11 @@
   <%- include('../partials/_footer.ejs') %>
 
   <script>
-    // Cost settings - you'll need to pass these from the server
-    // Cost settings - you'll need to pass these from the server
+    // Cost settings from server (stored in USD in database)
     const costSettings = {
-      seaFreight: 5.0,     // Default values - replace with actual from server
-      landFreight: 3.0,
-      administrativeExpenses: 8.0
+      seaFreight: <%= costSettings && costSettings.seaFreight ? costSettings.seaFreight : 0 %>,
+      landFreight: <%= costSettings && costSettings.landFreight ? costSettings.landFreight : 0 %>,
+      administrativeExpenses: <%= costSettings && costSettings.administrativeExpenses ? costSettings.administrativeExpenses : 0 %>
     };
     
     // Exchange rate from server (default to 4000 if not provided)
@@ -880,7 +879,8 @@
       let adminExpensesAmount = 0;
       
       if (includeSeaFreight) {
-        seaFreightAmount = total * (costSettings.seaFreight / 100);
+        // Sea freight is a fixed dollar amount (stored in USD in database)
+        seaFreightAmount = parseFloat(costSettings.seaFreight) || 0;
         total += seaFreightAmount;
         const seaFreightRow = document.getElementById('seaFreightRow');
         const seaFreightAmountEl = document.getElementById('seaFreightAmount');
@@ -892,7 +892,8 @@
       }
       
       if (includeLandFreight) {
-        landFreightAmount = total * (costSettings.landFreight / 100);
+        // Land freight is a fixed dollar amount (stored in USD in database)
+        landFreightAmount = parseFloat(costSettings.landFreight) || 0;
         total += landFreightAmount;
         const landFreightRow = document.getElementById('landFreightRow');
         const landFreightAmountEl = document.getElementById('landFreightAmount');
@@ -904,7 +905,8 @@
       }
       
       if (includeAdminExpenses) {
-        adminExpensesAmount = total * (costSettings.administrativeExpenses / 100);
+        // Administrative expenses is a fixed dollar amount (stored in USD in database)
+        adminExpensesAmount = parseFloat(costSettings.administrativeExpenses) || 0;
         total += adminExpensesAmount;
         const adminExpensesRow = document.getElementById('adminExpensesRow');
         const adminExpensesAmountEl = document.getElementById('adminExpensesAmount');

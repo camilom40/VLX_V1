@@ -434,6 +434,10 @@ router.get('/projects/:id', isAuthenticated, async (req, res) => {
     // Get exchange rate for currency conversion
     const { getExchangeRate } = require('../utils/currencyConverter');
     const exchangeRate = await getExchangeRate();
+    
+    // Get cost settings for project-level costs
+    const CostSettings = require('../models/CostSettings');
+    const costSettings = await CostSettings.findOne();
 
     res.render('projects/projectDetails', { 
       project, 
@@ -441,7 +445,8 @@ router.get('/projects/:id', isAuthenticated, async (req, res) => {
       windowSystems,
       projectTotal: projectTotal.toFixed(2),
       companyLogo: companyLogo,
-      exchangeRate: exchangeRate
+      exchangeRate: exchangeRate,
+      costSettings: costSettings || {}
     });
 
   } catch (error) {
