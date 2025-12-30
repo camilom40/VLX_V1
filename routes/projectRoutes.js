@@ -46,6 +46,152 @@ router.get('/projects', isAuthenticated, async (req, res) => {
   }
 });
 
+// Helper function to recalculate prices for a window item with current costs
+async function recalculateWindowItemPrices(windowItem) {
+  try {
+    // Get current exchange rate
+    const exchangeRate = await getExchangeRate();
+    
+    // Get current cost settings
+    const CostSettings = require('../models/CostSettings');
+    const costSettings = await CostSettings.findOne();
+    
+    // Get window system
+    const WindowSystem = require('../models/Window');
+    const windowSystem = await WindowSystem.findById(windowItem.windowSystemId)
+      .populate('profiles.profile')
+      .populate('accessories.accessory')
+      .populate('muntinConfiguration.muntinProfile');
+    
+    if (!windowSystem) {
+      console.error('Window system not found for recalculation');
+      return { unitPrice: windowItem.unitPrice, totalPrice: windowItem.totalPrice };
+    }
+    
+    // Get current glass price
+    const Glass = require('../models/Glass');
+    const selectedGlass = await Glass.findById(windowItem.selectedGlassId);
+    if (!selectedGlass) {
+      console.error('Glass not found for recalculation');
+      return { unitPrice: windowItem.unitPrice, totalPrice: windowItem.totalPrice };
+    }
+    
+    // Get all profiles and accessories for current prices
+    const Profile = require('../models/Profile');
+    const Accessory = require('../models/Accessory');
+    const [allProfiles, allAccessories] = await Promise.all([
+      Profile.find({}),
+      Accessory.find({})
+    ]);
+    
+    // Calculate dimensions
+    const windowWidth = windowItem.width;
+    const windowHeight = windowItem.height;
+    const windowQuantity = windowItem.quantity;
+    
+    // Glass cost calculation - ALL INTERNAL CALCULATIONS IN USD
+    const areaInches = windowWidth * windowHeight;
+    const areaSquareMeters = areaInches / 1550;
+    const glassCostUSD = convertToUSD(selectedGlass.pricePerSquareMeter, selectedGlass.currency || 'USD', exchangeRate);
+    const glassCost = glassCostUSD * areaSquareMeters;
+    
+    // Profile costs calculation
+    let profileCostTotal = 0;
+    const perimeterInches = 2 * (windowWidth + windowHeight);
+    const perimeterMeters = perimeterInches / 39.37;
+    
+    // Process user-configurable profiles (from saved selections)
+    const userConfigurableProfiles = windowSystem.profiles.filter(p => p.showToUser);
+    if (windowItem.selectedProfiles && windowItem.selectedProfiles.length > 0) {
+      for (let i = 0; i < Math.min(userConfigurableProfiles.length, windowItem.selectedProfiles.length); i++) {
+        const savedProfile = windowItem.selectedProfiles[i];
+        const profileDoc = allProfiles.find(p => p._id.toString() === savedProfile.profileId.toString());
+        if (profileDoc) {
+          const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'USD', exchangeRate);
+          const lengthDiscountMeters = (savedProfile.lengthDiscount || 0) * 0.0254;
+          const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
+          const profileCost = profileCostUSD * adjustedLength * (savedProfile.quantity || 1);
+          profileCostTotal += profileCost;
+        }
+      }
+    }
+    
+    // Add auto-managed profile costs
+    for (const profileItem of windowSystem.profiles.filter(p => !p.showToUser)) {
+      const profileDoc = profileItem.profile;
+      if (profileDoc) {
+        const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'USD', exchangeRate);
+        const lengthDiscountMeters = (profileItem.lengthDiscount || 0) * 0.0254;
+        const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
+        const profileCost = profileCostUSD * adjustedLength * (profileItem.quantity || 1);
+        profileCostTotal += profileCost;
+      }
+    }
+    
+    // Accessories cost calculation
+    let accessoryCostTotal = 0;
+    
+    // Process saved accessories
+    if (windowItem.selectedAccessories && windowItem.selectedAccessories.length > 0) {
+      for (const savedAcc of windowItem.selectedAccessories) {
+        const accessoryDoc = allAccessories.find(a => a._id.toString() === savedAcc.accessoryId.toString());
+        if (accessoryDoc) {
+          const accessoryCostUSD = convertToUSD(accessoryDoc.price, accessoryDoc.currency || 'USD', exchangeRate);
+          accessoryCostTotal += accessoryCostUSD * (savedAcc.quantity || 1);
+        }
+      }
+    }
+    
+    // Add auto-managed accessories
+    for (const accessoryItem of windowSystem.accessories.filter(a => !a.showToUser)) {
+      const accessoryDoc = accessoryItem.accessory;
+      if (accessoryDoc && accessoryDoc.price !== undefined) {
+        const accessoryCostUSD = convertToUSD(accessoryDoc.price, accessoryDoc.currency || 'USD', exchangeRate);
+        accessoryCostTotal += accessoryCostUSD * (accessoryItem.quantity || 1);
+      }
+    }
+    
+    // Muntin cost calculation
+    let muntinCost = 0;
+    if (windowItem.muntinConfiguration && windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+      const muntinConfig = windowItem.muntinConfiguration;
+      if (muntinConfig.muntinProfileId && muntinConfig.horizontalDivisions && muntinConfig.verticalDivisions) {
+        const muntinProfile = allProfiles.find(p => p._id.toString() === muntinConfig.muntinProfileId.toString());
+        if (muntinProfile) {
+          const muntinPricePerMeterUSD = convertToUSD(muntinProfile.pricePerMeter, muntinProfile.currency || 'USD', exchangeRate);
+          const horizontalMuntins = muntinConfig.horizontalDivisions - 1;
+          const verticalMuntins = muntinConfig.verticalDivisions - 1;
+          const horizontalLength = horizontalMuntins * windowWidth * 0.0254;
+          const verticalLength = verticalMuntins * windowHeight * 0.0254;
+          const totalMuntinLength = horizontalLength + verticalLength;
+          muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
+        }
+      }
+    }
+    
+    // Apply cost settings
+    const baseCost = glassCost + profileCostTotal + accessoryCostTotal + muntinCost;
+    const additionalCosts = costSettings ? baseCost * (
+      (parseFloat(costSettings.packaging) || 0) / 100 +
+      (parseFloat(costSettings.labor) || 0) / 100 +
+      (parseFloat(costSettings.indirectCosts) || 0) / 100
+    ) : 0;
+    
+    const totalCost = baseCost + additionalCosts;
+    const finalPrice = totalCost * windowQuantity;
+    const unitPrice = windowQuantity > 0 ? parseFloat((finalPrice / windowQuantity).toFixed(2)) : 0;
+    
+    return {
+      unitPrice: unitPrice,
+      totalPrice: finalPrice
+    };
+  } catch (error) {
+    console.error('Error recalculating window item prices:', error);
+    // Return original prices if recalculation fails
+    return { unitPrice: windowItem.unitPrice, totalPrice: windowItem.totalPrice };
+  }
+}
+
 // Helper function to generate quote number
 async function generateQuoteNumber(userId) {
   const today = new Date();
@@ -400,20 +546,48 @@ router.post('/projects/:projectId/items/:itemId/duplicate', isAuthenticated, asy
       newItemName = `${baseName} (${counter})`;
     }
 
-    // Create a duplicate item with the new name
-    const duplicatedItem = new WindowItem({
-      projectId: originalItem.projectId,
+    // Recalculate prices with current costs, exchange rate, and prices
+    const recalculatedPrices = await recalculateWindowItemPrices(originalItem);
+    
+    // Create a duplicate item with the new name and recalculated prices
+    // Convert Mongoose document to plain object to avoid issues
+    const originalItemObj = originalItem.toObject ? originalItem.toObject() : originalItem;
+    
+    // Build the item data object, only including fields that are not null/undefined
+    const duplicatedItemData = {
+      projectId: originalItemObj.projectId,
       itemName: newItemName,
-      width: originalItem.width,
-      height: originalItem.height,
-      quantity: originalItem.quantity,
-      unitPrice: originalItem.unitPrice,
-      material: originalItem.material,
-      color: originalItem.color,
-      style: originalItem.style,
-      description: originalItem.description,
-      // totalPrice will be calculated automatically by the model
-    });
+      width: originalItemObj.width,
+      height: originalItemObj.height,
+      quantity: originalItemObj.quantity,
+      unitPrice: recalculatedPrices.unitPrice,
+      totalPrice: recalculatedPrices.totalPrice,
+      material: originalItemObj.material,
+      color: originalItemObj.color,
+      style: originalItemObj.style,
+      description: originalItemObj.description,
+      windowSystemId: originalItemObj.windowSystemId || undefined,
+      selectedGlassId: originalItemObj.selectedGlassId || undefined,
+      missileType: originalItemObj.missileType || undefined,
+      includeFlange: originalItemObj.includeFlange || false,
+      selectedProfiles: originalItemObj.selectedProfiles || undefined,
+      selectedAccessories: originalItemObj.selectedAccessories || undefined,
+      notes: originalItemObj.notes || ''
+    };
+    
+    // Only include muntinConfiguration if it exists and has valid data
+    if (originalItemObj.muntinConfiguration && 
+        originalItemObj.muntinConfiguration !== null && 
+        typeof originalItemObj.muntinConfiguration === 'object' &&
+        !Array.isArray(originalItemObj.muntinConfiguration)) {
+      // Check if it has at least one meaningful property
+      const hasValidData = Object.values(originalItemObj.muntinConfiguration).some(val => val !== null && val !== undefined);
+      if (hasValidData) {
+        duplicatedItemData.muntinConfiguration = originalItemObj.muntinConfiguration;
+      }
+    }
+    
+    const duplicatedItem = new WindowItem(duplicatedItemData);
 
     await duplicatedItem.save();
     
@@ -1713,22 +1887,50 @@ router.post('/projects/:id/duplicate', isAuthenticated, async (req, res) => {
 
     await newProject.save();
 
-    // Duplicate all window items
+    // Duplicate all window items with recalculated prices
     const originalWindowItems = await WindowItem.find({ projectId: originalProject._id });
     for (const item of originalWindowItems) {
-      const newItem = new WindowItem({
+      // Recalculate prices with current costs, exchange rate, and prices
+      const recalculatedPrices = await recalculateWindowItemPrices(item);
+      
+      // Convert Mongoose document to plain object to avoid issues
+      const itemObj = item.toObject ? item.toObject() : item;
+      
+      // Build the item data object, only including fields that are not null/undefined
+      const newItemData = {
         projectId: newProject._id,
-        itemName: item.itemName,
-        width: item.width,
-        height: item.height,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        material: item.material,
-        color: item.color,
-        style: item.style,
-        description: item.description
-      });
+        itemName: itemObj.itemName,
+        width: itemObj.width,
+        height: itemObj.height,
+        quantity: itemObj.quantity,
+        unitPrice: recalculatedPrices.unitPrice,
+        totalPrice: recalculatedPrices.totalPrice,
+        material: itemObj.material,
+        color: itemObj.color,
+        style: itemObj.style,
+        description: itemObj.description,
+        windowSystemId: itemObj.windowSystemId || undefined,
+        selectedGlassId: itemObj.selectedGlassId || undefined,
+        missileType: itemObj.missileType || undefined,
+        includeFlange: itemObj.includeFlange || false,
+        selectedProfiles: itemObj.selectedProfiles || undefined,
+        selectedAccessories: itemObj.selectedAccessories || undefined,
+        notes: itemObj.notes || ''
+      };
+      
+      // Only include muntinConfiguration if it exists and has valid data
+      if (itemObj.muntinConfiguration && 
+          itemObj.muntinConfiguration !== null && 
+          typeof itemObj.muntinConfiguration === 'object' &&
+          !Array.isArray(itemObj.muntinConfiguration)) {
+        // Check if it has at least one meaningful property
+        const hasValidData = Object.values(itemObj.muntinConfiguration).some(val => val !== null && val !== undefined);
+        if (hasValidData) {
+          newItemData.muntinConfiguration = itemObj.muntinConfiguration;
+        }
+      }
+      
+      const newItem = new WindowItem(newItemData);
       await newItem.save();
     }
 
