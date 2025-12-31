@@ -1008,5 +1008,67 @@ npm run dev
 
 ---
 
-*Last Updated: December 2025 - Inline Editing & Validation Enhancements*
+## December 2025 - Accessory Quantity Equations & Dashboard Currency Conversion
+
+### What We Worked On
+
+1. **Accessory Quantity Equations**
+   - **Dynamic Quantity Calculation**: Accessories in window systems can now use equations instead of fixed quantities
+   - **Equation Variables**: Supports `width`, `height`, `perimeter` (2*(width+height)), and `area` (width*height) as variables
+   - **UI Enhancement**: Added "Quantity Type" selector (Fixed Quantity / Equation) in the compose window form
+   - **Equation Input**: Text input field with placeholder examples and variable documentation
+   - **Real-time Validation**: 
+     - Validates variable names as user types (only allows valid variables: width, height, perimeter, area)
+     - Validates equation syntax with sample values (width=10, height=20)
+     - Shows visual feedback: green border for valid equations, red border for invalid
+     - Displays preview calculation result with sample values
+     - Error messages for invalid variables or syntax errors
+   - **Backend Evaluation**: Added `evaluateQuantityEquation()` helper function that safely evaluates equations during pricing calculations
+   - **Use Cases**: 
+     - Weather stripping: `5 * height`
+     - Gasket: `2 * perimeter`
+     - Any custom formula based on window dimensions
+   - **Equation Storage**: Equations stored in `quantityEquation` field in Window model (quantity field becomes optional when equation is provided)
+   - **Display**: Equations shown in blue with monospace font in the accessories table
+
+2. **Dashboard Currency Conversion**
+   - **Currency Toggle Integration**: Dashboard now responds to global currency changes from header toggle
+   - **Real-time Updates**: Project values update instantly when currency is switched between COP and USD
+   - **Exchange Rate Integration**: Uses exchange rate from server for accurate conversion
+   - **Visual Updates**: All project value displays update dynamically without page reload
+   - **Data Attributes**: Project values stored with `data-value-usd` attributes for accurate conversion
+
+#### Key Files Modified
+- `models/Window.js` - Added `quantityEquation` field to accessories schema (optional string, quantity made optional when equation present)
+- `views/admin/composeWindow.ejs` - Added quantity type selector, equation input field, real-time validation, and equation display in table
+- `routes/admin/windowRoutes.js` - Updated create and update routes to handle `quantityEquation` field
+- `routes/projectRoutes.js` - Added `evaluateQuantityEquation()` function, updated all accessory cost calculation locations to evaluate equations
+- `views/dashboard.ejs` - Added currency conversion JavaScript, data attributes for project values
+- `routes/dashboardRoutes.js` - Added exchange rate to dashboard route
+
+#### Technical Notes
+- **Equation Evaluation**: Uses Function constructor with strict mode for safe evaluation (prevents code injection)
+- **Variable Replacement**: Variables replaced with actual values before evaluation (case-insensitive)
+- **Validation**: Real-time validation with debouncing (300ms delay) to reduce API calls
+- **Error Handling**: Comprehensive error handling for invalid variables, syntax errors, and invalid results
+- **Equation Scope**: Equations only evaluated for auto-managed accessories (user-configurable accessories use user input quantities)
+- **Currency Conversion**: All values stored in USD, converted to display currency (COP/USD) using exchange rate
+- **Preview Calculation**: Sample calculation shown with width=10, height=20 for user feedback
+
+#### Example Equations
+- `5 * height` - Weather stripping (5 times the window height)
+- `2 * perimeter` - Gasket (2 times the window perimeter)
+- `width + height` - Sum of dimensions
+- `3.5 * width` - Custom multiplier
+- `perimeter / 2` - Half the perimeter
+
+---
+
+## 🔮 TODO / Future Enhancements
+
+- **Profile Quantity Equations**: Consider implementing equation support for profile quantities, similar to accessory equations. This would allow profiles to use formulas based on window dimensions (e.g., perimeter-based calculations for frame profiles).
+
+---
+
+*Last Updated: December 2025 - Accessory Quantity Equations & Dashboard Currency Conversion*
 
