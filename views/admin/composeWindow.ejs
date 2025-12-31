@@ -842,8 +842,8 @@
 
           <div id="accessories-section" class="mb-8">
             <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div class="md:col-span-2">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
                   <label for="accessory-id" class="form-label">Accessory Type</label>
                   <select id="accessory-id" class="form-control w-full">
                     <option value="">Select Accessory</option>
@@ -851,11 +851,6 @@
                       <option value="<%= accessory._id %>" data-unit="<%= accessory.unit %>"><%= accessory.name %></option>
                     <% }); %>
                   </select>
-                </div>
-                
-                <div>
-                  <label for="accessory-quantity" class="form-label">Quantity</label>
-                  <input type="number" id="accessory-quantity" placeholder="Qty" min="1" class="form-control w-full">
                 </div>
                 
                 <div>
@@ -870,6 +865,30 @@
                     <label for="accessory-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
                   </div>
                   <p class="text-xs text-gray-500 mt-1">Allow users to modify this accessory</p>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="accessory-quantity-type" class="form-label">Quantity Type</label>
+                  <select id="accessory-quantity-type" class="form-control w-full" onchange="toggleAccessoryQuantityType()">
+                    <option value="fixed">Fixed Quantity</option>
+                    <option value="equation">Equation</option>
+                  </select>
+                </div>
+                
+                <div id="accessory-quantity-fixed-container">
+                  <label for="accessory-quantity" class="form-label">Quantity</label>
+                  <input type="number" id="accessory-quantity" placeholder="Qty" min="1" class="form-control w-full">
+                </div>
+                
+                <div id="accessory-quantity-equation-container" style="display: none;" class="md:col-span-2">
+                  <label for="accessory-quantity-equation" class="form-label">Quantity Equation</label>
+                  <input type="text" id="accessory-quantity-equation" placeholder="e.g., 5 * height, 2 * perimeter" class="form-control w-full">
+                  <div id="equation-validation-message" class="mt-2 text-sm"></div>
+                  <div id="equation-preview" class="mt-2 text-xs text-gray-600"></div>
+                  <p class="text-xs text-gray-500 mt-1">Available variables: <strong>width</strong>, <strong>height</strong>, <strong>perimeter</strong> (2*(width+height)), <strong>area</strong> (width*height)</p>
+                  <p class="text-xs text-gray-500">Examples: "5 * height", "2 * perimeter", "width + height", "3.5 * width"</p>
                 </div>
               </div>
               
@@ -3410,12 +3429,158 @@
       }
     }
 
+    // Validate equation syntax and variables
+    function validateEquation(equation) {
+      const validationMsg = document.getElementById('equation-validation-message');
+      const previewDiv = document.getElementById('equation-preview');
+      const input = document.getElementById('accessory-quantity-equation');
+      
+      if (!equation || equation.trim() === '') {
+        if (validationMsg) validationMsg.innerHTML = '';
+        if (previewDiv) previewDiv.innerHTML = '';
+        if (input) {
+          input.classList.remove('border-red-500', 'border-green-500');
+        }
+        return { valid: false, message: '' };
+      }
+      
+      const trimmed = equation.trim();
+      const validVariables = ['width', 'height', 'perimeter', 'area'];
+      
+      // Check for invalid variable names (case-insensitive)
+      const variablePattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+      const foundVariables = [];
+      let match;
+      while ((match = variablePattern.exec(trimmed)) !== null) {
+        const varName = match[1].toLowerCase();
+        // Skip JavaScript keywords and math functions
+        if (!['width', 'height', 'perimeter', 'area', 'sqrt', 'abs', 'round', 'floor', 'ceil', 'max', 'min', 'pow'].includes(varName)) {
+          foundVariables.push(match[1]);
+        }
+      }
+      
+      // Filter out valid variables
+      const invalidVars = foundVariables.filter(v => !validVariables.includes(v.toLowerCase()));
+      
+      if (invalidVars.length > 0) {
+        const uniqueInvalid = [...new Set(invalidVars)];
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-red-600 font-medium">❌ Invalid variable(s): ${uniqueInvalid.join(', ')}</span><br><span class="text-red-500 text-xs">Valid variables are: width, height, perimeter, area</span>`;
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: `Invalid variables: ${uniqueInvalid.join(', ')}` };
+      }
+      
+      // Try to evaluate with sample values
+      try {
+        // Test with sample values: width=10, height=20
+        const testWidth = 10;
+        const testHeight = 20;
+        const testPerimeter = 2 * (testWidth + testHeight);
+        const testArea = testWidth * testHeight;
+        
+        let testExpression = trimmed;
+        // Replace variables with test values (case-insensitive)
+        testExpression = testExpression.replace(/\bwidth\b/gi, testWidth);
+        testExpression = testExpression.replace(/\bheight\b/gi, testHeight);
+        testExpression = testExpression.replace(/\bperimeter\b/gi, testPerimeter);
+        testExpression = testExpression.replace(/\barea\b/gi, testArea);
+        
+        // Safe evaluation using Function constructor
+        const result = Function('"use strict"; return (' + testExpression + ')')();
+        
+        if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+          if (input) input.classList.add('border-red-500');
+          if (input) input.classList.remove('border-green-500');
+          if (validationMsg) {
+            validationMsg.innerHTML = '<span class="text-red-600 font-medium">❌ Invalid equation syntax</span><br><span class="text-red-500 text-xs">The equation must evaluate to a valid number</span>';
+          }
+          if (previewDiv) previewDiv.innerHTML = '';
+          return { valid: false, message: 'Invalid equation syntax' };
+        }
+        
+        // Valid equation
+        if (input) input.classList.add('border-green-500');
+        if (input) input.classList.remove('border-red-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = '<span class="text-green-600 font-medium">✓ Valid equation</span>';
+        }
+        
+        // Show preview with sample calculation
+        if (previewDiv) {
+          previewDiv.innerHTML = `<span class="text-gray-600">Preview (width=10, height=20): <strong>${result.toFixed(2)}</strong></span>`;
+        }
+        return { valid: true, message: '', result: result };
+      } catch (error) {
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = '<span class="text-red-600 font-medium">❌ Invalid equation syntax</span><br><span class="text-red-500 text-xs">Check your math operators and parentheses</span>';
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: 'Invalid equation syntax: ' + error.message };
+      }
+    }
+
+    // Toggle between fixed quantity and equation
+    function toggleAccessoryQuantityType() {
+      const quantityType = document.getElementById('accessory-quantity-type').value;
+      const fixedContainer = document.getElementById('accessory-quantity-fixed-container');
+      const equationContainer = document.getElementById('accessory-quantity-equation-container');
+      
+      if (quantityType === 'equation') {
+        fixedContainer.style.display = 'none';
+        equationContainer.style.display = 'block';
+        document.getElementById('accessory-quantity').value = '';
+        
+        // Add validation listener to equation input
+        setTimeout(() => {
+          const equationInput = document.getElementById('accessory-quantity-equation');
+          if (equationInput) {
+            // Remove existing listeners by cloning and replacing
+            const newInput = equationInput.cloneNode(true);
+            equationInput.parentNode.replaceChild(newInput, equationInput);
+            
+            // Add debounced validation
+            let validationTimeout;
+            newInput.addEventListener('input', function() {
+              clearTimeout(validationTimeout);
+              validationTimeout = setTimeout(() => {
+                validateEquation(this.value);
+              }, 300);
+            });
+            
+            // Validate on blur
+            newInput.addEventListener('blur', function() {
+              validateEquation(this.value);
+            });
+          }
+        }, 100);
+      } else {
+        fixedContainer.style.display = 'block';
+        equationContainer.style.display = 'none';
+        const eqInput = document.getElementById('accessory-quantity-equation');
+        if (eqInput) eqInput.value = '';
+        const validationMsg = document.getElementById('equation-validation-message');
+        if (validationMsg) validationMsg.innerHTML = '';
+        const previewDiv = document.getElementById('equation-preview');
+        if (previewDiv) previewDiv.innerHTML = '';
+        if (eqInput) {
+          eqInput.classList.remove('border-red-500', 'border-green-500');
+        }
+      }
+    }
+
     // Accessory functions
     function addAccessoryEntry() {
       const accessorySelect = document.getElementById('accessory-id');
       const accessoryId = accessorySelect.value;
       const accessoryName = accessorySelect.options[accessorySelect.selectedIndex]?.text || '';
+      const quantityType = document.getElementById('accessory-quantity-type').value;
       const quantity = document.getElementById('accessory-quantity').value;
+      const quantityEquation = document.getElementById('accessory-quantity-equation').value;
       const unit = document.getElementById('accessory-unit').value;
       const showToUser = document.getElementById('accessory-show-to-user').checked;
       
@@ -3429,28 +3594,54 @@
         return;
       }
       
-      if (!quantity || quantity <= 0) {
-        showAlert('Please enter a valid quantity');
-        return;
+      if (quantityType === 'fixed') {
+        if (!quantity || quantity <= 0) {
+          showAlert('Please enter a valid quantity');
+          return;
+        }
+      } else {
+        if (!quantityEquation || quantityEquation.trim() === '') {
+          showAlert('Please enter a valid equation');
+          return;
+        }
+        
+        // Validate equation before adding
+        const validation = validateEquation(quantityEquation);
+        if (!validation.valid) {
+          showAlert(validation.message || 'Please enter a valid equation. Check that you are using correct variable names (width, height, perimeter, area)');
+          return;
+        }
       }
 
-      accessories.push({ 
+      const accessoryEntry = { 
         accessoryId, 
         accessoryName, 
-        quantity, 
         unit, 
         showToUser,
         componentGroup: componentGroup || null,
         selectionType,
         isDefault
-      });
+      };
+      
+      if (quantityType === 'fixed') {
+        accessoryEntry.quantity = parseFloat(quantity);
+        accessoryEntry.quantityEquation = null;
+      } else {
+        accessoryEntry.quantity = null;
+        accessoryEntry.quantityEquation = quantityEquation.trim();
+      }
+      
+      accessories.push(accessoryEntry);
       renderAccessoriesTable();
       
       // Reset form inputs
       accessorySelect.selectedIndex = 0;
       document.getElementById('accessory-quantity').value = '';
+      document.getElementById('accessory-quantity-equation').value = '';
       document.getElementById('accessory-unit').value = '';
       document.getElementById('accessory-show-to-user').checked = false;
+      document.getElementById('accessory-quantity-type').value = 'fixed';
+      toggleAccessoryQuantityType();
       document.getElementById('accessory-component-group-select').value = '';
       document.getElementById('accessory-component-group-custom').style.display = 'none';
       document.getElementById('accessory-component-group-custom').value = '';
@@ -3490,10 +3681,14 @@
           `;
         }
         
+        const quantityDisplay = accessory.quantityEquation 
+          ? `<span class="text-blue-600 font-mono text-sm" title="Equation: ${accessory.quantityEquation}">${accessory.quantityEquation}</span>`
+          : accessory.quantity;
+        
         const row = `
           <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
             <td class="py-3 px-4 border-b">${accessory.accessoryName}</td>
-            <td class="py-3 px-4 border-b">${accessory.quantity}</td>
+            <td class="py-3 px-4 border-b">${quantityDisplay}</td>
             <td class="py-3 px-4 border-b">${accessory.unit}</td>
             <td class="py-3 px-4 border-b">${userConfigStatus}</td>
             <td class="py-3 px-4 border-b">${choiceGroupInfo}</td>

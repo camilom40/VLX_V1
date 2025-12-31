@@ -88,7 +88,8 @@ const windowSchema = new Schema({
   }],
   accessories: [{
     accessory: { type: Schema.Types.ObjectId, ref: 'Accessory', required: true },
-    quantity: { type: Number, required: true },
+    quantity: { type: Number, required: false }, // Optional if quantityEquation is provided
+    quantityEquation: { type: String, default: null }, // Equation for dynamic quantity calculation (e.g., "5 * height", "2 * perimeter")
     unit: { type: String, required: true },
     showToUser: { type: Boolean, default: false }, // Whether to show this accessory to users for configuration
     componentGroup: { type: String, default: null }, // Group name for related components (e.g., "handles", "locks")

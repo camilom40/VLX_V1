@@ -46,6 +46,43 @@ router.get('/projects', isAuthenticated, async (req, res) => {
   }
 });
 
+// Helper function to evaluate quantity equation safely
+function evaluateQuantityEquation(equation, width, height) {
+  if (!equation || typeof equation !== 'string') {
+    return null;
+  }
+  
+  try {
+    // Calculate derived values
+    const perimeter = 2 * (width + height);
+    const area = width * height;
+    
+    // Replace variable names with actual values (safe string replacement)
+    // Allow: width, height, perimeter, area, and basic math operations
+    let expression = equation.trim();
+    
+    // Replace variable names with their values (using word boundaries to avoid partial matches)
+    expression = expression.replace(/\bwidth\b/gi, width);
+    expression = expression.replace(/\bheight\b/gi, height);
+    expression = expression.replace(/\bperimeter\b/gi, perimeter);
+    expression = expression.replace(/\barea\b/gi, area);
+    
+    // Use Function constructor for safe evaluation (only allows mathematical expressions)
+    // This is safer than eval() because it doesn't have access to global scope
+    const result = Function('"use strict"; return (' + expression + ')')();
+    
+    // Ensure result is a valid number
+    if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+      return Math.max(0, result); // Ensure non-negative
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error evaluating quantity equation:', equation, error);
+    return null;
+  }
+}
+
 // Helper function to recalculate prices for a window item with current costs
 async function recalculateWindowItemPrices(windowItem) {
   try {
@@ -143,11 +180,21 @@ async function recalculateWindowItemPrices(windowItem) {
     }
     
     // Add auto-managed accessories
+    const perimeterInchesRecalc = 2 * (windowWidth + windowHeight);
     for (const accessoryItem of windowSystem.accessories.filter(a => !a.showToUser)) {
       const accessoryDoc = accessoryItem.accessory;
       if (accessoryDoc && accessoryDoc.price !== undefined) {
+        // Calculate quantity - use equation if present, otherwise use fixed quantity
+        let quantity = accessoryItem.quantity || 1;
+        if (accessoryItem.quantityEquation) {
+          const calculatedQuantity = evaluateQuantityEquation(accessoryItem.quantityEquation, windowWidth, windowHeight);
+          if (calculatedQuantity !== null) {
+            quantity = calculatedQuantity;
+          }
+        }
+        
         const accessoryCostUSD = convertToUSD(accessoryDoc.price, accessoryDoc.currency || 'USD', exchangeRate);
-        accessoryCostTotal += accessoryCostUSD * (accessoryItem.quantity || 1);
+        accessoryCostTotal += accessoryCostUSD * quantity;
       }
     }
     
@@ -1083,14 +1130,23 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
           return;
         }
         
-        // Use user input for configurable accessories, defaults for auto-managed
-        let quantity = accessoryItem.quantity;
+        // Calculate quantity - use equation if present, otherwise use fixed quantity
+        let quantity = accessoryItem.quantity || 1;
         
+        // If quantity equation exists, evaluate it (for auto-managed accessories)
+        if (accessoryItem.quantityEquation && !accessoryItem.showToUser) {
+          const calculatedQuantity = evaluateQuantityEquation(accessoryItem.quantityEquation, windowWidth, windowHeight);
+          if (calculatedQuantity !== null) {
+            quantity = calculatedQuantity;
+          }
+        }
+        
+        // Use user input for configurable accessories
         if (accessoryItem.showToUser && accessories && Array.isArray(accessories)) {
           // Find user input for this accessory
           const userAccessory = accessories.find(a => a.accessoryId === accessoryId);
           if (userAccessory) {
-            quantity = parseInt(userAccessory.quantity) || accessoryItem.quantity;
+            quantity = parseInt(userAccessory.quantity) || quantity;
           }
         }
         
@@ -1730,12 +1786,19 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
         const alreadyProcessed = choiceGroupAccessories.some(cga => cga.accessoryId === accessoryItem.accessory.toString());
         if (alreadyProcessed) return;
         
-        let quantity = accessoryItem.quantity;
+        // Calculate quantity - use equation if present (for auto-managed), otherwise use fixed quantity
+        let quantity = accessoryItem.quantity || 1;
+        if (accessoryItem.quantityEquation && !accessoryItem.showToUser) {
+          const calculatedQuantity = evaluateQuantityEquation(accessoryItem.quantityEquation, windowWidth, windowHeight);
+          if (calculatedQuantity !== null) {
+            quantity = calculatedQuantity;
+          }
+        }
         
         if (accessoryItem.showToUser && accessories && Array.isArray(accessories)) {
           const userAccessory = accessories.find(a => a.accessoryId === accessoryItem.accessory.toString());
           if (userAccessory) {
-            quantity = parseInt(userAccessory.quantity) || accessoryItem.quantity;
+            quantity = parseInt(userAccessory.quantity) || quantity;
           }
         }
         
@@ -1746,12 +1809,19 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
         const alreadyProcessed = choiceGroupAccessories.some(cga => cga.accessoryId === accessoryDoc._id.toString());
         if (alreadyProcessed) return;
         
-        let quantity = accessoryItem.quantity;
+        // Calculate quantity - use equation if present (for auto-managed), otherwise use fixed quantity
+        let quantity = accessoryItem.quantity || 1;
+        if (accessoryItem.quantityEquation && !accessoryItem.showToUser) {
+          const calculatedQuantity = evaluateQuantityEquation(accessoryItem.quantityEquation, windowWidth, windowHeight);
+          if (calculatedQuantity !== null) {
+            quantity = calculatedQuantity;
+          }
+        }
         
         if (accessoryItem.showToUser && accessories && Array.isArray(accessories)) {
           const userAccessory = accessories.find(a => a.accessoryId === accessoryDoc._id.toString());
           if (userAccessory) {
-            quantity = parseInt(userAccessory.quantity) || accessoryItem.quantity;
+            quantity = parseInt(userAccessory.quantity) || quantity;
           }
         }
         

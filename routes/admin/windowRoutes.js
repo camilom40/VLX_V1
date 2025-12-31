@@ -529,15 +529,27 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       showToUser: Boolean(profile.showToUser),
     }));
 
-    const accessoryEntries = accessories.map(accessory => ({
-      accessory: accessory.accessoryId,
-      quantity: parseInt(accessory.quantity, 10),
-      unit: accessory.unit,
-      showToUser: Boolean(accessory.showToUser),
-      componentGroup: accessory.componentGroup || null,
-      selectionType: accessory.selectionType || 'quantity',
-      isDefault: Boolean(accessory.isDefault),
-    }));
+    const accessoryEntries = accessories.map(accessory => {
+      const entry = {
+        accessory: accessory.accessoryId,
+        unit: accessory.unit,
+        showToUser: Boolean(accessory.showToUser),
+        componentGroup: accessory.componentGroup || null,
+        selectionType: accessory.selectionType || 'quantity',
+        isDefault: Boolean(accessory.isDefault),
+      };
+      
+      // Handle quantity or quantityEquation
+      if (accessory.quantityEquation) {
+        entry.quantityEquation = accessory.quantityEquation.trim();
+        entry.quantity = null; // Don't set quantity if equation is provided
+      } else {
+        entry.quantity = parseInt(accessory.quantity, 10) || 1;
+        entry.quantityEquation = null;
+      }
+      
+      return entry;
+    });
 
     console.log('Creating window system with data:', {
       type,
@@ -639,15 +651,27 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       showToUser: Boolean(profile.showToUser),
     }));
 
-    const accessoryEntries = JSON.parse(accessories).map(accessory => ({
-      accessory: accessory.accessoryId,
-      quantity: parseInt(accessory.quantity, 10),
-      unit: accessory.unit,
-      showToUser: Boolean(accessory.showToUser),
-      componentGroup: accessory.componentGroup || null,
-      selectionType: accessory.selectionType || 'quantity',
-      isDefault: Boolean(accessory.isDefault),
-    }));
+    const accessoryEntries = JSON.parse(accessories).map(accessory => {
+      const entry = {
+        accessory: accessory.accessoryId,
+        unit: accessory.unit,
+        showToUser: Boolean(accessory.showToUser),
+        componentGroup: accessory.componentGroup || null,
+        selectionType: accessory.selectionType || 'quantity',
+        isDefault: Boolean(accessory.isDefault),
+      };
+      
+      // Handle quantity or quantityEquation
+      if (accessory.quantityEquation) {
+        entry.quantityEquation = accessory.quantityEquation.trim();
+        entry.quantity = null; // Don't set quantity if equation is provided
+      } else {
+        entry.quantity = parseInt(accessory.quantity, 10) || 1;
+        entry.quantityEquation = null;
+      }
+      
+      return entry;
+    });
 
     const glassRestrictionEntries = JSON.parse(glassRestrictions).map(glass => ({
       type: glass.type,
