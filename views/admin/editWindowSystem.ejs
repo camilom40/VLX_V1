@@ -532,15 +532,6 @@
             <p class="text-gray-500 text-sm mt-1">Add aluminum profiles for this window system</p>
           </div>
           
-          <!-- Profile Search -->
-          <div class="p-6 bg-gray-50 border-b border-gray-100">
-            <div class="profile-search-container mb-4">
-              <input type="text" id="profileSearch" placeholder="Search profiles by name or color..." class="profile-search-input" oninput="filterProfiles()">
-              <span class="search-clear-btn" onclick="clearProfileSearch()"><i class="fas fa-times"></i></span>
-            </div>
-            <p class="text-xs text-gray-500" id="profileSearchCount"></p>
-          </div>
-          
           <!-- Add Profile Form -->
           <div class="p-6 border-b border-gray-100">
             <div class="category-tabs mb-4">
@@ -562,18 +553,91 @@
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Profile</label>
-                <select id="profile-id" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                  <option value="">Select Profile</option>
-                  <% profiles.forEach(profile => { %>
-                    <option value="<%= profile._id %>" data-name="<%= profile.name %>" data-color="<%= profile.color || '' %>">
-                      <%= profile.name %>
-                    </option>
-                  <% }); %>
-                </select>
+                <!-- Searchable Select -->
+                <div class="relative">
+                  <div id="profile-select-wrapper" class="relative">
+                    <input type="text" 
+                           id="profile-search-input" 
+                           placeholder="Search and select profile..." 
+                           class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none pr-10" 
+                           autocomplete="off"
+                           readonly
+                           style="cursor: pointer;">
+                    <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                  </div>
+                  <div id="profile-dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-64 overflow-hidden">
+                    <div class="p-2 border-b border-gray-200 sticky top-0 bg-white">
+                      <input type="text" 
+                             id="profile-search-filter" 
+                             placeholder="Type to search..." 
+                             class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                             autocomplete="off">
+                    </div>
+                    <div id="profile-options-list" class="overflow-y-auto max-h-56">
+                      <% profiles.forEach(profile => { %>
+                        <div class="profile-option px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0" 
+                             data-value="<%= profile._id %>"
+                             data-name="<%= profile.name.toLowerCase() %>"
+                             data-color="<%= profile.color || '' %>">
+                          <span class="font-medium"><%= profile.name %></span>
+                          <% if (profile.color) { %>
+                            <span class="text-xs text-gray-500 ml-2">(<%= profile.color %>)</span>
+                          <% } %>
+                        </div>
+                      <% }); %>
+                    </div>
+                    <div id="profile-no-results" class="hidden px-3 py-2 text-sm text-gray-500 text-center">
+                      No profiles found
+                    </div>
+                  </div>
+                  <input type="hidden" id="profile-id" value="">
+                </div>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                <input type="number" id="profile-quantity" min="1" value="1" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity Type</label>
+                <select id="profile-quantity-type" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" onchange="toggleProfileQuantityType()">
+                  <option value="fixed">Fixed Quantity</option>
+                  <option value="equation">Equation</option>
+                </select>
+                
+                <!-- Fixed Quantity Input -->
+                <div id="profile-quantity-fixed-container" class="mt-2">
+                  <input type="number" id="profile-quantity" min="1" value="1" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                
+                <!-- Quantity Equation Input -->
+                <div id="profile-quantity-equation-container" class="mt-2 hidden">
+                  <input type="text" id="profile-quantity-equation" placeholder="e.g., 4, (width / 24) + 1" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                  <div id="profile-quantity-equation-validation-message" class="mt-2 text-sm"></div>
+                  <div id="profile-quantity-equation-preview" class="mt-2 text-xs text-gray-600"></div>
+                  <div class="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <p class="text-xs font-semibold text-purple-800 mb-2">
+                      <i class="fas fa-info-circle mr-1"></i>Available Variables (click to insert):
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-3">
+                      <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-purple-700 border border-purple-300 hover:bg-purple-100 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('width', 'profile-quantity-equation')">
+                        width
+                      </button>
+                      <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-purple-700 border border-purple-300 hover:bg-purple-100 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('height', 'profile-quantity-equation')">
+                        height
+                      </button>
+                      <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-purple-700 border border-purple-300 hover:bg-purple-100 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('perimeter', 'profile-quantity-equation')">
+                        perimeter
+                      </button>
+                      <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-purple-700 border border-purple-300 hover:bg-purple-100 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('area', 'profile-quantity-equation')">
+                        area
+                      </button>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 mb-2">
+                      <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' + ', 'profile-quantity-equation')">+</button>
+                      <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' - ', 'profile-quantity-equation')">-</button>
+                      <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' * ', 'profile-quantity-equation')">×</button>
+                      <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' / ', 'profile-quantity-equation')">÷</button>
+                      <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable('(', 'profile-quantity-equation')">(</button>
+                      <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(')', 'profile-quantity-equation')">)</button>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Orientation</label>
@@ -583,15 +647,43 @@
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Length Discount</label>
-                <div class="flex items-center gap-2">
-                  <input type="number" id="profile-length-discount" step="0.01" value="0" class="w-24 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                  <select id="profile-length-unit" class="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" onchange="onUnitChange()">
-                    <option value="in">in.</option>
-                    <option value="mm">mm</option>
-                  </select>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Length Equation <span class="text-red-500">*</span></label>
+                <input type="text" id="profile-length-equation" placeholder="e.g., width - 23, perimeter / 2" class="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" style="min-height: 50px;" required>
+                <div id="profile-equation-validation-message" class="mt-2 text-sm"></div>
+                <div id="profile-equation-preview" class="mt-2 text-xs text-gray-600"></div>
+                <div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <p class="text-xs font-semibold text-blue-800 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>Available Variables (click to insert):
+                  </p>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" data-variable="width" onclick="insertVariable('width')">
+                      width
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" data-variable="height" onclick="insertVariable('height')">
+                      height
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" data-variable="perimeter" onclick="insertVariable('perimeter')">
+                      perimeter
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" data-variable="area" onclick="insertVariable('area')">
+                      area
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5 mb-2">
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' + ')">+</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' - ')">-</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' * ')">×</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' / ')">÷</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable('(')">(</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(')')">)</button>
+                  </div>
+                  <p class="text-xs text-blue-700 mb-1">
+                    <strong>Examples:</strong> "width - 23", "perimeter / 2", "height * 2"
+                  </p>
+                  <p class="text-xs text-blue-600 font-semibold">
+                    <i class="fas fa-ruler mr-1"></i>Result is in inches
+                  </p>
                 </div>
-                <p class="text-xs mt-1" id="unit-lock-message"></p>
               </div>
             </div>
             
@@ -1047,18 +1139,18 @@
       .map(p => ({
         profileId: p.profile?._id || p.profile,
         profileName: p.profile?.name || 'Unknown',
-        quantity: p.quantity || 1,
+        quantity: p.quantity || null,
+        quantityEquation: p.quantityEquation || null,
         orientation: p.orientation || 'horizontal',
         lengthDiscount: p.lengthDiscount || 0,
         lengthDiscountDisplay: p.lengthDiscountDisplay || String(p.lengthDiscount || 0),
+        lengthEquation: p.lengthEquation || null,
         lengthUnit: p.lengthUnit || 'in',
         category: p.category || 'frame'
       }));
     
     console.log('Loaded profiles:', profiles);
     
-    // Track locked unit from existing profiles
-    let lockedLengthUnit = profiles.length > 0 ? (profiles[0].lengthUnit || 'in') : null;
     
     let accessoriesData = (windowSystemData.accessories || [])
       .filter(a => a && a.accessory) // Filter out invalid entries
@@ -1502,69 +1594,518 @@
       });
     }
     
-    function filterProfiles() {
-      const search = document.getElementById('profileSearch').value.toLowerCase();
-      const select = document.getElementById('profile-id');
-      let visibleCount = 0;
+    // Profile searchable select functions
+    function initProfileSearch() {
+      const searchInput = document.getElementById('profile-search-input');
+      const searchFilter = document.getElementById('profile-search-filter');
+      const dropdown = document.getElementById('profile-dropdown');
+      const optionsList = document.getElementById('profile-options-list');
+      const noResults = document.getElementById('profile-no-results');
+      const hiddenInput = document.getElementById('profile-id');
+      const wrapper = document.getElementById('profile-select-wrapper');
       
-      Array.from(select.options).forEach(option => {
-        if (!option.value) return;
-        const name = (option.dataset.name || '').toLowerCase();
-        const color = (option.dataset.color || '').toLowerCase();
-        const matches = name.includes(search) || color.includes(search);
-        option.style.display = matches ? '' : 'none';
-        if (matches) visibleCount++;
+      if (!searchInput || !dropdown) return; // Exit if elements don't exist
+      
+      // Store all profile options
+      const allOptions = Array.from(optionsList.querySelectorAll('.profile-option'));
+      
+      // Toggle dropdown
+      function toggleDropdown() {
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+          searchFilter.focus();
+          filterOptions();
+        }
+      }
+      
+      // Filter options based on search
+      function filterOptions() {
+        const searchTerm = searchFilter.value.toLowerCase().trim();
+        let visibleCount = 0;
+        
+        allOptions.forEach(option => {
+          const name = option.dataset.name || '';
+          const color = (option.dataset.color || '').toLowerCase();
+          const matches = !searchTerm || name.includes(searchTerm) || color.includes(searchTerm);
+          
+          option.style.display = matches ? '' : 'none';
+          if (matches) visibleCount++;
+        });
+        
+        // Show/hide no results message
+        noResults.classList.toggle('hidden', visibleCount > 0 || !searchTerm);
+        optionsList.classList.toggle('hidden', visibleCount === 0 && searchTerm);
+      }
+      
+      // Select a profile
+      function selectProfile(optionElement) {
+        const value = optionElement.dataset.value;
+        const nameSpan = optionElement.querySelector('span.font-medium');
+        const name = nameSpan ? nameSpan.textContent : optionElement.textContent.trim();
+        
+        hiddenInput.value = value;
+        searchInput.value = name;
+        dropdown.classList.add('hidden');
+        searchFilter.value = '';
+        filterOptions();
+      }
+      
+      // Open dropdown when clicking on input or wrapper
+      searchInput.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (dropdown.classList.contains('hidden')) {
+          toggleDropdown();
+        }
       });
       
-      document.getElementById('profileSearchCount').textContent = search ? `${visibleCount} profiles found` : '';
-    }
-    
-    function clearProfileSearch() {
-      document.getElementById('profileSearch').value = '';
-      filterProfiles();
-    }
-    
-    function addProfileEntry() {
-      const select = document.getElementById('profile-id');
-      const profileId = select.value;
-      const profileName = select.options[select.selectedIndex]?.text || '';
-      const quantity = document.getElementById('profile-quantity').value;
-      const orientation = document.getElementById('profile-orientation').value;
-      const lengthDiscount = document.getElementById('profile-length-discount').value;
-      const lengthUnit = document.getElementById('profile-length-unit').value;
+      wrapper.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (e.target === searchInput || e.target === wrapper || e.target.closest('i.fa-chevron-down')) {
+          if (dropdown.classList.contains('hidden')) {
+            toggleDropdown();
+          }
+        }
+      });
       
-      if (!profileId || !quantity) {
-        alert('Please select a profile and enter quantity');
+      // Prevent dropdown from closing when clicking inside it
+      dropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+      
+      // Filter on search input
+      searchFilter.addEventListener('input', filterOptions);
+      
+      // Handle option clicks
+      allOptions.forEach(option => {
+        option.addEventListener('click', function(e) {
+          e.stopPropagation();
+          selectProfile(this);
+        });
+      });
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.add('hidden');
+        }
+      });
+      
+      // Handle keyboard navigation
+      searchFilter.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          dropdown.classList.add('hidden');
+          searchInput.focus();
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const firstVisible = optionsList.querySelector('.profile-option[style=""]');
+          if (firstVisible) {
+            selectProfile(firstVisible);
+          }
+        }
+      });
+    }
+    
+    // Validate profile length equation syntax and variables
+    function validateLengthEquation(equation) {
+      const validationMsg = document.getElementById('profile-equation-validation-message');
+      const previewDiv = document.getElementById('profile-equation-preview');
+      const input = document.getElementById('profile-length-equation');
+      
+      if (!equation || equation.trim() === '') {
+        if (validationMsg) validationMsg.innerHTML = '';
+        if (previewDiv) previewDiv.innerHTML = '';
+        if (input) {
+          input.classList.remove('border-red-500', 'border-green-500');
+        }
+        return { valid: false, message: '' };
+      }
+      
+      const trimmed = equation.trim();
+      const validVariables = ['width', 'height', 'perimeter', 'area'];
+      
+      // Check for invalid variable names (case-insensitive)
+      const variablePattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+      const foundVariables = [];
+      let match;
+      while ((match = variablePattern.exec(trimmed)) !== null) {
+        const varName = match[1].toLowerCase();
+        // Skip JavaScript keywords and math functions
+        if (!['width', 'height', 'perimeter', 'area', 'sqrt', 'abs', 'round', 'floor', 'ceil', 'max', 'min', 'pow'].includes(varName)) {
+          foundVariables.push(match[1]);
+        }
+      }
+      
+      // Filter out valid variables
+      const invalidVars = foundVariables.filter(v => !validVariables.includes(v.toLowerCase()));
+      
+      if (invalidVars.length > 0) {
+        const uniqueInvalid = [...new Set(invalidVars)];
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-red-600 font-medium">❌ Invalid variable(s): ${uniqueInvalid.join(', ')}</span><br><span class="text-red-500 text-xs">Valid variables are: width, height, perimeter, area</span>`;
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: `Invalid variables: ${uniqueInvalid.join(', ')}` };
+      }
+      
+      // Try to evaluate with sample values
+      try {
+        // Test with sample values: width=10, height=20
+        const testWidth = 10;
+        const testHeight = 20;
+        const testPerimeter = 2 * (testWidth + testHeight);
+        const testArea = testWidth * testHeight;
+        
+        let testExpression = trimmed;
+        // Replace variables with test values (case-insensitive)
+        testExpression = testExpression.replace(/\bwidth\b/gi, testWidth);
+        testExpression = testExpression.replace(/\bheight\b/gi, testHeight);
+        testExpression = testExpression.replace(/\bperimeter\b/gi, testPerimeter);
+        testExpression = testExpression.replace(/\barea\b/gi, testArea);
+        
+        // Safe evaluation using Function constructor
+        const result = Function('"use strict"; return (' + testExpression + ')')();
+        
+        if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+          if (input) input.classList.add('border-red-500');
+          if (input) input.classList.remove('border-green-500');
+          if (validationMsg) {
+            validationMsg.innerHTML = '<span class="text-red-600 font-medium">❌ Invalid equation syntax</span><br><span class="text-red-500 text-xs">The equation must evaluate to a valid number</span>';
+          }
+          if (previewDiv) previewDiv.innerHTML = '';
+          return { valid: false, message: 'Invalid equation syntax' };
+        }
+        
+        // Valid equation
+        if (input) input.classList.add('border-green-500');
+        if (input) input.classList.remove('border-red-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = '<span class="text-green-600 font-medium">✓ Valid equation</span>';
+        }
+        
+        // Show preview with sample calculation
+        if (previewDiv) {
+          previewDiv.innerHTML = `<span class="text-gray-600">Preview (width=10, height=20): <strong>${result.toFixed(2)} in</strong></span>`;
+        }
+        return { valid: true, message: '', result: result };
+      } catch (error) {
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = '<span class="text-red-600 font-medium">❌ Invalid equation syntax</span><br><span class="text-red-500 text-xs">Check your math operators and parentheses</span>';
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: 'Invalid equation syntax: ' + error.message };
+      }
+    }
+
+    // Function to insert variable/operator into equation field
+    function insertVariable(variable, inputId = 'profile-length-equation') {
+      const equationInput = document.getElementById(inputId);
+      if (!equationInput) {
+        console.error('Equation input field not found:', inputId);
         return;
       }
       
-      // Convert mm to inches for storage (backend uses inches)
-      let lengthDiscountInches = parseFloat(lengthDiscount) || 0;
-      if (lengthUnit === 'mm') {
-        lengthDiscountInches = lengthDiscountInches / 25.4;
+      // Focus the input if it's not focused
+      if (document.activeElement !== equationInput) {
+        equationInput.focus();
       }
       
-      // Set unit after first profile
-      if (profiles.length === 0 && !lockedLengthUnit) {
-        lockedLengthUnit = lengthUnit;
-      }
-      updateUnitMessage();
+      const start = equationInput.selectionStart || 0;
+      const end = equationInput.selectionEnd || 0;
+      const currentValue = equationInput.value;
       
-      profiles.push({
+      // Insert the variable at cursor position
+      const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
+      equationInput.value = newValue;
+      
+      // Set cursor position after inserted text
+      const newCursorPos = start + variable.length;
+      setTimeout(() => {
+        equationInput.setSelectionRange(newCursorPos, newCursorPos);
+        equationInput.focus();
+      }, 10);
+      
+      // Trigger input event to run validation
+      equationInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function toggleProfileQuantityType() {
+      const quantityType = document.getElementById('profile-quantity-type').value;
+      const fixedContainer = document.getElementById('profile-quantity-fixed-container');
+      const equationContainer = document.getElementById('profile-quantity-equation-container');
+      
+      if (quantityType === 'equation') {
+        fixedContainer.style.display = 'none';
+        equationContainer.style.display = 'block';
+        document.getElementById('profile-quantity').value = '';
+        
+        // Add validation listener to equation input
+        setTimeout(() => {
+          const equationInput = document.getElementById('profile-quantity-equation');
+          if (equationInput) {
+            // Remove existing listeners by cloning and replacing
+            const newInput = equationInput.cloneNode(true);
+            equationInput.parentNode.replaceChild(newInput, equationInput);
+            
+            // Add debounced validation
+            let validationTimeout;
+            newInput.addEventListener('input', function() {
+              clearTimeout(validationTimeout);
+              validationTimeout = setTimeout(() => {
+                validateProfileQuantityEquation(this.value);
+              }, 300);
+            });
+            
+            // Validate on blur
+            newInput.addEventListener('blur', function() {
+              validateProfileQuantityEquation(this.value);
+            });
+          }
+        }, 10);
+      } else {
+        fixedContainer.style.display = 'block';
+        equationContainer.style.display = 'none';
+        document.getElementById('profile-quantity-equation').value = '';
+        
+        // Clear validation messages
+        const validationMsg = document.getElementById('profile-quantity-equation-validation-message');
+        const previewDiv = document.getElementById('profile-quantity-equation-preview');
+        if (validationMsg) validationMsg.innerHTML = '';
+        if (previewDiv) previewDiv.innerHTML = '';
+        const qtyEqInput = document.getElementById('profile-quantity-equation');
+        if (qtyEqInput) {
+          qtyEqInput.classList.remove('border-red-500', 'border-green-500');
+        }
+      }
+    }
+
+    // Validate profile quantity equation
+    function validateProfileQuantityEquation(equation) {
+      const validationMsg = document.getElementById('profile-quantity-equation-validation-message');
+      const previewDiv = document.getElementById('profile-quantity-equation-preview');
+      const input = document.getElementById('profile-quantity-equation');
+      
+      if (!equation || equation.trim() === '') {
+        if (validationMsg) validationMsg.innerHTML = '';
+        if (previewDiv) previewDiv.innerHTML = '';
+        if (input) {
+          input.classList.remove('border-red-500', 'border-green-500');
+        }
+        return { valid: false, message: '' };
+      }
+      
+      const trimmed = equation.trim();
+      const validVariables = ['width', 'height', 'perimeter', 'area'];
+      
+      // Check for invalid variable names (case-insensitive)
+      const variablePattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+      const foundVariables = [];
+      let match;
+      while ((match = variablePattern.exec(trimmed)) !== null) {
+        const varName = match[1].toLowerCase();
+        // Skip JavaScript keywords and math functions
+        if (!['width', 'height', 'perimeter', 'area', 'sqrt', 'abs', 'round', 'floor', 'ceil', 'max', 'min', 'pow'].includes(varName)) {
+          foundVariables.push(match[1]);
+        }
+      }
+      
+      if (foundVariables.length > 0) {
+        const errorMsg = `Invalid variable(s): ${foundVariables.join(', ')}. Use: width, height, perimeter, area`;
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>${errorMsg}</span>`;
+        }
+        if (input) {
+          input.classList.add('border-red-500');
+          input.classList.remove('border-green-500');
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: errorMsg };
+      }
+      
+      // Try to evaluate the equation with sample values
+      try {
+        const testWidth = 48;
+        const testHeight = 60;
+        const testPerimeter = 2 * (testWidth + testHeight);
+        const testArea = testWidth * testHeight;
+        
+        // Replace variables with test values (case-insensitive)
+        let testEquation = trimmed;
+        testEquation = testEquation.replace(/\bwidth\b/gi, testWidth);
+        testEquation = testEquation.replace(/\bheight\b/gi, testHeight);
+        testEquation = testEquation.replace(/\bperimeter\b/gi, testPerimeter);
+        testEquation = testEquation.replace(/\barea\b/gi, testArea);
+        
+        // Evaluate using Function constructor (safer than eval)
+        const result = Function('"use strict"; return (' + testEquation + ')')();
+        
+        if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+          throw new Error('Equation does not evaluate to a valid number');
+        }
+        
+        // Quantity should be positive
+        if (result < 0) {
+          const errorMsg = 'Quantity equation must evaluate to a positive number';
+          if (validationMsg) {
+            validationMsg.innerHTML = `<span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>${errorMsg}</span>`;
+          }
+          if (input) {
+            input.classList.add('border-red-500');
+            input.classList.remove('border-green-500');
+          }
+          if (previewDiv) previewDiv.innerHTML = '';
+          return { valid: false, message: errorMsg };
+        }
+        
+        // Success
+        const roundedResult = Math.round(result);
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Valid equation</span>`;
+        }
+        if (previewDiv) {
+          previewDiv.innerHTML = `<span class="text-gray-600">Preview: For a ${testWidth}" × ${testHeight}" window, quantity = <strong>${roundedResult}</strong></span>`;
+        }
+        if (input) {
+          input.classList.remove('border-red-500');
+          input.classList.add('border-green-500');
+        }
+        return { valid: true, message: 'Valid equation' };
+      } catch (error) {
+        const errorMsg = `Invalid equation syntax: ${error.message}`;
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>${errorMsg}</span>`;
+        }
+        if (input) {
+          input.classList.add('border-red-500');
+          input.classList.remove('border-green-500');
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: errorMsg };
+      }
+    }
+
+    // Initialize equation validation and profile search on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      initProfileSearch();
+      
+      const equationInput = document.getElementById('profile-length-equation');
+      if (equationInput) {
+        // Add debounced validation
+        let validationTimeout;
+        equationInput.addEventListener('input', function() {
+          clearTimeout(validationTimeout);
+          validationTimeout = setTimeout(() => {
+            validateLengthEquation(this.value);
+          }, 300);
+        });
+        
+        // Validate on blur
+        equationInput.addEventListener('blur', function() {
+          validateLengthEquation(this.value);
+        });
+      }
+    });
+
+    function addProfileEntry() {
+      const hiddenInput = document.getElementById('profile-id');
+      const searchInput = document.getElementById('profile-search-input');
+      const profileId = hiddenInput.value;
+      
+      // Get profile name from the selected option
+      let profileName = searchInput.value || '';
+      if (profileId) {
+        const selectedOption = document.querySelector(`.profile-option[data-value="${profileId}"]`);
+        if (selectedOption) {
+          const nameSpan = selectedOption.querySelector('span.font-medium');
+          profileName = nameSpan ? nameSpan.textContent : selectedOption.textContent.trim();
+        }
+      }
+      
+      const quantityType = document.getElementById('profile-quantity-type').value;
+      const quantity = document.getElementById('profile-quantity').value;
+      const quantityEquation = document.getElementById('profile-quantity-equation').value;
+      const orientation = document.getElementById('profile-orientation').value;
+      const lengthEquation = document.getElementById('profile-length-equation').value;
+      
+      if (!profileId) {
+        alert('Please select a profile');
+        return;
+      }
+      
+      // Validate quantity based on type
+      if (quantityType === 'fixed') {
+        if (!quantity || quantity <= 0) {
+          alert('Please enter a valid quantity');
+          return;
+        }
+      } else {
+        if (!quantityEquation || quantityEquation.trim() === '') {
+          alert('Please enter a quantity equation');
+          return;
+        }
+        // Validate quantity equation
+        const qtyValidation = validateProfileQuantityEquation(quantityEquation);
+        if (!qtyValidation.valid) {
+          alert(qtyValidation.message || 'Please enter a valid quantity equation. Check that you are using correct variable names (width, height, perimeter, area)');
+          return;
+        }
+      }
+      
+      if (!lengthEquation || lengthEquation.trim() === '') {
+        alert('Please enter a length equation');
+        return;
+      }
+      
+      // Validate length equation before adding
+      const validation = validateLengthEquation(lengthEquation);
+      if (!validation.valid) {
+        alert(validation.message || 'Please enter a valid equation. Check that you are using correct variable names (width, height, perimeter, area)');
+        return;
+      }
+
+      const profileEntry = {
         profileId,
         profileName,
-        quantity: parseInt(quantity),
+        quantity: quantityType === 'fixed' ? parseInt(quantity) : null,
+        quantityEquation: quantityType === 'equation' ? quantityEquation.trim() : null,
         orientation,
-        lengthDiscount: lengthDiscountInches.toFixed(4),
-        lengthDiscountDisplay: lengthDiscount,
-        lengthUnit: lengthUnit,
+        lengthEquation: lengthEquation.trim(),
         category: currentCategory
-      });
+      };
+      
+      profiles.push(profileEntry);
       
       // Reset form
-      select.value = '';
+      hiddenInput.value = '';
+      searchInput.value = '';
+      document.getElementById('profile-quantity-type').value = 'fixed';
       document.getElementById('profile-quantity').value = '1';
-      document.getElementById('profile-length-discount').value = '0';
+      document.getElementById('profile-quantity-equation').value = '';
+      document.getElementById('profile-length-equation').value = '';
+      toggleProfileQuantityType(); // Reset UI state
+      
+      // Clear validation messages
+      const validationMsg = document.getElementById('profile-equation-validation-message');
+      const previewDiv = document.getElementById('profile-equation-preview');
+      if (validationMsg) validationMsg.innerHTML = '';
+      if (previewDiv) previewDiv.innerHTML = '';
+      const eqInput = document.getElementById('profile-length-equation');
+      if (eqInput) {
+        eqInput.classList.remove('border-red-500', 'border-green-500');
+      }
+      
+      // Clear quantity equation validation
+      const qtyValidationMsg = document.getElementById('profile-quantity-equation-validation-message');
+      const qtyPreviewDiv = document.getElementById('profile-quantity-equation-preview');
+      if (qtyValidationMsg) qtyValidationMsg.innerHTML = '';
+      if (qtyPreviewDiv) qtyPreviewDiv.innerHTML = '';
+      const qtyEqInput = document.getElementById('profile-quantity-equation');
+      if (qtyEqInput) {
+        qtyEqInput.classList.remove('border-red-500', 'border-green-500');
+      }
       
       renderProfilesTable();
     }
@@ -1604,7 +2145,7 @@
                   <th>Profile</th>
                   <th>Qty</th>
                   <th>Orientation</th>
-                  <th>Length Discount</th>
+                  <th>Length Equation</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -1613,26 +2154,19 @@
         
         catProfiles.forEach((profile, idx) => {
           const globalIdx = profiles.indexOf(profile);
-          // Use global unit preference for display
-          const globalUnit = window.globalPreferences?.unit || 'inches';
-          const displayUnit = globalUnit === 'mm' ? 'mm' : 'in';
           
-          // Convert stored inches value to display unit
-          const storedInches = parseFloat(profile.lengthDiscount || 0);
-          let displayValue;
-          if (displayUnit === 'mm') {
-            displayValue = (storedInches * 25.4).toFixed(2);
-          } else {
-            displayValue = storedInches.toFixed(4);
-          }
+          // Display length equation
+          const lengthDisplay = `<span class="text-blue-600 font-mono text-sm">${profile.lengthEquation || 'N/A'}</span>`;
           
-          const discountDisplay = `${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}`;
           html += `
             <tr>
               <td class="font-medium">${profile.profileName}</td>
-              <td>${profile.quantity}</td>
+              <td>${profile.quantityEquation ? 
+                `<code class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-sm font-mono border border-purple-200" title="Quantity Equation">${profile.quantityEquation}</code>` :
+                `${profile.quantity}`
+              }</td>
               <td class="capitalize">${profile.orientation}</td>
-              <td>${discountDisplay}</td>
+              <td>${lengthDisplay}</td>
               <td>
                 <button type="button" onclick="removeProfile(${globalIdx})" class="text-red-500 hover:text-red-700">
                   <i class="fas fa-trash"></i>
@@ -1857,6 +2391,7 @@
         orientation: p.orientation,
         lengthDiscount: p.lengthDiscount,
         lengthDiscountDisplay: p.lengthDiscountDisplay,
+        lengthEquation: p.lengthEquation || null,
         lengthUnit: p.lengthUnit,
         category: p.category
       }));

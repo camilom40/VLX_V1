@@ -678,17 +678,27 @@
         
         <!-- Step 2: Profiles -->
         <div id="step2-section" class="form-section">
-          <div class="section-header">
-            <h2>Step 2: Profiles</h2>
+          <div class="section-header mb-6">
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0 w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                2
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold text-gray-900">Step 2: Profiles</h2>
+                <p class="text-sm text-gray-500 mt-1">Configure the profiles that make up this window system</p>
+              </div>
+            </div>
           </div>
           
-          <div class="info-box">
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-5 mb-6 shadow-sm">
             <div class="flex items-start">
-              <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
-              <div>
-                <h4 class="font-semibold text-blue-800 mb-1">Profile Configuration</h4>
-                <p class="text-blue-700">
-                  Add profiles that compose this window system. Select profile type, specify quantity, orientation, and any length discount needed.
+              <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-500 text-2xl"></i>
+              </div>
+              <div class="ml-4">
+                <h4 class="text-lg font-semibold text-blue-900 mb-2">Profile Configuration</h4>
+                <p class="text-blue-800 text-sm leading-relaxed">
+                  Add profiles that compose this window system. Each profile requires a length equation using variables like <code class="bg-white px-1.5 py-0.5 rounded text-xs font-mono">width</code>, <code class="bg-white px-1.5 py-0.5 rounded text-xs font-mono">height</code>, <code class="bg-white px-1.5 py-0.5 rounded text-xs font-mono">perimeter</code>, or <code class="bg-white px-1.5 py-0.5 rounded text-xs font-mono">area</code>.
                 </p>
               </div>
             </div>
@@ -696,11 +706,13 @@
 
           <!-- Profiles Section -->
           <div id="profiles-section" class="mb-8">
-            <div class="p-4 bg-gray-50 rounded-lg shadow-sm mb-4">
-              <!-- Component Category Selector -->
+            <!-- Component Category Selector Card -->
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
               <div class="mb-4">
-                <label class="form-label">Component Category</label>
-                <div class="flex gap-2 flex-wrap">
+                <label class="text-sm font-semibold text-gray-700 mb-3 block">
+                  <i class="fas fa-tags mr-2 text-blue-500"></i>Component Category
+                </label>
+                <div class="flex gap-3 flex-wrap">
                   <button type="button" id="cat-frame" class="component-cat-btn active" onclick="selectProfileCategory('frame')">
                     <i class="fas fa-border-all mr-2"></i>Frame
                   </button>
@@ -714,109 +726,224 @@
                     <i class="fas fa-ellipsis-h mr-2"></i>Other
                   </button>
                 </div>
-                <p class="text-xs text-gray-500 mt-1">Select which part of the window this profile belongs to</p>
+                <p class="text-xs text-gray-500 mt-2">Select which part of the window this profile belongs to</p>
               </div>
+            </div>
+
+            <!-- Add Profile Form Card -->
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
+              <h3 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                <i class="fas fa-plus-circle mr-2 text-blue-500"></i>Add New Profile
+              </h3>
               
-              <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                <div class="md:col-span-2">
-                  <label for="profile-search" class="form-label">Profile Type</label>
-                  <!-- Search Input -->
-                  <div class="relative mb-1">
-                    <input type="text" id="profile-search" placeholder="Search profiles..." class="form-control w-full pr-8" autocomplete="off">
-                    <button type="button" id="clear-profile-search" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
-                      <i class="fas fa-times"></i>
-                    </button>
+              <!-- Profile Selection Row -->
+              <div class="mb-6 pb-6 border-b border-gray-200">
+                <label for="profile-id" class="text-sm font-semibold text-gray-700 mb-2 block">
+                  <i class="fas fa-search mr-2 text-gray-400"></i>Profile Type
+                </label>
+                <div class="relative">
+                  <div id="profile-select-wrapper" class="relative">
+                    <input type="text" 
+                           id="profile-search-input" 
+                           placeholder="Search and select profile..." 
+                           class="form-control w-full pr-10" 
+                           autocomplete="off"
+                           readonly
+                           style="cursor: pointer;">
+                    <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                   </div>
-                  <!-- Profile Select with Icons -->
-                  <select id="profile-id" class="form-control w-full">
-                    <option value="">Select Profile</option>
-                    <% profiles.forEach(profile => { %>
-                      <option value="<%= profile._id %>" 
-                              data-name="<%= profile.name.toLowerCase() %>"
-                              data-color="<%= profile.color %>">
-                        <%= profile.name %>
-                      </option>
-                    <% }); %>
+                  <div id="profile-dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-64 overflow-hidden">
+                    <div class="p-2 border-b border-gray-200 sticky top-0 bg-white">
+                      <input type="text" 
+                             id="profile-search-filter" 
+                             placeholder="Type to search..." 
+                             class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                             autocomplete="off">
+                    </div>
+                    <div id="profile-options-list" class="overflow-y-auto max-h-56">
+                      <% profiles.forEach(profile => { %>
+                        <div class="profile-option px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0" 
+                             data-value="<%= profile._id %>"
+                             data-name="<%= profile.name.toLowerCase() %>"
+                             data-color="<%= profile.color || '' %>">
+                          <span class="font-medium"><%= profile.name %></span>
+                          <% if (profile.color) { %>
+                            <span class="text-xs text-gray-500 ml-2">(<%= profile.color %>)</span>
+                          <% } %>
+                        </div>
+                      <% }); %>
+                    </div>
+                    <div id="profile-no-results" class="hidden px-3 py-2 text-sm text-gray-500 text-center">
+                      No profiles found
+                    </div>
+                  </div>
+                  <input type="hidden" id="profile-id" value="">
+                </div>
+              </div>
+
+              <!-- Configuration Fields Row -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Quantity Section -->
+                <div>
+                  <label for="profile-quantity-type" class="text-sm font-semibold text-gray-700 mb-2 block">
+                    <i class="fas fa-hashtag mr-2 text-gray-400"></i>Quantity Type
+                  </label>
+                  <select id="profile-quantity-type" class="form-control w-full" onchange="toggleProfileQuantityType()">
+                    <option value="fixed">Fixed Quantity</option>
+                    <option value="equation">Equation</option>
                   </select>
-                  <p id="profile-search-count" class="text-xs text-gray-500 mt-1"></p>
+                  
+                  <!-- Fixed Quantity Input -->
+                  <div id="profile-quantity-fixed-container" class="mt-2">
+                    <input type="number" id="profile-quantity" placeholder="1" min="1" class="form-control w-full">
+                  </div>
+                  
+                  <!-- Quantity Equation Input -->
+                  <div id="profile-quantity-equation-container" class="mt-2 hidden">
+                    <input type="text" id="profile-quantity-equation" placeholder="e.g., 4, (width / 24) + 1" class="form-control w-full">
+                    <div id="profile-quantity-equation-validation-message" class="mt-2 text-sm"></div>
+                    <div id="profile-quantity-equation-preview" class="mt-2 text-xs text-gray-600"></div>
+                    <div class="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                      <p class="text-xs font-semibold text-purple-800 mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>Available Variables (click to insert):
+                      </p>
+                      <div class="flex flex-wrap gap-2 mb-3">
+                        <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-purple-700 border border-purple-300 hover:bg-purple-100 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('width', 'profile-quantity-equation')">
+                          width
+                        </button>
+                        <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-purple-700 border border-purple-300 hover:bg-purple-100 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('height', 'profile-quantity-equation')">
+                          height
+                        </button>
+                        <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-purple-700 border border-purple-300 hover:bg-purple-100 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('perimeter', 'profile-quantity-equation')">
+                          perimeter
+                        </button>
+                        <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-purple-700 border border-purple-300 hover:bg-purple-100 hover:border-purple-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('area', 'profile-quantity-equation')">
+                          area
+                        </button>
+                      </div>
+                      <div class="flex flex-wrap gap-1.5 mb-2">
+                        <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' + ', 'profile-quantity-equation')">+</button>
+                        <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' - ', 'profile-quantity-equation')">-</button>
+                        <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' * ', 'profile-quantity-equation')">×</button>
+                        <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' / ', 'profile-quantity-equation')">÷</button>
+                        <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable('(', 'profile-quantity-equation')">(</button>
+                        <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(')', 'profile-quantity-equation')">)</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
                 <div>
-                  <label for="profile-quantity" class="form-label">Quantity</label>
-                  <input type="number" id="profile-quantity" placeholder="Qty" min="1" class="form-control w-full">
-                </div>
-                
-                <div>
-                  <label for="profile-orientation" class="form-label">Orientation</label>
+                  <label for="profile-orientation" class="text-sm font-semibold text-gray-700 mb-2 block">
+                    <i class="fas fa-arrows-alt mr-2 text-gray-400"></i>Orientation
+                  </label>
                   <select id="profile-orientation" class="form-control w-full">
-                    <option value="" disabled selected>Select</option>
+                    <option value="" disabled selected>Select orientation</option>
                     <option value="horizontal">Horizontal</option>
                     <option value="vertical">Vertical</option>
                   </select>
                 </div>
                 
                 <div>
-                  <label for="profile-length-discount" class="form-label">Length Discount</label>
-                  <div class="flex items-center gap-2">
-                    <input type="number" id="profile-length-discount" placeholder="0.0" step="0.01" min="0" class="form-control" style="flex: 1; min-width: 80px;">
-                    <select id="profile-length-unit" style="padding: 0.875rem 0.5rem; border: 2px solid #e5e7eb; border-radius: 0.75rem; background-color: white; cursor: pointer; font-size: 1rem; min-width: 65px; appearance: auto; -webkit-appearance: menulist; -moz-appearance: menulist;">
-                      <option value="in">in.</option>
-                      <option value="mm">mm</option>
-                    </select>
+                  <label for="profile-show-to-user" class="text-sm font-semibold text-gray-700 mb-2 block">
+                    <i class="fas fa-user-cog mr-2 text-gray-400"></i>User Settings
+                  </label>
+                  <div class="flex items-center h-10 bg-gray-50 rounded-lg px-3 border border-gray-200">
+                    <input type="checkbox" id="profile-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="profile-show-to-user" class="ml-3 text-sm text-gray-700 cursor-pointer">Allow users to modify</label>
                   </div>
                 </div>
-                
-                <div>
-                  <label for="profile-show-to-user" class="form-label">User Configurable</label>
-                  <div class="flex items-center mt-2">
-                    <input type="checkbox" id="profile-show-to-user" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label for="profile-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
+              </div>
+
+              <!-- Length Equation Section -->
+              <div class="mb-6 pb-6 border-b border-gray-200">
+                <label for="profile-length-equation" class="text-sm font-semibold text-gray-700 mb-2 block">
+                  <i class="fas fa-calculator mr-2 text-blue-500"></i>Length Equation <span class="text-red-500">*</span>
+                </label>
+                <input type="text" id="profile-length-equation" placeholder="e.g., width - 23, perimeter / 2" class="form-control w-full text-lg py-3 px-4" style="min-height: 50px;" required>
+                <div id="profile-equation-validation-message" class="mt-2 text-sm"></div>
+                <div id="profile-equation-preview" class="mt-2 text-xs text-gray-600"></div>
+                <div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <p class="text-xs font-semibold text-blue-800 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>Available Variables (click to insert):
+                  </p>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" data-variable="width" onclick="insertVariable('width')">
+                      width
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" data-variable="height" onclick="insertVariable('height')">
+                      height
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" data-variable="perimeter" onclick="insertVariable('perimeter')">
+                      perimeter
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" data-variable="area" onclick="insertVariable('area')">
+                      area
+                    </button>
                   </div>
-                  <p class="text-xs text-gray-500 mt-1">Allow users to modify this profile</p>
+                  <div class="flex flex-wrap gap-1.5 mb-2">
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' + ')">+</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' - ')">-</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' * ')">×</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' / ')">÷</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable('(')">(</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(')')">)</button>
+                  </div>
+                  <p class="text-xs text-blue-700 mb-1">
+                    <strong>Examples:</strong> "width - 23", "perimeter / 2", "height * 2"
+                  </p>
+                  <p class="text-xs text-blue-600 font-semibold">
+                    <i class="fas fa-ruler mr-1"></i>Result is in inches
+                  </p>
                 </div>
               </div>
               
-              <div class="mt-4 text-right">
-                <button type="button" onclick="addProfileEntry()" class="btn-success px-6 py-3">
+              <!-- Add Button -->
+              <div class="flex justify-end">
+                <button type="button" onclick="addProfileEntry()" class="btn-success px-8 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center">
                   <i class="fas fa-plus mr-2"></i>Add Profile
                 </button>
               </div>
             </div>
 
-            <!-- Table to display added profiles -->
-            <div class="mt-6 overflow-x-auto">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-medium text-gray-700">Added Profiles</h3>
-                <span id="unit-lock-indicator" class="hidden text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                  <i class="fas fa-lock mr-1"></i>Unit locked to: <span id="locked-unit-display">in.</span>
-                </span>
+            <!-- Added Profiles Table Card -->
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                  <i class="fas fa-list mr-2 text-blue-500"></i>Added Profiles
+                  <span id="profiles-count-badge" class="ml-3 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">0</span>
+                </h3>
               </div>
-              <table class="enhanced-table min-w-full text-center">
-                <thead>
-                  <tr>
-                    <th class="text-left">Profile</th>
-                    <th class="text-center">Quantity</th>
-                    <th class="text-center">Orientation</th>
-                    <th class="text-center">Length Discount</th>
-                    <th class="text-center">User Config</th>
-                    <th class="text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="profiles-table-body">
-                  <!-- Rows will be dynamically added here -->
-                </tbody>
-              </table>
-              <div id="profiles-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
-                No profiles added yet. Add at least one profile to continue.
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Profile</th>
+                      <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Quantity</th>
+                      <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Orientation</th>
+                      <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Length Equation</th>
+                      <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">User Config</th>
+                      <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="profiles-table-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Rows will be dynamically added here -->
+                  </tbody>
+                </table>
+              </div>
+              <div id="profiles-empty-state" class="text-center py-12 text-gray-400">
+                <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
+                <p class="text-sm font-medium">No profiles added yet</p>
+                <p class="text-xs mt-1">Add at least one profile to continue</p>
               </div>
             </div>
           </div>
 
-          <div class="mt-8 flex justify-between items-center">
-            <button type="button" id="back-to-step1-btn" class="btn-secondary px-6 py-3">
+          <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center bg-gray-50 -mx-6 -mb-6 px-6 pb-6 rounded-b-xl">
+            <button type="button" id="back-to-step1-btn" class="btn-secondary px-6 py-3 rounded-lg shadow-sm hover:shadow-md transition-all">
               <i class="fas fa-arrow-left mr-2"></i>Previous Step
             </button>
-            <button type="button" id="to-step3-btn" class="btn-primary px-6 py-3">
+            <button type="button" id="to-step3-btn" class="btn-primary px-8 py-3 rounded-lg shadow-md hover:shadow-lg transition-all">
               Next Step<i class="fas fa-arrow-right ml-2"></i>
             </button>
           </div>
@@ -1316,7 +1443,6 @@
     let profiles = [];
     let accessories = [];
     let currentStep = 1;
-    let lockedLengthUnit = null; // Track the unit used for profiles (null = not set yet)
     let panelConfig = ['O', 'O']; // Default panel configuration (O = Fixed)
     let selectedProfileCategory = 'frame'; // Default category for profiles
     
@@ -2990,91 +3116,115 @@
       }
     }
 
-    // Profile search and icon functions
-    const profileData = []; // Store original profile data
-    
+    // Profile searchable select functions
     function initProfileSearch() {
-      const searchInput = document.getElementById('profile-search');
-      const clearBtn = document.getElementById('clear-profile-search');
-      const profileSelect = document.getElementById('profile-id');
-      const searchCount = document.getElementById('profile-search-count');
+      const searchInput = document.getElementById('profile-search-input');
+      const searchFilter = document.getElementById('profile-search-filter');
+      const dropdown = document.getElementById('profile-dropdown');
+      const optionsList = document.getElementById('profile-options-list');
+      const noResults = document.getElementById('profile-no-results');
+      const hiddenInput = document.getElementById('profile-id');
+      const wrapper = document.getElementById('profile-select-wrapper');
       
-      // Store original options with their data
-      Array.from(profileSelect.options).slice(1).forEach(option => {
-        profileData.push({
-          value: option.value,
-          name: option.text,
-          nameLower: (option.dataset.name || option.text).toLowerCase(),
-          color: option.dataset.color || ''
+      if (!searchInput || !dropdown) return; // Exit if elements don't exist
+      
+      // Store all profile options
+      const allOptions = Array.from(optionsList.querySelectorAll('.profile-option'));
+      
+      // Toggle dropdown
+      function toggleDropdown() {
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+          searchFilter.focus();
+          filterOptions();
+        }
+      }
+      
+      // Filter options based on search
+      function filterOptions() {
+        const searchTerm = searchFilter.value.toLowerCase().trim();
+        let visibleCount = 0;
+        
+        allOptions.forEach(option => {
+          const name = option.dataset.name || '';
+          const color = (option.dataset.color || '').toLowerCase();
+          const matches = !searchTerm || name.includes(searchTerm) || color.includes(searchTerm);
+          
+          option.style.display = matches ? '' : 'none';
+          if (matches) visibleCount++;
         });
+        
+        // Show/hide no results message
+        noResults.classList.toggle('hidden', visibleCount > 0 || !searchTerm);
+        optionsList.classList.toggle('hidden', visibleCount === 0 && searchTerm);
+      }
+      
+      // Select a profile
+      function selectProfile(optionElement) {
+        const value = optionElement.dataset.value;
+        const nameSpan = optionElement.querySelector('span.font-medium');
+        const name = nameSpan ? nameSpan.textContent : optionElement.textContent.trim();
+        
+        hiddenInput.value = value;
+        searchInput.value = name;
+        dropdown.classList.add('hidden');
+        searchFilter.value = '';
+        filterOptions();
+      }
+      
+      // Open dropdown when clicking on input or wrapper
+      searchInput.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (dropdown.classList.contains('hidden')) {
+          toggleDropdown();
+        }
       });
       
-      // Add icons to initial options
-      updateProfileOptions('');
-      
-      // Search on input
-      searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
-        clearBtn.classList.toggle('hidden', !searchTerm);
-        updateProfileOptions(searchTerm);
-      });
-      
-      // Search on Enter key - auto-select if only one result
-      searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          if (profileSelect.options.length === 2) { // "Select Profile" + 1 result
-            profileSelect.selectedIndex = 1;
+      wrapper.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (e.target === searchInput || e.target === wrapper || e.target.closest('i.fa-chevron-down')) {
+          if (dropdown.classList.contains('hidden')) {
+            toggleDropdown();
           }
         }
       });
       
-      // Clear search
-      clearBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        updateProfileOptions('');
-        searchInput.focus();
+      // Prevent dropdown from closing when clicking inside it
+      dropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
       });
       
-      // Focus search when clicking on label area
-      searchInput.addEventListener('focus', function() {
-        this.select();
+      // Filter on search input
+      searchFilter.addEventListener('input', filterOptions);
+      
+      // Handle option clicks
+      allOptions.forEach(option => {
+        option.addEventListener('click', function(e) {
+          e.stopPropagation();
+          selectProfile(this);
+        });
       });
-    }
-    
-    function updateProfileOptions(searchTerm) {
-      const profileSelect = document.getElementById('profile-id');
-      const searchCount = document.getElementById('profile-search-count');
       
-      // Clear and rebuild options
-      profileSelect.innerHTML = '<option value="">Select Profile</option>';
-      
-      let matchCount = 0;
-      profileData.forEach(profile => {
-        // Match against name, also check if search term matches type keywords
-        const matchesSearch = !searchTerm || 
-          profile.nameLower.includes(searchTerm) ||
-          profile.color.toLowerCase().includes(searchTerm);
-        
-        if (matchesSearch) {
-          const icon = getProfileTypeIcon(profile.name);
-          const option = document.createElement('option');
-          option.value = profile.value;
-          option.text = `${icon.symbol} ${profile.name}`;
-          option.dataset.name = profile.nameLower;
-          profileSelect.appendChild(option);
-          matchCount++;
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.add('hidden');
         }
       });
       
-      // Update search count
-      if (searchTerm) {
-        searchCount.textContent = `${matchCount} of ${profileData.length} profiles`;
-        searchCount.classList.remove('hidden');
-      } else {
-        searchCount.textContent = `${profileData.length} profiles available`;
-        searchCount.classList.add('hidden');
-      }
+      // Handle keyboard navigation
+      searchFilter.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          dropdown.classList.add('hidden');
+          searchInput.focus();
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const firstVisible = optionsList.querySelector('.profile-option[style=""]');
+          if (firstVisible) {
+            selectProfile(firstVisible);
+          }
+        }
+      });
     }
     
     function getProfileTypeIcon(profileName) {
@@ -3216,39 +3366,83 @@
       nameInput.classList.remove('border-red-500', 'border-green-500');
     }
     
+    // Function to insert variable/operator into equation field
+    function insertVariable(variable, inputId = 'profile-length-equation') {
+      const equationInput = document.getElementById(inputId);
+      if (!equationInput) {
+        console.error('Equation input field not found:', inputId);
+        return;
+      }
+      
+      // Focus the input if it's not focused
+      if (document.activeElement !== equationInput) {
+        equationInput.focus();
+      }
+      
+      const start = equationInput.selectionStart || 0;
+      const end = equationInput.selectionEnd || 0;
+      const currentValue = equationInput.value;
+      
+      // Insert the variable at cursor position
+      const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
+      equationInput.value = newValue;
+      
+      // Set cursor position after inserted text
+      const newCursorPos = start + variable.length;
+      setTimeout(() => {
+        equationInput.setSelectionRange(newCursorPos, newCursorPos);
+        equationInput.focus();
+      }, 10);
+      
+      // Trigger input event to run validation
+      equationInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
       initWindowNameValidation();
       initProfileSearch();
       
-      // Initialize length discount unit from global preference
-      const unitSelect = document.getElementById('profile-length-unit');
-      if (unitSelect && window.globalPreferences) {
-        const globalUnit = window.globalPreferences.unit || 'inches';
-        const unitValue = globalUnit === 'mm' ? 'mm' : 'in';
-        unitSelect.value = unitValue;
+      // Initialize equation validation
+      const equationInput = document.getElementById('profile-length-equation');
+      if (equationInput) {
+        // Add debounced validation
+        let validationTimeout;
+        equationInput.addEventListener('input', function() {
+          clearTimeout(validationTimeout);
+          validationTimeout = setTimeout(() => {
+            validateLengthEquation(this.value);
+          }, 300);
+        });
         
-        // Listen to global unit changes and re-render table
-        window.addEventListener('unitChanged', (event) => {
-          if (!lockedLengthUnit) { // Only update if not locked
-            const newUnit = event.detail.unit === 'mm' ? 'mm' : 'in';
-            unitSelect.value = newUnit;
-          }
-          // Re-render table to update displayed units
-          renderProfilesTable();
+        // Validate on blur
+        equationInput.addEventListener('blur', function() {
+          validateLengthEquation(this.value);
         });
       }
     });
     
     // Profile functions
     function addProfileEntry() {
-      const profileSelect = document.getElementById('profile-id');
-      const profileId = profileSelect.value;
-      const profileName = profileSelect.options[profileSelect.selectedIndex]?.text || '';
+      const hiddenInput = document.getElementById('profile-id');
+      const searchInput = document.getElementById('profile-search-input');
+      const profileId = hiddenInput.value;
+      
+      // Get profile name from the selected option
+      let profileName = searchInput.value || '';
+      if (profileId) {
+        const selectedOption = document.querySelector(`.profile-option[data-value="${profileId}"]`);
+        if (selectedOption) {
+          const nameSpan = selectedOption.querySelector('span.font-medium');
+          profileName = nameSpan ? nameSpan.textContent : selectedOption.textContent.trim();
+        }
+      }
+      
+      const quantityType = document.getElementById('profile-quantity-type').value;
       const quantity = document.getElementById('profile-quantity').value;
+      const quantityEquation = document.getElementById('profile-quantity-equation').value;
       const orientation = document.getElementById('profile-orientation').value;
-      const lengthDiscount = document.getElementById('profile-length-discount').value;
-      const lengthUnit = document.getElementById('profile-length-unit').value;
+      const lengthEquation = document.getElementById('profile-length-equation').value;
       const showToUser = document.getElementById('profile-show-to-user').checked;
 
       if (!profileId) {
@@ -3256,9 +3450,23 @@
         return;
       }
       
-      if (!quantity || quantity <= 0) {
-        showAlert('Please enter a valid quantity');
-        return;
+      // Validate quantity based on type
+      if (quantityType === 'fixed') {
+        if (!quantity || quantity <= 0) {
+          showAlert('Please enter a valid quantity');
+          return;
+        }
+      } else {
+        if (!quantityEquation || quantityEquation.trim() === '') {
+          showAlert('Please enter a quantity equation');
+          return;
+        }
+        // Validate quantity equation
+        const qtyValidation = validateProfileQuantityEquation(quantityEquation);
+        if (!qtyValidation.valid) {
+          showAlert(qtyValidation.message || 'Please enter a valid quantity equation. Check that you are using correct variable names (width, height, perimeter, area)');
+          return;
+        }
       }
       
       if (!orientation) {
@@ -3266,85 +3474,92 @@
         return;
       }
       
-      if (!lengthDiscount && lengthDiscount !== 0) {
-        showAlert('Please enter a length discount');
+      if (!lengthEquation || lengthEquation.trim() === '') {
+        showAlert('Please enter a length equation');
+        return;
+      }
+      
+      // Validate length equation before adding
+      const validation = validateLengthEquation(lengthEquation);
+      if (!validation.valid) {
+        showAlert(validation.message || 'Please enter a valid equation. Check that you are using correct variable names (width, height, perimeter, area)');
         return;
       }
 
-      // Convert mm to inches for storage (backend uses inches)
-      let lengthDiscountInches = parseFloat(lengthDiscount);
-      if (lengthUnit === 'mm') {
-        lengthDiscountInches = lengthDiscountInches / 25.4; // Convert mm to inches
-      }
-
-      // Lock the unit after first profile is added
-      if (profiles.length === 0) {
-        lockedLengthUnit = lengthUnit;
-        lockUnitSelector(lengthUnit);
-      }
-
-      profiles.push({ 
+      const profileEntry = {
         profileId, 
         profileName, 
-        quantity, 
+        quantity: quantityType === 'fixed' ? parseInt(quantity) : null,
+        quantityEquation: quantityType === 'equation' ? quantityEquation.trim() : null,
         orientation, 
-        lengthDiscount: lengthDiscountInches.toFixed(4), 
-        lengthDiscountDisplay: lengthDiscount, // Original value for display
-        lengthUnit, // Store the unit for display
+        lengthEquation: lengthEquation.trim(),
         showToUser,
         category: selectedProfileCategory // Store which component this profile belongs to 
-      });
+      };
+
+      profiles.push(profileEntry);
       renderProfilesTable();
       
-      // Reset form inputs (keep the locked unit)
-      profileSelect.selectedIndex = 0;
+      // Reset form inputs
+      hiddenInput.value = '';
+      searchInput.value = '';
+      document.getElementById('profile-quantity-type').value = 'fixed';
       document.getElementById('profile-quantity').value = '';
+      document.getElementById('profile-quantity-equation').value = '';
       document.getElementById('profile-orientation').selectedIndex = 0;
-      document.getElementById('profile-length-discount').value = '';
-      // Keep the unit selector at the locked value
-      document.getElementById('profile-length-unit').value = lockedLengthUnit || 'in';
+      document.getElementById('profile-length-equation').value = '';
       document.getElementById('profile-show-to-user').checked = false;
+      toggleProfileQuantityType(); // Reset UI state
+      
+      // Clear validation messages
+      const validationMsg = document.getElementById('profile-equation-validation-message');
+      const previewDiv = document.getElementById('profile-equation-preview');
+      if (validationMsg) validationMsg.innerHTML = '';
+      if (previewDiv) previewDiv.innerHTML = '';
+      const eqInput = document.getElementById('profile-length-equation');
+      if (eqInput) {
+        eqInput.classList.remove('border-red-500', 'border-green-500');
+      }
+      
+      // Clear quantity equation validation
+      const qtyValidationMsg = document.getElementById('profile-quantity-equation-validation-message');
+      const qtyPreviewDiv = document.getElementById('profile-quantity-equation-preview');
+      if (qtyValidationMsg) qtyValidationMsg.innerHTML = '';
+      if (qtyPreviewDiv) qtyPreviewDiv.innerHTML = '';
+      const qtyEqInput = document.getElementById('profile-quantity-equation');
+      if (qtyEqInput) {
+        qtyEqInput.classList.remove('border-red-500', 'border-green-500');
+      }
       
       updateEmptyStates();
     }
     
-    // Lock the unit selector to a specific value
-    function lockUnitSelector(unit) {
-      const unitSelect = document.getElementById('profile-length-unit');
-      unitSelect.value = unit;
-      unitSelect.disabled = true;
-      unitSelect.style.backgroundColor = '#f3f4f6';
-      unitSelect.style.cursor = 'not-allowed';
-      unitSelect.title = 'Unit is locked to ' + (unit === 'mm' ? 'millimeters' : 'inches') + ' for all profiles';
-      
-      // Show the lock indicator
-      const indicator = document.getElementById('unit-lock-indicator');
-      const displaySpan = document.getElementById('locked-unit-display');
-      if (indicator && displaySpan) {
-        displaySpan.textContent = unit === 'mm' ? 'mm' : 'inches';
-        indicator.classList.remove('hidden');
-      }
-    }
-    
-    // Unlock the unit selector
-    function unlockUnitSelector() {
-      const unitSelect = document.getElementById('profile-length-unit');
-      unitSelect.disabled = false;
-      unitSelect.style.backgroundColor = 'white';
-      unitSelect.style.cursor = 'pointer';
-      unitSelect.title = '';
-      lockedLengthUnit = null;
-      
-      // Hide the lock indicator
-      const indicator = document.getElementById('unit-lock-indicator');
-      if (indicator) {
-        indicator.classList.add('hidden');
-      }
-    }
 
     function renderProfilesTable() {
       const tableBody = document.getElementById('profiles-table-body');
+      const emptyState = document.getElementById('profiles-empty-state');
+      const countBadge = document.getElementById('profiles-count-badge');
+      
       tableBody.innerHTML = '';
+      
+      // Update count badge
+      if (countBadge) {
+        countBadge.textContent = profiles.length;
+      }
+      
+      // Show/hide empty state
+      if (profiles.length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+        if (tableBody.closest('.overflow-x-auto')) {
+          tableBody.closest('.overflow-x-auto').style.display = 'none';
+        }
+        return;
+      } else {
+        if (emptyState) emptyState.style.display = 'none';
+        if (tableBody.closest('.overflow-x-auto')) {
+          tableBody.closest('.overflow-x-auto').style.display = 'block';
+        }
+      }
       
       // Group profiles by category
       const categories = ['frame', 'fixed-vent', 'operable-vent', 'other'];
@@ -3364,10 +3579,12 @@
         // Category header
         const headerRow = `
           <tr>
-            <td colspan="6" class="profile-category-header ${category}">
-              ${getCategoryIcon(category)}
-              <span class="ml-2">${getCategoryLabel(category)}</span>
-              <span class="ml-2 text-sm font-normal text-gray-500">(${categoryProfiles.length} profile${categoryProfiles.length > 1 ? 's' : ''})</span>
+            <td colspan="6" class="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-t-2 border-b-2 border-gray-200">
+              <div class="flex items-center">
+                ${getCategoryIcon(category)}
+                <span class="ml-2 font-semibold text-gray-700">${getCategoryLabel(category)}</span>
+                <span class="ml-3 px-2 py-0.5 bg-white text-xs font-medium text-gray-600 rounded-full border border-gray-300">${categoryProfiles.length} profile${categoryProfiles.length > 1 ? 's' : ''}</span>
+              </div>
             </td>
           </tr>
         `;
@@ -3376,39 +3593,36 @@
         // Profile rows for this category
         categoryProfiles.forEach((profile, idx) => {
           const userConfigStatus = profile.showToUser ? 
-            '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">User Configurable</span>' : 
-            '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Auto-managed</span>';
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>User Config</span>' : 
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"><i class="fas fa-lock mr-1"></i>Auto</span>';
           
-          // Use global unit preference for display
-          const globalUnit = window.globalPreferences?.unit || 'inches';
-          const displayUnit = globalUnit === 'mm' ? 'mm' : 'in';
-          
-          // Convert stored inches value to display unit
-          const storedInches = parseFloat(profile.lengthDiscount || 0);
-          let displayValue;
-          if (displayUnit === 'mm') {
-            displayValue = (storedInches * 25.4).toFixed(2);
-          } else {
-            displayValue = storedInches.toFixed(4);
-          }
+          // Display length equation
+          const lengthDisplay = `<code class="px-2 py-1 bg-blue-50 text-blue-700 rounded text-sm font-mono border border-blue-200">${profile.lengthEquation || 'N/A'}</code>`;
           
           const icon = getProfileTypeIcon(profile.profileName);
           
           const row = `
-            <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
-              <td class="py-3 px-4 border-b text-left">
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-4 py-3 whitespace-nowrap">
                 <div class="flex items-center gap-2">
                   <span class="text-lg" title="${icon.type}">${icon.symbol}</span>
-                  <span>${profile.profileName}</span>
+                  <span class="font-medium text-gray-900">${profile.profileName}</span>
                 </div>
               </td>
-              <td class="py-3 px-4 border-b text-center">${profile.quantity}</td>
-              <td class="py-3 px-4 border-b text-center">${profile.orientation}</td>
-              <td class="py-3 px-4 border-b text-center">${displayValue} ${displayUnit === 'mm' ? 'mm' : 'in.'}</td>
-              <td class="py-3 px-4 border-b text-center">${userConfigStatus}</td>
-              <td class="py-3 px-4 border-b text-center">
-                <button type="button" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200" onclick="removeProfile(${profile.originalIndex})">
-                  <i class="fas fa-trash mr-1"></i>Remove
+              <td class="px-4 py-3 whitespace-nowrap text-center">
+                ${profile.quantityEquation ? 
+                  `<code class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-sm font-mono border border-purple-200" title="Quantity Equation">${profile.quantityEquation}</code>` :
+                  `<span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium bg-gray-100 text-gray-800">${profile.quantity}</span>`
+                }
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-center">
+                <span class="text-sm text-gray-600 capitalize">${profile.orientation}</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-center">${lengthDisplay}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-center">${userConfigStatus}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-center">
+                <button type="button" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors" onclick="removeProfile(${profile.originalIndex})">
+                  <i class="fas fa-trash mr-1.5"></i>Remove
                 </button>
               </td>
             </tr>
@@ -3423,10 +3637,6 @@
       renderProfilesTable();
       updateEmptyStates();
       
-      // Unlock unit selector if all profiles are removed
-      if (profiles.length === 0) {
-        unlockUnitSelector();
-      }
     }
 
     // Validate equation syntax and variables
@@ -3524,7 +3734,277 @@
       }
     }
 
+    // Validate profile length equation syntax and variables
+    function validateLengthEquation(equation) {
+      const validationMsg = document.getElementById('profile-equation-validation-message');
+      const previewDiv = document.getElementById('profile-equation-preview');
+      const input = document.getElementById('profile-length-equation');
+      
+      if (!equation || equation.trim() === '') {
+        if (validationMsg) validationMsg.innerHTML = '';
+        if (previewDiv) previewDiv.innerHTML = '';
+        if (input) {
+          input.classList.remove('border-red-500', 'border-green-500');
+        }
+        return { valid: false, message: '' };
+      }
+      
+      const trimmed = equation.trim();
+      const validVariables = ['width', 'height', 'perimeter', 'area'];
+      
+      // Check for invalid variable names (case-insensitive)
+      const variablePattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+      const foundVariables = [];
+      let match;
+      while ((match = variablePattern.exec(trimmed)) !== null) {
+        const varName = match[1].toLowerCase();
+        // Skip JavaScript keywords and math functions
+        if (!['width', 'height', 'perimeter', 'area', 'sqrt', 'abs', 'round', 'floor', 'ceil', 'max', 'min', 'pow'].includes(varName)) {
+          foundVariables.push(match[1]);
+        }
+      }
+      
+      // Filter out valid variables
+      const invalidVars = foundVariables.filter(v => !validVariables.includes(v.toLowerCase()));
+      
+      if (invalidVars.length > 0) {
+        const uniqueInvalid = [...new Set(invalidVars)];
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-red-600 font-medium">❌ Invalid variable(s): ${uniqueInvalid.join(', ')}</span><br><span class="text-red-500 text-xs">Valid variables are: width, height, perimeter, area</span>`;
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: `Invalid variables: ${uniqueInvalid.join(', ')}` };
+      }
+      
+      // Try to evaluate with sample values
+      try {
+        // Test with sample values: width=10, height=20
+        const testWidth = 10;
+        const testHeight = 20;
+        const testPerimeter = 2 * (testWidth + testHeight);
+        const testArea = testWidth * testHeight;
+        
+        let testExpression = trimmed;
+        // Replace variables with test values (case-insensitive)
+        testExpression = testExpression.replace(/\bwidth\b/gi, testWidth);
+        testExpression = testExpression.replace(/\bheight\b/gi, testHeight);
+        testExpression = testExpression.replace(/\bperimeter\b/gi, testPerimeter);
+        testExpression = testExpression.replace(/\barea\b/gi, testArea);
+        
+        // Safe evaluation using Function constructor
+        const result = Function('"use strict"; return (' + testExpression + ')')();
+        
+        if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+          if (input) input.classList.add('border-red-500');
+          if (input) input.classList.remove('border-green-500');
+          if (validationMsg) {
+            validationMsg.innerHTML = '<span class="text-red-600 font-medium">❌ Invalid equation syntax</span><br><span class="text-red-500 text-xs">The equation must evaluate to a valid number</span>';
+          }
+          if (previewDiv) previewDiv.innerHTML = '';
+          return { valid: false, message: 'Invalid equation syntax' };
+        }
+        
+        // Valid equation
+        if (input) input.classList.add('border-green-500');
+        if (input) input.classList.remove('border-red-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = '<span class="text-green-600 font-medium">✓ Valid equation</span>';
+        }
+        
+        // Show preview with sample calculation
+        if (previewDiv) {
+          previewDiv.innerHTML = `<span class="text-gray-600">Preview (width=10, height=20): <strong>${result.toFixed(2)} in</strong></span>`;
+        }
+        return { valid: true, message: '', result: result };
+      } catch (error) {
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = '<span class="text-red-600 font-medium">❌ Invalid equation syntax</span><br><span class="text-red-500 text-xs">Check your math operators and parentheses</span>';
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: 'Invalid equation syntax: ' + error.message };
+      }
+    }
+
+    // Initialize equation validation on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const equationInput = document.getElementById('profile-length-equation');
+      if (equationInput) {
+        // Add debounced validation
+        let validationTimeout;
+        equationInput.addEventListener('input', function() {
+          clearTimeout(validationTimeout);
+          validationTimeout = setTimeout(() => {
+            validateLengthEquation(this.value);
+          }, 300);
+        });
+        
+        // Validate on blur
+        equationInput.addEventListener('blur', function() {
+          validateLengthEquation(this.value);
+        });
+      }
+    });
+
     // Toggle between fixed quantity and equation
+    function toggleProfileQuantityType() {
+      const quantityType = document.getElementById('profile-quantity-type').value;
+      const fixedContainer = document.getElementById('profile-quantity-fixed-container');
+      const equationContainer = document.getElementById('profile-quantity-equation-container');
+      
+      if (quantityType === 'equation') {
+        fixedContainer.style.display = 'none';
+        equationContainer.style.display = 'block';
+        document.getElementById('profile-quantity').value = '';
+        
+        // Add validation listener to equation input
+        setTimeout(() => {
+          const equationInput = document.getElementById('profile-quantity-equation');
+          if (equationInput) {
+            // Remove existing listeners by cloning and replacing
+            const newInput = equationInput.cloneNode(true);
+            equationInput.parentNode.replaceChild(newInput, equationInput);
+            
+            // Add debounced validation
+            let validationTimeout;
+            newInput.addEventListener('input', function() {
+              clearTimeout(validationTimeout);
+              validationTimeout = setTimeout(() => {
+                validateProfileQuantityEquation(this.value);
+              }, 300);
+            });
+            
+            // Validate on blur
+            newInput.addEventListener('blur', function() {
+              validateProfileQuantityEquation(this.value);
+            });
+          }
+        }, 10);
+      } else {
+        fixedContainer.style.display = 'block';
+        equationContainer.style.display = 'none';
+        document.getElementById('profile-quantity-equation').value = '';
+        
+        // Clear validation messages
+        const validationMsg = document.getElementById('profile-quantity-equation-validation-message');
+        const previewDiv = document.getElementById('profile-quantity-equation-preview');
+        if (validationMsg) validationMsg.innerHTML = '';
+        if (previewDiv) previewDiv.innerHTML = '';
+        const qtyEqInput = document.getElementById('profile-quantity-equation');
+        if (qtyEqInput) {
+          qtyEqInput.classList.remove('border-red-500', 'border-green-500');
+        }
+      }
+    }
+
+    // Validate profile quantity equation
+    function validateProfileQuantityEquation(equation) {
+      const validationMsg = document.getElementById('profile-quantity-equation-validation-message');
+      const previewDiv = document.getElementById('profile-quantity-equation-preview');
+      const input = document.getElementById('profile-quantity-equation');
+      
+      if (!equation || equation.trim() === '') {
+        if (validationMsg) validationMsg.innerHTML = '';
+        if (previewDiv) previewDiv.innerHTML = '';
+        if (input) {
+          input.classList.remove('border-red-500', 'border-green-500');
+        }
+        return { valid: false, message: '' };
+      }
+      
+      const trimmed = equation.trim();
+      const validVariables = ['width', 'height', 'perimeter', 'area'];
+      
+      // Check for invalid variable names (case-insensitive)
+      const variablePattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+      const foundVariables = [];
+      let match;
+      while ((match = variablePattern.exec(trimmed)) !== null) {
+        const varName = match[1].toLowerCase();
+        // Skip JavaScript keywords and math functions
+        if (!['width', 'height', 'perimeter', 'area', 'sqrt', 'abs', 'round', 'floor', 'ceil', 'max', 'min', 'pow'].includes(varName)) {
+          foundVariables.push(match[1]);
+        }
+      }
+      
+      if (foundVariables.length > 0) {
+        const errorMsg = `Invalid variable(s): ${foundVariables.join(', ')}. Use: width, height, perimeter, area`;
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>${errorMsg}</span>`;
+        }
+        if (input) {
+          input.classList.add('border-red-500');
+          input.classList.remove('border-green-500');
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: errorMsg };
+      }
+      
+      // Try to evaluate the equation with sample values
+      try {
+        const testWidth = 48;
+        const testHeight = 60;
+        const testPerimeter = 2 * (testWidth + testHeight);
+        const testArea = testWidth * testHeight;
+        
+        // Replace variables with test values (case-insensitive)
+        let testEquation = trimmed;
+        testEquation = testEquation.replace(/\bwidth\b/gi, testWidth);
+        testEquation = testEquation.replace(/\bheight\b/gi, testHeight);
+        testEquation = testEquation.replace(/\bperimeter\b/gi, testPerimeter);
+        testEquation = testEquation.replace(/\barea\b/gi, testArea);
+        
+        // Evaluate using Function constructor (safer than eval)
+        const result = Function('"use strict"; return (' + testEquation + ')')();
+        
+        if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+          throw new Error('Equation does not evaluate to a valid number');
+        }
+        
+        // Quantity should be positive
+        if (result < 0) {
+          const errorMsg = 'Quantity equation must evaluate to a positive number';
+          if (validationMsg) {
+            validationMsg.innerHTML = `<span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>${errorMsg}</span>`;
+          }
+          if (input) {
+            input.classList.add('border-red-500');
+            input.classList.remove('border-green-500');
+          }
+          if (previewDiv) previewDiv.innerHTML = '';
+          return { valid: false, message: errorMsg };
+        }
+        
+        // Success
+        const roundedResult = Math.round(result);
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Valid equation</span>`;
+        }
+        if (previewDiv) {
+          previewDiv.innerHTML = `<span class="text-gray-600">Preview: For a ${testWidth}" × ${testHeight}" window, quantity = <strong>${roundedResult}</strong></span>`;
+        }
+        if (input) {
+          input.classList.remove('border-red-500');
+          input.classList.add('border-green-500');
+        }
+        return { valid: true, message: 'Valid equation' };
+      } catch (error) {
+        const errorMsg = `Invalid equation syntax: ${error.message}`;
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>${errorMsg}</span>`;
+        }
+        if (input) {
+          input.classList.add('border-red-500');
+          input.classList.remove('border-green-500');
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: errorMsg };
+      }
+    }
+
     function toggleAccessoryQuantityType() {
       const quantityType = document.getElementById('accessory-quantity-type').value;
       const fixedContainer = document.getElementById('accessory-quantity-fixed-container');

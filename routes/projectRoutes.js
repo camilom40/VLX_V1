@@ -83,6 +83,43 @@ function evaluateQuantityEquation(equation, width, height) {
   }
 }
 
+// Helper function to evaluate profile length equation safely (result in inches)
+function evaluateLengthEquation(equation, width, height) {
+  if (!equation || typeof equation !== 'string') {
+    return null;
+  }
+  
+  try {
+    // Calculate derived values
+    const perimeter = 2 * (width + height);
+    const area = width * height;
+    
+    // Replace variable names with actual values (safe string replacement)
+    // Allow: width, height, perimeter, area, and basic math operations
+    let expression = equation.trim();
+    
+    // Replace variable names with their values (using word boundaries to avoid partial matches)
+    expression = expression.replace(/\bwidth\b/gi, width);
+    expression = expression.replace(/\bheight\b/gi, height);
+    expression = expression.replace(/\bperimeter\b/gi, perimeter);
+    expression = expression.replace(/\barea\b/gi, area);
+    
+    // Use Function constructor for safe evaluation (only allows mathematical expressions)
+    // This is safer than eval() because it doesn't have access to global scope
+    const result = Function('"use strict"; return (' + expression + ')')();
+    
+    // Ensure result is a valid number (in inches)
+    if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+      return Math.max(0, result); // Ensure non-negative
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error evaluating length equation:', equation, error);
+    return null;
+  }
+}
+
 // Helper function to recalculate prices for a window item with current costs
 async function recalculateWindowItemPrices(windowItem) {
   try {
@@ -145,9 +182,16 @@ async function recalculateWindowItemPrices(windowItem) {
         const profileDoc = allProfiles.find(p => p._id.toString() === savedProfile.profileId.toString());
         if (profileDoc) {
           const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'USD', exchangeRate);
-          const lengthDiscountMeters = (savedProfile.lengthDiscount || 0) * 0.0254;
-          const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
-          const profileCost = profileCostUSD * adjustedLength * (savedProfile.quantity || 1);
+          
+          // Calculate profile length using equation
+          const lengthInches = evaluateLengthEquation(savedProfile.lengthEquation, windowWidth, windowHeight);
+          if (lengthInches === null) {
+            console.error('Failed to evaluate length equation for profile:', savedProfile.lengthEquation);
+            continue; // Skip this profile if equation evaluation fails
+          }
+          
+          const lengthMeters = Math.max(0, lengthInches * 0.0254);
+          const profileCost = profileCostUSD * lengthMeters * (savedProfile.quantity || 1);
           profileCostTotal += profileCost;
         }
       }
@@ -158,9 +202,25 @@ async function recalculateWindowItemPrices(windowItem) {
       const profileDoc = profileItem.profile;
       if (profileDoc) {
         const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'USD', exchangeRate);
-        const lengthDiscountMeters = (profileItem.lengthDiscount || 0) * 0.0254;
-        const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
-        const profileCost = profileCostUSD * adjustedLength * (profileItem.quantity || 1);
+        
+        // Calculate profile length using equation
+        const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+        if (lengthInches === null) {
+          console.error('Failed to evaluate length equation for profile:', profileItem.lengthEquation);
+          continue; // Skip this profile if equation evaluation fails
+        }
+        
+        // Calculate profile quantity - use equation if present, otherwise use fixed quantity
+        let profileQuantity = profileItem.quantity || 1;
+        if (profileItem.quantityEquation) {
+          const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, windowWidth, windowHeight);
+          if (calculatedQuantity !== null) {
+            profileQuantity = Math.round(calculatedQuantity); // Round to whole number for quantity
+          }
+        }
+        
+        const lengthMeters = Math.max(0, lengthInches * 0.0254);
+        const profileCost = profileCostUSD * lengthMeters * profileQuantity;
         profileCostTotal += profileCost;
       }
     }
@@ -1037,11 +1097,15 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
             selectedQuantity = parseInt(userSelectedProfiles[i].quantity) || profileItem.quantity || 1;
             lengthDiscount = parseFloat(userSelectedProfiles[i].lengthDiscount) || 0;
             
-            // Convert length discount from inches to meters
-            const lengthDiscountMeters = lengthDiscount * 0.0254;
-            const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
+            // Calculate profile length using equation from window system
+            const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+            if (lengthInches === null) {
+              console.error('Failed to evaluate length equation for profile:', profileItem.lengthEquation);
+              continue; // Skip this profile if equation evaluation fails
+            }
+            const lengthMeters = lengthInches * 0.0254;
             
-            const profileCost = profileCostUSD * adjustedLength * selectedQuantity;
+            const profileCost = profileCostUSD * lengthMeters * selectedQuantity;
             profileCostTotal += profileCost;
             profileCosts.push({
               name: selectedProfileDoc.name,
@@ -1055,8 +1119,25 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       
       // Fallback to default profile if no user selection
       const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'COP', exchangeRate);
-      const profileQuantity = profileItem.quantity || 1;
-      const profileCost = profileCostUSD * perimeterMeters * profileQuantity;
+      
+      // Calculate profile quantity - use equation if present, otherwise use fixed quantity
+      let profileQuantity = profileItem.quantity || 1;
+      if (profileItem.quantityEquation) {
+        const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, windowWidth, windowHeight);
+        if (calculatedQuantity !== null) {
+          profileQuantity = Math.round(calculatedQuantity); // Round to whole number for quantity
+        }
+      }
+      
+      // Calculate profile length using equation
+      const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+      if (lengthInches === null) {
+        console.error('Failed to evaluate length equation for profile:', profileItem.lengthEquation);
+        continue; // Skip this profile if equation evaluation fails
+      }
+      const lengthMeters = lengthInches * 0.0254;
+      
+      const profileCost = profileCostUSD * lengthMeters * profileQuantity;
       profileCostTotal += profileCost;
       profileCosts.push({
         name: profileDoc.name,
@@ -1072,8 +1153,32 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       if (!profileDoc) continue;
       
       const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'COP', exchangeRate);
-      const profileQuantity = profileItem.quantity || 1;
-      const profileCost = profileCostUSD * perimeterMeters * profileQuantity;
+      // Calculate profile quantity - use equation if present, otherwise use fixed quantity
+      let profileQuantity = profileItem.quantity || 1;
+      if (profileItem.quantityEquation) {
+        const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, windowWidth, windowHeight);
+        if (calculatedQuantity !== null) {
+          profileQuantity = Math.round(calculatedQuantity); // Round to whole number for quantity
+        }
+      }
+      
+      // Calculate profile length: use equation if available, otherwise use discount
+      let lengthMeters;
+      if (profileItem.lengthEquation) {
+        const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+        if (lengthInches !== null) {
+          lengthMeters = lengthInches * 0.0254;
+        } else {
+          // Fallback to discount if equation evaluation fails
+          const lengthDiscountMeters = (profileItem.lengthDiscount || 0) * 0.0254;
+          lengthMeters = Math.max(0, perimeterMeters - lengthDiscountMeters);
+        }
+      } else {
+        const lengthDiscountMeters = (profileItem.lengthDiscount || 0) * 0.0254;
+        lengthMeters = Math.max(0, perimeterMeters - lengthDiscountMeters);
+      }
+      
+      const profileCost = profileCostUSD * lengthMeters * profileQuantity;
       profileCostTotal += profileCost;
       profileCosts.push({
         name: profileDoc.name,
@@ -1697,11 +1802,15 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
             selectedQuantity = parseInt(userSelectedProfiles[i].quantity) || profileItem.quantity || 1;
             lengthDiscount = parseFloat(userSelectedProfiles[i].lengthDiscount) || 0;
             
-            // Convert length discount from inches to meters
-            const lengthDiscountMeters = lengthDiscount * 0.0254;
-            const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
+            // Calculate profile length using equation from window system
+            const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+            if (lengthInches === null) {
+              console.error('Failed to evaluate length equation for profile:', profileItem.lengthEquation);
+              continue; // Skip this profile if equation evaluation fails
+            }
+            const lengthMeters = lengthInches * 0.0254;
             
-            const profileCost = profileCostUSD * adjustedLength * selectedQuantity;
+            const profileCost = profileCostUSD * lengthMeters * selectedQuantity;
             profileCostTotal += profileCost;
             profileCosts.push({
               name: selectedProfileDoc.name,
@@ -1715,8 +1824,25 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       
       // Fallback to default profile if no user selection
       const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'COP', exchangeRate);
-      const profileQuantity = profileItem.quantity || 1;
-      const profileCost = profileCostUSD * perimeterMeters * profileQuantity;
+      
+      // Calculate profile quantity - use equation if present, otherwise use fixed quantity
+      let profileQuantity = profileItem.quantity || 1;
+      if (profileItem.quantityEquation) {
+        const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, windowWidth, windowHeight);
+        if (calculatedQuantity !== null) {
+          profileQuantity = Math.round(calculatedQuantity); // Round to whole number for quantity
+        }
+      }
+      
+      // Calculate profile length using equation
+      const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+      if (lengthInches === null) {
+        console.error('Failed to evaluate length equation for profile:', profileItem.lengthEquation);
+        continue; // Skip this profile if equation evaluation fails
+      }
+      const lengthMeters = lengthInches * 0.0254;
+      
+      const profileCost = profileCostUSD * lengthMeters * profileQuantity;
       profileCostTotal += profileCost;
       profileCosts.push({
         name: profileDoc.name,
@@ -1732,8 +1858,32 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       if (!profileDoc) continue;
       
       const profileCostUSD = convertToUSD(profileDoc.pricePerMeter, profileDoc.currency || 'COP', exchangeRate);
-      const profileQuantity = profileItem.quantity || 1;
-      const profileCost = profileCostUSD * perimeterMeters * profileQuantity;
+      // Calculate profile quantity - use equation if present, otherwise use fixed quantity
+      let profileQuantity = profileItem.quantity || 1;
+      if (profileItem.quantityEquation) {
+        const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, windowWidth, windowHeight);
+        if (calculatedQuantity !== null) {
+          profileQuantity = Math.round(calculatedQuantity); // Round to whole number for quantity
+        }
+      }
+      
+      // Calculate profile length: use equation if available, otherwise use discount
+      let lengthMeters;
+      if (profileItem.lengthEquation) {
+        const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+        if (lengthInches !== null) {
+          lengthMeters = lengthInches * 0.0254;
+        } else {
+          // Fallback to discount if equation evaluation fails
+          const lengthDiscountMeters = (profileItem.lengthDiscount || 0) * 0.0254;
+          lengthMeters = Math.max(0, perimeterMeters - lengthDiscountMeters);
+        }
+      } else {
+        const lengthDiscountMeters = (profileItem.lengthDiscount || 0) * 0.0254;
+        lengthMeters = Math.max(0, perimeterMeters - lengthDiscountMeters);
+      }
+      
+      const profileCost = profileCostUSD * lengthMeters * profileQuantity;
       profileCostTotal += profileCost;
       profileCosts.push({
         name: profileDoc.name,

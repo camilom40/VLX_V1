@@ -1243,6 +1243,41 @@
       return price; // fallback
     }
 
+    // Helper function to evaluate profile length equation safely (result in inches)
+    function evaluateLengthEquation(equation, width, height) {
+      if (!equation || typeof equation !== 'string') {
+        return null;
+      }
+      
+      try {
+        // Calculate derived values
+        const perimeter = 2 * (width + height);
+        const area = width * height;
+        
+        // Replace variable names with actual values (safe string replacement)
+        let expression = equation.trim();
+        
+        // Replace variable names with their values (using word boundaries to avoid partial matches)
+        expression = expression.replace(/\bwidth\b/gi, width);
+        expression = expression.replace(/\bheight\b/gi, height);
+        expression = expression.replace(/\bperimeter\b/gi, perimeter);
+        expression = expression.replace(/\barea\b/gi, area);
+        
+        // Use Function constructor for safe evaluation
+        const result = Function('"use strict"; return (' + expression + ')')();
+        
+        // Ensure result is a valid number (in inches)
+        if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+          return Math.max(0, result); // Ensure non-negative
+        }
+        
+        return null;
+      } catch (error) {
+        console.error('Error evaluating length equation:', equation, error);
+        return null;
+      }
+    }
+
     // Exchange rate from server (default to 4000 if not provided)
     // Note: exchangeRateValue is already defined above, so we use that
     // const exchangeRate = <%= exchangeRate || 4000 %>; // Already defined as exchangeRateValue
@@ -1502,16 +1537,23 @@
         const profileName = selectedProfile?.text || `Profile ${index + 1}`;
         const pricePerMeterUSD = convertToUSD(pricePerMeter, profileCurrency, exchangeRateValue);
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        let lengthDiscount = parseFloat(select.closest('.component-card').querySelector('input[name*="lengthDiscount"]').value) || 0;
         
-        // Convert length discount to inches if needed
-        if (currentUnit === 'mm') {
-          lengthDiscount = mmToInches(lengthDiscount);
+        // Get the corresponding profile item from window system to get equation
+        const profileIndex = Array.from(profileSelects).indexOf(select);
+        const profileItem = windowSystemData.profiles && windowSystemData.profiles[profileIndex];
+        
+        // Calculate profile length using equation
+        let lengthMeters = 0;
+        if (profileItem && profileItem.lengthEquation) {
+          const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+          if (lengthInches !== null) {
+            lengthMeters = lengthInches * 0.0254;
+          } else {
+            console.error('Failed to evaluate length equation:', profileItem.lengthEquation);
+          }
         }
         
-        // Estimate profile length based on window perimeter
-        const adjustedLength = Math.max(0, perimeterMeters - (lengthDiscount * 0.0254));
-        const profileCost = pricePerMeterUSD * adjustedLength * qty;
+        const profileCost = pricePerMeterUSD * lengthMeters * qty;
         profilesCost += profileCost;
         
         profileDetails.push({
@@ -1520,9 +1562,8 @@
           currency: profileCurrency,
           priceUSD: pricePerMeterUSD,
           quantity: qty,
-          lengthDiscount: lengthDiscount,
+          lengthMeters: lengthMeters,
           perimeterMeters: perimeterMeters,
-          adjustedLength: adjustedLength,
           cost: profileCost
         });
       });
@@ -1533,12 +1574,19 @@
           if (!profileItem.showToUser && profileItem.profileId && profileItem.pricePerMeter > 0) {
             const pricePerMeterUSD = convertToUSD(profileItem.pricePerMeter, profileItem.currency || 'USD', exchangeRateValue);
             const qty = profileItem.quantity || 1;
-            let lengthDiscount = profileItem.lengthDiscount || 0;
             
-            // Length discount is already in inches from the window system
-            const lengthDiscountMeters = lengthDiscount * 0.0254; // Convert inches to meters
-            const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
-            const profileCost = pricePerMeterUSD * adjustedLength * qty;
+            // Calculate profile length using equation
+            let lengthMeters = 0;
+            if (profileItem.lengthEquation) {
+              const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
+              if (lengthInches !== null) {
+                lengthMeters = lengthInches * 0.0254;
+              } else {
+                console.error('Failed to evaluate length equation:', profileItem.lengthEquation);
+              }
+            }
+            
+            const profileCost = pricePerMeterUSD * lengthMeters * qty;
             profilesCost += profileCost;
             
             profileDetails.push({
@@ -1547,9 +1595,8 @@
               currency: profileItem.currency || 'USD',
               priceUSD: pricePerMeterUSD,
               quantity: qty,
-              lengthDiscount: lengthDiscount,
+              lengthMeters: lengthMeters,
               perimeterMeters: perimeterMeters,
-              adjustedLength: adjustedLength,
               cost: profileCost,
               isUserConfigurable: false
             });

@@ -518,16 +518,38 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       return res.status(400).json({ error: 'At least one profile is required' });
     }
 
-    const profileEntries = profiles.map(profile => ({
-      profile: profile.profileId,
-      quantity: parseInt(profile.quantity, 10),
-      orientation: profile.orientation,
-      lengthDiscount: parseFloat(profile.lengthDiscount),
-      lengthDiscountDisplay: profile.lengthDiscountDisplay || String(profile.lengthDiscount),
-      lengthUnit: profile.lengthUnit || 'in',
-      category: profile.category || 'frame',
-      showToUser: Boolean(profile.showToUser),
-    }));
+    const profileEntries = profiles.map(profile => {
+      const entry = {
+        profile: profile.profileId,
+        orientation: profile.orientation,
+        category: profile.category || 'frame',
+        showToUser: Boolean(profile.showToUser),
+      };
+      
+      // Handle quantity - either fixed or equation
+      if (profile.quantityEquation) {
+        entry.quantityEquation = profile.quantityEquation.trim();
+        entry.quantity = null;
+      } else {
+        entry.quantity = parseInt(profile.quantity, 10) || 1;
+        entry.quantityEquation = null;
+      }
+      
+      // Handle lengthDiscount or lengthEquation
+      if (profile.lengthEquation) {
+        entry.lengthEquation = profile.lengthEquation.trim();
+        entry.lengthDiscount = null;
+        entry.lengthDiscountDisplay = null;
+        entry.lengthUnit = 'in'; // Equations always result in inches
+      } else {
+        entry.lengthDiscount = parseFloat(profile.lengthDiscount) || 0;
+        entry.lengthDiscountDisplay = profile.lengthDiscountDisplay || String(profile.lengthDiscount || 0);
+        entry.lengthUnit = profile.lengthUnit || 'in';
+        entry.lengthEquation = null;
+      }
+      
+      return entry;
+    });
 
     const accessoryEntries = accessories.map(accessory => {
       const entry = {
@@ -640,16 +662,30 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
   try {
     const { type, profiles = [], accessories = [], glassRestrictions = [] } = req.body;
 
-    const profileEntries = JSON.parse(profiles).map(profile => ({
-      profile: profile.profileId,
-      quantity: parseInt(profile.quantity, 10),
-      orientation: profile.orientation,
-      lengthDiscount: parseFloat(profile.lengthDiscount),
-      lengthDiscountDisplay: profile.lengthDiscountDisplay || String(profile.lengthDiscount),
-      lengthUnit: profile.lengthUnit || 'in',
-      category: profile.category || 'frame',
-      showToUser: Boolean(profile.showToUser),
-    }));
+    const profileEntries = JSON.parse(profiles).map(profile => {
+      const entry = {
+        profile: profile.profileId,
+        quantity: parseInt(profile.quantity, 10),
+        orientation: profile.orientation,
+        category: profile.category || 'frame',
+        showToUser: Boolean(profile.showToUser),
+      };
+      
+      // Handle lengthDiscount or lengthEquation
+      if (profile.lengthEquation) {
+        entry.lengthEquation = profile.lengthEquation.trim();
+        entry.lengthDiscount = null;
+        entry.lengthDiscountDisplay = null;
+        entry.lengthUnit = 'in'; // Equations always result in inches
+      } else {
+        entry.lengthDiscount = parseFloat(profile.lengthDiscount) || 0;
+        entry.lengthDiscountDisplay = profile.lengthDiscountDisplay || String(profile.lengthDiscount || 0);
+        entry.lengthUnit = profile.lengthUnit || 'in';
+        entry.lengthEquation = null;
+      }
+      
+      return entry;
+    });
 
     const accessoryEntries = JSON.parse(accessories).map(accessory => {
       const entry = {
