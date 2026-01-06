@@ -1305,7 +1305,7 @@
         }).format(amount);
       } else {
         // Convert USD to COP for display
-        const amountCOP = amount * exchangeRate;
+        const amountCOP = amount * exchangeRateValue;
         return new Intl.NumberFormat('es-CO', {
           style: 'currency',
           currency: 'COP',
