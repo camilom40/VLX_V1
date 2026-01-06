@@ -123,6 +123,8 @@ Users configure windows within their projects:
 - Real-time calculations: Area, Perimeter, Aspect Ratio, Glass Area
 - Quantity selection
 - Price calculation based on dimensions and components
+- **Calculation Details Modal**: Detailed breakdown of all cost components
+- **Workshop Modal**: Production information showing quantity and length of each profile, accessory, and glass
 
 ### 4. Dynamic Visual Preview
 The configure window page features a dynamic preview that:
@@ -147,9 +149,32 @@ The configure window page features a dynamic preview that:
 {
   name: String,
   type: String, // e.g., 'horizontal-roller', 'casement', 'french-door'
-  profiles: [{ profile: ObjectId, quantity: Number, lengthDiscount: Number }],
-  accessories: [{ accessory: ObjectId, quantity: Number, isOptional: Boolean }],
+  profiles: [{ 
+    profile: ObjectId, 
+    quantity: Number, 
+    quantityEquation: String,  // Optional equation for dynamic quantity
+    lengthEquation: String,    // Optional equation for dynamic length (e.g., "width", "height-(38*2)")
+    lengthDiscount: Number, 
+    showToUser: Boolean,
+    position: String           // Optional position identifier (e.g., "sill", "stile", "head")
+  }],
+  accessories: [{ 
+    accessory: ObjectId, 
+    quantity: Number, 
+    quantityEquation: String,  // Optional equation for dynamic quantity
+    isOptional: Boolean,
+    showToUser: Boolean
+  }],
   muntinConfiguration: { type: String, horizontalBars: Number, verticalBars: Number, ... },
+  flangeConfiguration: {
+    hasFlange: Boolean,
+    flangeSize: String,        // e.g., "1/2"
+    isTrimable: Boolean
+  },
+  missileImpactConfiguration: {
+    lmiCompatibleGlasses: [ObjectId],  // Glasses compatible with Large Missile Impact
+    smiCompatibleGlasses: [ObjectId]   // Glasses compatible with Small Missile Impact
+  },
   panelConfiguration: {
     operationType: String,    // 'sliding', 'casement', 'fixed', 'french-door', etc.
     orientation: String,      // 'horizontal' or 'vertical'
@@ -202,6 +227,19 @@ The configure window page features a dynamic preview that:
   muntinType: String,   // 'none' or specific type
   muntinPattern: String,
   muntinSpacing: Number  // Optional, null if not a muntin
+}
+```
+
+### Window System Profiles (in Window model)
+```javascript
+{
+  profile: ObjectId,           // Reference to Profile
+  quantity: Number,             // Fixed quantity or calculated from quantityEquation
+  quantityEquation: String,    // Optional equation for dynamic quantity (e.g., "2 * height")
+  lengthEquation: String,      // Optional equation for dynamic length (e.g., "width", "height-(38*2)")
+  lengthDiscount: Number,      // Optional length discount (in inches)
+  showToUser: Boolean,         // Whether user can configure this profile
+  position: String             // Optional position identifier (e.g., "sill", "stile", "head")
 }
 ```
 
@@ -1064,11 +1102,92 @@ npm run dev
 
 ---
 
+## January 2026 - Profile Length Equations, Workshop Modal & Price Calculation Fixes
+
+### What We Worked On
+
+1. **Profile Length Equations with Unit Conversion**
+   - **Equation Support**: Profile lengths can now be calculated using mathematical equations instead of fixed values
+   - **Equation Variables**: Supports `width`, `height`, `perimeter` (2*(width+height)), and `area` (width*height) as variables
+   - **Numeric Constant Conversion**: Numeric constants in equations (e.g., `38` in `height-(38*2)`) are automatically converted from mm to inches, as equations are written with mm constants
+   - **Multiplier Detection**: Smart detection prevents conversion of multipliers (e.g., `2` in `38*2` is not converted, only `38` is converted)
+   - **Unit-Aware Validation**: Equation validation shows preview calculations in the current unit (inches/mm)
+   - **Dynamic Unit Display**: Equation input labels update to show current global unit preference
+   - **Backend Matching**: Backend `evaluateLengthEquation()` function now matches frontend behavior exactly, always converting numeric constants from mm to inches
+
+2. **Workshop Modal for Production Details**
+   - **New Modal**: Added "Workshop" button below "Calculation Details" on configure window page
+   - **Production Information**: Displays quantity and length for each profile, accessory, and glass component
+   - **Unit Display**: Shows lengths in both inches and meters for production use
+   - **Component Breakdown**: 
+     - Profiles: Name, quantity, length (inches/meters), position (if specified)
+     - Accessories: Name, quantity
+     - Glass: Type, area (square meters)
+   - **Workshop-Ready Format**: Information formatted for production team use
+
+3. **Price Calculation Consistency Fixes**
+   - **Frontend-Backend Matching**: Fixed critical discrepancy where frontend showed $112.87 but backend saved $107.75
+   - **Root Cause**: Backend's `evaluateLengthEquation()` was not converting numeric constants from mm to inches, causing incorrect profile length calculations
+   - **Profile Cost Fix**: Profile costs now match between frontend and backend calculations
+   - **WindowItem Model Fix**: Updated pre-save hook to preserve `totalPrice` when explicitly set, preventing recalculation from rounded `unitPrice`
+   - **Price Precision**: `totalPrice` is now set directly from `finalPrice` to maintain precision, with `unitPrice` calculated from `totalPrice` for display
+
+4. **Profile Position Field**
+   - **New Field**: Added `position` field to profiles in window systems (informative field)
+   - **Examples**: "sill", "stile", "head" - helps identify profile location in window assembly
+   - **Database Storage**: Position stored in Window model's profiles sub-schema
+   - **Display**: Position shown in workshop modal for production reference
+   - **UI**: Position field added to compose window and edit window system forms (text input for flexibility)
+
+5. **Form Validation & Error Fixes**
+   - **Hidden Required Fields**: Fixed "An invalid form control with name='' is not focusable" error by removing `required` attribute from hidden profile-length-equation inputs
+   - **Manual Validation**: Added JavaScript validation for length equations before form submission
+   - **Exchange Rate Reference**: Fixed `ReferenceError: exchangeRate is not defined` by using correct variable name `exchangeRateValue`
+   - **Calculation Modal Errors**: Fixed `Cannot read properties of undefined (reading 'toFixed')` by ensuring all calculation details are properly initialized
+
+6. **Calculation Details Modal Improvements**
+   - **Error Handling**: Fixed undefined value errors in calculation details modal
+   - **Profile Details**: All profile calculation details now properly displayed (length, discount, adjusted length)
+   - **Workshop Integration**: Workshop modal complements calculation details with production-focused information
+
+#### Key Files Modified
+- `views/projects/configureWindow.ejs` - Added workshop modal, fixed unit conversion in evaluateLengthEquation, fixed form validation, added position field support
+- `views/admin/composeWindow.ejs` - Added position field, fixed unit conversion in length equation validation, removed required attribute from hidden inputs
+- `views/admin/editWindowSystem.ejs` - Added position field, fixed unit conversion in length equation validation, removed required attribute from hidden inputs
+- `routes/projectRoutes.js` - Updated evaluateLengthEquation to always convert numeric constants from mm to inches, fixed price calculation consistency
+- `models/WindowItem.js` - Updated pre-save hook to preserve totalPrice when explicitly set
+- `models/Window.js` - Added position field to profiles sub-schema
+- `routes/admin/windowRoutes.js` - Updated to save/retrieve position field for profiles
+- `routes/admin/profileRoutes.js` - Updated to handle position field (if needed)
+
+#### Technical Notes
+- **Equation Evaluation**: Both frontend and backend now use identical logic for evaluating length equations
+- **Unit Conversion**: Numeric constants in equations are always converted from mm to inches (equations written with mm constants)
+- **Multiplier Detection**: Regex-based detection identifies multipliers (right operand of * or /) to avoid incorrect conversion
+- **Price Precision**: totalPrice stored with full precision, unitPrice rounded to 2 decimals for display
+- **Pre-Save Hook Logic**: WindowItem model checks if totalPrice was explicitly set (differs from unitPrice*quantity by more than 1 cent) and preserves it
+- **Workshop Data**: Workshop modal uses same calculation data as pricing, ensuring consistency
+- **Position Field**: Optional text field, allows any value (not restricted to specific options for flexibility)
+
+#### Example Length Equations
+- `width` - Profile length equals window width
+- `height-(38*2)` - Profile length equals height minus 76mm (38mm on each side)
+- `perimeter / 2` - Profile length equals half the perimeter
+- `width + 50` - Profile length equals width plus 50mm
+- `2 * height` - Profile length equals twice the window height
+
+#### Migration Notes
+- **Existing Window Systems**: Existing window systems will work with new equation evaluation (numeric constants automatically converted)
+- **Price Recalculation**: Existing window items may need to be recalculated if they were saved with incorrect prices due to the equation evaluation bug
+- **Position Field**: Existing profiles without position will display empty in workshop modal (field is optional)
+
+---
+
 ## 🔮 TODO / Future Enhancements
 
 - **Profile Quantity Equations**: Consider implementing equation support for profile quantities, similar to accessory equations. This would allow profiles to use formulas based on window dimensions (e.g., perimeter-based calculations for frame profiles).
 
 ---
 
-*Last Updated: December 2025 - Accessory Quantity Equations & Dashboard Currency Conversion*
+*Last Updated: January 2026 - Profile Length Equations, Workshop Modal & Price Calculation Fixes*
 

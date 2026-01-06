@@ -84,38 +84,85 @@ function evaluateQuantityEquation(equation, width, height) {
 }
 
 // Helper function to evaluate profile length equation safely (result in inches)
-function evaluateLengthEquation(equation, width, height) {
+function evaluateLengthEquation(equation, width, height, inputUnit = 'inches') {
   if (!equation || typeof equation !== 'string') {
     return null;
   }
   
   try {
-    // Calculate derived values
+    // Calculate derived values (width and height are already in inches at this point)
     const perimeter = 2 * (width + height);
     const area = width * height;
     
     // Replace variable names with actual values (safe string replacement)
-    // Allow: width, height, perimeter, area, and basic math operations
-    let expression = equation.trim();
+    // Normalize the equation: remove extra spaces, but preserve structure
+    let expression = equation.trim().replace(/\s+/g, ' '); // Replace multiple spaces with single space
+    
+    // Numeric constants in equations are ALWAYS in mm (standard unit for window manufacturing)
+    // We need to convert them to inches to match the width/height units (which are already in inches)
+    // Strategy: Only convert numbers that are measurements, not multipliers.
+    // A number is considered a multiplier if it's the right operand of a '*' or '/' operator.
+    // Always convert numeric constants from mm to inches (equations are written with mm constants)
+    {
+      // Temporarily replace variable names to avoid matching numbers within them
+      const variableNames = ['width', 'height', 'perimeter', 'area'];
+      const placeholders = {};
+      variableNames.forEach((varName, index) => {
+        const placeholder = `__VAR${index}__`;
+        placeholders[placeholder] = varName;
+        expression = expression.replace(new RegExp(`\\b${varName}\\b`, 'gi'), placeholder);
+      });
+
+      expression = expression.replace(/\b(\d+\.?\d*)\b/g, (match, number, offset, fullString) => {
+        const numValue = parseFloat(number);
+        if (isNaN(numValue)) {
+          return match;
+        }
+
+        // Check if this number is a multiplier (right operand in * or /)
+        // Look at the character immediately before this number
+        if (offset > 0) {
+          const beforeChar = fullString[offset - 1];
+          if (beforeChar === '*' || beforeChar === '/') {
+            // This is a multiplier (right operand), don't convert it
+            return match;
+          }
+        }
+        
+        // This is a measurement value, convert mm to inches
+        const converted = numValue / 25.4;
+        return converted.toString();
+      });
+
+      // Restore variable names
+      Object.keys(placeholders).forEach(placeholder => {
+        expression = expression.replace(new RegExp(placeholder, 'g'), placeholders[placeholder]);
+      });
+    }
     
     // Replace variable names with their values (using word boundaries to avoid partial matches)
-    expression = expression.replace(/\bwidth\b/gi, width);
-    expression = expression.replace(/\bheight\b/gi, height);
-    expression = expression.replace(/\bperimeter\b/gi, perimeter);
-    expression = expression.replace(/\barea\b/gi, area);
+    // Use parentheses to ensure proper evaluation
+    expression = expression.replace(/\bperimeter\b/gi, `(${perimeter})`);
+    expression = expression.replace(/\barea\b/gi, `(${area})`);
+    expression = expression.replace(/\bwidth\b/gi, `(${width})`);
+    expression = expression.replace(/\bheight\b/gi, `(${height})`);
     
-    // Use Function constructor for safe evaluation (only allows mathematical expressions)
-    // This is safer than eval() because it doesn't have access to global scope
-    const result = Function('"use strict"; return (' + expression + ')')();
+    let result;
+    try {
+      result = Function('"use strict"; return (' + expression + ')')();
+    } catch (evalError) {
+      console.error('evaluateLengthEquation - Evaluation error:', evalError.message, 'Expression:', expression);
+      return null;
+    }
     
-    // Ensure result is a valid number (in inches)
     if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
-      return Math.max(0, result); // Ensure non-negative
+      const finalResult = Math.max(0, result); // Ensure non-negative
+      return finalResult;
     }
     
     return null;
   } catch (error) {
-    console.error('Error evaluating length equation:', equation, error);
+    console.error('Error evaluating length equation:', equation, 'Error:', error);
     return null;
   }
 }
@@ -1057,7 +1104,8 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     // Glass cost calculation - ALL INTERNAL CALCULATIONS IN USD
     const areaInches = windowWidth * windowHeight;
     const areaSquareMeters = areaInches / 1550;
-    const glassCostUSD = convertToUSD(selectedGlass.pricePerSquareMeter, selectedGlass.currency || 'COP', exchangeRate);
+    // Use 'USD' as default currency (matching frontend behavior) - glass prices are typically in USD
+    const glassCostUSD = convertToUSD(selectedGlass.pricePerSquareMeter, selectedGlass.currency || 'USD', exchangeRate);
     const glassCost = glassCostUSD * areaSquareMeters;
 
     // Profile costs calculation (include both user-configurable and auto-managed)
@@ -1377,21 +1425,25 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       return res.status(400).send(`An item with the name "${windowRef}" already exists in this project. Please choose a different name.`);
     }
 
-    // Calculate unit price with validation
-    const unitPrice = isNaN(finalPrice) || isNaN(windowQuantity) || windowQuantity === 0 
-      ? 0 
-      : parseFloat((finalPrice / windowQuantity).toFixed(2));
-    
     // Use finalPrice as totalPrice to avoid rounding errors
     // The finalPrice is the total cost for all units, so it should be used directly
-    // The unitPrice is calculated from finalPrice/quantity for display purposes
     const totalPrice = finalPrice;
     
-    console.log('Final calculations before save:');
-    console.log('unitPrice:', unitPrice);
-    console.log('finalPrice:', finalPrice);
-    console.log('totalPrice:', totalPrice);
+    // Calculate unit price from totalPrice to ensure consistency
+    // Round to 2 decimals for display, but use totalPrice directly to maintain precision
+    const unitPrice = isNaN(totalPrice) || isNaN(windowQuantity) || windowQuantity === 0 
+      ? 0 
+      : parseFloat((totalPrice / windowQuantity).toFixed(2));
+    
+    console.log('=== FINAL CALCULATIONS BEFORE SAVE ===');
+    console.log('baseCost:', baseCost);
+    console.log('additionalCosts:', additionalCosts);
+    console.log('totalCost (baseCost + additionalCosts):', totalCost);
+    console.log('finalPrice (totalCost * quantity):', finalPrice);
     console.log('windowQuantity:', windowQuantity);
+    console.log('unitPrice (finalPrice / quantity, rounded):', unitPrice);
+    console.log('totalPrice (set to finalPrice):', totalPrice);
+    console.log('=== END FINAL CALCULATIONS ===');
     
     // Validate all numeric fields before creating WindowItem
     if (isNaN(unitPrice) || isNaN(finalPrice) || isNaN(totalPrice)) {
@@ -1499,6 +1551,12 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     }
     
     // Create window item with explicit totalPrice to maintain accuracy
+    console.log('=== CREATING WINDOW ITEM ===');
+    console.log('Setting unitPrice:', unitPrice);
+    console.log('Setting totalPrice:', totalPrice);
+    console.log('Setting quantity:', windowQuantity);
+    console.log('Expected: totalPrice should be preserved, not recalculated from unitPrice * quantity');
+    
     const newWindowItem = new WindowItem({
       projectId,
       itemName: windowRef,
@@ -1520,8 +1578,19 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       muntinConfiguration: muntinConfig,
       notes: notes || ''
     });
+    
+    console.log('WindowItem created, values before save:');
+    console.log('  unitPrice:', newWindowItem.unitPrice);
+    console.log('  totalPrice:', newWindowItem.totalPrice);
+    console.log('  quantity:', newWindowItem.quantity);
 
     await newWindowItem.save();
+    
+    console.log('WindowItem saved, values after save:');
+    console.log('  unitPrice:', newWindowItem.unitPrice);
+    console.log('  totalPrice:', newWindowItem.totalPrice);
+    console.log('  quantity:', newWindowItem.quantity);
+    console.log('=== END CREATING WINDOW ITEM ===');
 
     console.log(`Window ${windowRef} configured and saved for project ${projectId}`);
     res.redirect(`/projects/${projectId}`);
