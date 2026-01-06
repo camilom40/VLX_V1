@@ -681,6 +681,8 @@
               <input type="text" id="modalWindowRef" name="windowRef" required 
                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" 
                      placeholder="e.g., V1, W1" maxlength="10">
+              <div id="modalWindowRefError" class="mt-1 text-sm text-red-600 hidden"></div>
+              <div id="modalWindowRefSuccess" class="mt-1 text-sm text-green-600 hidden"></div>
             </div>
             
             <!-- Window System Selection -->
@@ -1002,9 +1004,24 @@
           const form = modal.querySelector('form');
           if (form) {
             form.reset();
-            // Remove error classes
+            // Remove error classes and messages
             const inputs = form.querySelectorAll('input, select');
-            inputs.forEach(input => input.classList.remove('border-red-500'));
+            inputs.forEach(input => input.classList.remove('border-red-500', 'border-green-500'));
+            // Clear validation messages
+            if (windowRefErrorDiv) {
+              windowRefErrorDiv.classList.add('hidden');
+              windowRefErrorDiv.textContent = '';
+            }
+            if (windowRefSuccessDiv) {
+              windowRefSuccessDiv.classList.add('hidden');
+              windowRefSuccessDiv.textContent = '';
+            }
+            // Clear timeout
+            if (nameCheckTimeout) {
+              clearTimeout(nameCheckTimeout);
+            }
+            // Reset validation state
+            isModalNameValid = true;
           }
         }
       }
@@ -1019,10 +1036,76 @@
         });
       }
       
+      // Real-time name validation for add window modal
+      let nameCheckTimeout;
+      const windowRefErrorDiv = document.getElementById('modalWindowRefError');
+      const windowRefSuccessDiv = document.getElementById('modalWindowRefSuccess');
+      let isModalNameValid = true;
+      const projectId = '<%= project._id %>';
+      
       // Simple form validation for window reference and system selection
       const addWindowForm = document.querySelector('form[action*="/windows/new"]');
       const windowRefInput = document.getElementById('modalWindowRef');
       const windowSystemSelect = document.getElementById('modalWindowSystemId');
+      
+      // Real-time name validation function
+      async function checkModalItemName(name) {
+        if (!name || !name.trim()) {
+          // Clear error/success messages if input is empty
+          if (windowRefErrorDiv) {
+            windowRefErrorDiv.classList.add('hidden');
+            windowRefErrorDiv.textContent = '';
+          }
+          if (windowRefSuccessDiv) {
+            windowRefSuccessDiv.classList.add('hidden');
+            windowRefSuccessDiv.textContent = '';
+          }
+          if (windowRefInput) {
+            windowRefInput.classList.remove('border-red-500', 'border-green-500');
+          }
+          isModalNameValid = true;
+          return;
+        }
+        
+        try {
+          const response = await fetch(`/projects/${projectId}/check-item-name?name=${encodeURIComponent(name.trim())}`);
+          const data = await response.json();
+          
+          if (data.exists) {
+            // Name already exists
+            isModalNameValid = false;
+            if (windowRefInput) {
+              windowRefInput.classList.remove('border-green-500');
+              windowRefInput.classList.add('border-red-500');
+            }
+            if (windowRefErrorDiv) {
+              windowRefErrorDiv.textContent = 'This window reference already exists in this project.';
+              windowRefErrorDiv.classList.remove('hidden');
+            }
+            if (windowRefSuccessDiv) {
+              windowRefSuccessDiv.classList.add('hidden');
+            }
+          } else {
+            // Name is available
+            isModalNameValid = true;
+            if (windowRefInput) {
+              windowRefInput.classList.remove('border-red-500');
+              windowRefInput.classList.add('border-green-500');
+            }
+            if (windowRefErrorDiv) {
+              windowRefErrorDiv.classList.add('hidden');
+            }
+            if (windowRefSuccessDiv) {
+              windowRefSuccessDiv.textContent = 'Window reference is available.';
+              windowRefSuccessDiv.classList.remove('hidden');
+            }
+          }
+        } catch (error) {
+          console.error('Error checking item name:', error);
+          // On error, allow submission (server will validate)
+          isModalNameValid = true;
+        }
+      }
       
       if (addWindowForm) {
         addWindowForm.addEventListener('submit', (e) => {
@@ -1032,6 +1115,21 @@
           if (!windowRefInput || !windowRefInput.value.trim()) {
             if (windowRefInput) windowRefInput.classList.add('border-red-500');
             isValid = false;
+          } else if (!isModalNameValid) {
+            // Name is duplicate
+            isValid = false;
+            e.preventDefault();
+            // Scroll to top of modal and highlight error
+            const modal = document.getElementById('addWindowModal');
+            if (modal) {
+              modal.scrollTop = 0;
+            }
+            if (windowRefInput) {
+              windowRefInput.focus();
+              windowRefInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            alert('Please choose a different window reference. This name already exists in the project.');
+            return;
           } else {
             windowRefInput.classList.remove('border-red-500');
           }
@@ -1046,15 +1144,34 @@
           
           if (!isValid) {
             e.preventDefault();
-            alert('Please fill in all required fields.');
+            if (windowRefInput && windowRefInput.value.trim() && isModalNameValid) {
+              alert('Please fill in all required fields.');
+            }
           }
         });
       }
       
       if (windowRefInput) {
         windowRefInput.addEventListener('input', () => {
-          if (windowRefInput.value.trim()) {
-            windowRefInput.classList.remove('border-red-500');
+          const value = windowRefInput.value.trim();
+          
+          // Clear previous timeout
+          if (nameCheckTimeout) {
+            clearTimeout(nameCheckTimeout);
+          }
+          
+          // Remove error/success styling immediately
+          windowRefInput.classList.remove('border-red-500', 'border-green-500');
+          if (windowRefErrorDiv) windowRefErrorDiv.classList.add('hidden');
+          if (windowRefSuccessDiv) windowRefSuccessDiv.classList.add('hidden');
+          
+          // Debounce validation (check 500ms after user stops typing)
+          if (value) {
+            nameCheckTimeout = setTimeout(() => {
+              checkModalItemName(value);
+            }, 500);
+          } else {
+            isModalNameValid = true;
           }
         });
       }
