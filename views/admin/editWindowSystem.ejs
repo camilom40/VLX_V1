@@ -647,8 +647,12 @@
                 </select>
               </div>
               <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Position <span class="text-gray-400 text-xs font-normal">(Informative)</span></label>
+                <input type="text" id="profile-position" placeholder="e.g., sill, stile, head, jamb, mullion..." class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+              </div>
+              <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Length Equation <span class="text-red-500">*</span></label>
-                <input type="text" id="profile-length-equation" placeholder="e.g., width - 23, perimeter / 2" class="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" style="min-height: 50px;" required>
+                <input type="text" id="profile-length-equation" placeholder="e.g., width - 23, perimeter / 2" class="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" style="min-height: 50px;">
                 <div id="profile-equation-validation-message" class="mt-2 text-sm"></div>
                 <div id="profile-equation-preview" class="mt-2 text-xs text-gray-600"></div>
                 <div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
@@ -1134,6 +1138,7 @@
     let currentCategory = 'frame';
     
     // Profiles and Accessories
+    let lockedLengthUnit = null; // Initialize lockedLengthUnit variable
     let profiles = (windowSystemData.profiles || [])
       .filter(p => p && p.profile) // Filter out invalid entries
       .map(p => ({
@@ -1142,6 +1147,7 @@
         quantity: p.quantity || null,
         quantityEquation: p.quantityEquation || null,
         orientation: p.orientation || 'horizontal',
+        position: p.position || null, // Position (informative)
         lengthDiscount: p.lengthDiscount || 0,
         lengthDiscountDisplay: p.lengthDiscountDisplay || String(p.lengthDiscount || 0),
         lengthEquation: p.lengthEquation || null,
@@ -2028,6 +2034,7 @@
       const quantity = document.getElementById('profile-quantity').value;
       const quantityEquation = document.getElementById('profile-quantity-equation').value;
       const orientation = document.getElementById('profile-orientation').value;
+      const position = document.getElementById('profile-position').value;
       const lengthEquation = document.getElementById('profile-length-equation').value;
       
       if (!profileId) {
@@ -2072,6 +2079,7 @@
         quantity: quantityType === 'fixed' ? parseInt(quantity) : null,
         quantityEquation: quantityType === 'equation' ? quantityEquation.trim() : null,
         orientation,
+        position: position || null, // Position (informative)
         lengthEquation: lengthEquation.trim(),
         category: currentCategory
       };
@@ -2084,6 +2092,8 @@
       document.getElementById('profile-quantity-type').value = 'fixed';
       document.getElementById('profile-quantity').value = '1';
       document.getElementById('profile-quantity-equation').value = '';
+      document.getElementById('profile-orientation').selectedIndex = 0;
+      document.getElementById('profile-position').value = '';
       document.getElementById('profile-length-equation').value = '';
       toggleProfileQuantityType(); // Reset UI state
       
@@ -2145,6 +2155,7 @@
                   <th>Profile</th>
                   <th>Qty</th>
                   <th>Orientation</th>
+                  <th>Position</th>
                   <th>Length Equation</th>
                   <th>Action</th>
                 </tr>
@@ -2166,6 +2177,10 @@
                 `${profile.quantity}`
               }</td>
               <td class="capitalize">${profile.orientation}</td>
+              <td>${profile.position ? 
+                `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 capitalize">${profile.position}</span>` : 
+                `<span class="text-xs text-gray-400">-</span>`
+              }</td>
               <td>${lengthDisplay}</td>
               <td>
                 <button type="button" onclick="removeProfile(${globalIdx})" class="text-red-500 hover:text-red-700">
@@ -2335,6 +2350,27 @@
     // Form Submission
     document.getElementById('window-form').addEventListener('submit', function(e) {
       console.log('=== Form Submit Started ===');
+      e.preventDefault();
+      
+      // Validate form
+      const windowType = document.getElementById('type').value.trim();
+      if (!windowType) {
+        alert('Please enter a window type');
+        return;
+      }
+      
+      if (profiles.length === 0) {
+        alert('Please add at least one profile');
+        return;
+      }
+      
+      // Validate that all profiles have length equations
+      const invalidProfiles = profiles.filter(p => !p.lengthEquation || p.lengthEquation.trim() === '');
+      if (invalidProfiles.length > 0) {
+        alert('Please ensure all profiles have valid length equations');
+        return;
+      }
+      
       const form = e.target;
       
       // Remove any existing hidden inputs to prevent duplicates
@@ -2388,12 +2424,15 @@
         profileId: p.profileId,
         profileName: p.profileName,
         quantity: p.quantity,
+        quantityEquation: p.quantityEquation || null,
         orientation: p.orientation,
+        position: p.position || null, // Position (informative)
         lengthDiscount: p.lengthDiscount,
         lengthDiscountDisplay: p.lengthDiscountDisplay,
         lengthEquation: p.lengthEquation || null,
         lengthUnit: p.lengthUnit,
-        category: p.category
+        category: p.category,
+        showToUser: p.showToUser || false
       }));
       
       const profilesInput = document.createElement('input');
@@ -2464,6 +2503,10 @@
       glassInput.name = 'glassRestrictions';
       glassInput.value = JSON.stringify([]);
       form.appendChild(glassInput);
+      
+      // Submit the form
+      console.log('Submitting form...');
+      form.submit();
     });
     
     // Initialize on page load

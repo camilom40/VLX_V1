@@ -522,6 +522,7 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       const entry = {
         profile: profile.profileId,
         orientation: profile.orientation,
+        position: profile.position || null, // Position (informative)
         category: profile.category || 'frame',
         showToUser: Boolean(profile.showToUser),
       };
@@ -665,11 +666,20 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
     const profileEntries = JSON.parse(profiles).map(profile => {
       const entry = {
         profile: profile.profileId,
-        quantity: parseInt(profile.quantity, 10),
         orientation: profile.orientation,
+        position: profile.position || null, // Position (informative)
         category: profile.category || 'frame',
         showToUser: Boolean(profile.showToUser),
       };
+      
+      // Handle quantity - either fixed or equation
+      if (profile.quantityEquation) {
+        entry.quantityEquation = profile.quantityEquation.trim();
+        entry.quantity = null;
+      } else {
+        entry.quantity = parseInt(profile.quantity, 10) || 1;
+        entry.quantityEquation = null;
+      }
       
       // Handle lengthDiscount or lengthEquation
       if (profile.lengthEquation) {

@@ -132,8 +132,10 @@
           pricePerMeter: p.profile ? p.profile.pricePerMeter : 0,
           currency: p.profile ? (p.profile.currency || 'USD') : 'USD',
           quantity: p.quantity || 1,
+          quantityEquation: p.quantityEquation || null,
           orientation: p.orientation || 'horizontal',
           lengthDiscount: p.lengthDiscount || 0,
+          lengthEquation: p.lengthEquation || null,
           showToUser: p.showToUser || false
         })),
         accessories: selectedWindowSystem.accessories.map(a => ({
@@ -174,12 +176,20 @@
             <div class="text-green-800 text-xl font-bold" id="totalPrice">$0.00</div>
             <div class="text-green-600 text-sm">Estimated Total</div>
           </div>
-          <button type="button" onclick="showCalculationDetails()" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            Show Calculation Details
-          </button>
+          <div class="flex gap-2">
+            <button type="button" onclick="showCalculationDetails()" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Show Calculation Details
+            </button>
+            <button type="button" onclick="showWorkshopDetails()" class="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+              </svg>
+              Workshop
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1244,36 +1254,131 @@
     }
 
     // Helper function to evaluate profile length equation safely (result in inches)
-    function evaluateLengthEquation(equation, width, height) {
+    function evaluateLengthEquation(equation, width, height, inputUnit = 'inches') {
       if (!equation || typeof equation !== 'string') {
+        console.warn('evaluateLengthEquation: Invalid equation input', equation);
         return null;
       }
       
       try {
-        // Calculate derived values
+        // Calculate derived values (width and height are already in inches at this point)
         const perimeter = 2 * (width + height);
         const area = width * height;
         
         // Replace variable names with actual values (safe string replacement)
-        let expression = equation.trim();
+        // Normalize the equation: remove extra spaces, but preserve structure
+        let expression = equation.trim().replace(/\s+/g, ' '); // Replace multiple spaces with single space
+        
+        // If input was in mm, numeric constants in the equation are likely also in mm
+        // We need to convert them to inches to match the width/height units
+        // This is a heuristic: if we see numbers that look like they could be mm (e.g., 38, 76, etc.)
+        // and the input unit is mm, we should convert them
+        // However, this is complex to detect automatically, so we'll use a simpler approach:
+        // The equation should be written assuming the input values are in the same units as the constants
+        // Since we always convert to inches, numeric constants should be in inches too
+        // BUT: if the user wrote the equation thinking in mm, we need to handle that
+        
+        // Numeric constants in equations are always assumed to be in mm (standard unit for window manufacturing)
+        // We need to convert them to inches to match the width/height units (which are already in inches)
+        // This applies regardless of the input unit, because equations are written with mm constants
+        // However, we need to be smart: only convert standalone numbers or numbers in arithmetic expressions
+        // For example: "height-(38*2)" should become "height-((38/25.4)*2)" = "height-(1.496*2)"
+        // NOT "height-(1.496*0.07874)" which would be wrong (2 is a multiplier, not a measurement)
+        // Always convert numeric constants from mm to inches
+        {
+          // Strategy: Find all numeric expressions (numbers and their arithmetic operations)
+          // and wrap them in parentheses with division by 25.4
+          // But we need to avoid converting numbers that are part of variable names
+          
+          // First, protect variable names by temporarily replacing them
+          const variableNames = ['width', 'height', 'perimeter', 'area'];
+          const placeholders = {};
+          variableNames.forEach((varName, index) => {
+            const placeholder = `__VAR${index}__`;
+            placeholders[placeholder] = varName;
+            // Use word boundaries to match whole variable names only
+            expression = expression.replace(new RegExp(`\\b${varName}\\b`, 'gi'), placeholder);
+          });
+          
+          // Now convert numeric constants, but NOT multipliers in multiplication/division
+          // Strategy: Only convert numbers that are:
+          // - Standalone (not part of * or / operations as the second operand)
+          // - The first operand in * or / (the measurement value)
+          // - Part of + or - operations (all operands are measurements)
+          
+          // Convert numeric constants, but skip numbers that are multipliers (right side of * or /)
+          expression = expression.replace(/\b(\d+\.?\d*)\b/g, (match, number, offset, fullString) => {
+            const numValue = parseFloat(number);
+            if (isNaN(numValue)) {
+              return match;
+            }
+            
+            // Check if preceded by a letter (part of variable name - but we already replaced variables)
+            if (offset > 0) {
+              const beforeChar = fullString[offset - 1];
+              if (/[a-zA-Z_]/.test(beforeChar)) {
+                return match; // Don't convert (shouldn't happen after variable replacement, but safety check)
+              }
+            }
+            
+            // Check if this number is a multiplier (right operand in * or /)
+            // Example: "38*2" - we convert 38 (measurement) but not 2 (multiplier)
+            // Note: This assumes the user writes equations as "measurement*multiplier" not "multiplier*measurement"
+            if (offset > 0) {
+              // Look at characters before this number
+              const beforeText = fullString.substring(Math.max(0, offset - 5), offset).trim();
+              // Check if immediately preceded by * or / (with optional whitespace)
+              if (beforeText.endsWith('*') || beforeText.endsWith('/')) {
+                // This is a multiplier (right operand), don't convert it
+                // Example: "38*2" -> we'll convert 38 to 1.496, keep 2 as 2
+                // Result: "1.496*2" = "2.992" ✓
+                return match;
+              }
+            }
+            
+            // This is a measurement value, convert mm to inches
+            const converted = numValue / 25.4;
+            return converted.toString();
+          });
+          
+          // Restore variable names
+          Object.keys(placeholders).forEach(placeholder => {
+            expression = expression.replace(new RegExp(placeholder, 'g'), placeholders[placeholder]);
+          });
+          
+        }
         
         // Replace variable names with their values (using word boundaries to avoid partial matches)
-        expression = expression.replace(/\bwidth\b/gi, width);
-        expression = expression.replace(/\bheight\b/gi, height);
-        expression = expression.replace(/\bperimeter\b/gi, perimeter);
-        expression = expression.replace(/\barea\b/gi, area);
+        // Replace in order: perimeter and area first (longer names), then width and height
+        // Use parentheses to ensure proper evaluation
+        expression = expression.replace(/\bperimeter\b/gi, `(${perimeter})`);
+        expression = expression.replace(/\barea\b/gi, `(${area})`);
+        expression = expression.replace(/\bwidth\b/gi, `(${width})`);
+        expression = expression.replace(/\bheight\b/gi, `(${height})`);
         
         // Use Function constructor for safe evaluation
-        const result = Function('"use strict"; return (' + expression + ')')();
+        // Wrap in try-catch to handle any evaluation errors
+        let result;
+        try {
+          result = Function('"use strict"; return (' + expression + ')')();
+        } catch (evalError) {
+          console.error('evaluateLengthEquation - Evaluation error:', evalError.message, 'Expression:', expression);
+          return null;
+        }
         
         // Ensure result is a valid number (in inches)
         if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
-          return Math.max(0, result); // Ensure non-negative
+          const finalResult = Math.max(0, result); // Ensure non-negative
+          if (result < 0) {
+            console.warn('evaluateLengthEquation: Result is negative, clamping to 0. Original:', result, 'Equation:', equation, 'Width:', width, 'Height:', height);
+          }
+          return finalResult;
         }
         
+        console.warn('evaluateLengthEquation: Invalid result', result, 'Type:', typeof result, 'IsNaN:', isNaN(result), 'IsFinite:', isFinite(result));
         return null;
       } catch (error) {
-        console.error('Error evaluating length equation:', equation, error);
+        console.error('Error evaluating length equation:', equation, 'Error:', error);
         return null;
       }
     }
@@ -1455,9 +1560,19 @@
       // Get window system data from data attribute
       const windowSystemData = JSON.parse(document.body.getAttribute('data-window-system') || '{}');
       
+      // Get current unit from hidden input or global variable (ensure we have the latest value)
+      const currentUnitInput = document.getElementById('currentUnit');
+      // Priority: hidden input > currentUnit variable > global preferences > default to inches
+      const activeUnit = currentUnitInput?.value || currentUnit || (window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches');
+      
+      // Normalize unit value (handle 'mm' vs 'millimeters', 'inches' vs 'in')
+      const normalizedUnit = activeUnit === 'mm' || activeUnit === 'millimeters' ? 'mm' : 'inches';
+      
+      // Unit detection complete
+      
       // Get values from input fields
       // CRITICAL: In edit mode, when page first loads, values are in inches (from database)
-      // The currentUnit variable tells us how the user is currently viewing/entering values
+      // The activeUnit variable tells us how the user is currently viewing/entering values
       const widthInput = document.getElementById('width');
       const heightInput = document.getElementById('height');
       let width = parseFloat(widthInput?.value) || 0;
@@ -1469,23 +1584,26 @@
       const heightDisplay = heightInput?.value || '0';
       
       // Debug logging (only in edit mode)
-      if (isEditMode) {
-        console.log('=== calculatePricing DEBUG ===');
-        console.log('currentUnit:', currentUnit);
-        console.log('width input value:', widthInput?.value, 'parsed:', width);
-        console.log('height input value:', heightInput?.value, 'parsed:', height);
-      }
+        if (isEditMode) {
+          console.log('=== calculatePricing DEBUG ===');
+          console.log('activeUnit:', activeUnit);
+          console.log('normalizedUnit:', normalizedUnit);
+          console.log('currentUnit variable:', currentUnit);
+          console.log('currentUnit input value:', currentUnitInput?.value);
+          console.log('width input value:', widthInput?.value, 'parsed:', width);
+          console.log('height input value:', heightInput?.value, 'parsed:', height);
+        }
       
       // Convert to inches for calculations (since backend expects inches)
-      // If currentUnit is 'mm', the input values are in mm (user entered them in mm), so convert them
-      // If currentUnit is 'inches', the input values are already in inches
-      if (currentUnit === 'mm') {
+      // If normalizedUnit is 'mm', the input values are in mm (user entered them in mm), so convert them
+      // If normalizedUnit is 'inches', the input values are already in inches
+      if (normalizedUnit === 'mm') {
         const widthBefore = width;
         const heightBefore = height;
         width = mmToInches(width);
         height = mmToInches(height);
         if (isEditMode) {
-          console.log('Converted from mm: width', widthBefore, '->', width, 'inches, height', heightBefore, '->', height, 'inches');
+          console.log('Converted from mm: width', widthBefore, 'mm ->', width, 'inches, height', heightBefore, 'mm ->', height, 'inches');
         }
       } else {
         if (isEditMode) {
@@ -1530,6 +1648,10 @@
       let profilesCost = 0;
       const profileDetails = [];
       const profileSelects = document.querySelectorAll('.profile-select');
+      
+      // Filter windowSystemData.profiles to only get user-configurable profiles (showToUser: true)
+      const userConfigurableProfilesFromData = (windowSystemData.profiles || []).filter(p => p.showToUser === true);
+      
       profileSelects.forEach((select, index) => {
         const selectedProfile = select.options[select.selectedIndex];
         const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
@@ -1539,22 +1661,25 @@
         const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
         
         // Get the corresponding profile item from window system to get equation
-        const profileIndex = Array.from(profileSelects).indexOf(select);
-        const profileItem = windowSystemData.profiles && windowSystemData.profiles[profileIndex];
+        // Use the index to match with user-configurable profiles array
+        const profileItem = userConfigurableProfilesFromData[index];
         
         // Calculate profile length using equation
         let lengthMeters = 0;
         if (profileItem && profileItem.lengthEquation) {
-          const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
-          if (lengthInches !== null) {
+          const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, width, height, normalizedUnit);
+          
+          if (lengthInches !== null && !isNaN(lengthInches) && lengthInches > 0) {
             lengthMeters = lengthInches * 0.0254;
-          } else {
-            console.error('Failed to evaluate length equation:', profileItem.lengthEquation);
           }
         }
         
         const profileCost = pricePerMeterUSD * lengthMeters * qty;
         profilesCost += profileCost;
+        
+        // Calculate adjusted length (perimeter - length discount)
+        const lengthDiscountMeters = 0; // Length discount is now handled by equations
+        const adjustedLength = lengthMeters; // For now, adjusted length equals calculated length
         
         profileDetails.push({
           name: profileName,
@@ -1563,6 +1688,8 @@
           priceUSD: pricePerMeterUSD,
           quantity: qty,
           lengthMeters: lengthMeters,
+          lengthDiscount: 0, // Length discount is now handled by equations
+          adjustedLength: adjustedLength,
           perimeterMeters: perimeterMeters,
           cost: profileCost
         });
@@ -1578,16 +1705,17 @@
             // Calculate profile length using equation
             let lengthMeters = 0;
             if (profileItem.lengthEquation) {
-              const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, windowWidth, windowHeight);
-              if (lengthInches !== null) {
+              const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, width, height, normalizedUnit);
+              if (lengthInches !== null && lengthInches > 0) {
                 lengthMeters = lengthInches * 0.0254;
-              } else {
-                console.error('Failed to evaluate length equation:', profileItem.lengthEquation);
               }
             }
             
             const profileCost = pricePerMeterUSD * lengthMeters * qty;
             profilesCost += profileCost;
+            
+            // Calculate adjusted length (same as lengthMeters since we use equations now)
+            const adjustedLength = lengthMeters;
             
             profileDetails.push({
               name: profileItem.profileName || 'Auto Profile',
@@ -1596,7 +1724,9 @@
               priceUSD: pricePerMeterUSD,
               quantity: qty,
               lengthMeters: lengthMeters,
-              perimeterMeters: perimeterMeters,
+              lengthDiscount: 0, // Length discount is now handled by equations
+              adjustedLength: adjustedLength,
+              perimeterMeters: perimeterMeters || 0,
               cost: profileCost,
               isUserConfigurable: false
             });
@@ -1746,9 +1876,8 @@
         (costSettings.indirectCosts / 100)
       );
       
-      totalCost += additionalCosts;
-      const costPerWindow = totalCost;
-      const finalTotal = totalCost * quantity; // finalTotal is in USD
+      const costPerWindow = baseCost + additionalCosts; // Cost per single window
+      const finalTotal = costPerWindow * quantity; // Total for all windows (costPerWindow × quantity)
       
       // Debug logging
       console.log('=== FRONTEND PRICING CALCULATION ===');
@@ -3110,11 +3239,10 @@
                     <div>Price (${profile.currency}): ${profile.priceOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                     <div>Price (USD): $${profile.priceUSD.toFixed(2)}</div>
                     <div>Quantity: ${profile.quantity}</div>
-                    <div>Length Discount: ${profile.lengthDiscount.toFixed(2)} in</div>
-                    <div>Perimeter: ${profile.perimeterMeters.toFixed(4)} m</div>
-                    <div>Adjusted Length: ${profile.adjustedLength.toFixed(4)} m</div>
+                    <div>Length: ${(profile.lengthMeters || 0).toFixed(4)} m</div>
+                    ${profile.perimeterMeters ? `<div>Perimeter: ${profile.perimeterMeters.toFixed(4)} m</div>` : ''}
                     <div class="font-semibold">Cost (USD): $${profile.cost.toFixed(2)}</div>
-                    <div class="text-xs text-gray-600">Formula: $${profile.priceUSD.toFixed(2)} × ${profile.adjustedLength.toFixed(4)} × ${profile.quantity} = $${profile.cost.toFixed(2)}</div>
+                    <div class="text-xs text-gray-600">Formula: $${profile.priceUSD.toFixed(2)} × ${(profile.lengthMeters || 0).toFixed(4)} × ${profile.quantity} = $${profile.cost.toFixed(2)}</div>
                   </div>
                 </div>
               `).join('')}
@@ -3203,6 +3331,233 @@
 
       modalContent.innerHTML = html;
     }
+
+    // Function to show workshop details modal
+    function showWorkshopDetails() {
+      // Always run calculation first to ensure details are up-to-date
+      if (typeof window.calculatePricing === 'function') {
+        window.calculatePricing();
+        // Wait a moment for calculation to complete and populate calculationDetails
+        setTimeout(() => {
+          if (!calculationDetails) {
+            // Check if window has minimum required data
+            const width = parseFloat(document.getElementById('width')?.value) || 0;
+            const height = parseFloat(document.getElementById('height')?.value) || 0;
+            if (width === 0 || height === 0) {
+              alert('Please enter window dimensions (width and height) first to see workshop details.');
+              return;
+            }
+            // If calculation still didn't populate, show error
+            alert('Unable to calculate pricing. Please check that all required fields are filled.');
+            return;
+          }
+          const modal = document.getElementById('workshopModal');
+          if (modal) {
+            modal.classList.remove('hidden');
+            populateWorkshopModal();
+          } else {
+            alert('Workshop modal not found. Please refresh the page.');
+          }
+        }, 200);
+      } else {
+        alert('Calculation function not available. Please refresh the page.');
+      }
+    }
+    
+    // Make showWorkshopDetails globally accessible
+    window.showWorkshopDetails = showWorkshopDetails;
+
+    // Function to close the workshop modal
+    function closeWorkshopModal() {
+      const modal = document.getElementById('workshopModal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // Function to populate the workshop modal with production information
+    function populateWorkshopModal() {
+      if (!calculationDetails) return;
+
+      const details = calculationDetails;
+      const modalContent = document.getElementById('workshopModalContent');
+      
+      // Get current unit for display
+      const currentUnit = document.getElementById('currentUnit')?.value || 'inches';
+      const unitLabel = currentUnit === 'mm' ? 'mm' : 'in';
+      
+      // Get window dimensions
+      const width = parseFloat(document.getElementById('width')?.value) || 0;
+      const height = parseFloat(document.getElementById('height')?.value) || 0;
+      const quantity = parseInt(document.getElementById('quantity')?.value) || 1;
+      
+      // Get glass information
+      const glassSelect = document.getElementById('glassType');
+      const selectedGlass = glassSelect?.options[glassSelect.selectedIndex];
+      const glassName = selectedGlass?.text || 'N/A';
+      
+      let html = `
+        <div class="space-y-4">
+          <!-- Window Information -->
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div class="text-lg font-bold text-blue-900 mb-3">Window Information</div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span class="font-semibold text-gray-700">Window Reference:</span>
+                <span class="ml-2 text-gray-900">${document.getElementById('windowRef')?.value || 'N/A'}</span>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-700">Quantity:</span>
+                <span class="ml-2 text-gray-900 font-bold text-lg">${quantity}</span>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-700">Width:</span>
+                <span class="ml-2 text-gray-900">${width.toFixed(2)} ${unitLabel}</span>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-700">Height:</span>
+                <span class="ml-2 text-gray-900">${height.toFixed(2)} ${unitLabel}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Glass Production -->
+          <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div class="text-lg font-bold text-green-900 mb-3">Glass Production</div>
+            <div class="space-y-2 text-sm">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="font-semibold text-gray-700">Glass Type:</span>
+                  <span class="ml-2 text-gray-900">${glassName}</span>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-700">Quantity:</span>
+                  <span class="ml-2 text-gray-900 font-bold">${quantity}</span>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="font-semibold text-gray-700">Width:</span>
+                  <span class="ml-2 text-gray-900">${width.toFixed(2)} ${unitLabel}</span>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-700">Height:</span>
+                  <span class="ml-2 text-gray-900">${height.toFixed(2)} ${unitLabel}</span>
+                </div>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-700">Area per unit:</span>
+                <span class="ml-2 text-gray-900">${details.areaSquareMeters.toFixed(4)} m²</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profiles Production -->
+          <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <div class="text-lg font-bold text-purple-900 mb-3">Profiles Production</div>
+            <div class="space-y-3">
+              ${details.profiles.length > 0 ? details.profiles.map((profile, idx) => {
+                // Convert length to inches for display if needed
+                const lengthInches = (profile.lengthMeters || 0) / 0.0254;
+                const lengthMM = (profile.lengthMeters || 0) * 1000;
+                return `
+                  <div class="bg-white p-3 rounded border border-purple-300">
+                    <div class="font-semibold text-purple-800 mb-2">${profile.name}</div>
+                    <div class="grid grid-cols-3 gap-3 text-sm">
+                      <div>
+                        <span class="text-gray-600">Quantity:</span>
+                        <span class="ml-2 font-bold text-lg">${profile.quantity}</span>
+                      </div>
+                      <div>
+                        <span class="text-gray-600">Length (m):</span>
+                        <span class="ml-2 font-semibold">${(profile.lengthMeters || 0).toFixed(4)}</span>
+                      </div>
+                      <div>
+                        <span class="text-gray-600">Length (${unitLabel}):</span>
+                        <span class="ml-2 font-semibold">${currentUnit === 'mm' ? lengthMM.toFixed(2) : lengthInches.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    ${quantity > 1 ? `
+                      <div class="mt-2 pt-2 border-t border-purple-200 text-xs text-gray-600">
+                        <span class="font-semibold">Total Length (${quantity} units):</span>
+                        <span class="ml-2">${((profile.lengthMeters || 0) * profile.quantity * quantity).toFixed(4)} m</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('') : '<div class="text-gray-500 italic text-sm">No profiles configured</div>'}
+            </div>
+          </div>
+
+          <!-- Accessories Production -->
+          <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div class="text-lg font-bold text-yellow-900 mb-3">Accessories Production</div>
+            <div class="space-y-2">
+              ${details.accessories.length > 0 ? details.accessories.map((acc, idx) => `
+                <div class="bg-white p-3 rounded border border-yellow-300">
+                  <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span class="font-semibold text-gray-700">${acc.name}</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">Quantity:</span>
+                      <span class="ml-2 font-bold text-lg">${acc.quantity}</span>
+                      ${quantity > 1 ? `<span class="text-xs text-gray-500 ml-2">(${acc.quantity * quantity} total for ${quantity} units)</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+              `).join('') : '<div class="text-gray-500 italic text-sm">No accessories configured</div>'}
+            </div>
+          </div>
+
+          ${details.muntinCost > 0 && details.muntinDetails ? `
+          <!-- Muntins Production -->
+          <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+            <div class="text-lg font-bold text-indigo-900 mb-3">Muntins Production</div>
+            <div class="space-y-2 text-sm">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="font-semibold text-gray-700">Profile:</span>
+                  <span class="ml-2 text-gray-900">${details.muntinDetails.name || 'N/A'}</span>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-700">Quantity:</span>
+                  <span class="ml-2 text-gray-900 font-bold">${quantity}</span>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="font-semibold text-gray-700">Horizontal Divisions:</span>
+                  <span class="ml-2 text-gray-900">${details.muntinDetails.horizontal || 'N/A'}</span>
+                </div>
+                <div>
+                  <span class="font-semibold text-gray-700">Vertical Divisions:</span>
+                  <span class="ml-2 text-gray-900">${details.muntinDetails.vertical || 'N/A'}</span>
+                </div>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-700">Total Length:</span>
+                <span class="ml-2 text-gray-900">${(details.muntinDetails.length || 0).toFixed(4)} m</span>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Summary -->
+          <div class="bg-gray-100 p-4 rounded-lg border border-gray-300">
+            <div class="text-lg font-bold text-gray-900 mb-2">Production Summary</div>
+            <div class="text-sm space-y-1 text-gray-700">
+              <div>Total Units to Produce: <span class="font-bold text-lg">${quantity}</span></div>
+              <div>Total Profiles: <span class="font-semibold">${details.profiles.reduce((sum, p) => sum + (p.quantity || 0), 0) * quantity}</span></div>
+              <div>Total Accessories: <span class="font-semibold">${details.accessories.reduce((sum, a) => sum + (a.quantity || 0), 0) * quantity}</span></div>
+              <div>Total Glass Panels: <span class="font-semibold">${quantity}</span></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modalContent.innerHTML = html;
+    }
   </script>
 
   <!-- Calculation Details Modal -->
@@ -3227,11 +3582,39 @@
     </div>
   </div>
 
-  <!-- Close modal when clicking outside -->
+  <!-- Workshop Modal -->
+  <div id="workshopModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="bg-green-600 text-white px-6 py-4 flex justify-between items-center">
+        <h2 class="text-xl font-bold">Workshop Production Details</h2>
+        <button onclick="closeWorkshopModal()" class="text-white hover:text-gray-200 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="overflow-y-auto p-6 flex-1" id="workshopModalContent">
+        <!-- Content will be populated by JavaScript -->
+      </div>
+      <div class="bg-gray-100 px-6 py-4 flex justify-end">
+        <button onclick="closeWorkshopModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Close modals when clicking outside -->
   <script>
     document.getElementById('calculationModal').addEventListener('click', function(e) {
       if (e.target === this) {
         closeCalculationModal();
+      }
+    });
+    
+    document.getElementById('workshopModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeWorkshopModal();
       }
     });
   </script>

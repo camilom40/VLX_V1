@@ -283,7 +283,7 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <label for="pricePerMeter" class="font-semibold text-gray-800 text-sm">Price Per Meter</label>
+                                    <label for="pricePerMeter" class="font-semibold text-gray-800 text-sm" id="pricePerMeterLabel">Price Per <span id="priceUnitDisplay">Inch</span></label>
                                     <span class="required-badge">Required</span>
                                 </div>
                             </div>
@@ -292,15 +292,16 @@
                                     <div class="input-icon">
                                         <span class="text-base font-bold">$</span>
                                     </div>
-                                    <input type="number" id="pricePerMeter" name="pricePerMeter" step="0.01" min="0" value="<%= profile.pricePerMeter %>" required 
+                                    <input type="number" id="pricePerMeter" name="pricePerMeter" step="0.01" min="0" required 
                                         class="form-input" placeholder="0.00">
+                                    <input type="hidden" id="currency" name="currency" value="USD">
                                 </div>
-                                <select id="currency" name="currency" required class="form-input-simple !w-24">
-                                    <option value="COP" <%= (profile.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP</option>
-                                    <option value="USD" <%= (profile.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD</option>
-                                </select>
+                                <div class="flex items-center px-3 bg-gray-50 rounded border border-gray-200">
+                                    <span class="text-sm text-gray-600" id="priceUnitSuffix">/in</span>
+                                </div>
                             </div>
                             <p id="priceError" class="error-text">Must be positive</p>
+                            <p class="help-text">Price per unit (stored in USD, converted to per meter for calculations)</p>
                         </div>
 
                         <!-- Weight field -->
@@ -412,6 +413,81 @@
             const weightInput = document.getElementById('weight');
             const weightError = document.getElementById('weightError');
             const deleteButton = document.getElementById('deleteButton');
+            
+            // Price unit display (based on global unit preference)
+            const priceUnitDisplay = document.getElementById('priceUnitDisplay');
+            const priceUnitSuffix = document.getElementById('priceUnitSuffix');
+            const storedPricePerMeter = parseFloat(priceInput.value) || 0;
+            
+            function updatePriceUnitDisplay() {
+                const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+                let displayPrice;
+                
+                if (globalUnit === 'mm') {
+                    priceUnitDisplay.textContent = 'mm';
+                    priceUnitSuffix.textContent = '/mm';
+                    // Convert from per meter to per mm: 1 meter = 1000 mm
+                    displayPrice = storedPricePerMeter / 1000;
+                } else {
+                    priceUnitDisplay.textContent = 'Inch';
+                    priceUnitSuffix.textContent = '/in';
+                    // Convert from per meter to per inch: 1 meter = 39.3701 inches
+                    displayPrice = storedPricePerMeter / 39.3701;
+                }
+                
+                // Update the input value to show in current unit
+                if (storedPricePerMeter > 0) {
+                    priceInput.value = displayPrice.toFixed(4);
+                }
+            }
+            
+            // Initialize price unit display
+            updatePriceUnitDisplay();
+            
+            // Listen for unit changes
+            window.addEventListener('unitChanged', function(event) {
+                // Recalculate display price based on new unit
+                const currentPrice = parseFloat(priceInput.value) || 0;
+                const globalUnit = event.detail.unit || 'inches';
+                let pricePerMeter;
+                
+                // First convert current display value back to per meter
+                const previousUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+                if (previousUnit === 'mm') {
+                    pricePerMeter = currentPrice * 1000;
+                } else {
+                    pricePerMeter = currentPrice * 39.3701;
+                }
+                
+                // Then convert to new unit
+                if (globalUnit === 'mm') {
+                    priceInput.value = (pricePerMeter / 1000).toFixed(4);
+                } else {
+                    priceInput.value = (pricePerMeter / 39.3701).toFixed(4);
+                }
+                
+                updatePriceUnitDisplay();
+            });
+            
+            // Convert price back to per meter on form submission
+            form.addEventListener('submit', function(e) {
+                const priceValue = parseFloat(priceInput.value);
+                if (!isNaN(priceValue) && priceValue > 0) {
+                    const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+                    let pricePerMeter;
+                    
+                    if (globalUnit === 'mm') {
+                        // Convert from per mm to per meter: 1 meter = 1000 mm
+                        pricePerMeter = priceValue * 1000;
+                    } else {
+                        // Convert from per inch to per meter: 1 meter = 39.3701 inches
+                        pricePerMeter = priceValue * 39.3701;
+                    }
+                    
+                    // Update the input value to per meter for storage
+                    priceInput.value = pricePerMeter.toFixed(4);
+                }
+            });
             
             // Validation functions
             function validateName() {

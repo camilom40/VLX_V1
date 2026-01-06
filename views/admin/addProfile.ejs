@@ -296,7 +296,7 @@
                   </svg>
                 </div>
                 <div>
-                  <label for="pricePerMeter" class="font-semibold text-gray-800 text-sm">Price Per Meter</label>
+                  <label for="pricePerMeter" class="font-semibold text-gray-800 text-sm" id="pricePerMeterLabel">Price Per <span id="priceUnitDisplay">Inch</span></label>
                   <span class="required-badge">Required</span>
                 </div>
               </div>
@@ -307,13 +307,13 @@
                   </div>
                   <input type="number" id="pricePerMeter" name="pricePerMeter" 
                       step="0.01" min="0" required class="form-input" placeholder="0.00">
+                  <input type="hidden" id="currency" name="currency" value="USD">
                 </div>
-                <select id="currency" name="currency" required class="form-input-simple !w-24">
-                  <option value="COP">COP</option>
-                  <option value="USD">USD</option>
-                </select>
+                <div class="flex items-center px-3 bg-gray-50 rounded border border-gray-200">
+                  <span class="text-sm text-gray-600" id="priceUnitSuffix">/in</span>
+                </div>
               </div>
-              <p class="help-text">Price per meter</p>
+              <p class="help-text">Price per unit (stored in USD, converted to per meter for calculations)</p>
             </div>
 
             <!-- Weight -->
@@ -492,9 +492,23 @@
         }
       }
       
-      // Convert formatted price before submission
+      // Convert price from current unit to per meter before submission
       if (pricePerMeter) {
-        pricePerMeter.value = pricePerMeter.value.replace(/\D/g, '');
+        const priceValue = parseFloat(pricePerMeter.value);
+        if (!isNaN(priceValue) && priceValue > 0) {
+          const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+          let pricePerMeterValue;
+          
+          if (globalUnit === 'mm') {
+            // Convert from per mm to per meter: 1 meter = 1000 mm
+            pricePerMeterValue = priceValue * 1000;
+          } else {
+            // Convert from per inch to per meter: 1 meter = 39.3701 inches
+            pricePerMeterValue = priceValue * 39.3701;
+          }
+          
+          pricePerMeter.value = pricePerMeterValue.toFixed(4);
+        }
       }
       
       // Submit the form

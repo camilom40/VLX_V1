@@ -46,7 +46,7 @@ router.post('/add', isAdmin, async (req, res) => {
       color,
       colorCode,
       pricePerMeter: Number(pricePerMeter),
-      currency,
+      currency: currency || 'USD', // Default to USD
       weight: weight === '' ? undefined : Number(weight),
       ammaCertification: ammaCertification === 'none' ? 'No Certification' : ammaCertification,
       isMuntin: Boolean(isMuntin),
@@ -89,7 +89,7 @@ router.post('/update/:id', isAdmin, async (req, res) => {
       color,
       colorCode,
       pricePerMeter: Number(pricePerMeter),
-      currency,
+      currency: currency || 'USD', // Default to USD
       weight: weight === '' ? undefined : Number(weight),
       ammaCertification: ammaCertification === 'none' ? 'No Certification' : ammaCertification,
       isMuntin: Boolean(isMuntin),

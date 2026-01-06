@@ -78,6 +78,7 @@ const windowSchema = new Schema({
     quantity: { type: Number, required: false }, // Optional if quantityEquation is provided
     quantityEquation: { type: String, default: null }, // Equation for dynamic quantity calculation (e.g., "4", "(width / 24) + 1")
     orientation: { type: String, required: true },
+    position: { type: String, default: null }, // Position of the profile (e.g., "sill", "stile", "head") - informative only
     lengthDiscount: { type: Number, required: false }, // Stored in inches for backend calculations (optional if lengthEquation is provided)
     lengthEquation: { type: String, default: null }, // Equation for dynamic length calculation (e.g., "width - 23", "perimeter / 2") - result in inches
     lengthDiscountDisplay: { type: String, default: null }, // Original value as entered by user
