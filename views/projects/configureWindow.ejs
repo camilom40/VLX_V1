@@ -146,7 +146,9 @@
           unit: a.unit || 'piece',
           quantity: a.quantity || 1,
           showToUser: a.showToUser || false
-        }))
+        })),
+        glassWidthEquation: selectedWindowSystem.glassWidthEquation || null,
+        glassHeightEquation: selectedWindowSystem.glassHeightEquation || null
       }) : '{}' %>"
       data-is-edit="<%= typeof isEdit !== 'undefined' && isEdit ? 'true' : 'false' %>">
   <%- include('../partials/_header.ejs') %>
@@ -1621,6 +1623,28 @@
       let totalCost = 0;
       
       // Glass cost - CONVERT TO USD
+      // Calculate actual glass dimensions using equations if available
+      let glassWidthInches = width; // Default to window width
+      let glassHeightInches = height; // Default to window height
+      
+      if (windowSystemData.glassWidthEquation) {
+        const calculatedWidth = evaluateLengthEquation(windowSystemData.glassWidthEquation, width, height, normalizedUnit);
+        if (calculatedWidth !== null && calculatedWidth > 0) {
+          glassWidthInches = calculatedWidth;
+        }
+      }
+      
+      if (windowSystemData.glassHeightEquation) {
+        const calculatedHeight = evaluateLengthEquation(windowSystemData.glassHeightEquation, width, height, normalizedUnit);
+        if (calculatedHeight !== null && calculatedHeight > 0) {
+          glassHeightInches = calculatedHeight;
+        }
+      }
+      
+      // Calculate glass area using actual glass dimensions
+      const glassAreaInches = glassWidthInches * glassHeightInches;
+      const glassAreaSquareMeters = glassAreaInches / 1550;
+      
       let glassCost = 0;
       let glassName = 'N/A';
       let glassPrice = 0;
@@ -1638,7 +1662,7 @@
           // Only calculate if glass has a valid price
           if (glassPrice > 0) {
             glassPriceUSD = convertToUSD(glassPrice, glassCurrency, exchangeRateValue);
-            glassCost = glassPriceUSD * areaSquareMeters;
+            glassCost = glassPriceUSD * glassAreaSquareMeters;
             totalCost += glassCost;
           }
         }
@@ -1909,6 +1933,12 @@
         glassCurrency: glassCurrency,
         glassPriceUSD: glassPriceUSD,
         glassCost: glassCost,
+        glassWidthInches: glassWidthInches,
+        glassHeightInches: glassHeightInches,
+        glassAreaInches: glassAreaInches,
+        glassAreaSquareMeters: glassAreaSquareMeters,
+        glassWidthEquation: windowSystemData.glassWidthEquation || null,
+        glassHeightEquation: windowSystemData.glassHeightEquation || null,
         profiles: profileDetails,
         profilesCost: profilesCost,
         accessories: accessoryDetails,
@@ -3437,17 +3467,19 @@
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <span class="font-semibold text-gray-700">Width:</span>
-                  <span class="ml-2 text-gray-900">${width.toFixed(2)} ${unitLabel}</span>
+                  <span class="font-semibold text-gray-700">Glass Width:</span>
+                  <span class="ml-2 text-gray-900">${currentUnit === 'mm' ? ((details.glassWidthInches || width) * 25.4).toFixed(2) : (details.glassWidthInches || width).toFixed(2)} ${unitLabel}</span>
+                  ${details.glassWidthEquation ? `<div class="text-xs text-gray-500 mt-1">Equation: ${details.glassWidthEquation}</div>` : ''}
                 </div>
                 <div>
-                  <span class="font-semibold text-gray-700">Height:</span>
-                  <span class="ml-2 text-gray-900">${height.toFixed(2)} ${unitLabel}</span>
+                  <span class="font-semibold text-gray-700">Glass Height:</span>
+                  <span class="ml-2 text-gray-900">${currentUnit === 'mm' ? ((details.glassHeightInches || height) * 25.4).toFixed(2) : (details.glassHeightInches || height).toFixed(2)} ${unitLabel}</span>
+                  ${details.glassHeightEquation ? `<div class="text-xs text-gray-500 mt-1">Equation: ${details.glassHeightEquation}</div>` : ''}
                 </div>
               </div>
               <div>
                 <span class="font-semibold text-gray-700">Area per unit:</span>
-                <span class="ml-2 text-gray-900">${details.areaSquareMeters.toFixed(4)} m²</span>
+                <span class="ml-2 text-gray-900">${(details.glassAreaSquareMeters || details.areaSquareMeters || 0).toFixed(4)} m²</span>
               </div>
             </div>
           </div>

@@ -103,7 +103,15 @@ const windowSchema = new Schema({
   muntinConfiguration: muntinConfigurationSchema, // Muntin configuration
   panelConfiguration: panelConfigurationSchema, // Panel layout for dynamic preview
   flangeConfiguration: flangeConfigurationSchema, // Flange configuration
-  missileImpactConfiguration: missileImpactConfigurationSchema // Missile impact capability
+  missileImpactConfiguration: missileImpactConfigurationSchema, // Missile impact capability
+  glassWidthEquation: { 
+    type: String, 
+    default: null 
+  }, // Equation for calculating glass width (e.g., "width - 20", "width - 20mm") - result in inches
+  glassHeightEquation: { 
+    type: String, 
+    default: null 
+  } // Equation for calculating glass height (e.g., "height - 38", "height - 38mm") - result in inches
 });
 
 module.exports = mongoose.model('Window', windowSchema);

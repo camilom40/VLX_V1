@@ -466,7 +466,7 @@
           <span class="mr-3 text-lg font-bold">3</span> Accessories
         </div>
         <div id="step4-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
-          <span class="mr-3 text-lg font-bold">4</span> Missile Type
+          <span class="mr-3 text-lg font-bold">4</span> Glass
         </div>
         <div id="step5-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
           <span class="mr-3 text-lg font-bold">5</span> Others
@@ -1129,15 +1129,64 @@
           </div>
         </div>
         
-        <!-- Step 4: Missile Type Configuration -->
+        <!-- Step 4: Glass Configuration -->
         <div id="step4-section" class="form-section">
           <div class="section-header">
-            <h2>Step 4: Missile Type Configuration</h2>
-            <p class="text-green-100 text-sm">Configure missile impact types and select available glasses for each type</p>
+            <h2>Step 4: Glass Configuration</h2>
+            <p class="text-green-100 text-sm">Configure glass size calculation and missile impact types</p>
           </div>
           
           <div class="bg-white rounded-xl shadow-lg border border-gray-200">
             <div class="p-6">
+              <!-- Glass Size Equations -->
+              <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Glass Size Calculation</h3>
+                
+                <!-- Glass Width Equation -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                  <label for="glass-width-equation" class="block text-sm font-medium text-gray-700 mb-2">
+                    Glass Width Equation <span class="text-red-500">*</span>
+                    <span class="text-xs text-gray-500 font-normal ml-2" id="glass-width-equation-unit-label">(Current unit: <span id="glass-width-equation-unit-display">inches</span>)</span>
+                  </label>
+                  <input type="text" id="glass-width-equation" name="glassWidthEquation" 
+                         placeholder="e.g., width - 20, width - 20mm" 
+                         class="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" 
+                         style="min-height: 50px;">
+                  <p class="mt-2 text-xs text-gray-600">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Enter an equation to calculate glass width. Use variables: <code class="bg-gray-100 px-1 rounded">width</code>, <code class="bg-gray-100 px-1 rounded">height</code>, <code class="bg-gray-100 px-1 rounded">perimeter</code>, or <code class="bg-gray-100 px-1 rounded">area</code>.
+                    <br>Numeric constants (e.g., 20, 38) are assumed to be in mm and will be converted to inches automatically.
+                    <br>Example: <code class="bg-gray-100 px-1 rounded">width - 20</code> means glass width = window width - 20mm
+                  </p>
+                  <div id="glass-width-equation-preview" class="mt-2 text-sm text-gray-700 hidden">
+                    <strong>Preview:</strong> <span id="glass-width-equation-preview-value"></span>
+                  </div>
+                  <div id="glass-width-equation-error" class="mt-2 text-sm text-red-600 hidden"></div>
+                </div>
+                
+                <!-- Glass Height Equation -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                  <label for="glass-height-equation" class="block text-sm font-medium text-gray-700 mb-2">
+                    Glass Height Equation <span class="text-red-500">*</span>
+                    <span class="text-xs text-gray-500 font-normal ml-2" id="glass-height-equation-unit-label">(Current unit: <span id="glass-height-equation-unit-display">inches</span>)</span>
+                  </label>
+                  <input type="text" id="glass-height-equation" name="glassHeightEquation" 
+                         placeholder="e.g., height - 38, height - 38mm" 
+                         class="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" 
+                         style="min-height: 50px;">
+                  <p class="mt-2 text-xs text-gray-600">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Enter an equation to calculate glass height. Use variables: <code class="bg-gray-100 px-1 rounded">width</code>, <code class="bg-gray-100 px-1 rounded">height</code>, <code class="bg-gray-100 px-1 rounded">perimeter</code>, or <code class="bg-gray-100 px-1 rounded">area</code>.
+                    <br>Numeric constants (e.g., 20, 38) are assumed to be in mm and will be converted to inches automatically.
+                    <br>Example: <code class="bg-gray-100 px-1 rounded">height - 38</code> means glass height = window height - 38mm
+                  </p>
+                  <div id="glass-height-equation-preview" class="mt-2 text-sm text-gray-700 hidden">
+                    <strong>Preview:</strong> <span id="glass-height-equation-preview-value"></span>
+                  </div>
+                  <div id="glass-height-equation-error" class="mt-2 text-sm text-red-600 hidden"></div>
+                </div>
+              </div>
+              
               <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Select Missile Impact Types</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1519,7 +1568,40 @@
         // Listen for unit changes
         window.addEventListener('unitChanged', function(event) {
           updateLengthEquationUnitDisplay();
+          updateGlassSizeEquationUnitDisplay();
         });
+        
+        // Glass width equation validation
+        const glassWidthEquationInput = document.getElementById('glass-width-equation');
+        if (glassWidthEquationInput) {
+          let glassWidthEquationTimeout;
+          glassWidthEquationInput.addEventListener('input', function() {
+            clearTimeout(glassWidthEquationTimeout);
+            glassWidthEquationTimeout = setTimeout(() => {
+              validateGlassSizeEquation(this.value, 'width');
+            }, 300);
+          });
+          
+          glassWidthEquationInput.addEventListener('blur', function() {
+            validateGlassSizeEquation(this.value, 'width');
+          });
+        }
+        
+        // Glass height equation validation
+        const glassHeightEquationInput = document.getElementById('glass-height-equation');
+        if (glassHeightEquationInput) {
+          let glassHeightEquationTimeout;
+          glassHeightEquationInput.addEventListener('input', function() {
+            clearTimeout(glassHeightEquationTimeout);
+            glassHeightEquationTimeout = setTimeout(() => {
+              validateGlassSizeEquation(this.value, 'height');
+            }, 300);
+          });
+          
+          glassHeightEquationInput.addEventListener('blur', function() {
+            validateGlassSizeEquation(this.value, 'height');
+          });
+        }
         
         updateEmptyStates();
         setupStepNavigation();
@@ -3895,6 +3977,198 @@
       }
     }
     
+    // Glass size equation validation (similar to length equation)
+    // dimensionType: 'width' or 'height' to determine which input/error elements to use
+    function validateGlassSizeEquation(equation, dimensionType = 'width') {
+      const validationMsg = document.getElementById(`glass-${dimensionType}-equation-error`);
+      const previewDiv = document.getElementById(`glass-${dimensionType}-equation-preview`);
+      const input = document.getElementById(`glass-${dimensionType}-equation`);
+      
+      // Get current global unit preference
+      const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+      const isMM = globalUnit === 'mm';
+      const unitLabel = isMM ? 'mm' : 'in';
+      const unitLabelFull = isMM ? 'millimeters' : 'inches';
+      
+      if (!equation || equation.trim() === '') {
+        if (validationMsg) {
+          validationMsg.classList.add('hidden');
+          validationMsg.textContent = '';
+        }
+        if (previewDiv) {
+          previewDiv.classList.add('hidden');
+          previewDiv.innerHTML = '';
+        }
+        if (input) {
+          input.classList.remove('border-red-500', 'border-green-500');
+        }
+        return { valid: false, message: '' };
+      }
+      
+      const trimmed = equation.trim();
+      const validVariables = ['width', 'height', 'perimeter', 'area'];
+      
+      // Check for invalid variable names (case-insensitive)
+      const variablePattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+      const foundVariables = [];
+      let match;
+      while ((match = variablePattern.exec(trimmed)) !== null) {
+        const varName = match[1].toLowerCase();
+        // Skip JavaScript keywords and math functions
+        if (!['width', 'height', 'perimeter', 'area', 'sqrt', 'abs', 'round', 'floor', 'ceil', 'max', 'min', 'pow'].includes(varName)) {
+          foundVariables.push(match[1]);
+        }
+      }
+      
+      // Filter out valid variables
+      const invalidVars = foundVariables.filter(v => !validVariables.includes(v.toLowerCase()));
+      
+      if (invalidVars.length > 0) {
+        const uniqueInvalid = [...new Set(invalidVars)];
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.textContent = `Invalid variable(s): ${uniqueInvalid.join(', ')}. Valid variables are: width, height, perimeter, area`;
+          validationMsg.classList.remove('hidden');
+        }
+        if (previewDiv) previewDiv.classList.add('hidden');
+        return { valid: false, message: `Invalid variables: ${uniqueInvalid.join(', ')}` };
+      }
+      
+      // Try to evaluate with sample values
+      try {
+        // Test with sample values in the current unit
+        // Base values in inches: width=10, height=20
+        let testWidth, testHeight;
+        if (isMM) {
+          // Convert to mm: 10 inches = 254 mm, 20 inches = 508 mm
+          testWidth = 254;
+          testHeight = 508;
+        } else {
+          testWidth = 10;
+          testHeight = 20;
+        }
+        const testPerimeter = 2 * (testWidth + testHeight);
+        const testArea = testWidth * testHeight;
+        
+        let testExpression = trimmed;
+        
+        // Convert numeric constants from mm to inches (equations are written with mm constants)
+        const variableNames = ['width', 'height', 'perimeter', 'area'];
+        const placeholders = {};
+        variableNames.forEach((varName, index) => {
+          const placeholder = `__VAR${index}__`;
+          placeholders[placeholder] = varName;
+          testExpression = testExpression.replace(new RegExp(`\\b${varName}\\b`, 'gi'), placeholder);
+        });
+
+        testExpression = testExpression.replace(/\b(\d+\.?\d*)\b/g, (match, number, offset, fullString) => {
+          const numValue = parseFloat(number);
+          if (isNaN(numValue)) {
+            return match;
+          }
+
+          // Check if this number is a multiplier (right operand in * or /)
+          if (offset > 0) {
+            const beforeChar = fullString[offset - 1];
+            if (beforeChar === '*' || beforeChar === '/') {
+              return match; // Don't convert multipliers
+            }
+          }
+          
+          // Convert mm to inches
+          const converted = numValue / 25.4;
+          return converted.toString();
+        });
+
+        // Restore variable names
+        Object.keys(placeholders).forEach(placeholder => {
+          testExpression = testExpression.replace(new RegExp(placeholder, 'g'), placeholders[placeholder]);
+        });
+        
+        // Replace variables with test values (case-insensitive)
+        // Note: testWidth and testHeight are already in the correct unit, but we need to convert to inches for evaluation
+        const testWidthInches = isMM ? testWidth / 25.4 : testWidth;
+        const testHeightInches = isMM ? testHeight / 25.4 : testHeight;
+        const testPerimeterInches = 2 * (testWidthInches + testHeightInches);
+        const testAreaInches = testWidthInches * testHeightInches;
+        
+        testExpression = testExpression.replace(/\bwidth\b/gi, testWidthInches);
+        testExpression = testExpression.replace(/\bheight\b/gi, testHeightInches);
+        testExpression = testExpression.replace(/\bperimeter\b/gi, testPerimeterInches);
+        testExpression = testExpression.replace(/\barea\b/gi, testAreaInches);
+        
+        // Safe evaluation using Function constructor
+        const result = Function('"use strict"; return (' + testExpression + ')')();
+        
+        if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+          if (input) input.classList.add('border-red-500');
+          if (input) input.classList.remove('border-green-500');
+          if (validationMsg) {
+            validationMsg.textContent = 'Invalid equation syntax. The equation must evaluate to a valid number.';
+            validationMsg.classList.remove('hidden');
+          }
+          if (previewDiv) previewDiv.classList.add('hidden');
+          return { valid: false, message: 'Invalid equation syntax' };
+        }
+        
+        // Valid equation
+        if (input) input.classList.add('border-green-500');
+        if (input) input.classList.remove('border-red-500');
+        if (validationMsg) {
+          validationMsg.classList.add('hidden');
+        }
+        
+        // Show preview with sample calculation
+        if (previewDiv) {
+          const displayResult = result.toFixed(2);
+          previewDiv.innerHTML = `Preview (width=${testWidth} ${unitLabel}, height=${testHeight} ${unitLabel}): <strong>${displayResult} in</strong>`;
+          previewDiv.classList.remove('hidden');
+        }
+        return { valid: true, message: '', result: result };
+      } catch (error) {
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.textContent = 'Invalid equation syntax: ' + error.message;
+          validationMsg.classList.remove('hidden');
+        }
+        if (previewDiv) previewDiv.classList.add('hidden');
+        return { valid: false, message: error.message };
+      }
+    }
+    
+    // Update glass size equation unit display when global unit changes
+    function updateGlassSizeEquationUnitDisplay() {
+      const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+      const isMM = globalUnit === 'mm';
+      const unitLabel = isMM ? 'mm' : 'in';
+      const unitLabelFull = isMM ? 'millimeters' : 'inches';
+      
+      // Update width equation unit display
+      const widthUnitDisplay = document.getElementById('glass-width-equation-unit-display');
+      if (widthUnitDisplay) {
+        widthUnitDisplay.textContent = unitLabelFull;
+      }
+      
+      // Update height equation unit display
+      const heightUnitDisplay = document.getElementById('glass-height-equation-unit-display');
+      if (heightUnitDisplay) {
+        heightUnitDisplay.textContent = unitLabelFull;
+      }
+      
+      // Re-validate if there are values
+      const widthEquationInput = document.getElementById('glass-width-equation');
+      if (widthEquationInput && widthEquationInput.value.trim()) {
+        validateGlassSizeEquation(widthEquationInput.value, 'width');
+      }
+      
+      const heightEquationInput = document.getElementById('glass-height-equation');
+      if (heightEquationInput && heightEquationInput.value.trim()) {
+        validateGlassSizeEquation(heightEquationInput.value, 'height');
+      }
+    }
+    
     // Update length equation unit display based on global preferences
     function updateLengthEquationUnitDisplay() {
       const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
@@ -4401,6 +4675,38 @@
         flangeConfiguration.isTrimable = document.getElementById('flange-trimable').checked;
       }
       
+      // Update glass size equations before submission
+      const glassWidthEquation = document.getElementById('glass-width-equation')?.value.trim() || null;
+      const glassHeightEquation = document.getElementById('glass-height-equation')?.value.trim() || null;
+      
+      // Validate glass width equation if provided
+      if (glassWidthEquation) {
+        const glassWidthValidation = validateGlassSizeEquation(glassWidthEquation, 'width');
+        if (!glassWidthValidation.valid) {
+          showAlert('Please enter a valid glass width equation. ' + (glassWidthValidation.message || ''));
+          goToStep(4);
+          return;
+        }
+      } else {
+        showAlert('Please enter a glass width equation.');
+        goToStep(4);
+        return;
+      }
+      
+      // Validate glass height equation if provided
+      if (glassHeightEquation) {
+        const glassHeightValidation = validateGlassSizeEquation(glassHeightEquation, 'height');
+        if (!glassHeightValidation.valid) {
+          showAlert('Please enter a valid glass height equation. ' + (glassHeightValidation.message || ''));
+          goToStep(4);
+          return;
+        }
+      } else {
+        showAlert('Please enter a glass height equation.');
+        goToStep(4);
+        return;
+      }
+      
       // Update missile impact configuration before submission
       missileImpactConfiguration.supportsLMI = document.getElementById('missile-lmi').checked;
       missileImpactConfiguration.supportsSMI = document.getElementById('missile-smi').checked;
@@ -4418,7 +4724,7 @@
       // Clear existing hidden inputs if any
       const existingInputs = form.querySelectorAll('input[type="hidden"]');
       existingInputs.forEach(input => {
-        if (['profiles', 'accessories', 'muntinConfiguration', 'flangeConfiguration', 'missileImpactConfiguration'].includes(input.name)) {
+        if (['profiles', 'accessories', 'muntinConfiguration', 'flangeConfiguration', 'missileImpactConfiguration', 'glassWidthEquation', 'glassHeightEquation'].includes(input.name)) {
           input.remove();
         }
       });

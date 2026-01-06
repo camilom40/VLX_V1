@@ -580,11 +580,17 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       accessoryCount: accessoryEntries.length
     });
 
+    // Get glass size equations from request
+    const glassWidthEquation = req.body.glassWidthEquation ? req.body.glassWidthEquation.trim() : null;
+    const glassHeightEquation = req.body.glassHeightEquation ? req.body.glassHeightEquation.trim() : null;
+
     const newWindow = new WindowSystem({
       type,
       profiles: profileEntries,
       accessories: accessoryEntries,
       glassRestrictions: [], // Glass restrictions removed - validation happens at quote time
+      glassWidthEquation: glassWidthEquation, // Glass width calculation equation
+      glassHeightEquation: glassHeightEquation, // Glass height calculation equation
       muntinConfiguration: {
         enabled: Boolean(muntinConfiguration.enabled),
         muntinProfile: muntinConfiguration.muntinProfile || null,
@@ -762,6 +768,10 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       console.error('Error parsing missileImpactConfiguration:', e);
       missileImpactConfigurationData = { supportsLMI: false, supportsSMI: false, lmiGlasses: [], smiGlasses: [] };
     }
+    
+    // Get glass size equations from request
+    const glassWidthEquation = req.body.glassWidthEquation ? req.body.glassWidthEquation.trim() : null;
+    const glassHeightEquation = req.body.glassHeightEquation ? req.body.glassHeightEquation.trim() : null;
 
     // Prepare update object
     const updateData = {
@@ -769,6 +779,8 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       profiles: profileEntries,
       accessories: accessoryEntries,
       glassRestrictions: glassRestrictionEntries,
+      glassWidthEquation: glassWidthEquation, // Glass width calculation equation
+      glassHeightEquation: glassHeightEquation, // Glass height calculation equation
       muntinConfiguration: {
         enabled: Boolean(muntinConfigurationData.enabled),
         muntinProfile: muntinConfigurationData.muntinProfile || null,

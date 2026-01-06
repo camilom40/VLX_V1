@@ -211,10 +211,29 @@ async function recalculateWindowItemPrices(windowItem) {
     const windowQuantity = windowItem.quantity;
     
     // Glass cost calculation - ALL INTERNAL CALCULATIONS IN USD
-    const areaInches = windowWidth * windowHeight;
-    const areaSquareMeters = areaInches / 1550;
+    // Calculate actual glass dimensions using equations if available
+    let glassWidthInches = windowWidth; // Default to window width
+    let glassHeightInches = windowHeight; // Default to window height
+    
+    if (windowSystem.glassWidthEquation) {
+      const calculatedWidth = evaluateLengthEquation(windowSystem.glassWidthEquation, windowWidth, windowHeight);
+      if (calculatedWidth !== null && calculatedWidth > 0) {
+        glassWidthInches = calculatedWidth;
+      }
+    }
+    
+    if (windowSystem.glassHeightEquation) {
+      const calculatedHeight = evaluateLengthEquation(windowSystem.glassHeightEquation, windowWidth, windowHeight);
+      if (calculatedHeight !== null && calculatedHeight > 0) {
+        glassHeightInches = calculatedHeight;
+      }
+    }
+    
+    // Calculate glass area using actual glass dimensions
+    const glassAreaInches = glassWidthInches * glassHeightInches;
+    const glassAreaSquareMeters = glassAreaInches / 1550;
     const glassCostUSD = convertToUSD(selectedGlass.pricePerSquareMeter, selectedGlass.currency || 'USD', exchangeRate);
-    const glassCost = glassCostUSD * areaSquareMeters;
+    const glassCost = glassCostUSD * glassAreaSquareMeters;
     
     // Profile costs calculation
     let profileCostTotal = 0;
@@ -1102,11 +1121,30 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     const windowQuantity = parseInt(quantity);
     
     // Glass cost calculation - ALL INTERNAL CALCULATIONS IN USD
-    const areaInches = windowWidth * windowHeight;
-    const areaSquareMeters = areaInches / 1550;
+    // Calculate actual glass dimensions using equations if available
+    let glassWidthInches = windowWidth; // Default to window width
+    let glassHeightInches = windowHeight; // Default to window height
+    
+    if (windowSystem.glassWidthEquation) {
+      const calculatedWidth = evaluateLengthEquation(windowSystem.glassWidthEquation, windowWidth, windowHeight);
+      if (calculatedWidth !== null && calculatedWidth > 0) {
+        glassWidthInches = calculatedWidth;
+      }
+    }
+    
+    if (windowSystem.glassHeightEquation) {
+      const calculatedHeight = evaluateLengthEquation(windowSystem.glassHeightEquation, windowWidth, windowHeight);
+      if (calculatedHeight !== null && calculatedHeight > 0) {
+        glassHeightInches = calculatedHeight;
+      }
+    }
+    
+    // Calculate glass area using actual glass dimensions
+    const glassAreaInches = glassWidthInches * glassHeightInches;
+    const glassAreaSquareMeters = glassAreaInches / 1550;
     // Use 'USD' as default currency (matching frontend behavior) - glass prices are typically in USD
     const glassCostUSD = convertToUSD(selectedGlass.pricePerSquareMeter, selectedGlass.currency || 'USD', exchangeRate);
-    const glassCost = glassCostUSD * areaSquareMeters;
+    const glassCost = glassCostUSD * glassAreaSquareMeters;
 
     // Profile costs calculation (include both user-configurable and auto-managed)
     let profileCostTotal = 0;
@@ -1828,11 +1866,30 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     const exchangeRate = await getExchangeRate();
 
     // Glass cost calculation with validation - ALL INTERNAL CALCULATIONS IN USD
-    const areaInches = (isNaN(windowWidth) ? 0 : windowWidth) * (isNaN(windowHeight) ? 0 : windowHeight);
-    const areaSquareMeters = areaInches / 1550;
+    // Calculate actual glass dimensions using equations if available
+    let glassWidthInches = windowWidth; // Default to window width
+    let glassHeightInches = windowHeight; // Default to window height
+    
+    if (windowSystem.glassWidthEquation) {
+      const calculatedWidth = evaluateLengthEquation(windowSystem.glassWidthEquation, windowWidth, windowHeight);
+      if (calculatedWidth !== null && calculatedWidth > 0) {
+        glassWidthInches = calculatedWidth;
+      }
+    }
+    
+    if (windowSystem.glassHeightEquation) {
+      const calculatedHeight = evaluateLengthEquation(windowSystem.glassHeightEquation, windowWidth, windowHeight);
+      if (calculatedHeight !== null && calculatedHeight > 0) {
+        glassHeightInches = calculatedHeight;
+      }
+    }
+    
+    // Calculate glass area using actual glass dimensions
+    const glassAreaInches = glassWidthInches * glassHeightInches;
+    const glassAreaSquareMeters = glassAreaInches / 1550;
     const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
     const glassCostUSD = convertToUSD(glassPricePerSqM, selectedGlass.currency || 'COP', exchangeRate);
-    const glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * areaSquareMeters;
+    const glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * glassAreaSquareMeters;
 
     // Profile costs calculation (include both user-configurable and auto-managed)
     let profileCostTotal = 0;
