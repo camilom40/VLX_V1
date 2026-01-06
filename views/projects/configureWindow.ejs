@@ -281,11 +281,24 @@
                                             selectedWindowSystem.missileImpactConfiguration.supportsSMI);
                     
                     // In edit mode, try to determine the missile type from the selected glass
-                    // Declare these outside the conditional block so they're available later
-                    let preSelectedMissileType = '';
-                    let preSelectedGlassId = '';
+                    // Use passed template variables if available, otherwise extract from description
+                    // Initialize with passed values or empty strings
+                    // Use intermediate variables to avoid conflicts - access template vars via eval to avoid temporal dead zone
+                    let editModeMissileType = '';
+                    let editModeGlassId = '';
                     
-                    if (hasMissileTypes && typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.description) {
+                    // Check if template variables were passed from the route using eval to avoid TDZ
+                    try {
+                      const templateMissile = eval('preSelectedMissileType');
+                      const templateGlass = eval('preSelectedGlassId');
+                      if (templateMissile) editModeMissileType = templateMissile;
+                      if (templateGlass) editModeGlassId = templateGlass;
+                    } catch(e) {
+                      // Template variables not passed - will extract from description if needed
+                    }
+                    
+                    // Only try to extract from description if we don't already have the glass ID from the route
+                    if (!editModeGlassId && hasMissileTypes && typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.description) {
                         // First, try to extract missile type from description
                         const missilePatterns = [
                           /Missile Impact:\s*Large Missile Impact \(LMI\)/i,  // "Missile Impact: Large Missile Impact (LMI)"
@@ -297,9 +310,9 @@
                         for (const pattern of missilePatterns) {
                           if (pattern.test(existingWindow.description)) {
                             if (pattern.source.includes('LMI') || pattern.source.includes('Large')) {
-                              preSelectedMissileType = 'LMI';
+                              editModeMissileType = 'LMI';
                             } else if (pattern.source.includes('SMI') || pattern.source.includes('Small')) {
-                              preSelectedMissileType = 'SMI';
+                              editModeMissileType = 'SMI';
                             }
                             break;
                           }
@@ -330,7 +343,7 @@
                           }
                           
                           if (selectedGlassObj) {
-                            preSelectedGlassId = selectedGlassObj._id.toString();
+                            editModeGlassId = selectedGlassObj._id.toString();
                             const glassIdStr = selectedGlassObj._id.toString();
                             
                             // Check if this glass is in LMI or SMI arrays
@@ -348,20 +361,25 @@
                                          });
                             
                             if (isLMI && !isSMI) {
-                              preSelectedMissileType = 'LMI';
+                              editModeMissileType = 'LMI';
                             } else if (isSMI && !isLMI) {
-                              preSelectedMissileType = 'SMI';
+                              editModeMissileType = 'SMI';
                             } else if (isLMI && isSMI) {
                               // Glass is in both - check description for missile type hint
                               if (existingWindow.description.includes('LMI') || existingWindow.description.includes('Large Missile')) {
-                                preSelectedMissileType = 'LMI';
+                                editModeMissileType = 'LMI';
                               } else if (existingWindow.description.includes('SMI') || existingWindow.description.includes('Small Missile')) {
-                                preSelectedMissileType = 'SMI';
+                                editModeMissileType = 'SMI';
                               }
                             }
                           }
                         }
                     }
+                    
+                    // Set final variables for use in the rest of the template
+                    // These are safe to declare as const because template variable access was isolated in IIFE above
+                    const preSelectedMissileType = editModeMissileType;
+                    const preSelectedGlassId = editModeGlassId;
                   %>
                   <% if (hasMissileTypes) { %>
                     <label for="missileType" class="form-label">Missile Impact Type *</label>
@@ -390,7 +408,8 @@
                   const glassDisabled = hasMissileTypes && !preSelectedMissileType;
                 %>
                 <select id="glassType" name="glassType" required class="form-input w-full" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()"
-                        <%= glassDisabled ? 'disabled' : '' %>>
+                        <%= glassDisabled ? 'disabled' : '' %>
+                        <% if (typeof preSelectedGlassId !== 'undefined' && preSelectedGlassId) { %>data-pre-selected-glass-id="<%= preSelectedGlassId %>"<% } %>>
                   <option value="">
                     <%= glassDisabled 
                         ? 'Please select missile type first' 
@@ -1103,31 +1122,125 @@
         // Store all original options (excluding the placeholder)
         allGlassOptions = Array.from(glassSelect.options)
           .filter(opt => opt.value !== '')
-          .map(opt => ({
-            value: opt.value,
-            text: opt.text,
-            price: opt.getAttribute('data-price'),
-            type: opt.getAttribute('data-type'),
-            lmi: opt.getAttribute('data-lmi'),
-            smi: opt.getAttribute('data-smi'),
-            selected: opt.selected
-          }));
+          .map(opt => {
+            let text = opt.text;
+            const type = opt.getAttribute('data-type');
+            
+            // If text is corrupted (shows price like "$45.00"), reconstruct from data-type
+            const textIsPrice = text && /^\$?\d+\.?\d*$/.test(text.trim());
+            const textHasFormat = text && text.includes(' - ');
+            
+            if ((textIsPrice || !textHasFormat) && type) {
+              // Text is corrupted - reconstruct from type attribute
+              text = type;
+            }
+            
+            return {
+              value: opt.value,
+              text: text,
+              price: opt.getAttribute('data-price'),
+              type: type,
+              lmi: opt.getAttribute('data-lmi'),
+              smi: opt.getAttribute('data-smi'),
+              selected: opt.selected
+            };
+          });
+        
+        // Fix corrupted option text in the DOM immediately
+        allGlassOptions.forEach(optData => {
+          const option = glassSelect.querySelector(`option[value="${optData.value}"]`);
+          if (option) {
+            const currentText = option.textContent.trim();
+            const textIsPrice = /^\$?\d+\.?\d*$/.test(currentText);
+            // If current text is a price and we have a proper text stored, fix it
+            if (textIsPrice && optData.text && !/^\$?\d+\.?\d*$/.test(optData.text.trim())) {
+              option.textContent = optData.text;
+            }
+          }
+        });
+        
         console.log('Initialized glass options:', allGlassOptions.length);
       }
     }
     
+    // Fix glass option text immediately if corrupted (must run before other code)
+    function fixGlassOptionTexts() {
+      const glassSelect = document.getElementById('glassType');
+      if (!glassSelect) return;
+      
+      // Fix all options that have price as text instead of glass name
+      Array.from(glassSelect.options).forEach(option => {
+        if (!option.value) return; // Skip placeholder
+        
+        const currentText = option.textContent.trim();
+        const textIsPrice = /^\$?\d+\.?\d*$/.test(currentText);
+        const dataType = option.getAttribute('data-type');
+        const dataPrice = option.getAttribute('data-price');
+        
+        // If text is a price and we have a type, fix it immediately
+        // Also check if text matches the price value
+        if (textIsPrice && dataType) {
+          option.textContent = dataType;
+          console.log('Fixed glass option text from', currentText, 'to', dataType);
+        } else if (dataPrice && currentText === '$' + parseFloat(dataPrice).toFixed(2)) {
+          // Text matches the price format exactly
+          option.textContent = dataType || 'Glass';
+          console.log('Fixed glass option text from price', currentText, 'to', dataType);
+        }
+      });
+    }
+    
+    // Use MutationObserver to watch for changes to the glass select and fix them
+    function setupGlassOptionTextWatcher() {
+      const glassSelect = document.getElementById('glassType');
+      if (!glassSelect) return;
+      
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'childList' || mutation.type === 'characterData') {
+            // Options changed, fix any corrupted text
+            fixGlassOptionTexts();
+          }
+        });
+      });
+      
+      observer.observe(glassSelect, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      
+      // Also fix immediately
+      setTimeout(fixGlassOptionTexts, 0);
+      setTimeout(fixGlassOptionTexts, 100);
+      setTimeout(fixGlassOptionTexts, 500);
+    }
+    
+    // Run fix immediately
+    fixGlassOptionTexts();
+    
     // Run initialization when DOM is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', function() {
+        fixGlassOptionTexts(); // Fix again after DOM is fully loaded
         initializeGlassOptions();
+        setupGlassOptionTextWatcher(); // Watch for changes
         // If in edit mode and missile type is pre-selected, filter glasses automatically
-        handleEditModeMissileType();
+        setTimeout(function() {
+          handleEditModeMissileType();
+          fixGlassOptionTexts(); // Fix after filtering
+        }, 100);
       });
     } else {
       // DOM is already ready
+      fixGlassOptionTexts(); // Fix again to be sure
       initializeGlassOptions();
+      setupGlassOptionTextWatcher(); // Watch for changes
       // If in edit mode and missile type is pre-selected, filter glasses automatically
-      handleEditModeMissileType();
+      setTimeout(function() {
+        handleEditModeMissileType();
+        fixGlassOptionTexts(); // Fix after filtering
+      }, 100);
     }
     
     // Handle edit mode: if missile type is pre-selected, filter glasses
@@ -1137,41 +1250,51 @@
       
       if (!missileTypeSelect || !glassSelect) return;
       
+      // Get pre-selected glass ID from data attribute (passed from server)
+      const preSelectedGlassId = glassSelect.getAttribute('data-pre-selected-glass-id');
+      
       // Check if a missile type option is selected (has selected attribute or value)
       const hasSelectedValue = missileTypeSelect.value && missileTypeSelect.value !== '';
       
       if (hasSelectedValue) {
         // Missile type is already selected (edit mode), filter glasses
-        // Store the currently selected glass before filtering
-        const currentSelectedValue = glassSelect.value;
+        // Store the currently selected glass before filtering, prefer preSelectedGlassId from server
+        const currentSelectedValue = preSelectedGlassId || glassSelect.value;
         
         // Filter glasses based on pre-selected missile type
-        filterGlassesByMissileType();
+        filterGlassesByMissileType(currentSelectedValue);
         
         // After filtering, restore the selection if it exists
         setTimeout(() => {
-          if (currentSelectedValue && glassSelect.querySelector(`option[value="${currentSelectedValue}"]`)) {
-            glassSelect.value = currentSelectedValue;
-            if(typeof window.calculatePricing==='function')window.calculatePricing(); // Recalculate with restored selection
+          if (currentSelectedValue) {
+            const option = glassSelect.querySelector(`option[value="${currentSelectedValue}"]`);
+            if (option) {
+              glassSelect.value = currentSelectedValue;
+              if(typeof window.calculatePricing==='function')window.calculatePricing(); // Recalculate with restored selection
+            }
           }
         }, 100);
       }
     }
     
     // Filter glasses based on selected missile type
-    function filterGlassesByMissileType() {
+    function filterGlassesByMissileType(preSelectedGlassIdValue) {
       const missileTypeSelect = document.getElementById('missileType');
       const missileType = missileTypeSelect?.value;
       const glassSelect = document.getElementById('glassType');
       
       if (!glassSelect) return;
       
+      // Get pre-selected glass ID from data attribute or parameter
+      const preSelectedGlassId = preSelectedGlassIdValue || glassSelect.getAttribute('data-pre-selected-glass-id');
+      
       // Check if missile type selection is required (window system supports missile types)
       const missileTypeRequired = missileTypeSelect !== null;
       
       if (missileTypeRequired) {
         // Store the currently selected glass value before filtering (for edit mode)
-        const currentSelectedGlass = glassSelect.value;
+        // Prefer preSelectedGlassId from server, then fall back to current value
+        const currentSelectedGlass = preSelectedGlassId || glassSelect.value;
         
         // Enable/disable glass select based on missile type selection
         if (!missileType) {
@@ -1217,14 +1340,41 @@
           if (isAvailable) {
             const newOption = document.createElement('option');
             newOption.value = optionData.value;
-            newOption.textContent = optionData.text;
+            
+            // Preserve the original text format (glass_type - description)
+            // If text is corrupted (shows price like "$45.00") or missing, reconstruct from data-type attribute
+            const textIsPrice = optionData.text && /^\$?\d+\.?\d*$/.test(optionData.text.trim());
+            const textHasFormat = optionData.text && optionData.text.includes(' - ');
+            
+            if (textHasFormat && !textIsPrice) {
+              // Text is in correct format (glass_type - description), use it
+              newOption.textContent = optionData.text;
+            } else if (optionData.type) {
+              // Text is corrupted or missing - reconstruct from type
+              // We lose the description, but at least show the glass type name
+              newOption.textContent = optionData.type;
+            } else {
+              // Fallback to text if type is not available
+              newOption.textContent = optionData.text || 'Glass';
+            }
+            
             newOption.setAttribute('data-price', optionData.price || '0');
             newOption.setAttribute('data-type', optionData.type || '');
             newOption.setAttribute('data-lmi', optionData.lmi || 'false');
             newOption.setAttribute('data-smi', optionData.smi || 'false');
             
             // Restore selection if this was the previously selected glass (edit mode)
-            if (currentSelectedGlass && optionData.value === currentSelectedGlass) {
+            // Check both currentSelectedGlass and preSelectedGlassId with proper string comparison
+            const optionValueStr = optionData.value.toString();
+            const selectedValueStr = currentSelectedGlass ? currentSelectedGlass.toString() : '';
+            
+            const shouldSelect = selectedValueStr && (
+              optionValueStr === selectedValueStr ||
+              optionValueStr === currentSelectedGlass ||
+              (preSelectedGlassId && optionValueStr === preSelectedGlassId.toString())
+            );
+            
+            if (shouldSelect) {
               newOption.selected = true;
             }
             

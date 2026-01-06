@@ -173,7 +173,9 @@ The configure window page features a dynamic preview that:
   },
   missileImpactConfiguration: {
     lmiCompatibleGlasses: [ObjectId],  // Glasses compatible with Large Missile Impact
-    smiCompatibleGlasses: [ObjectId]   // Glasses compatible with Small Missile Impact
+    smiCompatibleGlasses: [ObjectId],  // Glasses compatible with Small Missile Impact
+    glassWidthEquation: String,        // Optional equation for glass width (e.g., "width - 20")
+    glassHeightEquation: String        // Optional equation for glass height (e.g., "height - 20")
   },
   panelConfiguration: {
     operationType: String,    // 'sliding', 'casement', 'fixed', 'french-door', etc.
@@ -1115,49 +1117,57 @@ npm run dev
    - **Dynamic Unit Display**: Equation input labels update to show current global unit preference
    - **Backend Matching**: Backend `evaluateLengthEquation()` function now matches frontend behavior exactly, always converting numeric constants from mm to inches
 
-2. **Workshop Modal for Production Details**
+2. **Glass Dimension Equations**
+   - **Separate Width/Height Equations**: Replaced single `glassSizeEquation` with separate `glassWidthEquation` and `glassHeightEquation` fields
+   - **Step 4 Renamed**: "Missile Type Configuration" renamed to "Glass Configuration" for clarity
+   - **Equation Support**: Glass dimensions can now be calculated using equations (e.g., "width - 20", "height - 20")
+   - **Real-time Validation**: Equation validation with preview calculations and unit-aware display
+   - **Glass Cost Calculation**: Glass cost now uses calculated dimensions from equations instead of window dimensions
+   - **Workshop Display**: Calculated glass dimensions (width and height in inches) shown in workshop modal
+
+3. **Workshop Modal for Production Details**
    - **New Modal**: Added "Workshop" button below "Calculation Details" on configure window page
    - **Production Information**: Displays quantity and length for each profile, accessory, and glass component
    - **Unit Display**: Shows lengths in both inches and meters for production use
    - **Component Breakdown**: 
      - Profiles: Name, quantity, length (inches/meters), position (if specified)
      - Accessories: Name, quantity
-     - Glass: Type, area (square meters)
+     - Glass: Type, calculated width/height (inches), area (square meters), equations used
    - **Workshop-Ready Format**: Information formatted for production team use
 
-3. **Price Calculation Consistency Fixes**
+4. **Price Calculation Consistency Fixes**
    - **Frontend-Backend Matching**: Fixed critical discrepancy where frontend showed $112.87 but backend saved $107.75
    - **Root Cause**: Backend's `evaluateLengthEquation()` was not converting numeric constants from mm to inches, causing incorrect profile length calculations
    - **Profile Cost Fix**: Profile costs now match between frontend and backend calculations
    - **WindowItem Model Fix**: Updated pre-save hook to preserve `totalPrice` when explicitly set, preventing recalculation from rounded `unitPrice`
    - **Price Precision**: `totalPrice` is now set directly from `finalPrice` to maintain precision, with `unitPrice` calculated from `totalPrice` for display
 
-4. **Profile Position Field**
+5. **Profile Position Field**
    - **New Field**: Added `position` field to profiles in window systems (informative field)
    - **Examples**: "sill", "stile", "head" - helps identify profile location in window assembly
    - **Database Storage**: Position stored in Window model's profiles sub-schema
    - **Display**: Position shown in workshop modal for production reference
    - **UI**: Position field added to compose window and edit window system forms (text input for flexibility)
 
-5. **Form Validation & Error Fixes**
+6. **Form Validation & Error Fixes**
    - **Hidden Required Fields**: Fixed "An invalid form control with name='' is not focusable" error by removing `required` attribute from hidden profile-length-equation inputs
    - **Manual Validation**: Added JavaScript validation for length equations before form submission
    - **Exchange Rate Reference**: Fixed `ReferenceError: exchangeRate is not defined` by using correct variable name `exchangeRateValue`
    - **Calculation Modal Errors**: Fixed `Cannot read properties of undefined (reading 'toFixed')` by ensuring all calculation details are properly initialized
 
-6. **Calculation Details Modal Improvements**
+7. **Calculation Details Modal Improvements**
    - **Error Handling**: Fixed undefined value errors in calculation details modal
    - **Profile Details**: All profile calculation details now properly displayed (length, discount, adjusted length)
    - **Workshop Integration**: Workshop modal complements calculation details with production-focused information
 
 #### Key Files Modified
-- `views/projects/configureWindow.ejs` - Added workshop modal, fixed unit conversion in evaluateLengthEquation, fixed form validation, added position field support
-- `views/admin/composeWindow.ejs` - Added position field, fixed unit conversion in length equation validation, removed required attribute from hidden inputs
-- `views/admin/editWindowSystem.ejs` - Added position field, fixed unit conversion in length equation validation, removed required attribute from hidden inputs
-- `routes/projectRoutes.js` - Updated evaluateLengthEquation to always convert numeric constants from mm to inches, fixed price calculation consistency
+- `views/projects/configureWindow.ejs` - Added workshop modal, fixed unit conversion in evaluateLengthEquation, fixed form validation, added position field support, added glass dimension equation evaluation and display
+- `views/admin/composeWindow.ejs` - Added position field, fixed unit conversion in length equation validation, removed required attribute from hidden inputs, renamed Step 4 to "Glass Configuration", added separate glass width/height equation fields
+- `views/admin/editWindowSystem.ejs` - Added position field, fixed unit conversion in length equation validation, removed required attribute from hidden inputs, renamed Step 4 to "Glass Configuration", added separate glass width/height equation fields
+- `routes/projectRoutes.js` - Updated evaluateLengthEquation to always convert numeric constants from mm to inches, fixed price calculation consistency, added glass dimension equation evaluation for glass cost calculation
 - `models/WindowItem.js` - Updated pre-save hook to preserve totalPrice when explicitly set
-- `models/Window.js` - Added position field to profiles sub-schema
-- `routes/admin/windowRoutes.js` - Updated to save/retrieve position field for profiles
+- `models/Window.js` - Added position field to profiles sub-schema, replaced glassSizeEquation with glassWidthEquation and glassHeightEquation in missileImpactConfiguration
+- `routes/admin/windowRoutes.js` - Updated to save/retrieve position field for profiles, updated to save/retrieve glassWidthEquation and glassHeightEquation
 - `routes/admin/profileRoutes.js` - Updated to handle position field (if needed)
 
 #### Technical Notes
@@ -1183,11 +1193,69 @@ npm run dev
 
 ---
 
+## January 2026 - Glass Type Display Fix & Edit Mode Improvements
+
+### What We Worked On
+
+1. **Glass Type Display Fix in Edit Mode**
+   - **Problem**: When editing a saved window, the glass type dropdown showed the price (e.g., "$45.00") instead of the glass name (e.g., "Double Pane Clear - Clear")
+   - **Root Cause**: The edit route wasn't passing `preSelectedGlassId` to the template, causing the template to try extracting the glass ID from the description string, which was unreliable
+   - **Solution**: 
+     - Updated edit route to extract `selectedGlassId` from saved window item and pass it as `preSelectedGlassId` to template
+     - Added `data-pre-selected-glass-id` attribute to glass select element for JavaScript access
+     - Updated JavaScript filtering functions to use the saved glass ID when restoring selections
+     - Added comprehensive text reconstruction logic to fix corrupted option text (price instead of name)
+
+2. **Template Variable Handling Fix**
+   - **Temporal Dead Zone Issue**: Fixed JavaScript error "Cannot access 'preSelectedMissileType' before initialization"
+   - **Solution**: Used eval() to safely access template variables before they're declared as const, avoiding temporal dead zone conflicts
+   - **Variable Isolation**: Used intermediate variables (`editModeMissileType`, `editModeGlassId`) before setting final const variables
+
+3. **Glass Option Text Reconstruction**
+   - **Price Detection**: Added detection for option text that shows price format (e.g., "$45.00") instead of glass name
+   - **Text Reconstruction**: Automatically reconstructs option text from `data-type` attribute when price is detected
+   - **Multiple Fix Points**: 
+     - Immediate fix function runs on page load
+     - Fix applied when initializing glass options array
+     - Fix applied when filtering/rebuilding options
+     - MutationObserver watches for DOM changes and fixes corrupted text
+   - **Regex Pattern**: Uses `/^\$?\d+\.?\d*$/` to detect price-only text
+
+4. **Edit Mode Glass Selection Restoration**
+   - **Pre-Selected Glass ID**: Edit route now passes `preSelectedGlassId` directly from `existingWindow.selectedGlassId`
+   - **Pre-Selected Missile Type**: Edit route now passes `preSelectedMissileType` from `existingWindow.missileType`
+   - **Data Attribute**: Glass select element includes `data-pre-selected-glass-id` attribute for JavaScript access
+   - **Selection Restoration**: JavaScript uses saved glass ID to restore correct selection after filtering by missile type
+
+5. **JavaScript Filtering Improvements**
+   - **Parameter Passing**: Updated `filterGlassesByMissileType()` to accept optional `preSelectedGlassIdValue` parameter
+   - **Selection Matching**: Improved glass ID matching with proper string comparison (handles ObjectId vs string)
+   - **Option Text Preservation**: Ensures option text format is preserved when rebuilding options (glass_type - description)
+
+#### Key Files Modified
+- `routes/projectRoutes.js` - Updated edit route to extract and pass `preSelectedGlassId` and `preSelectedMissileType` to template
+- `views/projects/configureWindow.ejs` - Added template variable handling with eval(), added `data-pre-selected-glass-id` attribute, added comprehensive glass option text fix functions, updated filtering functions to use saved glass ID
+
+#### Technical Notes
+- **Template Variables**: Template variables passed from route are safely accessed using eval() to avoid temporal dead zone issues
+- **Price Detection**: Regex pattern `/^\$?\d+\.?\d*$/` detects if option text is a price format
+- **Text Reconstruction**: Option text reconstructed from `data-type` attribute when price is detected
+- **MutationObserver**: Watches for DOM changes to glass select and automatically fixes corrupted text
+- **Multiple Fix Points**: Fix functions run at multiple stages (page load, DOM ready, after filtering) to ensure text is always correct
+- **Selection Restoration**: Saved glass ID used to restore selection even when options are filtered by missile type
+
+#### Example Fixes
+- Before: Option text showed "$45.00"
+- After: Option text shows "Double Pane Clear - Clear"
+- The glass type name is correctly displayed in edit mode, matching what was saved
+
+---
+
 ## 🔮 TODO / Future Enhancements
 
 - **Profile Quantity Equations**: Consider implementing equation support for profile quantities, similar to accessory equations. This would allow profiles to use formulas based on window dimensions (e.g., perimeter-based calculations for frame profiles).
 
 ---
 
-*Last Updated: January 2026 - Profile Length Equations, Workshop Modal & Price Calculation Fixes*
+*Last Updated: January 2026 - Glass Type Display Fix & Edit Mode Improvements*
 

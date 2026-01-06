@@ -1775,6 +1775,14 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       });
     }
 
+    // Extract the selected glass ID for pre-selection
+    const preSelectedGlassId = existingWindow.selectedGlassId 
+      ? existingWindow.selectedGlassId.toString() 
+      : null;
+    
+    // Extract missile type for pre-selection
+    const preSelectedMissileType = existingWindow.missileType || '';
+
     res.render('projects/configureWindow', {
       project,
       windowRef,
@@ -1791,6 +1799,8 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       existingWindow, // Pass existing window data for pre-filling form
       savedAccessorySelections, // Pass saved accessory selections for restoration
       savedProfileSelections, // Pass saved profile selections for restoration
+      preSelectedGlassId, // Pass the saved glass ID directly
+      preSelectedMissileType, // Pass the saved missile type directly
       isEdit: true    // Flag to indicate this is edit mode
     });
 
