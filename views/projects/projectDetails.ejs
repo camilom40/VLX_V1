@@ -392,7 +392,10 @@
                         <span class="item-name-display"><%= item.itemName %></span>
                       </h4>
                       <div class="text-right">
-                        <span class="font-bold text-green-600" data-price="<%= item.totalPrice %>"><!-- Price will be formatted by JavaScript --></span>
+                        <span class="font-bold text-green-600" 
+                              data-base-total="<%= item.totalPrice %>"
+                              data-price="<%= item.totalPrice %>"
+                              data-markup="<%= item.markup !== undefined ? item.markup : 20 %>"><!-- Price will be formatted by JavaScript --></span>
                       </div>
                     </div>
                   </div>
@@ -429,8 +432,30 @@
                         <span class="quantity-display"><%= item.quantity %></span>
                       </div>
                       
+                      <div class="text-gray-500">Markup:</div>
+                      <div class="text-gray-800">
+                        <input type="number" 
+                               class="inline-edit-markup w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center"
+                               data-item-id="<%= item._id %>" 
+                               data-project-id="<%= project._id %>"
+                               data-original-markup="<%= item.markup !== undefined ? item.markup : 20 %>"
+                               value="<%= item.markup !== undefined ? item.markup : 20 %>"
+                               step="0.1" 
+                               min="0" 
+                               max="1000">%
+                      </div>
+                      
                       <div class="text-gray-500">Unit Price:</div>
-                      <div class="text-gray-800" data-price="<%= item.unitPrice %>"><!-- Price will be formatted by JavaScript --></div>
+                      <div class="text-gray-800" 
+                           data-base-price="<%= item.unitPrice %>" 
+                           data-price="<%= item.unitPrice %>"
+                           data-markup="<%= item.markup !== undefined ? item.markup : 20 %>"><!-- Price will be formatted by JavaScript --></div>
+                      
+                      <div class="text-gray-500">Total Price:</div>
+                      <div class="text-gray-800 font-semibold" 
+                           data-base-total="<%= item.totalPrice %>"
+                           data-price="<%= item.totalPrice %>"
+                           data-markup="<%= item.markup !== undefined ? item.markup : 20 %>"><!-- Price will be formatted by JavaScript --></div>
                       
                       <% if (item.material) { %>
                         <div class="text-gray-500">Material:</div>
@@ -476,6 +501,22 @@
             
             <!-- Desktop view: Table -->
             <div class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm" style="min-width: 100%; -webkit-overflow-scrolling: touch;">
+              <!-- Global Markup Control -->
+              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <label class="text-sm font-semibold text-gray-700">Global Markup:</label>
+                  <input type="number" 
+                         id="globalMarkup" 
+                         step="0.1" 
+                         min="0" 
+                         max="1000" 
+                         class="w-24 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                         placeholder="20">
+                  <span class="text-sm text-gray-600">%</span>
+                  <span class="text-xs text-gray-500 italic" id="globalMarkupNote">(Average of all items)</span>
+                </div>
+              </div>
+              
               <table class="data-table" style="min-width: 1200px;">
                 <thead>
                   <tr>
@@ -483,6 +524,7 @@
                     <th class="w-48">Preview</th>
                     <th class="min-w-48">Description</th>
                     <th class="text-center w-20">Qty</th>
+                    <th class="text-center w-28">Markup %</th>
                     <th class="text-right w-32">Unit Price</th>
                     <th class="text-right w-32">Total</th>
                     <th class="text-center w-28 whitespace-nowrap">Actions</th>
@@ -609,11 +651,32 @@
                           <span class="quantity-display"><%= item.quantity %></span>
                         </span>
                       </td>
-                      <td class="text-right py-3">
-                        <div class="text-sm font-medium text-gray-900" data-price="<%= item.unitPrice %>"><!-- Price will be formatted by JavaScript --></div>
+                      <td class="text-center py-3">
+                        <div class="inline-flex items-center justify-center">
+                          <input type="number" 
+                                 class="inline-edit-markup w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                 data-item-id="<%= item._id %>" 
+                                 data-project-id="<%= project._id %>"
+                                 data-original-markup="<%= item.markup !== undefined ? item.markup : 20 %>"
+                                 value="<%= item.markup !== undefined ? item.markup : 20 %>"
+                                 step="0.1" 
+                                 min="0" 
+                                 max="1000"
+                                 title="Edit markup percentage">
+                          <span class="text-xs text-gray-500 ml-1">%</span>
+                        </div>
                       </td>
                       <td class="text-right py-3">
-                        <div class="text-sm font-bold text-green-700" data-price="<%= item.totalPrice %>"><!-- Price will be formatted by JavaScript --></div>
+                        <div class="text-sm font-medium text-gray-900" 
+                             data-base-price="<%= item.unitPrice %>" 
+                             data-price="<%= item.unitPrice %>"
+                             data-markup="<%= item.markup !== undefined ? item.markup : 20 %>"><!-- Price will be formatted by JavaScript --></div>
+                      </td>
+                      <td class="text-right py-3">
+                        <div class="text-sm font-bold text-green-700" 
+                             data-base-total="<%= item.totalPrice %>"
+                             data-price="<%= item.totalPrice %>"
+                             data-markup="<%= item.markup !== undefined ? item.markup : 20 %>"><!-- Price will be formatted by JavaScript --></div>
                       </td>
                       <td class="whitespace-nowrap">
                         <div class="flex items-center justify-center gap-1 flex-nowrap">
@@ -643,8 +706,8 @@
                   
                   <!-- Total Row -->
                   <tr class="bg-gradient-to-r from-indigo-50 to-blue-50 font-medium border-t-2 border-indigo-200">
-                    <td colspan="4" class="px-4 py-3 text-right text-gray-900 font-semibold">TOTAL:</td>
-                    <td class="px-4 py-3 text-right text-green-700 font-bold text-lg" data-price="<%= projectTotal %>">$<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                    <td colspan="5" class="px-4 py-3 text-right text-gray-900 font-semibold">TOTAL:</td>
+                    <td class="px-4 py-3 text-right text-green-700 font-bold text-lg" id="projectTotalDisplay" data-base-price="<%= projectTotal %>" data-price="<%= projectTotal %>">$<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                     <td class="px-4 py-3"></td>
                   </tr>
                 </tbody>
@@ -902,7 +965,18 @@
     
     // Calculate project total with optional costs
     function calculateProjectTotal() {
-      let total = baseProjectTotal;
+      // Calculate total from marked-up prices
+      let total = 0;
+      document.querySelectorAll('[data-base-total][data-markup]').forEach(element => {
+        const baseTotal = parseFloat(element.getAttribute('data-base-total')) || 0;
+        const markup = parseFloat(element.getAttribute('data-markup')) || 20;
+        total += baseTotal * (1 + markup / 100);
+      });
+      
+      // If no items with markup found, use baseProjectTotal
+      if (total === 0) {
+        total = baseProjectTotal;
+      }
       
       const includeSeaFreight = document.getElementById('includeSeaFreight')?.checked;
       const includeLandFreight = document.getElementById('includeLandFreight')?.checked;
@@ -966,17 +1040,186 @@
         baseProjectCostEl.textContent = formatCurrency(baseProjectTotal);
       }
       
-      // Format individual item prices
-      const itemPrices = document.querySelectorAll('[data-price]');
-      itemPrices.forEach(element => {
-        const price = parseFloat(element.getAttribute('data-price'));
-        if (!isNaN(price)) {
-          element.textContent = formatCurrency(price);
-        }
-      });
+      // Apply markup to prices and format
+      applyMarkupToPrices();
       
       // Initial calculation
       calculateProjectTotal();
+    }
+    
+    // Apply markup to all prices
+    function applyMarkupToPrices() {
+      // Update unit prices and totals for each item
+      document.querySelectorAll('[data-base-price][data-markup]').forEach(element => {
+        const basePrice = parseFloat(element.getAttribute('data-base-price')) || 0;
+        const markup = parseFloat(element.getAttribute('data-markup')) || 20;
+        const markedUpPrice = basePrice * (1 + markup / 100);
+        element.setAttribute('data-price', markedUpPrice);
+        element.textContent = formatCurrency(markedUpPrice);
+      });
+      
+      // Update total prices for each item
+      document.querySelectorAll('[data-base-total][data-markup]').forEach(element => {
+        const baseTotal = parseFloat(element.getAttribute('data-base-total')) || 0;
+        const markup = parseFloat(element.getAttribute('data-markup')) || 20;
+        const markedUpTotal = baseTotal * (1 + markup / 100);
+        element.setAttribute('data-price', markedUpTotal);
+        element.textContent = formatCurrency(markedUpTotal);
+      });
+      
+      // Update project total
+      updateProjectTotalWithMarkup();
+    }
+    
+    // Update project total with markup applied
+    function updateProjectTotalWithMarkup() {
+      let total = 0;
+      document.querySelectorAll('[data-base-total][data-markup]').forEach(element => {
+        const baseTotal = parseFloat(element.getAttribute('data-base-total')) || 0;
+        const markup = parseFloat(element.getAttribute('data-markup')) || 20;
+        total += baseTotal * (1 + markup / 100);
+      });
+      
+      const projectTotalEl = document.getElementById('projectTotalDisplay');
+      if (projectTotalEl) {
+        projectTotalEl.setAttribute('data-price', total);
+        projectTotalEl.textContent = formatCurrency(total);
+      }
+      
+      // Update displayTotal
+      const displayTotal = document.getElementById('displayTotal');
+      if (displayTotal) {
+        displayTotal.textContent = formatCurrency(total);
+      }
+    }
+    
+    // Calculate average markup from all items
+    function calculateAverageMarkup() {
+      const markupInputs = document.querySelectorAll('.inline-edit-markup');
+      if (markupInputs.length === 0) return 20;
+      
+      let sum = 0;
+      let count = 0;
+      markupInputs.forEach(input => {
+        const value = parseFloat(input.value);
+        if (!isNaN(value)) {
+          sum += value;
+          count++;
+        }
+      });
+      
+      return count > 0 ? sum / count : 20;
+    }
+    
+    // Update global markup field with average
+    function updateGlobalMarkupDisplay() {
+      const globalMarkupInput = document.getElementById('globalMarkup');
+      if (globalMarkupInput) {
+        const average = calculateAverageMarkup();
+        globalMarkupInput.value = average.toFixed(1);
+      }
+    }
+    
+    // Apply global markup to all items
+    function applyGlobalMarkup(markupValue) {
+      const markupInputs = document.querySelectorAll('.inline-edit-markup');
+      markupInputs.forEach(input => {
+        input.value = parseFloat(markupValue).toFixed(1);
+        input.setAttribute('data-original-markup', markupValue);
+        
+        // Update data-markup attribute on related price elements
+        const itemId = input.getAttribute('data-item-id');
+        const row = input.closest('tr') || input.closest('.item-card');
+        if (row) {
+          row.querySelectorAll('[data-markup]').forEach(el => {
+            el.setAttribute('data-markup', markupValue);
+          });
+        }
+        
+        // Save to backend (debounced)
+        debouncedSaveMarkup(input);
+      });
+      
+      // Update prices
+      applyMarkupToPrices();
+    }
+    
+    // Debounce function for saving markup
+    let saveMarkupTimeouts = {};
+    function debouncedSaveMarkup(input) {
+      const itemId = input.getAttribute('data-item-id');
+      
+      // Clear existing timeout
+      if (saveMarkupTimeouts[itemId]) {
+        clearTimeout(saveMarkupTimeouts[itemId]);
+      }
+      
+      // Set new timeout
+      saveMarkupTimeouts[itemId] = setTimeout(() => {
+        saveMarkup(input);
+      }, 500);
+    }
+    
+    // Save markup to backend
+    async function saveMarkup(input) {
+      const itemId = input.getAttribute('data-item-id');
+      const projectId = input.getAttribute('data-project-id');
+      const markupValue = parseFloat(input.value);
+      
+      if (isNaN(markupValue) || markupValue < 0 || markupValue > 1000) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/projects/${projectId}/items/${itemId}/markup`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ markup: markupValue })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          // Update data attributes with new values
+          input.setAttribute('data-original-markup', markupValue);
+          
+          // Update data-markup on price elements
+          const row = input.closest('tr') || input.closest('.item-card');
+          if (row) {
+            row.querySelectorAll('[data-markup]').forEach(el => {
+              el.setAttribute('data-markup', markupValue);
+            });
+            
+            // Update displayed prices
+            const basePriceEl = row.querySelector('[data-base-price][data-markup]');
+            const baseTotalEl = row.querySelector('[data-base-total][data-markup]');
+            
+            if (basePriceEl) {
+              const basePrice = parseFloat(basePriceEl.getAttribute('data-base-price')) || 0;
+              const newPrice = basePrice * (1 + markupValue / 100);
+              basePriceEl.setAttribute('data-price', newPrice);
+              basePriceEl.textContent = formatCurrency(newPrice);
+            }
+            
+            if (baseTotalEl) {
+              const baseTotal = parseFloat(baseTotalEl.getAttribute('data-base-total')) || 0;
+              const newTotal = baseTotal * (1 + markupValue / 100);
+              baseTotalEl.setAttribute('data-price', newTotal);
+              baseTotalEl.textContent = formatCurrency(newTotal);
+            }
+          }
+          
+          // Update project total
+          updateProjectTotalWithMarkup();
+          
+          // Update global markup average (but don't trigger change event)
+          updateGlobalMarkupDisplay();
+        }
+      } catch (error) {
+        console.error('Error saving markup:', error);
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -1187,6 +1430,69 @@
       // Make functions globally available
       window.openAddWindowModal = openAddWindowModal;
       window.closeAddWindowModal = closeAddWindowModal;
+      
+      // Initialize markup functionality
+      // Set up global markup handler
+      const globalMarkupInput = document.getElementById('globalMarkup');
+      if (globalMarkupInput) {
+        // Initialize with average
+        updateGlobalMarkupDisplay();
+        
+        // When global markup changes, apply to all items
+        let isUpdatingFromAverage = false;
+        globalMarkupInput.addEventListener('change', function() {
+          if (!isUpdatingFromAverage) {
+            const value = parseFloat(this.value);
+            if (!isNaN(value) && value >= 0 && value <= 1000) {
+              applyGlobalMarkup(value);
+            }
+          }
+        });
+        
+        // Also update on input for real-time feedback
+        globalMarkupInput.addEventListener('input', function() {
+          if (!isUpdatingFromAverage) {
+            const value = parseFloat(this.value);
+            if (!isNaN(value) && value >= 0 && value <= 1000) {
+              applyGlobalMarkup(value);
+            }
+          }
+        });
+      }
+      
+      // Set up individual markup handlers
+      document.querySelectorAll('.inline-edit-markup').forEach(input => {
+        input.addEventListener('change', function() {
+          const value = parseFloat(this.value);
+          if (!isNaN(value) && value >= 0 && value <= 1000) {
+            debouncedSaveMarkup(this);
+            // Update prices immediately
+            const itemId = this.getAttribute('data-item-id');
+            const row = this.closest('tr') || this.closest('.item-card');
+            if (row) {
+              row.querySelectorAll('[data-markup]').forEach(el => {
+                el.setAttribute('data-markup', value);
+              });
+            }
+            applyMarkupToPrices();
+            // Update global average (but don't trigger change)
+            updateGlobalMarkupDisplay();
+          } else {
+            // Restore original value
+            this.value = this.getAttribute('data-original-markup') || 20;
+          }
+        });
+        
+        input.addEventListener('blur', function() {
+          const value = parseFloat(this.value);
+          if (isNaN(value) || value < 0 || value > 1000) {
+            this.value = this.getAttribute('data-original-markup') || 20;
+          }
+        });
+      });
+      
+      // Initial price formatting with markup
+      applyMarkupToPrices();
       
       // Render window previews
       function renderWindowPreviews() {

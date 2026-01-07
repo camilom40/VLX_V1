@@ -36,6 +36,13 @@ const windowItemSchema = new Schema({
     required: true,
     min: 0
   },
+  // Markup percentage (applied to unitPrice for quoting)
+  markup: {
+    type: Number,
+    default: 20,
+    min: 0,
+    max: 1000
+  },
   // Additional properties
   material: {
     type: String,

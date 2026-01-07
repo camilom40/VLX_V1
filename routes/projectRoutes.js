@@ -935,6 +935,53 @@ router.patch('/projects/:projectId/items/:itemId/quantity', isAuthenticated, asy
   }
 });
 
+// API endpoint to update item markup
+router.patch('/projects/:projectId/items/:itemId/markup', isAuthenticated, async (req, res) => {
+  try {
+    const { projectId, itemId } = req.params;
+    const { markup } = req.body;
+    const userId = req.session.userId;
+
+    // Verify project ownership
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found or access denied.' });
+    }
+
+    // Validate markup
+    const markupNum = parseFloat(markup);
+    if (isNaN(markupNum) || markupNum < 0 || markupNum > 1000) {
+      return res.status(400).json({ error: 'Markup must be a number between 0 and 1000.' });
+    }
+
+    // Find and update the item
+    const windowItem = await WindowItem.findOne({ _id: itemId, projectId });
+    if (!windowItem) {
+      return res.status(404).json({ error: 'Window item not found.' });
+    }
+
+    // Update the markup
+    windowItem.markup = markupNum;
+    await windowItem.save();
+
+    // Calculate displayed prices (with markup applied)
+    const baseUnitPrice = windowItem.unitPrice || 0;
+    const displayedUnitPrice = baseUnitPrice * (1 + markupNum / 100);
+    const displayedTotalPrice = displayedUnitPrice * (windowItem.quantity || 1);
+
+    res.json({ 
+      success: true, 
+      markup: markupNum,
+      displayedUnitPrice: displayedUnitPrice,
+      displayedTotalPrice: displayedTotalPrice,
+      message: 'Markup updated successfully.'
+    });
+  } catch (error) {
+    console.error('Error updating item markup:', error);
+    res.status(500).json({ error: 'Failed to update item markup.' });
+  }
+});
+
 // NEW ROUTE: Delete a window item
 router.post('/projects/:projectId/items/:itemId/delete', isAuthenticated, async (req, res) => {
   try {
