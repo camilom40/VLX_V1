@@ -338,7 +338,9 @@
         </div>
         
         <div class="mt-4 md:mt-0">
-          <div class="bg-blue-50 rounded-lg px-6 py-4 border border-blue-100" data-project-total="<%= projectTotal %>">
+          <div class="bg-blue-50 rounded-lg px-6 py-4 border border-blue-100" 
+               data-project-total="<%= projectTotal %>"
+               data-cost-settings='<%= JSON.stringify(costSettings || {}) %>'>
             <div class="text-blue-800 text-xl font-bold" id="displayTotal">$<%= projectTotal %></div>
             <div class="text-blue-600 text-sm">Total Project Value</div>
           </div>
@@ -887,10 +889,11 @@
 
   <script>
     // Cost settings from server (stored in USD in database)
-    const costSettings = {
-      seaFreight: <%= costSettings && costSettings.seaFreight ? costSettings.seaFreight : 0 %>,
-      landFreight: <%= costSettings && costSettings.landFreight ? costSettings.landFreight : 0 %>,
-      administrativeExpenses: <%= costSettings && costSettings.administrativeExpenses ? costSettings.administrativeExpenses : 0 %>
+    const costSettingsElement = document.querySelector('[data-cost-settings]');
+    const costSettings = costSettingsElement ? JSON.parse(costSettingsElement.getAttribute('data-cost-settings')) : {
+      seaFreight: 0,
+      landFreight: 0,
+      administrativeExpenses: 0
     };
     
     // Exchange rate from server (default to 4000 if not provided)

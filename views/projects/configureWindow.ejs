@@ -2149,12 +2149,11 @@
                          document.querySelector('button[type="submit"]');
     let isNameValid = true;
     
-    <% if (typeof isEdit !== 'undefined' && isEdit && existingWindow) { %>
-    const currentWindowId = '<%= existingWindow._id %>';
-    <% } else { %>
-    const currentWindowId = null;
-    <% } %>
-    const projectId = '<%= project._id %>';
+    // Get current window ID and project ID from data attributes
+    const currentWindowIdElement = document.querySelector('[data-current-window-id]');
+    const currentWindowId = currentWindowIdElement ? currentWindowIdElement.getAttribute('data-current-window-id') : null;
+    const projectIdElement = document.querySelector('[data-project-id]');
+    const projectId = projectIdElement ? projectIdElement.getAttribute('data-project-id') : '';
     
     if (windowRefInput) {
       windowRefInput.addEventListener('input', function() {
