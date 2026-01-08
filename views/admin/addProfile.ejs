@@ -57,6 +57,15 @@
     .form-input-simple:hover { border-color: #cbd5e1; background: #fff; }
     .form-input-simple:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
     
+    .form-input-simple.price-input {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
+    .form-input-simple.price-input:focus {
+      box-shadow: none;
+    }
+    
     .input-with-icon { position: relative; width: 100%; }
     .input-icon {
       position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
@@ -301,19 +310,19 @@
                 </div>
               </div>
               <div class="flex gap-2">
-                <div class="flex-1 input-with-icon">
-                  <div class="input-icon">
-                    <span class="text-base font-bold">$</span>
-                  </div>
+                <div class="flex items-center px-3 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-l-lg border border-gray-200 border-r-0">
+                  <span class="text-sm font-semibold text-emerald-700" id="currencySymbol">USD</span>
+                </div>
+                <div class="flex-1">
                   <input type="number" id="pricePerMeter" name="pricePerMeter" 
-                      step="0.01" min="0" required class="form-input" placeholder="0.00">
+                      step="0.0001" min="0" required class="form-input-simple price-input w-full" placeholder="0.00">
                   <input type="hidden" id="currency" name="currency" value="USD">
                 </div>
-                <div class="flex items-center px-3 bg-gray-50 rounded border border-gray-200">
+                <div class="flex items-center px-3 bg-gray-50 rounded-r-lg border border-gray-200 border-l-0">
                   <span class="text-sm text-gray-600" id="priceUnitSuffix">/in</span>
                 </div>
               </div>
-              <p class="help-text">Price per unit (stored in USD, converted to per meter for calculations)</p>
+              <p class="help-text" id="priceHelpText">Enter price in <span id="priceCurrencyLabel">USD</span> per <span id="priceUnitLabel">inch</span>. Stored as USD per meter.</p>
             </div>
 
             <!-- Weight -->
@@ -402,9 +411,24 @@
     // For profiles: kg/m to lbs/ft (1 kg/m = 0.671969 lbs/ft)
     const KG_PER_M_TO_LBS_PER_FT = 0.671969;
     const LBS_PER_FT_TO_KG_PER_M = 1.48816; // inverse
+    
+    // Unit conversion constants
+    const INCHES_PER_METER = 39.3701;
+    const MM_PER_METER = 1000;
+    
+    // Exchange rate from server (COP per USD)
+    let exchangeRate = <%= typeof exchangeRate !== 'undefined' ? exchangeRate : 4000 %>;
+    
     let weightUnit = 'kg'; // 'kg' or 'lbs'
+    let currentPriceUnit = 'inches'; // 'inches' or 'mm'
+    let currentCurrency = 'USD'; // 'USD' or 'COP'
     
     document.addEventListener('DOMContentLoaded', function() {
+      // Initialize from global preferences
+      currentPriceUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+      currentCurrency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'USD';
+      exchangeRate = window.globalPreferences?.exchangeRate || 4000;
+      
       // Name validation on input
       const nameInput = document.getElementById('name');
       const nameError = document.getElementById('nameError');
@@ -467,7 +491,86 @@
       });
       
       updateWeightUnitDisplay();
+      
+      // Price unit and currency display
+      updatePriceDisplay();
+      
+      // Listen for global unit changes
+      window.addEventListener('unitChanged', function(event) {
+        const newUnit = event.detail.unit;
+        const priceInput = document.getElementById('pricePerMeter');
+        const currentPrice = parseFloat(priceInput.value) || 0;
+        
+        if (currentPrice > 0) {
+          // Convert current price to per meter first (in current currency)
+          let pricePerMeter;
+          if (currentPriceUnit === 'mm') {
+            pricePerMeter = currentPrice * MM_PER_METER;
+          } else {
+            pricePerMeter = currentPrice * INCHES_PER_METER;
+          }
+          
+          // Convert to new unit
+          if (newUnit === 'mm') {
+            priceInput.value = (pricePerMeter / MM_PER_METER).toFixed(4);
+          } else {
+            priceInput.value = (pricePerMeter / INCHES_PER_METER).toFixed(4);
+          }
+        }
+        
+        currentPriceUnit = newUnit;
+        updatePriceDisplay();
+      });
+      
+      // Listen for global currency changes
+      window.addEventListener('currencyChanged', function(event) {
+        const newCurrency = event.detail.currency;
+        const priceInput = document.getElementById('pricePerMeter');
+        const currentPrice = parseFloat(priceInput.value) || 0;
+        
+        if (currentPrice > 0) {
+          // Convert price between currencies
+          if (currentCurrency === 'USD' && newCurrency === 'COP') {
+            // USD to COP
+            priceInput.value = (currentPrice * exchangeRate).toFixed(2);
+          } else if (currentCurrency === 'COP' && newCurrency === 'USD') {
+            // COP to USD
+            priceInput.value = (currentPrice / exchangeRate).toFixed(4);
+          }
+        }
+        
+        currentCurrency = newCurrency;
+        updatePriceDisplay();
+      });
     });
+    
+    function updatePriceDisplay() {
+      const priceUnitDisplay = document.getElementById('priceUnitDisplay');
+      const priceUnitSuffix = document.getElementById('priceUnitSuffix');
+      const currencySymbol = document.getElementById('currencySymbol');
+      const priceCurrencyLabel = document.getElementById('priceCurrencyLabel');
+      const priceUnitLabel = document.getElementById('priceUnitLabel');
+      
+      // Update unit display
+      if (currentPriceUnit === 'mm') {
+        priceUnitDisplay.textContent = 'Meter';
+        priceUnitSuffix.textContent = '/m';
+        priceUnitLabel.textContent = 'meter';
+      } else {
+        priceUnitDisplay.textContent = 'Inch';
+        priceUnitSuffix.textContent = '/in';
+        priceUnitLabel.textContent = 'inch';
+      }
+      
+      // Update currency display
+      if (currentCurrency === 'COP') {
+        currencySymbol.textContent = 'COP';
+        priceCurrencyLabel.textContent = 'COP';
+      } else {
+        currencySymbol.textContent = 'USD';
+        priceCurrencyLabel.textContent = 'USD';
+      }
+    }
     
     function validateAndSubmit() {
       const name = document.getElementById('name').value.trim();
@@ -492,19 +595,23 @@
         }
       }
       
-      // Convert price from current unit to per meter before submission
+      // Convert price to USD per meter before submission
       if (pricePerMeter) {
-        const priceValue = parseFloat(pricePerMeter.value);
+        let priceValue = parseFloat(pricePerMeter.value);
         if (!isNaN(priceValue) && priceValue > 0) {
-          const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
-          let pricePerMeterValue;
+          // Step 1: Convert to USD if in COP
+          if (currentCurrency === 'COP') {
+            priceValue = priceValue / exchangeRate;
+          }
           
-          if (globalUnit === 'mm') {
-            // Convert from per mm to per meter: 1 meter = 1000 mm
-            pricePerMeterValue = priceValue * 1000;
+          // Step 2: Convert to per meter
+          let pricePerMeterValue;
+          if (currentPriceUnit === 'mm') {
+            // If displaying as per meter (when unit is mm), value is already per meter
+            pricePerMeterValue = priceValue;
           } else {
             // Convert from per inch to per meter: 1 meter = 39.3701 inches
-            pricePerMeterValue = priceValue * 39.3701;
+            pricePerMeterValue = priceValue * INCHES_PER_METER;
           }
           
           pricePerMeter.value = pricePerMeterValue.toFixed(4);

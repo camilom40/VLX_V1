@@ -448,8 +448,15 @@
           <i class="fas fa-arrow-left"></i>
         </a>
         <h1 class="text-3xl font-bold text-gray-900">Create New Window System</h1>
+        <!-- Auto-save indicator -->
+        <span id="autosave-indicator" class="hidden ml-auto text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Draft saved
+        </span>
       </div>
-      <p class="text-gray-500">Configure a new window system template</p>
+      <p class="text-gray-500">Configure a new window system template <span class="text-xs text-gray-400">(Auto-saves your progress)</span></p>
     </div>
     
     <!-- Enhanced Step Indicator -->
@@ -1528,6 +1535,315 @@
     let panelConfig = ['O', 'O']; // Default panel configuration (O = Fixed)
     let selectedProfileCategory = 'frame'; // Default category for profiles
     
+    // ============================================
+    // AUTO-SAVE FUNCTIONALITY
+    // ============================================
+    const DRAFT_STORAGE_KEY = 'vlx_compose_window_draft';
+    let hasUnsavedChanges = false;
+    let autoSaveTimeout = null;
+    
+    // Save draft to localStorage
+    function saveDraft() {
+      // Get panel ratios if available
+      let panelRatios = null;
+      try {
+        if (typeof getPanelRatios === 'function') {
+          panelRatios = getPanelRatios();
+        }
+      } catch(e) {}
+      
+      const draftData = {
+        timestamp: Date.now(),
+        // Step 1: Basic Info
+        windowName: document.getElementById('type')?.value || '',
+        operationType: document.getElementById('operationType')?.value || 'sliding',
+        panelOrientation: document.getElementById('panelOrientation')?.value || 'horizontal',
+        panelCount: document.getElementById('panelCount')?.value || 2,
+        panelConfig: panelConfig,
+        panelRatios: panelRatios,
+        showLogo: document.getElementById('showLogoCheckbox')?.checked || false,
+        // French door config
+        frenchDoorType: document.getElementById('doorType')?.value || 'double',
+        frenchHingeSide: document.getElementById('hingeSide')?.value || 'left',
+        frenchLeftSidelites: document.getElementById('leftSidelites')?.value || 0,
+        frenchRightSidelites: document.getElementById('rightSidelites')?.value || 0,
+        frenchTransom: document.getElementById('transom')?.value || 'none',
+        frenchDoorLogo: document.getElementById('frenchDoorLogo')?.checked || false,
+        // Step 2: Profiles
+        profiles: profiles,
+        selectedProfileCategory: selectedProfileCategory,
+        // Step 3: Accessories
+        accessories: accessories,
+        // Step 4: Glass Config (missileImpact)
+        glassWidthEquation: document.getElementById('glass-width-equation')?.value || '',
+        glassHeightEquation: document.getElementById('glass-height-equation')?.value || '',
+        // Step 5: Others (Flange)
+        hasFlange: document.getElementById('has-flange')?.checked || false,
+        flangeSize: document.getElementById('flange-size')?.value || '',
+        isTrimable: document.getElementById('is-trimable')?.checked || false,
+        // Current progress
+        currentStep: currentStep
+      };
+      
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+        hasUnsavedChanges = false;
+        showAutoSaveIndicator();
+      } catch (e) {
+        console.warn('Could not save draft:', e);
+      }
+    }
+    
+    // Schedule auto-save (debounced)
+    function scheduleAutoSave() {
+      hasUnsavedChanges = true;
+      clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(saveDraft, 2000); // Save after 2 seconds of inactivity
+    }
+    
+    // Show auto-save indicator
+    function showAutoSaveIndicator() {
+      const indicator = document.getElementById('autosave-indicator');
+      if (indicator) {
+        indicator.classList.remove('hidden');
+        indicator.textContent = 'Draft saved';
+        setTimeout(() => {
+          indicator.classList.add('hidden');
+        }, 2000);
+      }
+    }
+    
+    // Restore draft from localStorage
+    function restoreDraft() {
+      try {
+        const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (!savedDraft) return false;
+        
+        const draft = JSON.parse(savedDraft);
+        
+        // Check if draft is older than 24 hours
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        if (Date.now() - draft.timestamp > maxAge) {
+          clearDraft();
+          return false;
+        }
+        
+        // Check if draft has meaningful data
+        const hasData = draft.windowName || draft.profiles?.length > 0 || draft.accessories?.length > 0;
+        if (!hasData) return false;
+        
+        return draft;
+      } catch (e) {
+        console.warn('Could not restore draft:', e);
+        return false;
+      }
+    }
+    
+    // Apply restored draft data to form
+    function applyDraft(draft) {
+      // Restore Step 1: Basic Info
+      if (document.getElementById('type')) {
+        document.getElementById('type').value = draft.windowName || '';
+      }
+      if (document.getElementById('operationType')) {
+        document.getElementById('operationType').value = draft.operationType || 'sliding';
+        // Trigger change event to update UI (shows/hides French door config)
+        document.getElementById('operationType').dispatchEvent(new Event('change'));
+      }
+      if (document.getElementById('panelOrientation')) {
+        document.getElementById('panelOrientation').value = draft.panelOrientation || 'horizontal';
+      }
+      if (document.getElementById('panelCount')) {
+        document.getElementById('panelCount').value = draft.panelCount || 2;
+      }
+      if (document.getElementById('showLogoCheckbox')) {
+        document.getElementById('showLogoCheckbox').checked = draft.showLogo !== false;
+      }
+      
+      // Restore panel config array
+      panelConfig = draft.panelConfig || ['O', 'O'];
+      
+      // Restore French door config
+      if (document.getElementById('doorType')) {
+        document.getElementById('doorType').value = draft.frenchDoorType || 'double';
+      }
+      if (document.getElementById('hingeSide')) {
+        document.getElementById('hingeSide').value = draft.frenchHingeSide || 'left';
+      }
+      if (document.getElementById('leftSidelites')) {
+        document.getElementById('leftSidelites').value = draft.frenchLeftSidelites || 0;
+      }
+      if (document.getElementById('rightSidelites')) {
+        document.getElementById('rightSidelites').value = draft.frenchRightSidelites || 0;
+      }
+      if (document.getElementById('transom')) {
+        document.getElementById('transom').value = draft.frenchTransom || 'none';
+      }
+      if (document.getElementById('frenchDoorLogo')) {
+        document.getElementById('frenchDoorLogo').checked = draft.frenchDoorLogo !== false;
+      }
+      
+      // Restore Step 2: Profiles
+      profiles = draft.profiles || [];
+      selectedProfileCategory = draft.selectedProfileCategory || 'frame';
+      
+      // Restore Step 3: Accessories
+      accessories = draft.accessories || [];
+      
+      // Restore Step 4: Glass equations
+      if (document.getElementById('glass-width-equation')) {
+        document.getElementById('glass-width-equation').value = draft.glassWidthEquation || '';
+      }
+      if (document.getElementById('glass-height-equation')) {
+        document.getElementById('glass-height-equation').value = draft.glassHeightEquation || '';
+      }
+      
+      // Restore Step 5: Flange config
+      if (document.getElementById('has-flange')) {
+        document.getElementById('has-flange').checked = draft.hasFlange || false;
+      }
+      if (document.getElementById('flange-size')) {
+        document.getElementById('flange-size').value = draft.flangeSize || '';
+      }
+      if (document.getElementById('is-trimable')) {
+        document.getElementById('is-trimable').checked = draft.isTrimable || false;
+      }
+      
+      // Update UI after short delay to ensure DOM is ready
+      setTimeout(() => {
+        // Rebuild panel layout buttons
+        if (typeof validateAndUpdatePanels === 'function') {
+          validateAndUpdatePanels();
+        }
+        // Update preview with restored panel config
+        if (typeof updatePanelPreview === 'function') {
+          updatePanelPreview();
+        }
+        // Restore panel ratios if saved
+        if (draft.panelRatios && typeof setPanelRatios === 'function') {
+          setPanelRatios(draft.panelRatios);
+        }
+        // Render tables
+        renderProfilesTable();
+        renderAccessoriesTable();
+        updateEmptyStates();
+        // Update French door preview if applicable
+        if (draft.operationType === 'french-door' && typeof updateFrenchDoorPreview === 'function') {
+          updateFrenchDoorPreview();
+        }
+      }, 100);
+    }
+    
+    // Clear draft from localStorage
+    function clearDraft() {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      hasUnsavedChanges = false;
+      hideDraftRecoveryBar();
+    }
+    
+    // Show draft recovery notification bar
+    function showDraftRecoveryBar(draft) {
+      const bar = document.createElement('div');
+      bar.id = 'draft-recovery-bar';
+      bar.className = 'fixed top-0 left-0 right-0 bg-amber-500 text-white px-4 py-3 shadow-lg z-50 flex items-center justify-between';
+      
+      const timestamp = new Date(draft.timestamp);
+      const timeAgo = getTimeAgo(timestamp);
+      
+      bar.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span class="font-medium">Unsaved draft found from ${timeAgo}</span>
+          <span class="text-amber-100 text-sm">${draft.windowName ? `"${draft.windowName}"` : 'Unnamed window'} - ${draft.profiles?.length || 0} profiles, ${draft.accessories?.length || 0} accessories</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="restoreAndApplyDraft()" class="bg-white text-amber-600 px-4 py-1.5 rounded font-medium hover:bg-amber-50 transition-colors">
+            Restore Draft
+          </button>
+          <button onclick="discardDraft()" class="bg-amber-600 text-white px-4 py-1.5 rounded font-medium hover:bg-amber-700 border border-amber-400 transition-colors">
+            Start Fresh
+          </button>
+        </div>
+      `;
+      
+      document.body.insertBefore(bar, document.body.firstChild);
+      // Push content down
+      document.body.style.paddingTop = '60px';
+    }
+    
+    function hideDraftRecoveryBar() {
+      const bar = document.getElementById('draft-recovery-bar');
+      if (bar) {
+        bar.remove();
+        document.body.style.paddingTop = '';
+      }
+    }
+    
+    function restoreAndApplyDraft() {
+      const draft = restoreDraft();
+      if (draft) {
+        applyDraft(draft);
+        hideDraftRecoveryBar();
+        showAlert('Draft restored successfully!', 'success');
+      }
+    }
+    
+    function discardDraft() {
+      clearDraft();
+      showAlert('Draft discarded. Starting fresh.', 'info');
+    }
+    
+    function getTimeAgo(date) {
+      const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+      if (seconds < 60) return 'just now';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      const days = Math.floor(hours / 24);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    }
+    
+    // Warn before leaving page with unsaved changes
+    window.addEventListener('beforeunload', function(e) {
+      // Save draft before leaving
+      if (hasUnsavedChanges || profiles.length > 0 || accessories.length > 0) {
+        saveDraft();
+      }
+      
+      // Only show warning if there's meaningful unsaved data
+      if (profiles.length > 0 || accessories.length > 0 || document.getElementById('type')?.value.trim()) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    });
+    
+    // Setup auto-save listeners on form inputs
+    function setupAutoSaveListeners() {
+      // List of input IDs to monitor for changes (using correct IDs from the form)
+      const inputIds = [
+        // Step 1: Basic Info
+        'type', 'operationType', 'panelOrientation', 'panelCount', 'showLogoCheckbox',
+        // French door config
+        'doorType', 'hingeSide', 'leftSidelites', 'rightSidelites', 'transom', 'frenchDoorLogo',
+        // Step 4: Glass config
+        'glass-width-equation', 'glass-height-equation',
+        // Step 5: Flange config
+        'has-flange', 'flange-size', 'is-trimable'
+      ];
+      
+      inputIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', scheduleAutoSave);
+          el.addEventListener('change', scheduleAutoSave);
+        }
+      });
+    }
+    
     // Profile category selection
     function selectProfileCategory(category) {
       selectedProfileCategory = category;
@@ -1562,6 +1878,15 @@
     // Initialize the page
     document.addEventListener('DOMContentLoaded', function() {
       try {
+        // Check for saved draft
+        const savedDraft = restoreDraft();
+        if (savedDraft) {
+          showDraftRecoveryBar(savedDraft);
+        }
+        
+        // Hook up auto-save to form changes
+        setupAutoSaveListeners();
+        
         // Initialize length equation unit display
         updateLengthEquationUnitDisplay();
         
@@ -3624,6 +3949,7 @@
 
       profiles.push(profileEntry);
       renderProfilesTable();
+      scheduleAutoSave();
       
       // Reset form inputs
       hiddenInput.value = '';
@@ -3738,7 +4064,10 @@
               <td class="px-4 py-3 whitespace-nowrap text-center">
                 ${profile.quantityEquation ? 
                   `<code class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-sm font-mono border border-purple-200" title="Quantity Equation">${profile.quantityEquation}</code>` :
-                  `<span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium bg-gray-100 text-gray-800">${profile.quantity}</span>`
+                  `<input type="number" min="1" step="1" value="${profile.quantity}" 
+                     class="w-16 text-center px-2 py-1 rounded text-sm font-medium bg-gray-100 text-gray-800 border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors"
+                     onchange="updateProfileQuantity(${profile.originalIndex}, this.value)"
+                     title="Click to edit quantity">`
                 }
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-center">
@@ -3768,7 +4097,18 @@
       profiles.splice(index, 1);
       renderProfilesTable();
       updateEmptyStates();
-      
+      scheduleAutoSave();
+    }
+    
+    function updateProfileQuantity(index, newQuantity) {
+      const qty = parseInt(newQuantity, 10);
+      if (!isNaN(qty) && qty >= 1) {
+        profiles[index].quantity = qty;
+        scheduleAutoSave();
+      } else {
+        // Reset to previous value if invalid
+        renderProfilesTable();
+      }
     }
 
     // Validate equation syntax and variables
@@ -4481,6 +4821,7 @@
       
       accessories.push(accessoryEntry);
       renderAccessoriesTable();
+      scheduleAutoSave();
       
       // Reset form inputs
       accessorySelect.selectedIndex = 0;
@@ -4555,6 +4896,7 @@
       accessories.splice(index, 1);
       renderAccessoriesTable();
       updateEmptyStates();
+      scheduleAutoSave();
     }
 
     // Attach event listeners and ensure correct data is sent on form submission
@@ -4795,6 +5137,9 @@
       console.log('Profiles:', profiles.length);
       console.log('Accessories:', accessories.length);
       console.log('Muntin Config:', muntinConfiguration);
+      
+      // Clear draft since we're successfully submitting
+      clearDraft();
       
       // Submit the form
       form.submit();

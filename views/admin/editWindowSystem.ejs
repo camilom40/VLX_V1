@@ -2457,7 +2457,10 @@
               <td class="font-medium">${profile.profileName}</td>
               <td>${profile.quantityEquation ? 
                 `<code class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-sm font-mono border border-purple-200" title="Quantity Equation">${profile.quantityEquation}</code>` :
-                `${profile.quantity}`
+                `<input type="number" min="1" step="1" value="${profile.quantity}" 
+                   class="w-16 text-center px-2 py-1 rounded text-sm font-medium bg-gray-100 text-gray-800 border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors"
+                   onchange="updateProfileQuantity(${globalIdx}, this.value)"
+                   title="Click to edit quantity">`
               }</td>
               <td class="capitalize">${profile.orientation}</td>
               <td>${profile.position ? 
@@ -2490,6 +2493,16 @@
       
       updateUnitMessage();
       renderProfilesTable();
+    }
+    
+    function updateProfileQuantity(index, newQuantity) {
+      const qty = parseInt(newQuantity, 10);
+      if (!isNaN(qty) && qty >= 1) {
+        profiles[index].quantity = qty;
+      } else {
+        // Reset to previous value if invalid
+        renderProfilesTable();
+      }
     }
     
     // Accessory Management

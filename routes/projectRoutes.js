@@ -487,6 +487,49 @@ router.post('/projects/delete/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+// NEW ROUTE: Bulk delete projects
+router.post('/projects/bulk-delete', isAuthenticated, async (req, res) => {
+  try {
+    const { projectIds } = req.body;
+    const userId = req.session.userId;
+
+    if (!projectIds || !Array.isArray(projectIds) || projectIds.length === 0) {
+      return res.status(400).json({ error: 'No projects selected for deletion.' });
+    }
+
+    // Verify all projects belong to the user
+    const projects = await Project.find({ 
+      _id: { $in: projectIds }, 
+      userId: userId 
+    });
+
+    if (projects.length !== projectIds.length) {
+      return res.status(403).json({ error: 'Some projects do not belong to you or do not exist.' });
+    }
+
+    // Delete all window items associated with these projects
+    await WindowItem.deleteMany({ projectId: { $in: projectIds } });
+
+    // Delete all projects
+    const deleteResult = await Project.deleteMany({ 
+      _id: { $in: projectIds },
+      userId: userId 
+    });
+
+    console.log(`Bulk deleted ${deleteResult.deletedCount} project(s) by user ${userId}`);
+
+    res.json({ 
+      success: true, 
+      deletedCount: deleteResult.deletedCount,
+      message: `Successfully deleted ${deleteResult.deletedCount} project(s).`
+    });
+
+  } catch (error) {
+    console.error("Error bulk deleting projects:", error);
+    res.status(500).json({ error: 'Failed to delete projects.' });
+  }
+});
+
 // NEW ROUTE: Quote preview (opens in popup window)
 router.get('/projects/:id/quote-preview', isAuthenticated, async (req, res) => {
   try {

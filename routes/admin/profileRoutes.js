@@ -33,8 +33,17 @@ router.get('/', isAdmin, async (req, res) => {
 });
 
 // Route to show the form for adding a new profile
-router.get('/add', isAdmin, (req, res) => {
-  res.render('admin/addProfile');
+router.get('/add', isAdmin, async (req, res) => {
+  try {
+    const CostSettings = require('../../models/CostSettings');
+    const costSettings = await CostSettings.findOne();
+    res.render('admin/addProfile', {
+      exchangeRate: costSettings?.exchangeRate || 4000
+    });
+  } catch (error) {
+    console.error('Error loading add profile page:', error);
+    res.render('admin/addProfile', { exchangeRate: 4000 });
+  }
 });
 
 router.post('/add', isAdmin, async (req, res) => {
@@ -66,12 +75,20 @@ router.post('/add', isAdmin, async (req, res) => {
 // Route to show the form for editing a profile
 router.get('/edit/:id', isAdmin, async (req, res) => {
   try {
-    const profile = await Profile.findById(req.params.id);
+    const CostSettings = require('../../models/CostSettings');
+    const [profile, costSettings] = await Promise.all([
+      Profile.findById(req.params.id),
+      CostSettings.findOne()
+    ]);
+    
     if (!profile) {
       logger.warn(`Profile with ID: ${req.params.id} not found.`);
       return res.status(404).send('Profile not found');
     }
-    res.render('admin/editProfile', { profile });
+    res.render('admin/editProfile', { 
+      profile,
+      exchangeRate: costSettings?.exchangeRate || 4000
+    });
   } catch (error) {
     logger.error('Failed to fetch profile for editing:', error);
     res.status(500).send('Failed to fetch profile for editing');

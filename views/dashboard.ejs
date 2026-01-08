@@ -146,6 +146,26 @@
             width: 90%;
             box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
+        
+        /* Bulk selection styles */
+        .project-checkbox:checked + .flex-1,
+        tr:has(.project-checkbox:checked) {
+            background-color: #eff6ff;
+        }
+        
+        .project-card:has(.project-checkbox:checked) {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        #bulkActionsBar {
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -263,14 +283,28 @@
                 </div>
             </div>
             
-            <!-- New Project Button -->
-            <div class="mb-4">
+            <!-- New Project Button & Bulk Actions -->
+            <div class="mb-4 flex flex-wrap items-center gap-3">
                 <a href="/projects/new" class="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                     New Project
                 </a>
+                
+                <!-- Bulk Delete Button (hidden by default) -->
+                <div id="bulkActionsBar" class="hidden items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+                    <span id="selectedCount" class="text-sm text-red-700 font-medium">0 selected</span>
+                    <button onclick="bulkDeleteProjects()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete Selected
+                    </button>
+                    <button onclick="clearSelection()" class="text-gray-600 hover:text-gray-800 text-sm underline">
+                        Clear Selection
+                    </button>
+                </div>
             </div>
             
             <!-- Search & Sort Bar -->
@@ -296,6 +330,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="projectCardsContainer">
                         <% projects.forEach(function(project) { %>
                             <div class="project-card" 
+                                 data-project-id="<%= project._id %>"
                                  data-project-name="<%= project.projectName.toLowerCase() %>" 
                                  data-client-name="<%= (project.clientName || '').toLowerCase() %>"
                                  data-quote-number="<%= (project.quoteNumber || '').toLowerCase() %>"
@@ -304,12 +339,16 @@
                                  data-created="<%= project.createdAt instanceof Date ? project.createdAt.getTime() : new Date(project.createdAt).getTime() %>"
                                  data-updated="<%= (project.updatedAt || project.createdAt) instanceof Date ? (project.updatedAt || project.createdAt).getTime() : new Date(project.updatedAt || project.createdAt).getTime() %>">
                                 <div class="flex items-start justify-between mb-3">
-                                    <div class="flex-1">
-                                        <h3 class="font-bold text-lg text-gray-800 mb-1">
-                                            <a href="/projects/<%= project._id %>" class="hover:text-blue-600 transition-colors">
-                                                <%= project.projectName %>
-                                            </a>
-                                        </h3>
+                                    <div class="flex items-start gap-3 flex-1">
+                                        <input type="checkbox" class="project-checkbox mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                                               data-project-id="<%= project._id %>" 
+                                               data-project-name="<%= project.projectName %>">
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-lg text-gray-800 mb-1">
+                                                <a href="/projects/<%= project._id %>" class="hover:text-blue-600 transition-colors">
+                                                    <%= project.projectName %>
+                                                </a>
+                                            </h3>
                                         <% if (project.quoteNumber) { %>
                                         <p class="text-xs font-mono text-blue-600 font-semibold mb-1">
                                             Quote: <%= project.quoteNumber %>
@@ -318,6 +357,7 @@
                                         <p class="text-sm text-gray-600 mb-2">
                                             <span class="font-medium">Client:</span> <%= project.clientName || 'Not specified' %>
                                         </p>
+                                        </div>
                                     </div>
                                     <span class="status-badge status-active">Active</span>
                                 </div>
@@ -387,6 +427,9 @@
                     <table class="min-w-full divide-y divide-gray-200" id="projectTable">
                         <thead class="bg-gray-50">
                             <tr>
+                                <th class="px-4 py-3 text-left">
+                                    <input type="checkbox" id="selectAllProjects" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" title="Select All">
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('name')">
                                     Project Name <span class="sort-indicator" id="sort-name"></span>
                                 </th>
@@ -408,6 +451,7 @@
                         <tbody class="bg-white divide-y divide-gray-200" id="projectTableBody">
                             <% projects.forEach(function(project) { %>
                                 <tr class="hover:bg-gray-50 project-row transition-colors" 
+                                    data-project-id="<%= project._id %>"
                                     data-project-name="<%= project.projectName.toLowerCase() %>" 
                                     data-client-name="<%= (project.clientName || '').toLowerCase() %>"
                                     data-quote-number="<%= (project.quoteNumber || '').toLowerCase() %>"
@@ -415,6 +459,11 @@
                                     data-windows="<%= project.windowCount || 0 %>"
                                     data-created="<%= project.createdAt instanceof Date ? project.createdAt.getTime() : new Date(project.createdAt).getTime() %>"
                                     data-updated="<%= (project.updatedAt || project.createdAt) instanceof Date ? (project.updatedAt || project.createdAt).getTime() : new Date(project.updatedAt || project.createdAt).getTime() %>">
+                                    <td class="px-4 py-4">
+                                        <input type="checkbox" class="project-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                                               data-project-id="<%= project._id %>" 
+                                               data-project-name="<%= project.projectName %>">
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div>
                                             <a href="/projects/<%= project._id %>" class="text-base font-medium text-blue-600 hover:text-blue-800">
@@ -641,6 +690,131 @@
                 );
             });
         });
+
+        // ============================================
+        // BULK DELETE FUNCTIONALITY
+        // ============================================
+        
+        const selectedProjects = new Set();
+        
+        // Update bulk actions bar visibility
+        function updateBulkActionsBar() {
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCountEl = document.getElementById('selectedCount');
+            
+            if (selectedProjects.size > 0) {
+                bulkActionsBar.classList.remove('hidden');
+                bulkActionsBar.classList.add('flex');
+                selectedCountEl.textContent = `${selectedProjects.size} selected`;
+            } else {
+                bulkActionsBar.classList.add('hidden');
+                bulkActionsBar.classList.remove('flex');
+            }
+            
+            // Update select all checkbox state
+            const selectAllCheckbox = document.getElementById('selectAllProjects');
+            const allCheckboxes = document.querySelectorAll('.project-checkbox');
+            if (selectAllCheckbox && allCheckboxes.length > 0) {
+                const visibleCheckboxes = Array.from(allCheckboxes).filter(cb => {
+                    const row = cb.closest('.project-row, .project-card');
+                    return row && row.style.display !== 'none';
+                });
+                const checkedVisible = visibleCheckboxes.filter(cb => cb.checked).length;
+                selectAllCheckbox.checked = visibleCheckboxes.length > 0 && checkedVisible === visibleCheckboxes.length;
+                selectAllCheckbox.indeterminate = checkedVisible > 0 && checkedVisible < visibleCheckboxes.length;
+            }
+        }
+        
+        // Handle individual checkbox changes
+        document.querySelectorAll('.project-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const projectId = this.getAttribute('data-project-id');
+                if (this.checked) {
+                    selectedProjects.add(projectId);
+                } else {
+                    selectedProjects.delete(projectId);
+                }
+                updateBulkActionsBar();
+            });
+        });
+        
+        // Handle select all checkbox
+        const selectAllCheckbox = document.getElementById('selectAllProjects');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const allCheckboxes = document.querySelectorAll('.project-checkbox');
+                allCheckboxes.forEach(checkbox => {
+                    // Only select visible projects
+                    const row = checkbox.closest('.project-row, .project-card');
+                    if (row && row.style.display !== 'none') {
+                        checkbox.checked = this.checked;
+                        const projectId = checkbox.getAttribute('data-project-id');
+                        if (this.checked) {
+                            selectedProjects.add(projectId);
+                        } else {
+                            selectedProjects.delete(projectId);
+                        }
+                    }
+                });
+                updateBulkActionsBar();
+            });
+        }
+        
+        // Clear selection
+        function clearSelection() {
+            selectedProjects.clear();
+            document.querySelectorAll('.project-checkbox').forEach(cb => cb.checked = false);
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+            updateBulkActionsBar();
+        }
+        
+        // Bulk delete projects
+        function bulkDeleteProjects() {
+            if (selectedProjects.size === 0) {
+                showToast('No projects selected', 'error');
+                return;
+            }
+            
+            const count = selectedProjects.size;
+            showConfirmModal(
+                `Are you sure you want to delete ${count} project${count > 1 ? 's' : ''}? This will also delete all associated windows and data. This action cannot be undone.`,
+                async function() {
+                    try {
+                        const response = await fetch('/projects/bulk-delete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ projectIds: Array.from(selectedProjects) })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            showToast(`Successfully deleted ${data.deletedCount} project${data.deletedCount > 1 ? 's' : ''}!`, 'success');
+                            // Remove deleted rows/cards from the DOM
+                            selectedProjects.forEach(projectId => {
+                                const row = document.querySelector(`tr[data-project-id="${projectId}"]`);
+                                const card = document.querySelector(`div.project-card[data-project-id="${projectId}"]`);
+                                if (row) row.remove();
+                                if (card) card.remove();
+                            });
+                            clearSelection();
+                            // Update project count
+                            const remainingProjects = document.querySelectorAll('.project-row, .project-card').length / 2; // Divided by 2 because both mobile and desktop views
+                            document.getElementById('projectCount').textContent = `${Math.floor(remainingProjects)} projects`;
+                            // Reload page after a short delay to update stats
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else {
+                            showToast(data.error || 'Failed to delete projects', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting projects:', error);
+                        showToast('An error occurred while deleting projects', 'error');
+                    }
+                }
+            );
+        }
 
         // Logo upload
         const logoUpload = document.getElementById('logoUpload');

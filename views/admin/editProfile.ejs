@@ -57,6 +57,15 @@
         .form-input-simple:hover { border-color: #cbd5e1; background: #fff; }
         .form-input-simple:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
         
+        .form-input-simple.price-input {
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+        .form-input-simple.price-input:focus {
+            box-shadow: none;
+        }
+        
         .input-with-icon { position: relative; width: 100%; }
         .input-icon {
             position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
@@ -288,20 +297,20 @@
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <div class="flex-1 input-with-icon">
-                                    <div class="input-icon">
-                                        <span class="text-base font-bold">$</span>
-                                    </div>
-                                    <input type="number" id="pricePerMeter" name="pricePerMeter" step="0.01" min="0" required 
-                                        class="form-input" placeholder="0.00">
+                                <div class="flex items-center px-3 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-l-lg border border-gray-200 border-r-0">
+                                    <span class="text-sm font-semibold text-emerald-700" id="currencySymbol">USD</span>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="number" id="pricePerMeter" name="pricePerMeter" step="0.0001" min="0" required 
+                                        class="form-input-simple price-input w-full" placeholder="0.00" data-stored-price-per-meter="<%= profile.pricePerMeter %>">
                                     <input type="hidden" id="currency" name="currency" value="USD">
                                 </div>
-                                <div class="flex items-center px-3 bg-gray-50 rounded border border-gray-200">
+                                <div class="flex items-center px-3 bg-gray-50 rounded-r-lg border border-gray-200 border-l-0">
                                     <span class="text-sm text-gray-600" id="priceUnitSuffix">/in</span>
                                 </div>
                             </div>
                             <p id="priceError" class="error-text">Must be positive</p>
-                            <p class="help-text">Price per unit (stored in USD, converted to per meter for calculations)</p>
+                            <p class="help-text" id="priceHelpText">Enter price in <span id="priceCurrencyLabel">USD</span> per <span id="priceUnitLabel">inch</span>. Stored as USD per meter.</p>
                         </div>
 
                         <!-- Weight field -->
@@ -404,6 +413,23 @@
     <%- include('../partials/_footer.ejs') %>
     
     <script>
+        // Exchange rate from server (COP per USD)
+        const exchangeRate = <%= typeof exchangeRate !== 'undefined' ? exchangeRate : 4000 %>;
+        
+        // Unit conversion constants
+        const INCHES_PER_METER = 39.3701;
+        const MM_PER_METER = 1000;
+        
+        // Weight unit conversion
+        // For profiles: kg/m to lbs/ft (1 kg/m = 0.671969 lbs/ft)
+        const KG_PER_M_TO_LBS_PER_FT = 0.671969;
+        const LBS_PER_FT_TO_KG_PER_M = 1.48816; // inverse
+        
+        // Current display settings
+        let currentPriceUnit = 'inches'; // 'inches' or 'mm'
+        let currentCurrency = 'USD'; // 'USD' or 'COP'
+        let weightUnit = 'kg'; // 'kg' or 'lbs'
+        
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('editProfileForm');
             const nameInput = document.getElementById('name');
@@ -414,78 +440,140 @@
             const weightError = document.getElementById('weightError');
             const deleteButton = document.getElementById('deleteButton');
             
-            // Price unit display (based on global unit preference)
-            const priceUnitDisplay = document.getElementById('priceUnitDisplay');
-            const priceUnitSuffix = document.getElementById('priceUnitSuffix');
-            const storedPricePerMeter = parseFloat(priceInput.value) || 0;
+            // Initialize from global preferences
+            currentPriceUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+            currentCurrency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'USD';
             
-            function updatePriceUnitDisplay() {
-                const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
-                let displayPrice;
+            // Stored price is in USD per meter
+            const storedPricePerMeter = parseFloat(priceInput.getAttribute('data-stored-price-per-meter')) || 0;
+            
+            function updatePriceDisplay() {
+                const priceUnitDisplay = document.getElementById('priceUnitDisplay');
+                const priceUnitSuffix = document.getElementById('priceUnitSuffix');
+                const currencySymbol = document.getElementById('currencySymbol');
+                const priceCurrencyLabel = document.getElementById('priceCurrencyLabel');
+                const priceUnitLabel = document.getElementById('priceUnitLabel');
                 
-                if (globalUnit === 'mm') {
-                    priceUnitDisplay.textContent = 'mm';
-                    priceUnitSuffix.textContent = '/mm';
-                    // Convert from per meter to per mm: 1 meter = 1000 mm
-                    displayPrice = storedPricePerMeter / 1000;
+                // Update unit display
+                if (currentPriceUnit === 'mm') {
+                    priceUnitDisplay.textContent = 'Meter';
+                    priceUnitSuffix.textContent = '/m';
+                    priceUnitLabel.textContent = 'meter';
                 } else {
                     priceUnitDisplay.textContent = 'Inch';
                     priceUnitSuffix.textContent = '/in';
-                    // Convert from per meter to per inch: 1 meter = 39.3701 inches
-                    displayPrice = storedPricePerMeter / 39.3701;
+                    priceUnitLabel.textContent = 'inch';
                 }
                 
-                // Update the input value to show in current unit
-                if (storedPricePerMeter > 0) {
-                    priceInput.value = displayPrice.toFixed(4);
+                // Update currency display
+                if (currentCurrency === 'COP') {
+                    currencySymbol.textContent = 'COP';
+                    priceCurrencyLabel.textContent = 'COP';
+                } else {
+                    currencySymbol.textContent = 'USD';
+                    priceCurrencyLabel.textContent = 'USD';
                 }
             }
             
-            // Initialize price unit display
-            updatePriceUnitDisplay();
+            function initializePriceFromStored() {
+                // Convert stored USD per meter to display unit and currency
+                let displayPrice = storedPricePerMeter;
+                
+                // Convert to display unit
+                if (currentPriceUnit === 'mm') {
+                    // Per meter
+                    displayPrice = storedPricePerMeter;
+                } else {
+                    // Per inch
+                    displayPrice = storedPricePerMeter / INCHES_PER_METER;
+                }
+                
+                // Convert to display currency
+                if (currentCurrency === 'COP') {
+                    displayPrice = displayPrice * exchangeRate;
+                }
+                
+                if (storedPricePerMeter > 0) {
+                    priceInput.value = displayPrice.toFixed(4);
+                }
+                
+                updatePriceDisplay();
+            }
+            
+            // Initialize price display
+            initializePriceFromStored();
             
             // Listen for unit changes
             window.addEventListener('unitChanged', function(event) {
-                // Recalculate display price based on new unit
+                const newUnit = event.detail.unit;
                 const currentPrice = parseFloat(priceInput.value) || 0;
-                const globalUnit = event.detail.unit || 'inches';
-                let pricePerMeter;
                 
-                // First convert current display value back to per meter
-                const previousUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
-                if (previousUnit === 'mm') {
-                    pricePerMeter = currentPrice * 1000;
-                } else {
-                    pricePerMeter = currentPrice * 39.3701;
-                }
-                
-                // Then convert to new unit
-                if (globalUnit === 'mm') {
-                    priceInput.value = (pricePerMeter / 1000).toFixed(4);
-                } else {
-                    priceInput.value = (pricePerMeter / 39.3701).toFixed(4);
-                }
-                
-                updatePriceUnitDisplay();
-            });
-            
-            // Convert price back to per meter on form submission
-            form.addEventListener('submit', function(e) {
-                const priceValue = parseFloat(priceInput.value);
-                if (!isNaN(priceValue) && priceValue > 0) {
-                    const globalUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+                if (currentPrice > 0) {
+                    // Convert current price to per meter (in current currency)
                     let pricePerMeter;
-                    
-                    if (globalUnit === 'mm') {
-                        // Convert from per mm to per meter: 1 meter = 1000 mm
-                        pricePerMeter = priceValue * 1000;
+                    if (currentPriceUnit === 'mm') {
+                        pricePerMeter = currentPrice; // Already per meter
                     } else {
-                        // Convert from per inch to per meter: 1 meter = 39.3701 inches
-                        pricePerMeter = priceValue * 39.3701;
+                        pricePerMeter = currentPrice * INCHES_PER_METER;
                     }
                     
-                    // Update the input value to per meter for storage
+                    // Convert to new unit
+                    if (newUnit === 'mm') {
+                        priceInput.value = pricePerMeter.toFixed(4);
+                    } else {
+                        priceInput.value = (pricePerMeter / INCHES_PER_METER).toFixed(4);
+                    }
+                }
+                
+                currentPriceUnit = newUnit;
+                updatePriceDisplay();
+            });
+            
+            // Listen for currency changes
+            window.addEventListener('currencyChanged', function(event) {
+                const newCurrency = event.detail.currency;
+                const currentPrice = parseFloat(priceInput.value) || 0;
+                
+                if (currentPrice > 0) {
+                    // Convert between currencies
+                    if (currentCurrency === 'USD' && newCurrency === 'COP') {
+                        priceInput.value = (currentPrice * exchangeRate).toFixed(2);
+                    } else if (currentCurrency === 'COP' && newCurrency === 'USD') {
+                        priceInput.value = (currentPrice / exchangeRate).toFixed(4);
+                    }
+                }
+                
+                currentCurrency = newCurrency;
+                updatePriceDisplay();
+            });
+            
+            // Convert price back to USD per meter and weight to kg/m on form submission
+            form.addEventListener('submit', function(e) {
+                // Convert price
+                let priceValue = parseFloat(priceInput.value);
+                if (!isNaN(priceValue) && priceValue > 0) {
+                    // Step 1: Convert to USD if in COP
+                    if (currentCurrency === 'COP') {
+                        priceValue = priceValue / exchangeRate;
+                    }
+                    
+                    // Step 2: Convert to per meter
+                    let pricePerMeter;
+                    if (currentPriceUnit === 'mm') {
+                        pricePerMeter = priceValue; // Already per meter
+                    } else {
+                        pricePerMeter = priceValue * INCHES_PER_METER;
+                    }
+                    
                     priceInput.value = pricePerMeter.toFixed(4);
+                }
+                
+                // Convert weight to kg/m if in lbs/ft
+                if (weightUnit === 'lbs') {
+                    const lbsPerFtValue = parseFloat(weightInput.value);
+                    if (!isNaN(lbsPerFtValue) && lbsPerFtValue > 0) {
+                        weightInput.value = (lbsPerFtValue * LBS_PER_FT_TO_KG_PER_M).toFixed(2);
+                    }
                 }
             });
             
@@ -558,12 +646,6 @@
                 }
             });
             
-            // Weight unit conversion
-            // For profiles: kg/m to lbs/ft (1 kg/m = 0.671969 lbs/ft)
-            const KG_PER_M_TO_LBS_PER_FT = 0.671969;
-            const LBS_PER_FT_TO_KG_PER_M = 1.48816; // inverse
-            let weightUnit = 'kg'; // 'kg' or 'lbs'
-            
             const weightUnitLabel = document.getElementById('weightUnitLabel');
             const weightUnitSuffix = document.getElementById('weightUnit');
             const weightUnitToggle = document.getElementById('weightUnitToggle');
@@ -610,16 +692,6 @@
             });
             
             updateWeightUnitDisplay();
-            
-            // Convert weight to kg/m before form submission if in lbs/ft
-            form.addEventListener('submit', function(e) {
-                if (weightUnit === 'lbs') {
-                    const lbsPerFtValue = parseFloat(weightInput.value);
-                    if (!isNaN(lbsPerFtValue) && lbsPerFtValue > 0) {
-                        weightInput.value = (lbsPerFtValue * LBS_PER_FT_TO_KG_PER_M).toFixed(2);
-                    }
-                }
-            });
         });
     </script>
 </body>
