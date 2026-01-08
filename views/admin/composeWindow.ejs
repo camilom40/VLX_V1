@@ -802,7 +802,7 @@
                   
                   <!-- Fixed Quantity Input -->
                   <div id="profile-quantity-fixed-container" class="mt-2">
-                    <input type="number" id="profile-quantity" placeholder="1" min="1" class="form-control w-full">
+                    <input type="number" id="profile-quantity" value="1" placeholder="1" min="1" class="form-control w-full">
                   </div>
                   
                   <!-- Quantity Equation Input -->
@@ -1139,8 +1139,8 @@
         <!-- Step 4: Glass Configuration -->
         <div id="step4-section" class="form-section">
           <div class="section-header">
-            <h2>Step 4: Glass Configuration</h2>
-            <p class="text-green-100 text-sm">Configure glass size calculation and missile impact types</p>
+            <h2>Step 4: Glass Configuration <span class="text-green-200 text-sm font-normal">(Optional)</span></h2>
+            <p class="text-green-100 text-sm">Configure glass size calculation and missile impact types. Skip this step if your system has no glass.</p>
           </div>
           
           <div class="bg-white rounded-xl shadow-lg border border-gray-200">
@@ -1152,7 +1152,7 @@
                 <!-- Glass Width Equation -->
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                   <label for="glass-width-equation" class="block text-sm font-medium text-gray-700 mb-2">
-                    Glass Width Equation <span class="text-red-500">*</span>
+                    Glass Width Equation <span class="text-gray-400 text-xs font-normal">(optional)</span>
                     <span class="text-xs text-gray-500 font-normal ml-2" id="glass-width-equation-unit-label">(Current unit: <span id="glass-width-equation-unit-display">inches</span>)</span>
                   </label>
                   <input type="text" id="glass-width-equation" name="glassWidthEquation" 
@@ -1174,7 +1174,7 @@
                 <!-- Glass Height Equation -->
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                   <label for="glass-height-equation" class="block text-sm font-medium text-gray-700 mb-2">
-                    Glass Height Equation <span class="text-red-500">*</span>
+                    Glass Height Equation <span class="text-gray-400 text-xs font-normal">(optional)</span>
                     <span class="text-xs text-gray-500 font-normal ml-2" id="glass-height-equation-unit-label">(Current unit: <span id="glass-height-equation-unit-display">inches</span>)</span>
                   </label>
                   <input type="text" id="glass-height-equation" name="glassHeightEquation" 
@@ -5021,7 +5021,7 @@
       const glassWidthEquation = document.getElementById('glass-width-equation')?.value.trim() || null;
       const glassHeightEquation = document.getElementById('glass-height-equation')?.value.trim() || null;
       
-      // Validate glass width equation if provided
+      // Validate glass width equation only if provided (glass is optional)
       if (glassWidthEquation) {
         const glassWidthValidation = validateGlassSizeEquation(glassWidthEquation, 'width');
         if (!glassWidthValidation.valid) {
@@ -5029,13 +5029,9 @@
           goToStep(4);
           return;
         }
-      } else {
-        showAlert('Please enter a glass width equation.');
-        goToStep(4);
-        return;
       }
       
-      // Validate glass height equation if provided
+      // Validate glass height equation only if provided (glass is optional)
       if (glassHeightEquation) {
         const glassHeightValidation = validateGlassSizeEquation(glassHeightEquation, 'height');
         if (!glassHeightValidation.valid) {
@@ -5043,10 +5039,6 @@
           goToStep(4);
           return;
         }
-      } else {
-        showAlert('Please enter a glass height equation.');
-        goToStep(4);
-        return;
       }
       
       // Update missile impact configuration before submission
