@@ -196,7 +196,7 @@
       </div>
     </div>
 
-    <form id="windowConfigForm" action="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? `/projects/${project._id}/windows/${existingWindow._id}/update` : `/projects/${project._id}/windows/save` %>" method="POST" class="space-y-6">
+    <form id="windowConfigForm" action="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? `/projects/${project._id}/windows/${existingWindow._id}/update` : `/projects/${project._id}/windows/save` %>" method="POST" class="space-y-6" data-project-id="<%= project._id %>" data-current-window-id="<%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? existingWindow._id : '' %>">
       <input type="hidden" name="windowSystemId" value="<%= selectedWindowSystem._id %>">
       <input type="hidden" id="currentUnit" name="currentUnit" value="inches">
       
@@ -272,11 +272,16 @@
                          class="form-input w-full" onchange="if(typeof window.calculatePricing==='function')window.calculatePricing()">
                 </div>
                 <div>
-                  <!-- Missile Type Selection (if window system supports missile types) - Must be selected first -->
+                  <!-- Missile Type Selection (if window system supports missile types AND has glass) - Must be selected first -->
                   <% 
-                    // Show missile type selection if the window system supports LMI or SMI
+                    // Check if system has glass configuration (glass equations defined)
+                    const systemHasGlassConfig = (selectedWindowSystem.glassWidthEquation && selectedWindowSystem.glassWidthEquation.trim()) || 
+                                                 (selectedWindowSystem.glassHeightEquation && selectedWindowSystem.glassHeightEquation.trim());
+                    
+                    // Show missile type selection if the window system supports LMI or SMI AND has glass
                     // We check supportsLMI/supportsSMI flags, and optionally if glasses are configured
-                    const hasMissileTypes = selectedWindowSystem.missileImpactConfiguration && 
+                    const hasMissileTypes = systemHasGlassConfig && 
+                                           selectedWindowSystem.missileImpactConfiguration && 
                                            (selectedWindowSystem.missileImpactConfiguration.supportsLMI || 
                                             selectedWindowSystem.missileImpactConfiguration.supportsSMI);
                     
@@ -394,14 +399,20 @@
                     </select>
                     <p class="text-xs text-gray-500 mt-1">Select missile type to see available glasses</p>
                   <% } else { %>
-                    <!-- Placeholder to maintain grid layout when no missile types -->
+                    <!-- Placeholder to maintain grid layout when no missile types or no glass -->
                     <div></div>
                   <% } %>
                 </div>
               </div>
               
-              <!-- Glass Type Selection - Below Missile Type -->
-              <div class="mt-4">
+              <!-- Glass Type Selection - Below Missile Type (only if system has glass configuration) -->
+              <%
+                // Check if system has glass configuration (glass equations defined)
+                const systemHasGlass = (selectedWindowSystem.glassWidthEquation && selectedWindowSystem.glassWidthEquation.trim()) || 
+                                       (selectedWindowSystem.glassHeightEquation && selectedWindowSystem.glassHeightEquation.trim());
+              %>
+              <% if (systemHasGlass) { %>
+              <div class="mt-4" id="glassTypeSection">
                 <label for="glassType" class="form-label">Glass Type *</label>
                 <%
                   // Determine if glass should be disabled
@@ -452,6 +463,10 @@
                   <p class="text-xs text-gray-500 mt-1">Glass options will appear after selecting a missile type</p>
                 <% } %>
               </div>
+              <% } else { %>
+              <!-- No glass for this system - add hidden field to indicate no glass -->
+              <input type="hidden" id="glassType" name="glassType" value="">
+              <% } %>
               
               <!-- Flange Option (if trimable) -->
               <% if (selectedWindowSystem.flangeConfiguration && selectedWindowSystem.flangeConfiguration.hasFlange && selectedWindowSystem.flangeConfiguration.isTrimable) { %>
@@ -1118,7 +1133,8 @@
     // Initialize glass options storage when DOM is ready
     function initializeGlassOptions() {
       const glassSelect = document.getElementById('glassType');
-      if (glassSelect && allGlassOptions.length === 0) {
+      // Only initialize if glassType is a SELECT element (not hidden input)
+      if (glassSelect && glassSelect.tagName === 'SELECT' && allGlassOptions.length === 0) {
         // Store all original options (excluding the placeholder)
         allGlassOptions = Array.from(glassSelect.options)
           .filter(opt => opt.value !== '')
@@ -1166,7 +1182,8 @@
     // Fix glass option text immediately if corrupted (must run before other code)
     function fixGlassOptionTexts() {
       const glassSelect = document.getElementById('glassType');
-      if (!glassSelect) return;
+      // Only run if glassType is a SELECT element (not hidden input)
+      if (!glassSelect || glassSelect.tagName !== 'SELECT') return;
       
       // Fix all options that have price as text instead of glass name
       Array.from(glassSelect.options).forEach(option => {
@@ -1193,7 +1210,8 @@
     // Use MutationObserver to watch for changes to the glass select and fix them
     function setupGlassOptionTextWatcher() {
       const glassSelect = document.getElementById('glassType');
-      if (!glassSelect) return;
+      // Only run if glassType is a SELECT element (not hidden input)
+      if (!glassSelect || glassSelect.tagName !== 'SELECT') return;
       
       const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
@@ -1248,7 +1266,8 @@
       const missileTypeSelect = document.getElementById('missileType');
       const glassSelect = document.getElementById('glassType');
       
-      if (!missileTypeSelect || !glassSelect) return;
+      // Only run if both elements exist and glassType is a SELECT (not hidden input)
+      if (!missileTypeSelect || !glassSelect || glassSelect.tagName !== 'SELECT') return;
       
       // Get pre-selected glass ID from data attribute (passed from server)
       const preSelectedGlassId = glassSelect.getAttribute('data-pre-selected-glass-id');
@@ -1283,7 +1302,8 @@
       const missileType = missileTypeSelect?.value;
       const glassSelect = document.getElementById('glassType');
       
-      if (!glassSelect) return;
+      // Only run if glassType is a SELECT element (not hidden input)
+      if (!glassSelect || glassSelect.tagName !== 'SELECT') return;
       
       // Get pre-selected glass ID from data attribute or parameter
       const preSelectedGlassId = preSelectedGlassIdValue || glassSelect.getAttribute('data-pre-selected-glass-id');
@@ -1521,7 +1541,8 @@
         // Ensure result is a valid number (in inches)
         if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
           const finalResult = Math.max(0, result); // Ensure non-negative
-          if (result < 0) {
+          // Only warn about negative results when dimensions are actually provided (not initial 0 values)
+          if (result < 0 && (width > 0 || height > 0)) {
             console.warn('evaluateLengthEquation: Result is negative, clamping to 0. Original:', result, 'Equation:', equation, 'Width:', width, 'Height:', height);
           }
           return finalResult;
@@ -1805,7 +1826,8 @@
       let glassPriceUSD = 0;
       
       const glassSelect = document.getElementById('glassType');
-      if (glassSelect && glassSelect.value) {
+      // Check if glassSelect is a select element (not a hidden input) and has a value
+      if (glassSelect && glassSelect.tagName === 'SELECT' && glassSelect.value) {
         const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
         if (selectedGlass) {
           glassPrice = parseFloat(selectedGlass.getAttribute('data-price')) || 0;
@@ -2152,11 +2174,10 @@
                          document.querySelector('button[type="submit"]');
     let isNameValid = true;
     
-    // Get current window ID and project ID from data attributes
-    const currentWindowIdElement = document.querySelector('[data-current-window-id]');
-    const currentWindowId = currentWindowIdElement ? currentWindowIdElement.getAttribute('data-current-window-id') : null;
-    const projectIdElement = document.querySelector('[data-project-id]');
-    const projectId = projectIdElement ? projectIdElement.getAttribute('data-project-id') : '';
+    // Get current window ID and project ID from form data attributes
+    const windowConfigForm = document.getElementById('windowConfigForm');
+    const currentWindowId = windowConfigForm ? windowConfigForm.getAttribute('data-current-window-id') : null;
+    const projectId = windowConfigForm ? windowConfigForm.getAttribute('data-project-id') : '';
     
     if (windowRefInput) {
       windowRefInput.addEventListener('input', function() {
@@ -3289,34 +3310,10 @@
           });
         }
         
-        // In edit mode, also set the calculated prices to match saved values initially
-        // This prevents confusion until we can properly restore saved selections
-        const savedUnitPriceEl = document.querySelector('.bg-yellow-50 [data-price]');
-        const savedTotalPriceEl = document.querySelectorAll('.bg-yellow-50 [data-price]');
-        if (savedUnitPriceEl && savedTotalPriceEl.length >= 2) {
-          const unitPrice = parseFloat(savedUnitPriceEl.getAttribute('data-price')) || 0;
-          const totalPrice = parseFloat(savedTotalPriceEl[1].getAttribute('data-price')) || 0;
-          const quantity = parseInt(document.getElementById('quantity')?.value) || 1;
-          
-          // Set the calculated prices to match saved values
-          // This is a temporary fix until we can restore saved profile/accessory selections
-          if (unitPrice > 0) {
-            const unitPriceDisplayEl = document.getElementById('unitPriceDisplay');
-            if (unitPriceDisplayEl) {
-              unitPriceDisplayEl.textContent = formatCurrency(unitPrice);
-            }
-          }
-          if (totalPrice > 0) {
-            const finalTotalPriceEl = document.getElementById('finalTotalPrice');
-            if (finalTotalPriceEl) {
-              finalTotalPriceEl.textContent = formatCurrency(totalPrice);
-            }
-            const totalPriceEl = document.getElementById('totalPrice');
-            if (totalPriceEl) {
-              totalPriceEl.textContent = formatCurrency(totalPrice);
-            }
-          }
-        }
+        // Note: We no longer override calculated prices with saved values
+        // The saved values are shown in the yellow info box for reference
+        // The main price display should always show the current calculated price
+        // based on the user's selections (which calculatePricing() handles)
       }
       
       // Calculate pricing AFTER unit is properly set
@@ -3404,19 +3401,31 @@
       }
     }
 
+    // Helper function to format COP value
+    function formatCOP(usdAmount, exchangeRate) {
+      const copAmount = usdAmount * exchangeRate;
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(copAmount);
+    }
+
     // Function to populate the modal with calculation details
     function populateCalculationModal() {
       if (!calculationDetails) return;
 
       const details = calculationDetails;
       const modalContent = document.getElementById('calculationModalContent');
+      const rate = details.exchangeRate;
       
       let html = `
         <div class="space-y-4">
           <!-- Exchange Rate -->
           <div class="bg-blue-50 p-3 rounded-lg">
             <div class="text-sm font-semibold text-blue-800 mb-2">Exchange Rate</div>
-            <div class="text-sm text-gray-700">1 USD = ${details.exchangeRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} COP</div>
+            <div class="text-sm text-gray-700">1 USD = ${rate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} COP</div>
           </div>
 
           <!-- Dimensions -->
@@ -3449,6 +3458,7 @@
               <div>Price (USD): $${details.glassPriceUSD.toFixed(2)}</div>
               <div>Area (sq m): ${details.areaSquareMeters.toFixed(4)}</div>
               <div class="font-semibold">Glass Cost (USD): $${details.glassCost.toFixed(2)}</div>
+              <div class="font-semibold text-green-700">Glass Cost (COP): ${formatCOP(details.glassCost, rate)}</div>
               <div class="text-xs text-gray-600">Formula: ${details.glassPriceUSD.toFixed(2)} × ${details.areaSquareMeters.toFixed(4)} = $${details.glassCost.toFixed(2)}</div>
             </div>
           </div>
@@ -3467,11 +3477,13 @@
                     <div>Length: ${(profile.lengthMeters || 0).toFixed(4)} m</div>
                     ${profile.perimeterMeters ? `<div>Perimeter: ${profile.perimeterMeters.toFixed(4)} m</div>` : ''}
                     <div class="font-semibold">Cost (USD): $${profile.cost.toFixed(2)}</div>
+                    <div class="font-semibold text-purple-700">Cost (COP): ${formatCOP(profile.cost, rate)}</div>
                     <div class="text-xs text-gray-600">Formula: $${profile.priceUSD.toFixed(2)} × ${(profile.lengthMeters || 0).toFixed(4)} × ${profile.quantity} = $${profile.cost.toFixed(2)}</div>
                   </div>
                 </div>
               `).join('')}
               <div class="font-semibold mt-2 pt-2 border-t border-purple-300">Total Profiles Cost (USD): $${details.profilesCost.toFixed(2)}</div>
+              <div class="font-semibold text-purple-700">Total Profiles Cost (COP): ${formatCOP(details.profilesCost, rate)}</div>
             </div>
           </div>
 
@@ -3487,11 +3499,13 @@
                     <div>Price (USD): $${acc.priceUSD.toFixed(2)}</div>
                     <div>Quantity: ${acc.quantity}</div>
                     <div class="font-semibold">Cost (USD): $${acc.cost.toFixed(2)}</div>
+                    <div class="font-semibold text-yellow-700">Cost (COP): ${formatCOP(acc.cost, rate)}</div>
                     <div class="text-xs text-gray-600">Formula: $${acc.priceUSD.toFixed(2)} × ${acc.quantity} = $${acc.cost.toFixed(2)}</div>
                   </div>
                 </div>
               `).join('') : '<div class="text-gray-500 italic">No accessories selected</div>'}
               <div class="font-semibold mt-2 pt-2 border-t border-yellow-300">Total Accessories Cost (USD): $${details.accessoriesCost.toFixed(2)}</div>
+              <div class="font-semibold text-yellow-700">Total Accessories Cost (COP): ${formatCOP(details.accessoriesCost, rate)}</div>
             </div>
           </div>
 
@@ -3507,6 +3521,7 @@
               <div>Vertical Divisions: ${details.muntinDetails.vertical}</div>
               <div>Total Muntin Length: ${details.muntinDetails.length.toFixed(4)} m</div>
               <div class="font-semibold">Muntin Cost (USD): $${details.muntinDetails.cost.toFixed(2)}</div>
+              <div class="font-semibold text-indigo-700">Muntin Cost (COP): ${formatCOP(details.muntinDetails.cost, rate)}</div>
               <div class="text-xs text-gray-600">Formula: $${details.muntinDetails.priceUSD.toFixed(2)} × ${details.muntinDetails.length.toFixed(4)} = $${details.muntinDetails.cost.toFixed(2)}</div>
             </div>
           </div>
@@ -3514,13 +3529,30 @@
 
           <!-- Base Cost Summary -->
           <div class="bg-gray-100 p-3 rounded-lg">
-            <div class="text-sm font-semibold text-gray-800 mb-2">Base Cost Summary (USD)</div>
+            <div class="text-sm font-semibold text-gray-800 mb-2">Base Cost Summary</div>
             <div class="text-sm text-gray-700 space-y-1">
-              <div>Glass Cost: $${details.glassCost.toFixed(2)}</div>
-              <div>Profiles Cost: $${details.profilesCost.toFixed(2)}</div>
-              <div>Accessories Cost: $${details.accessoriesCost.toFixed(2)}</div>
-              ${details.muntinCost > 0 ? `<div>Muntin Cost: $${details.muntinCost.toFixed(2)}</div>` : ''}
-              <div class="font-semibold pt-2 border-t border-gray-300">Base Cost (USD): $${details.baseCost.toFixed(2)}</div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>Glass Cost (USD): $${details.glassCost.toFixed(2)}</div>
+                <div class="text-gray-600">COP: ${formatCOP(details.glassCost, rate)}</div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>Profiles Cost (USD): $${details.profilesCost.toFixed(2)}</div>
+                <div class="text-gray-600">COP: ${formatCOP(details.profilesCost, rate)}</div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>Accessories Cost (USD): $${details.accessoriesCost.toFixed(2)}</div>
+                <div class="text-gray-600">COP: ${formatCOP(details.accessoriesCost, rate)}</div>
+              </div>
+              ${details.muntinCost > 0 ? `
+              <div class="grid grid-cols-2 gap-2">
+                <div>Muntin Cost (USD): $${details.muntinCost.toFixed(2)}</div>
+                <div class="text-gray-600">COP: ${formatCOP(details.muntinCost, rate)}</div>
+              </div>
+              ` : ''}
+              <div class="font-semibold pt-2 border-t border-gray-300 grid grid-cols-2 gap-2">
+                <div>Base Cost (USD): $${details.baseCost.toFixed(2)}</div>
+                <div class="text-gray-700">COP: ${formatCOP(details.baseCost, rate)}</div>
+              </div>
             </div>
           </div>
 
@@ -3532,7 +3564,10 @@
               <div>Labor: ${details.costSettings.labor}%</div>
               <div>Indirect Costs: ${details.costSettings.indirectCosts}%</div>
               <div>Total Percentage: ${(details.costSettings.packaging + details.costSettings.labor + details.costSettings.indirectCosts).toFixed(2)}%</div>
-              <div class="font-semibold">Additional Costs (USD): $${details.additionalCosts.toFixed(2)}</div>
+              <div class="font-semibold grid grid-cols-2 gap-2">
+                <div>Additional Costs (USD): $${details.additionalCosts.toFixed(2)}</div>
+                <div class="text-orange-700">COP: ${formatCOP(details.additionalCosts, rate)}</div>
+              </div>
               <div class="text-xs text-gray-600">Formula: $${details.baseCost.toFixed(2)} × ${((details.costSettings.packaging + details.costSettings.labor + details.costSettings.indirectCosts) / 100).toFixed(4)} = $${details.additionalCosts.toFixed(2)}</div>
             </div>
           </div>
@@ -3541,14 +3576,26 @@
           <div class="bg-green-100 p-3 rounded-lg border-2 border-green-300">
             <div class="text-sm font-semibold text-green-800 mb-2">Final Calculation</div>
             <div class="text-sm text-gray-700 space-y-1">
-              <div>Base Cost (USD): $${details.baseCost.toFixed(2)}</div>
-              <div>Additional Costs (USD): $${details.additionalCosts.toFixed(2)}</div>
-              <div>Cost per Window (USD): $${details.costPerWindow.toFixed(2)}</div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>Base Cost (USD): $${details.baseCost.toFixed(2)}</div>
+                <div class="text-gray-600">COP: ${formatCOP(details.baseCost, rate)}</div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>Additional Costs (USD): $${details.additionalCosts.toFixed(2)}</div>
+                <div class="text-gray-600">COP: ${formatCOP(details.additionalCosts, rate)}</div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>Cost per Window (USD): $${details.costPerWindow.toFixed(2)}</div>
+                <div class="text-gray-600">COP: ${formatCOP(details.costPerWindow, rate)}</div>
+              </div>
               <div>Quantity: ${details.quantity}</div>
-              <div class="font-bold text-lg pt-2 border-t border-green-400">Total Price (USD): $${details.finalTotal.toFixed(2)}</div>
+              <div class="font-bold text-lg pt-2 border-t border-green-400">
+                <div class="grid grid-cols-1 gap-1">
+                  <div>Total Price (USD): $${details.finalTotal.toFixed(2)}</div>
+                  <div class="text-green-700">Total Price (COP): ${formatCOP(details.finalTotal, rate)}</div>
+                </div>
+              </div>
               <div class="text-xs text-gray-600">Formula: $${details.costPerWindow.toFixed(2)} × ${details.quantity} = $${details.finalTotal.toFixed(2)}</div>
-              <div class="text-xs text-gray-500 mt-2">Display Currency: ${details.displayCurrency}</div>
-              <div class="text-xs text-gray-500">Display Total: ${details.displayTotal}</div>
             </div>
           </div>
         </div>
@@ -3616,10 +3663,13 @@
       const height = parseFloat(document.getElementById('height')?.value) || 0;
       const quantity = parseInt(document.getElementById('quantity')?.value) || 1;
       
-      // Get glass information
+      // Get glass information (check if glassType is a select element)
       const glassSelect = document.getElementById('glassType');
-      const selectedGlass = glassSelect?.options[glassSelect.selectedIndex];
-      const glassName = selectedGlass?.text || 'N/A';
+      let glassName = 'N/A (No Glass)';
+      if (glassSelect && glassSelect.tagName === 'SELECT' && glassSelect.value) {
+        const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
+        glassName = selectedGlass?.text || 'N/A';
+      }
       
       let html = `
         <div class="space-y-4">

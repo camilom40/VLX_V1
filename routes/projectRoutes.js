@@ -821,7 +821,8 @@ router.post('/projects/:projectId/items/:itemId/duplicate', isAuthenticated, asy
       includeFlange: originalItemObj.includeFlange || false,
       selectedProfiles: originalItemObj.selectedProfiles || undefined,
       selectedAccessories: originalItemObj.selectedAccessories || undefined,
-      notes: originalItemObj.notes || ''
+      notes: originalItemObj.notes || '',
+      markup: originalItemObj.markup !== undefined ? originalItemObj.markup : 20 // Preserve markup from original (default 20%)
     };
     
     // Only include muntinConfiguration if it exists and has valid data
@@ -1241,11 +1242,20 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       return res.status(404).send('Window system not found.');
     }
 
-    // Get selected glass for pricing
+    // Get selected glass for pricing (optional - some systems don't have glass)
     const Glass = require('../models/Glass');
-    const selectedGlass = await Glass.findById(glassType);
-    if (!selectedGlass) {
-      return res.status(404).send('Selected glass type not found.');
+    let selectedGlass = null;
+    const systemHasGlass = (windowSystem.glassWidthEquation && windowSystem.glassWidthEquation.trim()) || 
+                           (windowSystem.glassHeightEquation && windowSystem.glassHeightEquation.trim());
+    
+    if (glassType && glassType.trim()) {
+      selectedGlass = await Glass.findById(glassType);
+      if (!selectedGlass && systemHasGlass) {
+        return res.status(404).send('Selected glass type not found.');
+      }
+    } else if (systemHasGlass) {
+      // Glass is required for this system but wasn't selected
+      return res.status(400).send('Glass type is required for this window system.');
     }
 
     // Get all profiles and accessories for pricing calculations
@@ -1287,45 +1297,53 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     // Calculate actual glass dimensions using equations if available
     let glassWidthInches = windowWidth; // Default to window width
     let glassHeightInches = windowHeight; // Default to window height
+    let glassCost = 0;
+    let glassAreaSquareMeters = 0;
     
-    if (windowSystem.glassWidthEquation) {
-      const calculatedWidth = evaluateLengthEquation(windowSystem.glassWidthEquation, windowWidth, windowHeight);
-      if (calculatedWidth !== null && calculatedWidth > 0) {
-        glassWidthInches = calculatedWidth;
+    if (selectedGlass) {
+      if (windowSystem.glassWidthEquation) {
+        const calculatedWidth = evaluateLengthEquation(windowSystem.glassWidthEquation, windowWidth, windowHeight);
+        if (calculatedWidth !== null && calculatedWidth > 0) {
+          glassWidthInches = calculatedWidth;
+        }
       }
-    }
-    
-    if (windowSystem.glassHeightEquation) {
-      const calculatedHeight = evaluateLengthEquation(windowSystem.glassHeightEquation, windowWidth, windowHeight);
-      if (calculatedHeight !== null && calculatedHeight > 0) {
-        glassHeightInches = calculatedHeight;
+      
+      if (windowSystem.glassHeightEquation) {
+        const calculatedHeight = evaluateLengthEquation(windowSystem.glassHeightEquation, windowWidth, windowHeight);
+        if (calculatedHeight !== null && calculatedHeight > 0) {
+          glassHeightInches = calculatedHeight;
+        }
       }
+      
+      // Calculate glass area using actual glass dimensions
+      const glassAreaInches = glassWidthInches * glassHeightInches;
+      glassAreaSquareMeters = glassAreaInches / 1550;
+      
+      // Validate glass price
+      const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
+      if (isNaN(glassPricePerSqM) || glassPricePerSqM < 0) {
+        console.error('Invalid glass price:', selectedGlass.pricePerSquareMeter);
+      }
+      
+      // Use 'USD' as default currency (matching frontend behavior) - glass prices are typically in USD
+      const glassCurrency = selectedGlass.currency || 'USD';
+      const glassCostUSD = convertToUSD(glassPricePerSqM, glassCurrency, exchangeRate);
+      glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * glassAreaSquareMeters;
+      
+      // Debug logging for glass cost calculation
+      console.log('=== GLASS COST CALCULATION (SAVE) ===');
+      console.log('glassPricePerSqM (original):', glassPricePerSqM);
+      console.log('glassCurrency:', glassCurrency);
+      console.log('exchangeRate:', exchangeRate);
+      console.log('glassCostUSD (converted):', glassCostUSD);
+      console.log('glassAreaSquareMeters:', glassAreaSquareMeters);
+      console.log('glassCost (final):', glassCost);
+      console.log('=== END GLASS COST CALCULATION ===');
+    } else {
+      console.log('=== GLASS COST CALCULATION (SAVE) ===');
+      console.log('No glass selected - glass cost: 0');
+      console.log('=== END GLASS COST CALCULATION ===');
     }
-    
-    // Calculate glass area using actual glass dimensions
-    const glassAreaInches = glassWidthInches * glassHeightInches;
-    const glassAreaSquareMeters = glassAreaInches / 1550;
-    
-    // Validate glass price
-    const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
-    if (isNaN(glassPricePerSqM) || glassPricePerSqM < 0) {
-      console.error('Invalid glass price:', selectedGlass.pricePerSquareMeter);
-    }
-    
-    // Use 'USD' as default currency (matching frontend behavior) - glass prices are typically in USD
-    const glassCurrency = selectedGlass.currency || 'USD';
-    const glassCostUSD = convertToUSD(glassPricePerSqM, glassCurrency, exchangeRate);
-    const glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * glassAreaSquareMeters;
-    
-    // Debug logging for glass cost calculation
-    console.log('=== GLASS COST CALCULATION (SAVE) ===');
-    console.log('glassPricePerSqM (original):', glassPricePerSqM);
-    console.log('glassCurrency:', glassCurrency);
-    console.log('exchangeRate:', exchangeRate);
-    console.log('glassCostUSD (converted):', glassCostUSD);
-    console.log('glassAreaSquareMeters:', glassAreaSquareMeters);
-    console.log('glassCost (final):', glassCost);
-    console.log('=== END GLASS COST CALCULATION ===');
 
     // Profile costs calculation (include both user-configurable and auto-managed)
     let profileCostTotal = 0;
@@ -1624,9 +1642,14 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       missileInfo = `Missile Impact: ${missileTypeLabel}\n`;
     }
     
+    // Build glass info for description
+    const glassInfo = selectedGlass 
+      ? `Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}`
+      : 'Glass: None (profiles only)';
+    
     const description = `
 Window System: ${windowSystem.type}
-Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}
+${glassInfo}
 ${missileInfo}${flangeInfo}User-Configured Profiles: ${userConfigurableProfiles.length}
 Auto-Managed Profiles: ${autoManagedProfiles.length}
 User-Configured Accessories: ${userConfigurableAccessories.length}
@@ -1797,8 +1820,8 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       style: windowSystem.type,
       description: description,
       windowSystemId: windowSystemId,
-      selectedGlassId: glassType,
-      missileType: missileType,
+      selectedGlassId: glassType && glassType.trim() ? glassType : null,
+      missileType: missileType || null,
       includeFlange: includeFlange === 'on' || includeFlange === true,
       selectedProfiles: selectedProfiles,
       selectedAccessories: selectedAccessories,
@@ -2038,11 +2061,20 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       return res.status(404).send('Window system not found.');
     }
 
-    // Get selected glass for pricing
+    // Get selected glass for pricing (optional - some systems don't have glass)
     const Glass = require('../models/Glass');
-    const selectedGlass = await Glass.findById(glassType);
-    if (!selectedGlass) {
-      return res.status(404).send('Selected glass type not found.');
+    let selectedGlass = null;
+    const systemHasGlass = (windowSystem.glassWidthEquation && windowSystem.glassWidthEquation.trim()) || 
+                           (windowSystem.glassHeightEquation && windowSystem.glassHeightEquation.trim());
+    
+    if (glassType && glassType.trim()) {
+      selectedGlass = await Glass.findById(glassType);
+      if (!selectedGlass && systemHasGlass) {
+        return res.status(404).send('Selected glass type not found.');
+      }
+    } else if (systemHasGlass) {
+      // Glass is required for this system but wasn't selected
+      return res.status(400).send('Glass type is required for this window system.');
     }
 
     // Get all profiles and accessories for pricing calculations
@@ -2068,39 +2100,47 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     // Calculate actual glass dimensions using equations if available
     let glassWidthInches = windowWidth; // Default to window width
     let glassHeightInches = windowHeight; // Default to window height
+    let glassCost = 0;
+    let glassAreaSquareMeters = 0;
     
-    if (windowSystem.glassWidthEquation) {
-      const calculatedWidth = evaluateLengthEquation(windowSystem.glassWidthEquation, windowWidth, windowHeight);
-      if (calculatedWidth !== null && calculatedWidth > 0) {
-        glassWidthInches = calculatedWidth;
+    if (selectedGlass) {
+      if (windowSystem.glassWidthEquation) {
+        const calculatedWidth = evaluateLengthEquation(windowSystem.glassWidthEquation, windowWidth, windowHeight);
+        if (calculatedWidth !== null && calculatedWidth > 0) {
+          glassWidthInches = calculatedWidth;
+        }
       }
-    }
-    
-    if (windowSystem.glassHeightEquation) {
-      const calculatedHeight = evaluateLengthEquation(windowSystem.glassHeightEquation, windowWidth, windowHeight);
-      if (calculatedHeight !== null && calculatedHeight > 0) {
-        glassHeightInches = calculatedHeight;
+      
+      if (windowSystem.glassHeightEquation) {
+        const calculatedHeight = evaluateLengthEquation(windowSystem.glassHeightEquation, windowWidth, windowHeight);
+        if (calculatedHeight !== null && calculatedHeight > 0) {
+          glassHeightInches = calculatedHeight;
+        }
       }
+      
+      // Calculate glass area using actual glass dimensions
+      const glassAreaInches = glassWidthInches * glassHeightInches;
+      glassAreaSquareMeters = glassAreaInches / 1550;
+      const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
+      // Use 'USD' as default currency (matching save route and frontend behavior) - glass prices are typically in USD
+      const glassCurrency = selectedGlass.currency || 'USD';
+      const glassCostUSD = convertToUSD(glassPricePerSqM, glassCurrency, exchangeRate);
+      glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * glassAreaSquareMeters;
+      
+      // Debug logging for glass cost calculation
+      console.log('=== GLASS COST CALCULATION (UPDATE) ===');
+      console.log('glassPricePerSqM (original):', glassPricePerSqM);
+      console.log('glassCurrency:', glassCurrency);
+      console.log('exchangeRate:', exchangeRate);
+      console.log('glassCostUSD (converted):', glassCostUSD);
+      console.log('glassAreaSquareMeters:', glassAreaSquareMeters);
+      console.log('glassCost (final):', glassCost);
+      console.log('=== END GLASS COST CALCULATION ===');
+    } else {
+      console.log('=== GLASS COST CALCULATION (UPDATE) ===');
+      console.log('No glass selected - glass cost: 0');
+      console.log('=== END GLASS COST CALCULATION ===');
     }
-    
-    // Calculate glass area using actual glass dimensions
-    const glassAreaInches = glassWidthInches * glassHeightInches;
-    const glassAreaSquareMeters = glassAreaInches / 1550;
-    const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
-    // Use 'USD' as default currency (matching save route and frontend behavior) - glass prices are typically in USD
-    const glassCurrency = selectedGlass.currency || 'USD';
-    const glassCostUSD = convertToUSD(glassPricePerSqM, glassCurrency, exchangeRate);
-    const glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * glassAreaSquareMeters;
-    
-    // Debug logging for glass cost calculation
-    console.log('=== GLASS COST CALCULATION (UPDATE) ===');
-    console.log('glassPricePerSqM (original):', glassPricePerSqM);
-    console.log('glassCurrency:', glassCurrency);
-    console.log('exchangeRate:', exchangeRate);
-    console.log('glassCostUSD (converted):', glassCostUSD);
-    console.log('glassAreaSquareMeters:', glassAreaSquareMeters);
-    console.log('glassCost (final):', glassCost);
-    console.log('=== END GLASS COST CALCULATION ===');
 
     // Profile costs calculation (include both user-configurable and auto-managed)
     let profileCostTotal = 0;
@@ -2414,9 +2454,14 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
       missileInfo = `Missile Impact: ${missileTypeLabel}\n`;
     }
     
+    // Build glass info for description
+    const glassInfo = selectedGlass 
+      ? `Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}`
+      : 'Glass: None (profiles only)';
+    
     const description = `
 Window System: ${windowSystem.type}
-Glass Type: ${selectedGlass.glass_type} - ${selectedGlass.description}
+${glassInfo}
 ${missileInfo}${flangeInfo}User-Configured Profiles: ${userConfigurableProfiles.length}
 Auto-Managed Profiles: ${autoManagedProfiles.length}
 User-Configured Accessories: ${userConfigurableAccessories.length}
@@ -2570,8 +2615,8 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       style: windowSystem.type,
       description: description,
       windowSystemId: windowSystemId,
-      selectedGlassId: glassType,
-      missileType: missileType,
+      selectedGlassId: glassType && glassType.trim() ? glassType : null,
+      missileType: missileType || null,
       includeFlange: includeFlange === 'on' || includeFlange === true,
       selectedProfiles: selectedProfiles,
       selectedAccessories: selectedAccessories,
@@ -2643,7 +2688,8 @@ router.post('/projects/:id/duplicate', isAuthenticated, async (req, res) => {
         includeFlange: itemObj.includeFlange || false,
         selectedProfiles: itemObj.selectedProfiles || undefined,
         selectedAccessories: itemObj.selectedAccessories || undefined,
-        notes: itemObj.notes || ''
+        notes: itemObj.notes || '',
+        markup: itemObj.markup !== undefined ? itemObj.markup : 20 // Preserve markup from original (default 20%)
       };
       
       // Only include muntinConfiguration if it exists and has valid data

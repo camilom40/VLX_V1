@@ -1341,11 +1341,103 @@ npm run dev
 
 ---
 
+## January 2026 - Optional Glass Configuration, COP Display & Duplicate Fixes
+
+### What We Worked On
+
+1. **Optional Glass Configuration for Window Systems**
+   - **Glass No Longer Required**: Window systems can now be created without glass (profiles-only systems)
+   - **Glass Equations Optional**: `glassWidthEquation` and `glassHeightEquation` fields are now optional in compose window form
+   - **UI Updates**: 
+     - Removed required asterisks from glass equation labels
+     - Added "(Optional)" badge to glass equation labels
+     - Updated Step 4 header to show "Glass Configuration (Optional)"
+     - Added help text: "Skip this step if your system has no glass"
+   - **Validation Removed**: Glass equations are only validated if provided (empty values allowed)
+
+2. **Conditional Glass/Missile Type Display in Configure Window**
+   - **Smart Detection**: System checks if `glassWidthEquation` or `glassHeightEquation` exists
+   - **Glass Type Hidden**: If system has no glass config, glass type selector is hidden (replaced with hidden input)
+   - **Missile Type Hidden**: Missile type selector also hidden when no glass (only relevant with glass)
+   - **Backend Validation**: 
+     - Glass is required only if system has glass configuration
+     - Glass cost calculated as $0 when no glass selected
+     - Description shows "Glass: None (profiles only)" for systems without glass
+
+3. **JavaScript Fixes for Hidden Glass Elements**
+   - **Problem**: JavaScript tried to access `.options` and `.selectedIndex` on hidden input element
+   - **Solution**: Added `glassSelect.tagName === 'SELECT'` checks before accessing select-specific properties
+   - **Functions Updated**:
+     - `calculatePricingWithUnits()` - Glass cost calculation
+     - `initializeGlassOptions()` - Glass options storage
+     - `fixGlassOptionTexts()` - Text corruption fix
+     - `setupGlassOptionTextWatcher()` - MutationObserver setup
+     - `handleEditModeMissileType()` - Edit mode handling
+     - `filterGlassesByMissileType()` - Glass filtering
+     - Workshop modal glass info display
+
+4. **500 Error Fix for Windows Without Glass**
+   - **Problem**: `ReferenceError: glassPricePerSqM is not defined` when saving windows without glass
+   - **Root Cause**: Debug console.log statements referenced variables only defined inside `if (selectedGlass)` block
+   - **Solution**: Moved debug logging inside the if block, added else branch logging "No glass selected - glass cost: 0"
+
+5. **Project ID Fix for Name Validation**
+   - **Problem**: 404 error on `/projects//check-item-name` (double slash - missing project ID)
+   - **Root Cause**: JavaScript looked for `data-project-id` attribute that didn't exist in HTML
+   - **Solution**: Added `data-project-id` and `data-current-window-id` attributes to form element
+
+6. **Price Display Fix in Edit Mode**
+   - **Problem**: Displayed price didn't match calculated price (showed old saved value instead)
+   - **Root Cause**: Code was overwriting calculated price with saved database value "as a temporary fix"
+   - **Solution**: Removed the override code - display now always shows current calculated price
+
+7. **COP Values in Calculation Details Modal**
+   - **Dual Currency Display**: Every cost step now shows both USD and COP values
+   - **Sections Updated**:
+     - Glass Cost: USD and COP
+     - Each Profile: Individual cost in USD and COP
+     - Total Profiles Cost: USD and COP
+     - Each Accessory: Individual cost in USD and COP
+     - Total Accessories Cost: USD and COP
+     - Muntin Cost (if applicable): USD and COP
+     - Base Cost Summary: All line items in both currencies
+     - Additional Costs: USD and COP
+     - Final Calculation: All totals in both currencies
+   - **COP Formatting**: Uses Colombian locale (es-CO) with no decimal places
+
+8. **Markup Preservation on Duplicate**
+   - **Single Item Duplicate**: Markup now preserved when duplicating a window item
+   - **Project Duplicate**: All window items preserve their markup when duplicating entire project
+   - **Default Value**: Falls back to 20% if original item has no markup defined
+
+9. **Console Warning Cleanup**
+   - **Reduced Noise**: `evaluateLengthEquation` warnings now only show when width/height > 0 (not on initial page load with 0 values)
+
+#### Key Files Modified
+- `views/admin/composeWindow.ejs` - Made glass equations optional, updated labels and validation
+- `views/admin/editWindowSystem.ejs` - Made glass equations optional, updated labels and validation
+- `views/projects/configureWindow.ejs` - Conditional glass/missile display, JavaScript fixes for hidden elements, added form data attributes, removed price override code, added formatCOP helper, updated calculation modal with dual currency
+- `routes/projectRoutes.js` - Optional glass handling in save/update routes, glass cost $0 when no glass, description updates, debug logging fixes, markup preservation in duplicate routes
+
+#### Technical Notes
+- **Glass Detection**: `systemHasGlass = (glassWidthEquation?.trim()) || (glassHeightEquation?.trim())`
+- **Hidden Element Handling**: Check `element.tagName === 'SELECT'` before accessing select-specific properties
+- **COP Formatting**: `new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })`
+- **Markup Default**: `markup !== undefined ? markup : 20` ensures 0% markup is preserved (not defaulted to 20%)
+- **Glass-Free Systems**: Useful for aluminum frames, curtain walls, or other profile-only configurations
+
+#### Example Use Cases
+- **Profile-Only System**: Create window system with only profiles (no glass), skip Step 4 entirely
+- **Mixed Systems**: Some window systems have glass, others don't - configure window page adapts automatically
+- **Production Planning**: Workshop modal still shows profile/accessory info even without glass
+
+---
+
 ## 🔮 TODO / Future Enhancements
 
 - **Profile Quantity Equations**: Consider implementing equation support for profile quantities, similar to accessory equations. This would allow profiles to use formulas based on window dimensions (e.g., perimeter-based calculations for frame profiles).
 
 ---
 
-*Last Updated: January 2026 - Markup Functionality, Bulk Delete & Price Calculation Fixes*
+*Last Updated: January 2026 - Optional Glass Configuration, COP Display & Duplicate Fixes*
 
