@@ -1696,6 +1696,9 @@
         currentUnitInput.value = newUnit;
       }
       
+      // Reset conversion flag when unit changes (new values need conversion)
+      dimensionsConverted = false;
+      
       // Update preview to reflect unit changes
       if (typeof updateWindowPreview === 'function') {
         updateWindowPreview();
@@ -2218,6 +2221,87 @@
       });
     }
     
+    // Track if dimensions have been converted to prevent double conversion
+    let dimensionsConverted = false;
+    
+    // Helper function to convert dimensions from mm to inches if needed
+    function convertDimensionsToInches() {
+      // Don't convert twice - if already converted and unit input says 'inches', skip
+      const currentUnitInput = document.getElementById('currentUnit');
+      if (dimensionsConverted && currentUnitInput && currentUnitInput.value === 'inches') {
+        console.log('✅ Dimensions already converted, skipping');
+        return;
+      }
+      
+      const widthInput = document.getElementById('width');
+      const heightInput = document.getElementById('height');
+      const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
+      
+      // Check unit from multiple sources: display label (source of truth), hidden input, variable
+      const widthUnitSpan = document.getElementById('widthUnit');
+      const currentUnitDisplay = document.getElementById('currentUnitDisplay');
+      
+      // The displayed unit label is the most reliable source of truth
+      const displayedUnit = widthUnitSpan?.textContent?.toLowerCase() || 
+                           currentUnitDisplay?.textContent?.toLowerCase() || 
+                           currentUnitInput?.value || 
+                           currentUnit || 
+                           'in';
+      
+      // Normalize: 'mm' or 'millimeters' = mm, everything else = inches
+      const isMm = displayedUnit === 'mm' || displayedUnit === 'millimeters';
+      
+      console.log('=== CONVERTING DIMENSIONS TO INCHES ===');
+      console.log('widthUnitSpan text:', widthUnitSpan?.textContent);
+      console.log('currentUnitDisplay text:', currentUnitDisplay?.textContent);
+      console.log('currentUnit variable:', currentUnit);
+      console.log('currentUnit input value:', currentUnitInput?.value);
+      console.log('displayedUnit (source of truth):', displayedUnit);
+      console.log('isMm:', isMm);
+      console.log('widthInput.value before conversion:', widthInput?.value);
+      console.log('heightInput.value before conversion:', heightInput?.value);
+      
+      if (isMm) {
+        // Convert width and height
+        if (widthInput && widthInput.value) {
+          const originalValue = parseFloat(widthInput.value);
+          if (!isNaN(originalValue) && originalValue > 0) {
+            const convertedValue = mmToInches(originalValue);
+            widthInput.value = convertedValue.toFixed(2);
+            console.log('✅ Converted width:', originalValue, 'mm ->', convertedValue, 'inches');
+          }
+        }
+        if (heightInput && heightInput.value) {
+          const originalValue = parseFloat(heightInput.value);
+          if (!isNaN(originalValue) && originalValue > 0) {
+            const convertedValue = mmToInches(originalValue);
+            heightInput.value = convertedValue.toFixed(2);
+            console.log('✅ Converted height:', originalValue, 'mm ->', convertedValue, 'inches');
+          }
+        }
+        
+        // Convert length discounts
+        lengthDiscountInputs.forEach(input => {
+          if (input.value) {
+            const originalValue = parseFloat(input.value);
+            if (!isNaN(originalValue) && originalValue > 0) {
+              input.value = mmToInches(originalValue).toFixed(2);
+            }
+          }
+        });
+        
+        // Update the unit tracker to inches so backend knows it's receiving inches
+        if (currentUnitInput) {
+          currentUnitInput.value = 'inches';
+        }
+        dimensionsConverted = true;
+        console.log('✅ Dimensions converted to inches, currentUnit input set to "inches"');
+      } else {
+        dimensionsConverted = true; // Mark as processed even if no conversion needed
+        console.log('✅ Dimensions already in inches, no conversion needed');
+      }
+    }
+    
     // Form submission handler to ensure backend gets inches and validate name
     let isSubmitting = false;
     const form = document.getElementById('windowConfigForm');
@@ -2226,6 +2310,10 @@
       if (isSubmitting) {
         return true;
       }
+      
+      // CRITICAL: Convert dimensions FIRST, before any async operations
+      // This ensures the values are converted even if async validation fails
+      convertDimensionsToInches();
       
       // Prevent submission if name is invalid
       if (!isNameValid) {
@@ -2279,29 +2367,9 @@
               }
               if (submitButton) submitButton.disabled = true;
             } else {
-              // Name is valid, proceed with submission
+              // Name is valid, proceed with submission (dimensions already converted above)
               isNameValid = true;
               isSubmitting = true;
-              
-              // Convert measurements if needed before submitting
-              const widthInput = document.getElementById('width');
-              const heightInput = document.getElementById('height');
-              const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
-              
-              if (currentUnit === 'mm') {
-                if (widthInput && widthInput.value) {
-                  widthInput.value = mmToInches(parseFloat(widthInput.value)).toFixed(2);
-                }
-                if (heightInput && heightInput.value) {
-                  heightInput.value = mmToInches(parseFloat(heightInput.value)).toFixed(2);
-                }
-                lengthDiscountInputs.forEach(input => {
-                  if (input.value) {
-                    input.value = mmToInches(parseFloat(input.value)).toFixed(2);
-                  }
-                });
-                document.getElementById('currentUnit').value = 'inches';
-              }
               
               // Remove event listener temporarily to prevent loop, then submit
               form.removeEventListener('submit', formSubmitHandler);
@@ -2311,6 +2379,7 @@
           .catch(error => {
             console.error('Error checking name:', error);
             // On error, allow submission (server will validate)
+            // Dimensions already converted above
             isSubmitting = true;
             form.removeEventListener('submit', formSubmitHandler);
             form.submit();
@@ -2318,31 +2387,8 @@
         return false;
       }
       
-      // If no name validation needed, just convert measurements
-      const widthInput = document.getElementById('width');
-      const heightInput = document.getElementById('height');
-      const lengthDiscountInputs = document.querySelectorAll('input[name*="lengthDiscount"]');
-      
-      // Convert all measurements to inches if currently in mm
-      if (currentUnit === 'mm') {
-        // Convert width and height
-        if (widthInput && widthInput.value) {
-          widthInput.value = mmToInches(parseFloat(widthInput.value)).toFixed(2);
-        }
-        if (heightInput && heightInput.value) {
-          heightInput.value = mmToInches(parseFloat(heightInput.value)).toFixed(2);
-        }
-        
-        // Convert length discounts
-        lengthDiscountInputs.forEach(input => {
-          if (input.value) {
-            input.value = mmToInches(parseFloat(input.value)).toFixed(2);
-          }
-        });
-        
-        // Update the unit tracker to inches so backend knows it's receiving inches
-        document.getElementById('currentUnit').value = 'inches';
-      }
+      // If no name validation needed, dimensions already converted above
+      // Form will submit normally with converted values
     };
     
     form.addEventListener('submit', formSubmitHandler);

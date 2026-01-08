@@ -108,10 +108,9 @@
     .data-table td {
       padding: 0.875rem 1rem;
       vertical-align: middle;
-      background: inherit;
-      font-size: 0.875rem;
-      color: #374151;
     }
+    
+    /* Tailwind lg:block handles visibility */
     
     .badge {
       display: inline-flex;
@@ -356,9 +355,18 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               </svg>
-              Window Items (<%= windowItems.length %>)
+              Window Items (<span id="itemCount"><%= windowItems.length %></span>)
             </h3>
             <div class="flex items-center gap-3">
+              <!-- Bulk Delete Button (hidden by default) -->
+              <button id="bulkDeleteBtn" 
+                      onclick="deleteSelectedItems()" 
+                      class="btn-danger flex items-center gap-2 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete Selected (<span id="selectedCount">0</span>)
+              </button>
               <!-- Add Window Button -->
               <button onclick="openAddWindowModal()" class="btn-primary flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -380,11 +388,35 @@
           <% } else { %>
             <!-- Mobile view: Cards -->
             <div class="lg:hidden space-y-4">
+              <!-- Mobile Select All -->
+              <div class="bg-gray-50 rounded-lg p-4 mb-4 flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" 
+                         id="selectAllCheckboxMobile" 
+                         class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                         onchange="toggleSelectAll(this)">
+                  <span class="text-sm font-semibold text-gray-700">Select All</span>
+                </label>
+                <button id="bulkDeleteBtnMobile" 
+                        onclick="deleteSelectedItems()" 
+                        class="btn-danger flex items-center gap-2 hidden text-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete (<span id="selectedCountMobile">0</span>)
+                </button>
+              </div>
+              
               <% windowItems.forEach((item, index) => { %>
-                <div class="item-card">
+                <div class="item-card" data-item-id="<%= item._id %>">
                   <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
                     <div class="flex justify-between items-center">
-                      <h4 class="font-medium text-gray-800 inline-edit-name" 
+                      <div class="flex items-center gap-2">
+                        <input type="checkbox" 
+                               class="item-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                               value="<%= item._id %>"
+                               onchange="updateSelectionState()">
+                        <h4 class="font-medium text-gray-800 inline-edit-name" 
                           data-item-id="<%= item._id %>" 
                           data-project-id="<%= project._id %>"
                           data-original-name="<%= item.itemName %>"
@@ -393,6 +425,7 @@
                           onmouseout="if(!this.querySelector('input')) this.style.backgroundColor='transparent'">
                         <span class="item-name-display"><%= item.itemName %></span>
                       </h4>
+                      </div>
                       <div class="text-right">
                         <span class="font-bold text-green-600" 
                               data-base-total="<%= item.totalPrice %>"
@@ -502,7 +535,7 @@
             </div>
             
             <!-- Desktop view: Table -->
-            <div class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm" style="min-width: 100%; -webkit-overflow-scrolling: touch;">
+            <div class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm" style="min-width: 100%; -webkit-overflow-scrolling: touch;" id="desktopTableContainer">
               <!-- Global Markup Control -->
               <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -522,6 +555,12 @@
               <table class="data-table" style="min-width: 1200px;">
                 <thead>
                   <tr>
+                    <th class="w-12 text-center">
+                      <input type="checkbox" 
+                             id="selectAllCheckbox" 
+                             class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                             onchange="toggleSelectAll(this)">
+                    </th>
                     <th class="w-16">Item</th>
                     <th class="w-48">Preview</th>
                     <th class="min-w-48">Description</th>
@@ -570,7 +609,13 @@
                     // Get window system type
                     const windowSystemType = item.style || item.windowSystem?.type || '—';
                   %>
-                    <tr>
+                    <tr data-item-id="<%= item._id %>">
+                      <td class="py-3 text-center">
+                        <input type="checkbox" 
+                               class="item-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                               value="<%= item._id %>"
+                               onchange="updateSelectionState()">
+                      </td>
                       <td class="py-3">
                         <div class="text-sm font-semibold text-gray-900 inline-edit-name" 
                              data-item-id="<%= item._id %>" 
@@ -675,7 +720,7 @@
                              data-markup="<%= item.markup !== undefined ? item.markup : 20 %>"><!-- Price will be formatted by JavaScript --></div>
                       </td>
                       <td class="text-right py-3">
-                        <div class="text-sm font-bold text-green-700" 
+                        <div class="text-sm font-bold text-green-700 item-total-countable" 
                              data-base-total="<%= item.totalPrice %>"
                              data-price="<%= item.totalPrice %>"
                              data-markup="<%= item.markup !== undefined ? item.markup : 20 %>"><!-- Price will be formatted by JavaScript --></div>
@@ -708,8 +753,8 @@
                   
                   <!-- Total Row -->
                   <tr class="bg-gradient-to-r from-indigo-50 to-blue-50 font-medium border-t-2 border-indigo-200">
-                    <td colspan="5" class="px-4 py-3 text-right text-gray-900 font-semibold">TOTAL:</td>
-                    <td class="px-4 py-3 text-right text-green-700 font-bold text-lg" id="projectTotalDisplay" data-base-price="<%= projectTotal %>" data-price="<%= projectTotal %>">$<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                    <td colspan="6" class="px-4 py-3 text-right text-gray-900 font-semibold">TOTAL:</td>
+                    <td class="px-4 py-3 text-right text-green-700 font-bold text-lg" id="projectTotalDisplay" data-price="<%= projectTotal %>">$<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                     <td class="px-4 py-3"></td>
                   </tr>
                 </tbody>
@@ -720,7 +765,7 @@
     </div>
 
     <!-- Add Window Modal -->
-    <div id="addWindowModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div id="addWindowModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4" style="display: none;">
       <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <div class="flex items-center justify-between mb-4">
@@ -888,6 +933,35 @@
   <%- include('../partials/_footer.ejs') %>
 
   <script>
+    // Define modal functions immediately (before DOMContentLoaded) so they're available for onclick handlers
+    let isModalOpen = false;
+    
+    function openAddWindowModal() {
+      if (isModalOpen) return; // Prevent multiple opens
+      const modal = document.getElementById('addWindowModal');
+      if (modal) {
+        isModalOpen = true;
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      }
+    }
+    
+    function closeAddWindowModal() {
+      if (!isModalOpen) return; // Prevent multiple closes
+      const modal = document.getElementById('addWindowModal');
+      if (modal) {
+        isModalOpen = false;
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    }
+    
+    // Make functions globally available immediately
+    window.openAddWindowModal = openAddWindowModal;
+    window.closeAddWindowModal = closeAddWindowModal;
+    
     // Cost settings from server (stored in USD in database)
     const costSettingsElement = document.querySelector('[data-cost-settings]');
     const costSettings = costSettingsElement ? JSON.parse(costSettingsElement.getAttribute('data-cost-settings')) : {
@@ -969,10 +1043,14 @@
     // Calculate project total with optional costs
     function calculateProjectTotal() {
       // Calculate total from marked-up prices
+      // Use .item-total-countable class to avoid counting mobile+desktop duplicates
       let total = 0;
-      document.querySelectorAll('[data-base-total][data-markup]').forEach(element => {
+      document.querySelectorAll('.item-total-countable[data-base-total][data-markup]').forEach(element => {
         const baseTotal = parseFloat(element.getAttribute('data-base-total')) || 0;
-        const markup = parseFloat(element.getAttribute('data-markup')) || 20;
+        const markupAttr = element.getAttribute('data-markup');
+        const markup = (markupAttr !== null && markupAttr !== undefined && markupAttr !== '') 
+          ? parseFloat(markupAttr) 
+          : 20; // Default to 20% only if attribute is missing/null/undefined
         total += baseTotal * (1 + markup / 100);
       });
       
@@ -1031,8 +1109,15 @@
       // Update displays
       const displayTotal = document.getElementById('displayTotal');
       const finalProjectTotal = document.getElementById('finalProjectTotal');
+      const projectTotalDisplay = document.getElementById('projectTotalDisplay');
+      
       if (displayTotal) displayTotal.textContent = formatCurrency(total);
       if (finalProjectTotal) finalProjectTotal.textContent = formatCurrency(total);
+      // Also update projectTotalDisplay if it exists (the table footer total)
+      if (projectTotalDisplay) {
+        projectTotalDisplay.setAttribute('data-price', total);
+        projectTotalDisplay.textContent = formatCurrency(total);
+      }
     }
     
     // Format all existing prices on page load
@@ -1053,19 +1138,71 @@
     // Apply markup to all prices
     function applyMarkupToPrices() {
       // Update unit prices and totals for each item
-      document.querySelectorAll('[data-base-price][data-markup]').forEach(element => {
+      // Exclude projectTotalDisplay - it's calculated separately
+      document.querySelectorAll('[data-base-price][data-markup]:not(#projectTotalDisplay)').forEach(element => {
         const basePrice = parseFloat(element.getAttribute('data-base-price')) || 0;
-        const markup = parseFloat(element.getAttribute('data-markup')) || 20;
+        const markupAttr = element.getAttribute('data-markup');
+        const markup = (markupAttr !== null && markupAttr !== undefined && markupAttr !== '') 
+          ? parseFloat(markupAttr) 
+          : 20; // Default to 20% only if attribute is missing/null/undefined
+        
+        // Validate markup is reasonable (0-1000%)
+        if (markup < 0 || markup > 1000) {
+          console.error('[PRICING DEBUG] Invalid markup value:', markup, 'for element:', element);
+          console.error('[PRICING DEBUG] Base price:', basePrice);
+          // Fallback to 0% markup if invalid
+          const markedUpPrice = basePrice;
+          element.setAttribute('data-price', markedUpPrice);
+          element.textContent = formatCurrency(markedUpPrice);
+          return;
+        }
+        
         const markedUpPrice = basePrice * (1 + markup / 100);
+        
+        // Debug logging for suspiciously high prices
+        if (markedUpPrice > basePrice * 10) {
+          console.warn('[PRICING DEBUG] Suspicious price calculation:');
+          console.warn('  Base price:', basePrice);
+          console.warn('  Markup:', markup, '%');
+          console.warn('  Calculated price:', markedUpPrice);
+          console.warn('  Element:', element);
+        }
+        
         element.setAttribute('data-price', markedUpPrice);
         element.textContent = formatCurrency(markedUpPrice);
       });
       
       // Update total prices for each item
-      document.querySelectorAll('[data-base-total][data-markup]').forEach(element => {
+      // Exclude projectTotalDisplay - it's calculated separately
+      document.querySelectorAll('[data-base-total][data-markup]:not(#projectTotalDisplay)').forEach(element => {
         const baseTotal = parseFloat(element.getAttribute('data-base-total')) || 0;
-        const markup = parseFloat(element.getAttribute('data-markup')) || 20;
+        const markupAttr = element.getAttribute('data-markup');
+        const markup = (markupAttr !== null && markupAttr !== undefined && markupAttr !== '') 
+          ? parseFloat(markupAttr) 
+          : 20; // Default to 20% only if attribute is missing/null/undefined
+        
+        // Validate markup is reasonable (0-1000%)
+        if (markup < 0 || markup > 1000) {
+          console.error('[PRICING DEBUG] Invalid markup value:', markup, 'for element:', element);
+          console.error('[PRICING DEBUG] Base total:', baseTotal);
+          // Fallback to 0% markup if invalid
+          const markedUpTotal = baseTotal;
+          element.setAttribute('data-price', markedUpTotal);
+          element.textContent = formatCurrency(markedUpTotal);
+          return;
+        }
+        
         const markedUpTotal = baseTotal * (1 + markup / 100);
+        
+        // Debug logging for suspiciously high prices
+        if (markedUpTotal > baseTotal * 10) {
+          console.warn('[PRICING DEBUG] Suspicious total price calculation:');
+          console.warn('  Base total:', baseTotal);
+          console.warn('  Markup:', markup, '%');
+          console.warn('  Calculated total:', markedUpTotal);
+          console.warn('  Element:', element);
+        }
+        
         element.setAttribute('data-price', markedUpTotal);
         element.textContent = formatCurrency(markedUpTotal);
       });
@@ -1077,19 +1214,35 @@
     // Update project total with markup applied
     function updateProjectTotalWithMarkup() {
       let total = 0;
-      document.querySelectorAll('[data-base-total][data-markup]').forEach(element => {
+      // Sum all item totals using .item-total-countable class to avoid mobile+desktop duplicates
+      document.querySelectorAll('.item-total-countable[data-base-total][data-markup]').forEach(element => {
         const baseTotal = parseFloat(element.getAttribute('data-base-total')) || 0;
-        const markup = parseFloat(element.getAttribute('data-markup')) || 20;
-        total += baseTotal * (1 + markup / 100);
+        const markupAttr = element.getAttribute('data-markup');
+        const markup = (markupAttr !== null && markupAttr !== undefined && markupAttr !== '') 
+          ? parseFloat(markupAttr) 
+          : 20; // Default to 20% only if attribute is missing/null/undefined
+        
+        const markedUpTotal = baseTotal * (1 + markup / 100);
+        total += markedUpTotal;
+        
+        // Debug logging for project total calculation
+        console.log('[PROJECT TOTAL DEBUG] Item calculation:');
+        console.log('  Base total:', baseTotal);
+        console.log('  Markup:', markup, '%');
+        console.log('  Marked up total:', markedUpTotal);
+        console.log('  Running total:', total);
       });
+      
+      console.log('[PROJECT TOTAL DEBUG] Final calculated total:', total);
       
       const projectTotalEl = document.getElementById('projectTotalDisplay');
       if (projectTotalEl) {
         projectTotalEl.setAttribute('data-price', total);
         projectTotalEl.textContent = formatCurrency(total);
+        console.log('[PROJECT TOTAL DEBUG] Updated projectTotalDisplay to:', total);
       }
       
-      // Update displayTotal
+      // Update displayTotal (the blue box at the top)
       const displayTotal = document.getElementById('displayTotal');
       if (displayTotal) {
         displayTotal.textContent = formatCurrency(total);
@@ -1232,20 +1385,14 @@
       
       // Format existing prices with commas (already called above)
       
-      // Modal functions
-      function openAddWindowModal() {
-        const modal = document.getElementById('addWindowModal');
-        if (modal) {
-          modal.classList.remove('hidden');
-          document.body.style.overflow = 'hidden';
+      // Enhanced closeAddWindowModal with form reset (runs after DOM is ready)
+      const originalCloseAddWindowModal = window.closeAddWindowModal;
+      window.closeAddWindowModal = function() {
+        if (originalCloseAddWindowModal) {
+          originalCloseAddWindowModal();
         }
-      }
-      
-      function closeAddWindowModal() {
         const modal = document.getElementById('addWindowModal');
         if (modal) {
-          modal.classList.add('hidden');
-          document.body.style.overflow = '';
           // Reset form
           const form = modal.querySelector('form');
           if (form) {
@@ -1254,6 +1401,8 @@
             const inputs = form.querySelectorAll('input, select');
             inputs.forEach(input => input.classList.remove('border-red-500', 'border-green-500'));
             // Clear validation messages
+            const windowRefErrorDiv = document.getElementById('modalWindowRefError');
+            const windowRefSuccessDiv = document.getElementById('modalWindowRefSuccess');
             if (windowRefErrorDiv) {
               windowRefErrorDiv.classList.add('hidden');
               windowRefErrorDiv.textContent = '';
@@ -1262,24 +1411,35 @@
               windowRefSuccessDiv.classList.add('hidden');
               windowRefSuccessDiv.textContent = '';
             }
-            // Clear timeout
-            if (nameCheckTimeout) {
-              clearTimeout(nameCheckTimeout);
-            }
-            // Reset validation state
-            isModalNameValid = true;
           }
         }
-      }
+      };
       
-      // Close modal when clicking outside
+      // Prevent modal from closing when clicking inside the modal content
       const modal = document.getElementById('addWindowModal');
       if (modal) {
-        modal.addEventListener('click', (e) => {
-          if (e.target === modal) {
-            closeAddWindowModal();
-          }
-        });
+        const modalContent = modal.querySelector('.bg-white');
+        if (modalContent) {
+          modalContent.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
+        }
+        // Close modal when clicking outside (on the backdrop) - only add once
+        if (!modal.hasAttribute('data-listener-added')) {
+          modal.setAttribute('data-listener-added', 'true');
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal && isModalOpen) {
+              closeAddWindowModal();
+            }
+          });
+          
+          // Handle ESC key
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isModalOpen) {
+              closeAddWindowModal();
+            }
+          });
+        }
       }
       
       // Real-time name validation for add window modal
@@ -1482,14 +1642,20 @@
             updateGlobalMarkupDisplay();
           } else {
             // Restore original value
-            this.value = this.getAttribute('data-original-markup') || 20;
+            const originalMarkup = this.getAttribute('data-original-markup');
+            this.value = (originalMarkup !== null && originalMarkup !== undefined && originalMarkup !== '') 
+              ? originalMarkup 
+              : 20;
           }
         });
         
         input.addEventListener('blur', function() {
           const value = parseFloat(this.value);
           if (isNaN(value) || value < 0 || value > 1000) {
-            this.value = this.getAttribute('data-original-markup') || 20;
+            const originalMarkup = this.getAttribute('data-original-markup');
+            this.value = (originalMarkup !== null && originalMarkup !== undefined && originalMarkup !== '') 
+              ? originalMarkup 
+              : 20;
           }
         });
       });
@@ -2075,26 +2241,31 @@
                 // Update the total price display for this item and project total
                 const row = this.closest('tr') || this.closest('.item-card');
                 if (row) {
-                  // Find the total price element (has text-green-700 or text-green-600 class, not unit price)
-                  const totalPriceElement = row.querySelector('.text-green-700[data-price], .text-green-600[data-price]');
-                  if (totalPriceElement) {
-                    // Update the data-price attribute with new total
-                    totalPriceElement.setAttribute('data-price', data.totalPrice);
-                    // Trigger price update if function exists
-                    if (window.updateAllPrices) {
-                      setTimeout(() => {
-                        window.updateAllPrices();
-                      }, 100);
+                  // Find ALL total price elements (both regular and countable)
+                  const totalPriceElements = row.querySelectorAll('[data-base-total], .text-green-700[data-price], .text-green-600[data-price]');
+                  totalPriceElements.forEach(el => {
+                    // Update data-base-total (used for project total calculation)
+                    if (el.hasAttribute('data-base-total')) {
+                      el.setAttribute('data-base-total', data.totalPrice);
                     }
+                    // Update data-price 
+                    el.setAttribute('data-price', data.totalPrice);
+                    // Update display text
+                    el.textContent = formatCurrency(data.totalPrice);
+                  });
+                  
+                  // Also find the .item-total-countable element specifically (in desktop table)
+                  const countableElement = row.querySelector('.item-total-countable');
+                  if (countableElement) {
+                    countableElement.setAttribute('data-base-total', data.totalPrice);
+                    countableElement.setAttribute('data-price', data.totalPrice);
+                    countableElement.textContent = formatCurrency(data.totalPrice);
                   }
                 }
                 
-                // Recalculate project total
-                if (window.calculateProjectTotal) {
-                  setTimeout(() => {
-                    window.calculateProjectTotal();
-                  }, 200);
-                }
+                // Recalculate project total immediately
+                updateProjectTotalWithMarkup();
+                calculateProjectTotal();
                 
                 setTimeout(() => {
                   this.style.backgroundColor = 'transparent';
@@ -2162,6 +2333,161 @@
           input.addEventListener('blur', saveQuantity);
         });
       });
+      
+      // Multi-select functionality
+      function toggleSelectAll(checkbox) {
+        if (!checkbox) return;
+        const isChecked = checkbox.checked;
+        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+        itemCheckboxes.forEach(cb => {
+          cb.checked = isChecked;
+        });
+        updateSelectionState();
+      }
+      
+      function updateSelectionState() {
+        try {
+          const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+          const totalBoxes = document.querySelectorAll('.item-checkbox');
+          const selectedCount = checkedBoxes.length;
+          
+          // Update select all checkboxes
+          const selectAllDesktop = document.getElementById('selectAllCheckbox');
+          const selectAllMobile = document.getElementById('selectAllCheckboxMobile');
+          
+          if (selectAllDesktop) {
+            selectAllDesktop.checked = selectedCount > 0 && selectedCount === totalBoxes.length;
+            selectAllDesktop.indeterminate = selectedCount > 0 && selectedCount < totalBoxes.length;
+          }
+          if (selectAllMobile) {
+            selectAllMobile.checked = selectedCount > 0 && selectedCount === totalBoxes.length;
+            selectAllMobile.indeterminate = selectedCount > 0 && selectedCount < totalBoxes.length;
+          }
+          
+          // Update selected count displays
+          const selectedCountEl = document.getElementById('selectedCount');
+          const selectedCountMobileEl = document.getElementById('selectedCountMobile');
+          if (selectedCountEl) selectedCountEl.textContent = selectedCount;
+          if (selectedCountMobileEl) selectedCountMobileEl.textContent = selectedCount;
+          
+          // Show/hide bulk delete buttons
+          const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+          const bulkDeleteBtnMobile = document.getElementById('bulkDeleteBtnMobile');
+          
+          if (selectedCount > 0) {
+            if (bulkDeleteBtn) bulkDeleteBtn.classList.remove('hidden');
+            if (bulkDeleteBtnMobile) bulkDeleteBtnMobile.classList.remove('hidden');
+          } else {
+            if (bulkDeleteBtn) bulkDeleteBtn.classList.add('hidden');
+            if (bulkDeleteBtnMobile) bulkDeleteBtnMobile.classList.add('hidden');
+          }
+        } catch (error) {
+          console.error('Error in updateSelectionState:', error);
+        }
+      }
+      
+      async function deleteSelectedItems() {
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+        
+        if (selectedIds.length === 0) {
+          alert('Please select at least one item to delete.');
+          return;
+        }
+        
+        const itemCount = selectedIds.length;
+        const confirmMessage = `Are you sure you want to delete ${itemCount} item${itemCount > 1 ? 's' : ''}? This action cannot be undone.`;
+        
+        if (!confirm(confirmMessage)) {
+          return;
+        }
+        
+        // Get project ID from the page
+        const projectId = '<%= project._id %>';
+        
+        try {
+          // Show loading state
+          const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+          const bulkDeleteBtnMobile = document.getElementById('bulkDeleteBtnMobile');
+          const originalText = bulkDeleteBtn ? bulkDeleteBtn.innerHTML : '';
+          if (bulkDeleteBtn) {
+            bulkDeleteBtn.disabled = true;
+            bulkDeleteBtn.innerHTML = '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...</span>';
+          }
+          if (bulkDeleteBtnMobile) {
+            bulkDeleteBtnMobile.disabled = true;
+            bulkDeleteBtnMobile.innerHTML = '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...</span>';
+          }
+          
+          // Send bulk delete request
+          const response = await fetch(`/projects/${projectId}/items/bulk-delete`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ itemIds: selectedIds })
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            // Remove deleted items from DOM
+            selectedIds.forEach(itemId => {
+              const row = document.querySelector(`tr[data-item-id="${itemId}"], .item-card[data-item-id="${itemId}"]`);
+              if (row) {
+                row.style.transition = 'opacity 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => row.remove(), 300);
+              }
+            });
+            
+            // Update item count
+            const itemCountEl = document.getElementById('itemCount');
+            if (itemCountEl) {
+              const currentCount = parseInt(itemCountEl.textContent) || 0;
+              itemCountEl.textContent = Math.max(0, currentCount - selectedIds.length);
+            }
+            
+            // Reset selection state
+            updateSelectionState();
+            
+            // Reload page after a short delay to refresh totals
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
+          } else {
+            alert(data.error || 'Failed to delete items. Please try again.');
+            if (bulkDeleteBtn) {
+              bulkDeleteBtn.disabled = false;
+              bulkDeleteBtn.innerHTML = originalText;
+            }
+            if (bulkDeleteBtnMobile) {
+              bulkDeleteBtnMobile.disabled = false;
+            }
+          }
+        } catch (error) {
+          console.error('Error deleting items:', error);
+          alert('An error occurred while deleting items. Please try again.');
+          const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+          const bulkDeleteBtnMobile = document.getElementById('bulkDeleteBtnMobile');
+          if (bulkDeleteBtn) bulkDeleteBtn.disabled = false;
+          if (bulkDeleteBtnMobile) bulkDeleteBtnMobile.disabled = false;
+        }
+      }
+      
+      // Make functions globally accessible
+      window.toggleSelectAll = toggleSelectAll;
+      window.updateSelectionState = updateSelectionState;
+      window.deleteSelectedItems = deleteSelectedItems;
+      
+      // Initialize selection state on page load (only if items exist)
+      setTimeout(() => {
+        try {
+          updateSelectionState();
+        } catch (error) {
+          console.error('Error initializing selection state:', error);
+        }
+      }, 100);
     });
   </script>
 </body>

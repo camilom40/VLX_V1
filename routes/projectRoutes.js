@@ -232,8 +232,17 @@ async function recalculateWindowItemPrices(windowItem) {
     // Calculate glass area using actual glass dimensions
     const glassAreaInches = glassWidthInches * glassHeightInches;
     const glassAreaSquareMeters = glassAreaInches / 1550;
-    const glassCostUSD = convertToUSD(selectedGlass.pricePerSquareMeter, selectedGlass.currency || 'USD', exchangeRate);
-    const glassCost = glassCostUSD * glassAreaSquareMeters;
+    
+    // Validate glass price
+    const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
+    if (isNaN(glassPricePerSqM) || glassPricePerSqM < 0) {
+      console.error('Invalid glass price:', selectedGlass.pricePerSquareMeter);
+    }
+    
+    // Use 'USD' as default currency (matching save route and frontend behavior) - glass prices are typically in USD
+    const glassCurrency = selectedGlass.currency || 'USD';
+    const glassCostUSD = convertToUSD(glassPricePerSqM, glassCurrency, exchangeRate);
+    const glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * glassAreaSquareMeters;
     
     // Profile costs calculation
     let profileCostTotal = 0;
@@ -1016,6 +1025,54 @@ router.post('/projects/:projectId/items/:itemId/delete', isAuthenticated, async 
   }
 });
 
+// NEW ROUTE: Bulk delete window items
+router.post('/projects/:projectId/items/bulk-delete', isAuthenticated, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { itemIds } = req.body;
+    const userId = req.session.userId;
+
+    // Verify project ownership
+    const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found or access denied.' });
+    }
+
+    // Validate itemIds
+    if (!Array.isArray(itemIds) || itemIds.length === 0) {
+      return res.status(400).json({ error: 'No items selected for deletion.' });
+    }
+
+    // Verify all items belong to this project
+    const items = await WindowItem.find({ 
+      _id: { $in: itemIds },
+      projectId: projectId 
+    });
+
+    if (items.length !== itemIds.length) {
+      return res.status(403).json({ error: 'Some items do not belong to this project.' });
+    }
+
+    // Delete all items
+    const deleteResult = await WindowItem.deleteMany({ 
+      _id: { $in: itemIds },
+      projectId: projectId 
+    });
+
+    console.log(`Deleted ${deleteResult.deletedCount} window item(s) from project ${projectId}`);
+
+    res.json({ 
+      success: true, 
+      deletedCount: deleteResult.deletedCount,
+      message: `Successfully deleted ${deleteResult.deletedCount} item(s).`
+    });
+
+  } catch (error) {
+    console.error("Error bulk deleting window items:", error);
+    res.status(500).json({ error: 'Failed to delete items.' });
+  }
+});
+
 // NEW ROUTE: Create detailed window configuration page
 router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
   try {
@@ -1167,6 +1224,22 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     const windowHeight = parseFloat(height);
     const windowQuantity = parseInt(quantity);
     
+    // Debug and validate dimensions
+    console.log('=== BACKEND: RECEIVED DIMENSIONS ===');
+    console.log('Raw width from form:', width);
+    console.log('Parsed windowWidth:', windowWidth);
+    console.log('Raw height from form:', height);
+    console.log('Parsed windowHeight:', windowHeight);
+    
+    // Safety check: If dimensions are > 500 inches (~12.7m), they're probably in mm and weren't converted
+    if (windowWidth > 500 || windowHeight > 500) {
+      console.error('⚠️ WARNING: Dimensions are suspiciously large!');
+      console.error('Width:', windowWidth, 'inches (', windowWidth * 25.4, 'mm)');
+      console.error('Height:', windowHeight, 'inches (', windowHeight * 25.4, 'mm)');
+      console.error('This suggests the frontend did NOT convert mm to inches before submission!');
+      console.error('Expected: ~39.37 inches for 1000mm window');
+    }
+    
     // Glass cost calculation - ALL INTERNAL CALCULATIONS IN USD
     // Calculate actual glass dimensions using equations if available
     let glassWidthInches = windowWidth; // Default to window width
@@ -1189,9 +1262,27 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     // Calculate glass area using actual glass dimensions
     const glassAreaInches = glassWidthInches * glassHeightInches;
     const glassAreaSquareMeters = glassAreaInches / 1550;
+    
+    // Validate glass price
+    const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
+    if (isNaN(glassPricePerSqM) || glassPricePerSqM < 0) {
+      console.error('Invalid glass price:', selectedGlass.pricePerSquareMeter);
+    }
+    
     // Use 'USD' as default currency (matching frontend behavior) - glass prices are typically in USD
-    const glassCostUSD = convertToUSD(selectedGlass.pricePerSquareMeter, selectedGlass.currency || 'USD', exchangeRate);
-    const glassCost = glassCostUSD * glassAreaSquareMeters;
+    const glassCurrency = selectedGlass.currency || 'USD';
+    const glassCostUSD = convertToUSD(glassPricePerSqM, glassCurrency, exchangeRate);
+    const glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * glassAreaSquareMeters;
+    
+    // Debug logging for glass cost calculation
+    console.log('=== GLASS COST CALCULATION (SAVE) ===');
+    console.log('glassPricePerSqM (original):', glassPricePerSqM);
+    console.log('glassCurrency:', glassCurrency);
+    console.log('exchangeRate:', exchangeRate);
+    console.log('glassCostUSD (converted):', glassCostUSD);
+    console.log('glassAreaSquareMeters:', glassAreaSquareMeters);
+    console.log('glassCost (final):', glassCost);
+    console.log('=== END GLASS COST CALCULATION ===');
 
     // Profile costs calculation (include both user-configurable and auto-managed)
     let profileCostTotal = 0;
@@ -1642,6 +1733,13 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     console.log('Setting quantity:', windowQuantity);
     console.log('Expected: totalPrice should be preserved, not recalculated from unitPrice * quantity');
     
+    // Debug logging for dimensions and pricing
+    console.log('=== SAVING WINDOW ITEM ===');
+    console.log('Received width:', width, '-> parsed as:', windowWidth);
+    console.log('Received height:', height, '-> parsed as:', windowHeight);
+    console.log('unitPrice calculated:', unitPrice);
+    console.log('totalPrice calculated:', totalPrice);
+    
     const newWindowItem = new WindowItem({
       projectId,
       itemName: windowRef,
@@ -1650,6 +1748,7 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       quantity: isNaN(windowQuantity) ? 1 : windowQuantity,
       unitPrice: unitPrice,
       totalPrice: totalPrice, // Use finalPrice directly to maintain accuracy
+      markup: 0, // Ensure markup is 0 when saving base price (will be applied later in UI)
       material: 'Aluminum/Glass',
       color: 'Various',
       style: windowSystem.type,
@@ -1945,8 +2044,20 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     const glassAreaInches = glassWidthInches * glassHeightInches;
     const glassAreaSquareMeters = glassAreaInches / 1550;
     const glassPricePerSqM = parseFloat(selectedGlass.pricePerSquareMeter) || 0;
-    const glassCostUSD = convertToUSD(glassPricePerSqM, selectedGlass.currency || 'COP', exchangeRate);
+    // Use 'USD' as default currency (matching save route and frontend behavior) - glass prices are typically in USD
+    const glassCurrency = selectedGlass.currency || 'USD';
+    const glassCostUSD = convertToUSD(glassPricePerSqM, glassCurrency, exchangeRate);
     const glassCost = (isNaN(glassCostUSD) ? 0 : glassCostUSD) * glassAreaSquareMeters;
+    
+    // Debug logging for glass cost calculation
+    console.log('=== GLASS COST CALCULATION (UPDATE) ===');
+    console.log('glassPricePerSqM (original):', glassPricePerSqM);
+    console.log('glassCurrency:', glassCurrency);
+    console.log('exchangeRate:', exchangeRate);
+    console.log('glassCostUSD (converted):', glassCostUSD);
+    console.log('glassAreaSquareMeters:', glassAreaSquareMeters);
+    console.log('glassCost (final):', glassCost);
+    console.log('=== END GLASS COST CALCULATION ===');
 
     // Profile costs calculation (include both user-configurable and auto-managed)
     let profileCostTotal = 0;

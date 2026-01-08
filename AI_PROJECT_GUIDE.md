@@ -1251,11 +1251,101 @@ npm run dev
 
 ---
 
+## January 2026 - Markup Functionality, Bulk Delete & Price Calculation Fixes
+
+### What We Worked On
+
+1. **Markup Functionality for Project Details**
+   - **Individual Item Markup**: Each window item now has an editable markup percentage field in both desktop table and mobile card views
+   - **Global Markup Control**: Added global markup input that displays the average of all item markups
+   - **Auto-Apply Global Markup**: When user changes the global markup, all individual item markups update to that value
+   - **Default Markup**: New items are saved with 0% markup (base price only), allowing users to add markup as needed
+   - **Price Display**: Unit price and total price dynamically update when markup changes
+   - **Backend Route**: Added `PATCH /projects/:projectId/items/:itemId/markup` endpoint for updating item markup
+   - **Real-time Calculation**: Markup applied as `basePrice * (1 + markup/100)` on the frontend
+
+2. **Multi-Select and Bulk Delete**
+   - **Checkbox Selection**: Added checkboxes to each item row (desktop) and card (mobile)
+   - **Select All**: Header checkbox to select/deselect all items at once
+   - **Indeterminate State**: "Select All" checkbox shows indeterminate state when some items are selected
+   - **Bulk Delete Button**: Appears when items are selected, shows count of selected items
+   - **Backend Route**: Added `POST /projects/:projectId/items/bulk-delete` endpoint
+   - **Confirmation Dialog**: Requires user confirmation before bulk deletion
+   - **Loading States**: Shows loading indicator during bulk delete operation
+
+3. **Desktop Table Visibility Fix**
+   - **Problem**: Desktop table was not visible in full-screen mode, only appeared in mobile view
+   - **Root Cause**: A missing closing `</div>` tag caused the desktop table container to be nested inside the mobile view container
+   - **Solution**: Added the missing `</div>` tag to properly close the mobile card loop
+   - **Additional Fixes**: Removed inline `style="display: none;"` and fixed Tailwind class conflicts
+
+4. **Add Window Modal Blinking Fix**
+   - **Problem**: In mobile mode, clicking "Add Window" caused the modal to rapidly blink on/off
+   - **Root Cause**: Functions defined inside DOMContentLoaded weren't available on button click, and duplicate event listeners caused rapid state changes
+   - **Solution**: 
+     - Moved `openAddWindowModal()` and `closeAddWindowModal()` functions outside DOMContentLoaded
+     - Added `isModalOpen` flag to prevent multiple rapid calls
+     - Removed duplicate backdrop click listener
+     - Added `e.stopPropagation()` to prevent click bubbling
+
+5. **Price Calculation Triple-Counting Fix**
+   - **Problem**: Project total was showing 3x the actual value (e.g., $244.81 instead of $81.60)
+   - **Root Cause**: Each item had 3 elements with `data-base-total` (mobile card header, mobile card details, desktop table), all being summed
+   - **Solution**: 
+     - Added `.item-total-countable` class to only the desktop table total element
+     - Updated all calculation selectors to use `.item-total-countable[data-base-total][data-markup]`
+     - Removed `data-base-price` from `projectTotalDisplay` (it's a result, not a source)
+
+6. **Markup 0% Display Fix**
+   - **Problem**: Items with 0% markup were displaying with 20% markup applied
+   - **Root Cause**: Code used `parseFloat(attr) || 20` which treated `0` as falsy, defaulting to 20
+   - **Solution**: Changed to explicit null/undefined check: `(attr !== null && attr !== undefined && attr !== '') ? parseFloat(attr) : 20`
+   - **Applied To**: `applyMarkupToPrices()`, `updateProjectTotalWithMarkup()`, `calculateProjectTotal()`, and inline input value attributes
+
+7. **Quantity Change Total Update Fix**
+   - **Problem**: When changing item quantity, the item total updated but the project total didn't
+   - **Root Cause**: Quantity update handler only updated `data-price` attribute, but project total calculation uses `data-base-total`
+   - **Solution**: 
+     - Updated quantity change handler to update both `data-base-total` and `data-price`
+     - Explicitly update the `.item-total-countable` element
+     - Call `updateProjectTotalWithMarkup()` and `calculateProjectTotal()` immediately after save
+
+8. **Dimension Conversion Reliability Fix**
+   - **Problem**: Windows saved with mm dimensions were sometimes saved with incorrect values (1000mm becoming 25400mm)
+   - **Root Cause**: Unit conversion logic wasn't reliably detecting when dimensions were in mm before converting to inches
+   - **Solution**: 
+     - Made conversion logic use the displayed unit label as the source of truth (not hidden inputs or variables)
+     - Added `conversionApplied` flag to prevent double conversion
+     - Added debug logging to trace conversion process
+     - Added backend validation for dimension bounds
+
+#### Key Files Modified
+- `views/projects/projectDetails.ejs` - Markup functionality, bulk delete, triple-counting fix, modal fix, quantity update fix
+- `routes/projectRoutes.js` - Added markup update route, bulk delete route, dimension validation
+- `models/WindowItem.js` - Added `markup` field with default of 20, range 0-1000
+- `views/projects/configureWindow.ejs` - Dimension conversion reliability improvements
+
+#### Technical Notes
+- **Markup Storage**: Markup percentage stored in `WindowItem.markup` field (default: 20, min: 0, max: 1000)
+- **Price Calculation**: Base prices stored without markup, markup applied on frontend display
+- **Countable Elements**: Only elements with `.item-total-countable` class are summed for project total
+- **Debounced Save**: Markup changes use debounced save (300ms delay) to reduce API calls
+- **Selection State**: Selected items tracked in `selectedItems` array, synced between desktop and mobile views
+- **Unit Conversion**: Dimensions converted from mm to inches before form submission, using displayed unit as source of truth
+
+#### Example Markup Calculation
+- Base unit price: $81.60
+- Markup: 20%
+- Displayed unit price: $81.60 × 1.20 = $97.92
+- Total price (qty 2): $97.92 × 2 = $195.84
+
+---
+
 ## 🔮 TODO / Future Enhancements
 
 - **Profile Quantity Equations**: Consider implementing equation support for profile quantities, similar to accessory equations. This would allow profiles to use formulas based on window dimensions (e.g., perimeter-based calculations for frame profiles).
 
 ---
 
-*Last Updated: January 2026 - Glass Type Display Fix & Edit Mode Improvements*
+*Last Updated: January 2026 - Markup Functionality, Bulk Delete & Price Calculation Fixes*
 
