@@ -149,7 +149,7 @@ app.use(projectRoutes);
 app.use(authRoutes);
 
 // Quotation Routes
-app.use('/admin/accessories', accessoryRoutes);
+app.use('/admin/hardware', accessoryRoutes);
 app.use('/admin/glasses', glassRoutes);
 
 // Admin Routes for Profiles

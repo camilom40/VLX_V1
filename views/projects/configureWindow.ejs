@@ -231,7 +231,7 @@
             </svg>
             <div class="text-sm text-yellow-800">
               <p class="font-medium mb-1">Edit Mode:</p>
-              <p>Basic dimensions and glass type are pre-filled. For detailed component configurations (profiles, accessories), please review and adjust the default settings as needed. The pricing will update automatically as you make changes.</p>
+              <p>Basic dimensions and glass type are pre-filled. For detailed component configurations (profiles, hardware), please review and adjust the default settings as needed. The pricing will update automatically as you make changes.</p>
             </div>
           </div>
         </div>
@@ -516,12 +516,12 @@
                 <span class="font-medium text-green-600"><%= userConfigurableProfiles.length %> profiles</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Total Accessories:</span>
+                <span class="text-gray-600">Total Hardware:</span>
                 <span class="font-medium"><%= selectedWindowSystem.accessories.length %></span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">User-Configurable:</span>
-                <span class="font-medium text-green-600"><%= userConfigurableAccessories.length %> accessories</span>
+                <span class="font-medium text-green-600"><%= userConfigurableAccessories.length %> hardware items</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Glass Restrictions:</span>
@@ -849,7 +849,7 @@
               <!-- Individual Accessories (quantity-based) -->
               <% if (individualAccessories.length > 0) { %>
                 <div class="space-y-4">
-                  <h5 class="text-lg font-medium text-gray-700">Additional Accessories</h5>
+                  <h5 class="text-lg font-medium text-gray-700">Additional Hardware</h5>
                   <% individualAccessories.forEach((accessoryItem, index) => { %>
                     <div class="component-card border border-gray-200 rounded-lg p-4">
                       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -914,7 +914,7 @@
               <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p class="text-blue-800 text-sm">
                   <i class="fas fa-info-circle mr-2"></i>
-                  All accessories for this window system are automatically configured. No user input required.
+                  All hardware for this window system are automatically configured. No user input required.
                 </p>
               </div>
             <% } %>
@@ -1058,7 +1058,7 @@
                 <span class="font-medium" id="glassCost">$0.00</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Accessories:</span>
+                <span class="text-gray-600">Hardware:</span>
                 <span class="font-medium" id="accessoriesCost">$0.00</span>
               </div>
               <div class="flex justify-between" id="muntinCostRow" style="display: none;">
@@ -1744,7 +1744,7 @@
     function calculatePricingWithUnits() {
       // Get window system data from data attribute
       const windowSystemData = JSON.parse(document.body.getAttribute('data-window-system') || '{}');
-      // Get all accessories data for currency lookup
+      // Get all hardware data for currency lookup
       const allAccessories = JSON.parse(document.body.getAttribute('data-all-accessories') || '[]');
       
       // Get current unit from hidden input or global variable (ensure we have the latest value)
@@ -1974,7 +1974,7 @@
         });
       });
       
-      // Choice group accessories (radio buttons and checkboxes)
+      // Choice group hardware (radio buttons and checkboxes)
       const checkedChoices = document.querySelectorAll('input[name^="choiceGroup_"]:checked');
       
       checkedChoices.forEach(choice => {
@@ -2161,7 +2161,7 @@
       
       // Update displays with comma formatting (formatCurrency will convert USD to display currency)
       document.getElementById('totalPrice').textContent = formatCurrency(finalTotal);
-      // Base Materials should show the total of profiles (not including glass/accessories separately shown)
+      // Base Materials should show the total of profiles (not including glass/hardware separately shown)
       // Or we could show total base cost - for now, showing profiles cost as "Base Materials"
       document.getElementById('baseMaterialsCost').textContent = formatCurrency(profilesCost);
       document.getElementById('glassCost').textContent = formatCurrency(glassCost);
@@ -3530,9 +3530,9 @@
             </div>
           </div>
 
-          <!-- Accessory Costs -->
+          <!-- Hardware Costs -->
           <div class="bg-yellow-50 p-3 rounded-lg">
-            <div class="text-sm font-semibold text-yellow-800 mb-2">Accessory Costs</div>
+            <div class="text-sm font-semibold text-yellow-800 mb-2">Hardware Costs</div>
             <div class="text-sm text-gray-700 space-y-2">
               ${details.accessories.length > 0 ? details.accessories.map((acc, idx) => `
                 <div class="border-b border-yellow-200 pb-2 ${idx === details.accessories.length - 1 ? 'border-b-0 pb-0' : ''}">
@@ -3546,9 +3546,9 @@
                     <div class="text-xs text-gray-600">Formula: $${acc.priceUSD.toFixed(2)} × ${acc.quantity} = $${acc.cost.toFixed(2)}</div>
                   </div>
                 </div>
-              `).join('') : '<div class="text-gray-500 italic">No accessories selected</div>'}
-              <div class="font-semibold mt-2 pt-2 border-t border-yellow-300">Total Accessories Cost (USD): $${details.accessoriesCost.toFixed(2)}</div>
-              <div class="font-semibold text-yellow-700">Total Accessories Cost (COP): ${formatCOP(details.accessoriesCost, rate)}</div>
+              `).join('') : '<div class="text-gray-500 italic">No hardware selected</div>'}
+              <div class="font-semibold mt-2 pt-2 border-t border-yellow-300">Total Hardware Cost (USD): $${details.accessoriesCost.toFixed(2)}</div>
+              <div class="font-semibold text-yellow-700">Total Hardware Cost (COP): ${formatCOP(details.accessoriesCost, rate)}</div>
             </div>
           </div>
 
@@ -3809,9 +3809,9 @@
             </div>
           </div>
 
-          <!-- Accessories Production -->
+          <!-- Hardware Production -->
           <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-            <div class="text-lg font-bold text-yellow-900 mb-3">Accessories Production</div>
+            <div class="text-lg font-bold text-yellow-900 mb-3">Hardware Production</div>
             <div class="space-y-2">
               ${details.accessories.length > 0 ? details.accessories.map((acc, idx) => `
                 <div class="bg-white p-3 rounded border border-yellow-300">
@@ -3826,7 +3826,7 @@
                     </div>
                   </div>
                 </div>
-              `).join('') : '<div class="text-gray-500 italic text-sm">No accessories configured</div>'}
+              `).join('') : '<div class="text-gray-500 italic text-sm">No hardware configured</div>'}
             </div>
           </div>
 
@@ -3869,7 +3869,7 @@
             <div class="text-sm space-y-1 text-gray-700">
               <div>Total Units to Produce: <span class="font-bold text-lg">${quantity}</span></div>
               <div>Total Profiles: <span class="font-semibold">${details.profiles.reduce((sum, p) => sum + (p.quantity || 0), 0) * quantity}</span></div>
-              <div>Total Accessories: <span class="font-semibold">${details.accessories.reduce((sum, a) => sum + (a.quantity || 0), 0) * quantity}</span></div>
+              <div>Total Hardware: <span class="font-semibold">${details.accessories.reduce((sum, a) => sum + (a.quantity || 0), 0) * quantity}</span></div>
               <div>Total Glass Panels: <span class="font-semibold">${quantity}</span></div>
             </div>
           </div>

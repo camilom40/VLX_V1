@@ -198,7 +198,7 @@ async function recalculateWindowItemPrices(windowItem, exchangeRateOverride = nu
       return { unitPrice: windowItem.unitPrice, totalPrice: windowItem.totalPrice };
     }
     
-    // Get all profiles and accessories for current prices
+    // Get all profiles and hardware for current prices
     const Profile = require('../models/Profile');
     const Accessory = require('../models/Accessory');
     const [allProfiles, allAccessories] = await Promise.all([
@@ -315,7 +315,7 @@ async function recalculateWindowItemPrices(windowItem, exchangeRateOverride = nu
       }
     }
     
-    // Add auto-managed accessories
+    // Add auto-managed hardware
     const perimeterInchesRecalc = 2 * (windowWidth + windowHeight);
     for (const accessoryItem of windowSystem.accessories.filter(a => !a.showToUser)) {
       const accessoryDoc = accessoryItem.accessory;
@@ -1202,11 +1202,11 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
           }
           accessoryChoiceGroups[accessoryItem.componentGroup].accessories.push(accessoryItem);
         } else {
-          // Regular quantity-based accessories
+          // Regular quantity-based hardware
           individualAccessories.push(accessoryItem);
         }
       } else {
-        // Regular quantity-based accessories (no component group)
+        // Regular quantity-based hardware (no component group)
         individualAccessories.push(accessoryItem);
       }
     });
@@ -2011,7 +2011,7 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
           }
           accessoryChoiceGroups[accessoryItem.componentGroup].accessories.push(accessoryItem);
         } else {
-          // Regular quantity-based accessories
+          // Regular quantity-based hardware
           individualAccessories.push(accessoryItem);
         }
       } else {
@@ -2020,7 +2020,7 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       }
     });
     
-    // Restore saved accessory selections
+    // Restore saved hardware selections
     const savedAccessorySelections = {};
     if (existingWindow.selectedAccessories && existingWindow.selectedAccessories.length > 0) {
       existingWindow.selectedAccessories.forEach(savedAcc => {

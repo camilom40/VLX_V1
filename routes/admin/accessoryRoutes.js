@@ -43,7 +43,7 @@ const accessoryImageUpload = multer({
 // Log utility
 const logger = require('../../utils/logger');
 
-// Route to list all accessories
+// Route to list all hardware
 router.get('/', isAdmin, async (req, res) => {
   try {
     const CostSettings = require('../../models/CostSettings');
@@ -132,7 +132,7 @@ router.post('/add', isAdmin, accessoryImageUpload.single('image'), async (req, r
       name: { $regex: new RegExp(`^${name}$`, 'i') } 
     });
     if (existingAccessory) {
-      return res.status(400).send(`An accessory with the name "${name}" already exists.`);
+      return res.status(400).send(`A hardware item with the name "${name}" already exists.`);
     }
     
     // Enhanced debug logging
@@ -175,14 +175,14 @@ router.post('/add', isAdmin, accessoryImageUpload.single('image'), async (req, r
     });
     await newAccessory.save();
     logger.info(`New accessory created: ${name} with image: ${imageFilename}`);
-    res.redirect('/admin/accessories');
+    res.redirect('/admin/hardware');
   } catch (error) {
     if (error.name === 'ValidationError') {
       logger.error('Validation error:', error.message);
       return res.status(400).send(error.message);
     }
-    logger.error('Error creating accessory:', error);
-    res.status(500).send('Error creating accessory');
+    logger.error('Error creating hardware:', error);
+    res.status(500).send('Error creating hardware');
   }
 });
 
@@ -195,16 +195,16 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
       CostSettings.findOne()
     ]);
     if (!accessory) {
-      logger.warn(`Accessory with ID: ${req.params.id} not found.`);
-      return res.status(404).send('Accessory not found');
+      logger.warn(`Hardware with ID: ${req.params.id} not found.`);
+      return res.status(404).send('Hardware not found');
     }
     res.render('admin/editAccessory', { 
       accessory,
       exchangeRate: costSettings?.exchangeRate || 4000
     });
   } catch (error) {
-    logger.error('Failed to fetch accessory for editing:', error);
-    res.status(500).send('Failed to fetch accessory for editing');
+    logger.error('Failed to fetch hardware for editing:', error);
+    res.status(500).send('Failed to fetch hardware for editing');
   }
 });
 
@@ -213,13 +213,13 @@ router.post('/update/:id', isAdmin, accessoryImageUpload.single('image'), async 
   try {
     const { name, price, currency, weight, unit, referenceNumber, providerName, removeImage } = req.body;
     
-    // Check for duplicate name (case-insensitive, excluding current accessory)
+    // Check for duplicate name (case-insensitive, excluding current hardware)
     const existingAccessory = await Accessory.findOne({ 
       name: { $regex: new RegExp(`^${name}$`, 'i') },
       _id: { $ne: req.params.id }
     });
     if (existingAccessory) {
-      return res.status(400).send(`An accessory with the name "${name}" already exists.`);
+      return res.status(400).send(`A hardware item with the name "${name}" already exists.`);
     }
     
     // Debug logging
@@ -253,7 +253,7 @@ router.post('/update/:id', isAdmin, accessoryImageUpload.single('image'), async 
     
     await Accessory.findByIdAndUpdate(req.params.id, updateFields);
     logger.info(`Accessory with ID: ${req.params.id} updated successfully.`);
-    res.redirect('/admin/accessories');
+    res.redirect('/admin/hardware');
   } catch (error) {
     logger.error('Failed to update accessory:', error);
     res.status(500).send('Failed to update accessory');
@@ -266,17 +266,17 @@ router.post('/delete/:id', isAdmin, async (req, res) => {
     const { id } = req.params;
     const deletedAccessory = await Accessory.findByIdAndDelete(id);
     if (!deletedAccessory) {
-      return res.status(404).send('Accessory not found');
+      return res.status(404).send('Hardware not found');
     }
     logger.info(`Accessory ${id} deleted successfully.`);
-    res.redirect('/admin/accessories');
+    res.redirect('/admin/hardware');
   } catch (error) {
-    logger.error('Failed to delete accessory:', error);
-    res.status(500).send('Failed to delete accessory');
+    logger.error('Failed to delete hardware:', error);
+    res.status(500).send('Failed to delete hardware');
   }
 });
 
-// Route to export accessories to Excel
+// Route to export hardware to Excel
 router.get('/export-accessories', isAdmin, async (req, res) => {
   try {
     const accessories = await Accessory.find({});
@@ -330,7 +330,7 @@ router.get('/export-accessories', isAdmin, async (req, res) => {
     };
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=accessories.xlsx');
+    res.setHeader('Content-Disposition', 'attachment; filename=hardware.xlsx');
 
     await workbook.xlsx.write(res);
     res.end();
@@ -340,7 +340,7 @@ router.get('/export-accessories', isAdmin, async (req, res) => {
   }
 });
 
-// Route to import accessories from Excel
+// Route to import hardware from Excel
 router.post('/import-accessories', isAdmin, upload.single('file'), async (req, res) => {
   const filePath = req.file.path;
   try {

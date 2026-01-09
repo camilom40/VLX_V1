@@ -470,7 +470,7 @@
           <span class="mr-3 text-lg font-bold">2</span> Profiles
         </div>
         <div id="step3-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
-          <span class="mr-3 text-lg font-bold">3</span> Accessories
+          <span class="mr-3 text-lg font-bold">3</span> Hardware
         </div>
         <div id="step4-indicator" class="step-indicator step-inactive rounded-xl py-3 px-6 flex items-center font-medium">
           <span class="mr-3 text-lg font-bold">4</span> Glass
@@ -964,10 +964,10 @@
           </div>
         </div>
         
-        <!-- Step 3: Accessories -->
+        <!-- Step 3: Hardware -->
         <div id="step3-section" class="form-section">
           <div class="section-header">
-            <h2>Step 3: Accessories</h2>
+            <h2>Step 3: Hardware</h2>
           </div>
           
           <div class="info-box">
@@ -976,7 +976,7 @@
               <div>
                 <h4 class="font-semibold text-blue-800 mb-1">Accessory Configuration</h4>
                 <p class="text-blue-700">
-                  Add any accessories needed for this window system. The unit will be automatically set based on the selected accessory.
+                  Add any hardware needed for this window system. The unit will be automatically set based on the selected hardware item.
                 </p>
               </div>
             </div>
@@ -1092,9 +1092,9 @@
               </div>
             </div>
 
-            <!-- Table to display added accessories -->
+            <!-- Table to display added hardware -->
             <div class="mt-6 overflow-x-auto">
-              <h3 class="text-lg font-medium text-gray-700 mb-3">Added Accessories</h3>
+              <h3 class="text-lg font-medium text-gray-700 mb-3">Added Hardware</h3>
               <table class="enhanced-table min-w-full">
                 <thead>
                   <tr>
@@ -1111,7 +1111,7 @@
                 </tbody>
               </table>
               <div id="accessories-empty-state" class="text-center py-8 text-gray-500 italic bg-gray-50 rounded-lg mt-4">
-                No accessories added yet.
+                No hardware added yet.
               </div>
             </div>
           </div>
@@ -1634,7 +1634,7 @@
         // Step 2: Profiles
         profiles: profiles,
         selectedProfileCategory: selectedProfileCategory,
-        // Step 3: Accessories
+        // Step 3: Hardware
         accessories: accessories,
         // Step 4: Glass Config (missileImpact)
         glassWidthEquation: document.getElementById('glass-width-equation')?.value || '',
@@ -1749,7 +1749,7 @@
       profiles = draft.profiles || [];
       selectedProfileCategory = draft.selectedProfileCategory || 'frame';
       
-      // Restore Step 3: Accessories
+      // Restore Step 3: Hardware
       accessories = draft.accessories || [];
       
       // Restore Step 4: Glass equations
@@ -1818,7 +1818,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <span class="font-medium">Unsaved draft found from ${timeAgo}</span>
-          <span class="text-amber-100 text-sm">${draft.windowName ? `"${draft.windowName}"` : 'Unnamed window'} - ${draft.profiles?.length || 0} profiles, ${draft.accessories?.length || 0} accessories</span>
+          <span class="text-amber-100 text-sm">${draft.windowName ? `"${draft.windowName}"` : 'Unnamed window'} - ${draft.profiles?.length || 0} profiles, ${draft.accessories?.length || 0} hardware items</span>
         </div>
         <div class="flex items-center gap-2">
           <button onclick="restoreAndApplyDraft()" class="bg-white text-amber-600 px-4 py-1.5 rounded font-medium hover:bg-amber-50 transition-colors">
@@ -3610,7 +3610,7 @@
           }
         }
         
-        // Accessories
+        // Hardware
         const accessoriesEmpty = document.getElementById('accessories-empty-state');
         if (accessoriesEmpty) {
           if (accessories.length > 0) {

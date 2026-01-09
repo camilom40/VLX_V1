@@ -23,7 +23,7 @@ router.get('/compose-window', isAdmin, async (req, res) => {
     const glasses = await Glass.find({}).sort({ glass_type: 1 });
     res.render('admin/composeWindow', { profiles, accessories, componentGroups, glasses, session: req.session });
   } catch (error) {
-    console.error('Failed to fetch profiles and accessories:', error.message);
+    console.error('Failed to fetch profiles and hardware:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

@@ -115,7 +115,7 @@
       </div>
       <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
         <div class="text-2xl font-bold text-gray-800"><%= stats.totalAccessories || 0 %></div>
-        <div class="text-sm text-gray-600">Accessories</div>
+        <div class="text-sm text-gray-600">Hardware</div>
       </div>
       <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-500">
         <div class="text-2xl font-bold text-gray-800"><%= stats.totalProfiles || 0 %></div>
@@ -198,11 +198,11 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
       
-      <!-- Card for managing accessories -->
-      <a href="/admin/accessories" class="admin-card red p-6 flex flex-col h-full">
+      <!-- Card for managing hardware -->
+      <a href="/admin/hardware" class="admin-card red p-6 flex flex-col h-full">
         <div class="flex items-start justify-between mb-4">
           <div class="flex-1">
-            <h2 class="text-xl font-bold text-gray-800">Manage Accessories</h2>
+            <h2 class="text-xl font-bold text-gray-800">Manage Hardware</h2>
             <% if (typeof stats !== 'undefined' && stats.totalAccessories !== undefined) { %>
             <div class="mt-1 text-sm text-gray-500"><%= stats.totalAccessories %> total</div>
             <% } %>
@@ -213,7 +213,7 @@
             </svg>
           </div>
         </div>
-        <p class="text-gray-600 mb-4">Add, edit or remove accessories for window systems.</p>
+        <p class="text-gray-600 mb-4">Add, edit or remove hardware for window systems.</p>
         <div class="mt-auto pt-4 border-t border-gray-100">
           <span class="text-red-600 font-medium flex items-center text-sm">
             Manage Now
@@ -301,7 +301,7 @@
       <a href="/admin/component-groups" class="admin-card teal p-6 flex flex-col h-full">
         <div class="flex items-start justify-between mb-4">
           <div class="flex-1">
-            <h2 class="text-xl font-bold text-gray-800">Accessories Component Groups</h2>
+            <h2 class="text-xl font-bold text-gray-800">Hardware Component Groups</h2>
             <% if (typeof stats !== 'undefined' && stats.totalComponentGroups !== undefined) { %>
             <div class="mt-1 text-sm text-gray-500"><%= stats.totalComponentGroups %> total</div>
             <% } %>
@@ -312,7 +312,7 @@
             </svg>
           </div>
         </div>
-        <p class="text-gray-600 mb-4">Organize accessories into groups for user selection (handles, locks, etc.).</p>
+        <p class="text-gray-600 mb-4">Organize hardware into groups for user selection (handles, locks, etc.).</p>
         <div class="mt-auto pt-4 border-t border-gray-100">
           <span class="text-teal-600 font-medium flex items-center text-sm">
             Manage Groups

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <%- include('../partials/_head.ejs') %>
-  <title>Add New Accessory</title>
+  <title>Add New Hardware</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -140,11 +140,11 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-2xl font-bold text-gray-800">Add New Accessory</h1>
-          <p class="text-gray-500 text-sm">Create a new window system accessory</p>
+          <h1 class="text-2xl font-bold text-gray-800">Add New Hardware</h1>
+          <p class="text-gray-500 text-sm">Create a new window system hardware item</p>
         </div>
       </div>
-      <a href="/admin/accessories" class="btn-secondary">
+      <a href="/admin/hardware" class="btn-secondary">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -153,7 +153,7 @@
     </div>
     <div class="max-w-4xl mx-auto">
       <div class="main-card p-6 mb-5">
-        <form id="createAccessoryForm" action="/admin/accessories/add" method="POST" enctype="multipart/form-data">
+        <form id="createAccessoryForm" action="/admin/hardware/add" method="POST" enctype="multipart/form-data">
           <!-- Row 1: Name and Reference Number -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
             <!-- Name field -->
@@ -165,7 +165,7 @@
                   </svg>
                 </div>
                 <div>
-                  <label for="name" class="font-semibold text-gray-800 text-sm">Accessory Name</label>
+                  <label for="name" class="font-semibold text-gray-800 text-sm">Hardware Name</label>
                   <span class="required-badge">Required</span>
                 </div>
               </div>
@@ -367,7 +367,7 @@
                 </svg>
               </div>
               <div>
-                <label class="font-semibold text-gray-800 text-sm">Accessory Image</label>
+                <label class="font-semibold text-gray-800 text-sm">Hardware Image</label>
                 <span class="text-gray-400 text-xs ml-1.5">Optional</span>
               </div>
             </div>
@@ -399,7 +399,7 @@
           
           <!-- Action Buttons -->
           <div class="flex justify-between items-center pt-5 mt-5 border-t border-gray-100">
-            <a href="/admin/accessories" class="btn-secondary">
+            <a href="/admin/hardware" class="btn-secondary">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -409,7 +409,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
-              Create Accessory
+              Create Hardware
             </button>
           </div>
         </form>
@@ -806,7 +806,7 @@
         const unitValue = unitSelect.value;
         
         if (!nameValue) {
-          alert('Please enter an accessory name');
+          alert('Please enter a hardware name');
           nameInput.focus();
           return;
         }
@@ -883,11 +883,11 @@
             isCheckingName = true;
             
             try {
-              const response = await fetch(`/admin/accessories/check-name/${encodeURIComponent(name)}`);
+              const response = await fetch(`/admin/hardware/check-name/${encodeURIComponent(name)}`);
               const data = await response.json();
               
               if (data.exists) {
-                nameErrorText.textContent = 'This accessory name is already taken';
+                nameErrorText.textContent = 'This hardware name is already taken';
                 nameError.style.display = 'flex';
                 nameInput.style.borderColor = '#f87171';
                 isCheckingName = false;
