@@ -1571,5 +1571,74 @@ Sent to backend: 1234567.89
 
 ---
 
-*Last Updated: January 2026 - UI Improvements: Exchange Rate Display, Price Formatting & Profile Fields*
+## January 2026 - Component Group Selection Type & Accessory Price Display Improvements
+
+### Overview
+Moved selection type configuration from individual accessories to component groups, improved accessory price display with currency support, and fixed various UI and calculation issues.
+
+### Changes Made
+
+#### 1. Component Group Selection Type
+- **Moved `selectionType` from Accessory to ComponentGroup**: The selection type (quantity/single/multiple choice) is now defined at the component group level rather than per accessory, making it more logical and easier to manage.
+- **ComponentGroup Model**: Added `selectionType` field with enum values: `'quantity'`, `'single'`, `'multiple'` (default: `'quantity'`).
+- **Component Group Pages**: Added selection type dropdown to add/edit component group pages with clear descriptions:
+  - **Quantity**: Users enter quantity manually
+  - **Single Choice**: Users select one option (radio buttons)
+  - **Multiple Choice**: Users select multiple options (checkboxes)
+- **Window System Pages**: Removed `selectionType` field from accessory configuration in compose/edit window pages.
+- **Backend Logic**: Updated `projectRoutes.js` to:
+  - Fetch component groups when loading window configuration
+  - Create a lookup map for component groups
+  - Use component group's `selectionType` when grouping accessories for user selection
+- **Frontend Display**: Updated `composeWindow.ejs` to look up and display component group's `selectionType` in the accessories table.
+
+#### 2. UI Label Updates
+- Changed "Component Groups" to "Accessories Component Groups" throughout the application:
+  - Component groups list page title
+  - Admin console card title
+  - Page titles
+
+#### 3. Accessory Price Display Improvements
+- **Dynamic Currency Display**: Accessory prices in choice groups now respect the global currency preference:
+  - Added `data-price-usd` and `data-unit` attributes to price display elements
+  - Created `updateAccessoryPriceDisplays()` function to update prices based on currency
+  - Prices automatically update when currency changes in the header
+  - USD prices display as `$6.42/piece`
+  - COP prices display as `$25,680/piece` (formatted with Colombian locale)
+- **Image Size**: Increased accessory images in choice groups from `w-16 h-16` (64px) to `w-24 h-24` (96px) for better visibility.
+
+#### 4. Accessory Price Calculation Fix
+- **Choice Group Accessories**: Fixed pricing calculation to properly include accessories selected from choice groups:
+  - Added `allAccessories` data attribute to body element for JavaScript access
+  - Updated `calculatePricingWithUnits()` to parse `allAccessories` from data attribute
+  - Fixed choice group accessory price calculation to:
+    - Get price from hidden field (in accessory's original currency)
+    - Find accessory in `allAccessories` to get its currency
+    - Convert to USD using `convertToUSD` function
+    - Calculate cost correctly and add to total
+
+#### 5. Bug Fixes
+- **Edit Window Route**: Fixed 500 error by adding missing `ComponentGroup.find()` to `Promise.all` array in edit window route.
+- **Selection Type Lookup**: Updated saved accessory selections logic to get `selectionType` from component group lookup instead of saved data for consistency.
+
+### Files Modified
+- `models/ComponentGroup.js`: Added `selectionType` field
+- `views/admin/addComponentGroup.ejs`: Added selection type dropdown
+- `views/admin/editComponentGroup.ejs`: Added selection type dropdown
+- `views/admin/listComponentGroups.ejs`: Updated title to "Accessories Component Groups"
+- `views/admin/adminConsole.ejs`: Updated card title to "Accessories Component Groups"
+- `views/admin/composeWindow.ejs`: Removed `selectionType` from accessory config, added component groups lookup
+- `views/admin/editWindowSystem.ejs`: Removed `selectionType` from accessory config, added component groups lookup
+- `routes/admin/componentGroupRoutes.js`: Added `selectionType` handling in create/update routes
+- `routes/admin/windowRoutes.js`: Removed `selectionType` from accessory processing
+- `routes/projectRoutes.js`: Updated to use component group's `selectionType`, fixed missing componentGroups fetch, added `allAccessories` data
+- `views/projects/configureWindow.ejs`: Added dynamic currency display for accessory prices, increased image size, fixed price calculation for choice groups
+
+### Technical Notes
+- Component groups now control how users select accessories (radio buttons for single choice, checkboxes for multiple choice, quantity input for quantity-based)
+- All accessories in the same component group use the same selection type
+- Accessory prices are stored in their original currency (COP or USD) and converted to USD for internal calculations
+- The `updateAccessoryPriceDisplays()` function listens to `currencyChanged` events to update prices in real-time
+
+*Last Updated: January 2026 - Component Group Selection Type & Accessory Price Display Improvements*
 
