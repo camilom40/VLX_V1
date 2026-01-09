@@ -6,10 +6,10 @@
 
 ## 📋 Project Overview
 
-**VLX-ESTIMATOR** (also referred to as VLW-ESTIMATOR) is a web application for quoting windows in construction projects. It allows users to calculate the total selling price for window systems based on measurements, accessories, colors, glass types, and profiles.
+**VLX-ESTIMATOR** (also referred to as VLW-ESTIMATOR) is a web application for quoting windows in construction projects. It allows users to calculate the total selling price for window systems based on measurements, hardware, colors, glass types, and profiles.
 
 ### Core Purpose
-- **Admin users** create and manage window system templates (profiles, glass types, accessories, panel configurations)
+- **Admin users** create and manage window system templates (profiles, glass types, hardware, panel configurations)
 - **Regular users** create projects, add windows to those projects, configure dimensions/components, and get price quotes
 - **PDF export** for quotations
 
@@ -41,7 +41,7 @@ VLX_V1/
 │   ├── WindowItem.js        # Individual configured windows in projects
 │   ├── Profile.js           # Aluminum profiles (frame components)
 │   ├── Glass.js             # Glass types with pricing
-│   ├── Accessory.js         # Window accessories
+│   ├── Accessory.js         # Window hardware (accessories)
 │   ├── ComponentGroup.js    # Grouping for components
 │   ├── CostSettings.js      # Global cost settings (freight, labor, etc.)
 │   ├── SystemMetric.js      # System metrics tracking
@@ -94,7 +94,7 @@ VLX_V1/
 Admin creates window system "templates" that define:
 - **Name & Type**: e.g., "Horizontal Roller", "Casement", "French Door"
 - **Profiles**: Frame components with pricing, weight, length discounts
-- **Accessories**: Hardware, handles, locks, etc.
+- **Hardware**: Handles, locks, hinges, etc. (stored as "Accessory" in database for compatibility)
 - **Muntin Configuration**: Grid patterns for decorative glass divisions
 - **Panel Configuration**: Defines the window layout (e.g., OXXO for sliding - X=Operable, O=Fixed)
   - `operationType`: sliding, casement, awning, fixed, single-hung, double-hung, french-door, etc.
@@ -135,7 +135,7 @@ The configure window page features a dynamic preview that:
 - Shows dimension labels that adjust position based on unit
 
 ### 5. Pricing System
-- Component-based pricing (profiles, glass, accessories)
+- Component-based pricing (profiles, glass, hardware)
 - Additional costs: freight, packaging, labor, indirect costs
 - Currency conversion (COP ↔ USD) with live exchange rates
 - Pricing tiers for different user levels
@@ -312,7 +312,7 @@ The configure window page features a dynamic preview that:
 - `GET /admin/window-systems/edit/:id` - Edit window system
 - `GET /admin/profiles` - Manage profiles
 - `GET /admin/glasses` - Manage glass types
-- `GET /admin/accessories` - Manage accessories
+- `GET /admin/hardware` - Manage hardware (formerly `/admin/accessories`)
 - `GET /admin/settings` - Cost settings
 - `GET /admin/users` - List all users
 - `GET /admin/users/add` - Add new user form
@@ -352,11 +352,11 @@ Multi-step wizard with 4 steps:
    - **Profile Type Icons**: Visual icons identify profile types (Frame 🔲, Sash 🪟, Mullion ┃, Rail ═, etc.)
    - **Enter to Select**: Press Enter to auto-select when only one result matches
    - **Grouped Table**: Added profiles are organized by component category with visual headers
-3. **Accessories** - Add hardware and accessories
+3. **Hardware** - Add hardware items (handles, locks, hinges, etc.)
 4. **Muntins** - Configure decorative grid patterns
 
 ### Configure Window Form (User)
-- Left side: Form inputs (dimensions, quantity, glass, accessories)
+- Left side: Form inputs (dimensions, quantity, glass, hardware)
 - Right side: Dynamic visual preview with:
   - **Matches admin compose window preview exactly**
   - Aluminum frame and realistic glass appearance
@@ -1641,4 +1641,68 @@ Moved selection type configuration from individual accessories to component grou
 - The `updateAccessoryPriceDisplays()` function listens to `currencyChanged` events to update prices in real-time
 
 *Last Updated: January 2026 - Component Group Selection Type & Accessory Price Display Improvements*
+
+---
+
+## January 2026 - Terminology Update: "Accessories" to "Hardware"
+
+### What We Worked On
+
+1. **Global Terminology Change**
+   - **Change**: Renamed all user-facing references from "Accessories" to "Hardware" throughout the entire web application
+   - **Reason**: Better alignment with industry terminology and user expectations
+   - **Scope**: All UI text, labels, titles, error messages, and user-facing content
+
+2. **Route Path Updates**
+   - Changed `/admin/accessories` → `/admin/hardware` in route registration
+   - Updated all redirects and links throughout the application
+   - Updated API endpoints (e.g., `/admin/accessories/check-name` → `/admin/hardware/check-name`)
+
+3. **User Interface Updates**
+   - **Admin Console**: "Manage Accessories" → "Manage Hardware"
+   - **Component Groups**: "Accessories Component Groups" → "Hardware Component Groups"
+   - **List Page**: "Accessories Management" → "Hardware Management"
+   - **Add/Edit Pages**: "Add Accessory" → "Add Hardware", "Edit Accessory" → "Edit Hardware"
+   - **Window Configuration**: "Accessories" section → "Hardware" section
+   - **Calculation Details**: "Accessory Costs" → "Hardware Costs"
+   - **Production Planning**: "Accessories Production" → "Hardware Production"
+
+4. **Error Messages & Comments**
+   - Updated all error messages to use "hardware" terminology
+   - Updated code comments for clarity
+   - Updated Excel export filenames (`accessories.xlsx` → `hardware.xlsx`)
+
+### Files Modified
+
+- **Route Files**:
+  - `server.js`: Updated route registration from `/admin/accessories` to `/admin/hardware`
+  - `routes/admin/accessoryRoutes.js`: Updated all redirects, error messages, and comments
+  - `routes/projectRoutes.js`: Updated comments and user-facing text
+  - `routes/admin/windowRoutes.js`: Updated error messages
+
+- **View Files**:
+  - `views/admin/adminConsole.ejs`: Updated card titles and descriptions
+  - `views/admin/listAccessories.ejs`: Updated page title, headings, buttons, and all user-facing text
+  - `views/admin/addAccessory.ejs`: Updated page title, form labels, and error messages
+  - `views/admin/editAccessory.ejs`: Updated page title, form labels, and error messages
+  - `views/admin/composeWindow.ejs`: Updated step titles and section labels
+  - `views/admin/editWindowSystem.ejs`: Updated section titles and labels
+  - `views/admin/listComponentGroups.ejs`: Updated page title and descriptions
+  - `views/admin/addComponentGroup.ejs`: Updated help text
+  - `views/projects/configureWindow.ejs`: Updated section titles, calculation details, and production labels
+
+### Technical Notes
+
+- **Database & Code Compatibility**: Variable names, database model names (`Accessory`), and internal code identifiers remain unchanged for backward compatibility
+- **Only User-Facing Text Changed**: The rename affects only what users see, not the underlying data structure or code logic
+- **Consistent Terminology**: All user-facing references now consistently use "Hardware" instead of "Accessories"
+- **Route Paths**: All routes now use `/admin/hardware` instead of `/admin/accessories`, but the underlying route handler file (`accessoryRoutes.js`) remains the same
+
+### Impact
+
+- **User Experience**: More intuitive terminology that better reflects industry standards
+- **Consistency**: Unified terminology across all pages and features
+- **No Breaking Changes**: Database schema and internal code remain unchanged, ensuring data integrity
+
+*Last Updated: January 2026 - Terminology Update: "Accessories" to "Hardware"*
 
