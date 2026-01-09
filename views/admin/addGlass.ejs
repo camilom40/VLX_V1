@@ -248,24 +248,24 @@
                   </svg>
                 </div>
                 <div>
-                  <label for="pricePerSquareMeter" class="font-semibold text-gray-800 text-sm">Price Per m²</label>
+                  <label for="pricePerSquareMeter" class="font-semibold text-gray-800 text-sm">Price Per <span id="priceUnitDisplay">m²</span></label>
                   <span class="required-badge">Required</span>
                 </div>
               </div>
               <div class="flex gap-2">
-                <div class="flex-1 input-with-icon">
-                  <div class="input-icon">
-                    <span class="text-base font-bold">$</span>
-                  </div>
-                  <input type="number" id="pricePerSquareMeter" name="pricePerSquareMeter" 
-                      step="0.01" min="0" required class="form-input" placeholder="0.00">
+                <div class="flex items-center px-3 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-l-lg border border-gray-200 border-r-0">
+                  <span class="text-sm font-semibold text-emerald-700" id="currencySymbol">USD</span>
                 </div>
-                <select id="currency" name="currency" required class="form-input-simple !w-24">
-                  <option value="COP">COP</option>
-                  <option value="USD">USD</option>
-                </select>
+                <div class="flex-1">
+                  <input type="text" id="pricePerSquareMeter" name="pricePerSquareMeter" inputmode="decimal" required 
+                      class="form-input-simple w-full" placeholder="0.00">
+                  <input type="hidden" id="currency" name="currency" value="USD">
+                </div>
+                <div class="flex items-center px-3 bg-gray-50 rounded-r-lg border border-gray-200 border-l-0">
+                  <span class="text-sm text-gray-600" id="priceUnitSuffix">/m²</span>
+                </div>
               </div>
-              <p class="help-text">Price per square meter</p>
+              <p class="help-text" id="priceHelpText">Enter price in <span id="priceCurrencyLabel">USD</span> per <span id="priceUnitLabel">square meter</span>. Stored as USD per m².</p>
             </div>
 
             <!-- Weight -->
@@ -288,7 +288,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                     </svg>
                   </div>
-                  <input type="number" id="weight" name="weight" step="0.01" min="0" required 
+                  <input type="number" id="weight" name="weight" step="any" min="0" required 
                       class="form-input !pr-20" placeholder="0.00">
                   <div class="input-suffix" id="weightUnit">kg/m²</div>
                 </div>
@@ -329,19 +329,178 @@
   <%- include('../partials/_footer.ejs') %>
   
   <script>
+    // Exchange rate from server (COP per USD)
+    const exchangeRate = <%= typeof exchangeRate !== 'undefined' ? exchangeRate : 4000 %>;
+    
+    // Unit conversion constants
+    const SQ_INCHES_PER_SQ_METER = 1550.0031; // 1 m² = 1550.0031 sq inches
+    
     // Weight unit conversion
     // For glass: kg/m² to lbs/ft² (1 kg/m² = 0.204816 lbs/ft²)
     const KG_PER_M2_TO_LBS_PER_FT2 = 0.204816;
     const LBS_PER_FT2_TO_KG_PER_M2 = 4.88243; // inverse
+    
+    // Current display settings
+    let currentPriceUnit = 'mm'; // 'inches' = per sq inch, 'mm' = per sq meter
+    let currentCurrency = 'USD'; // 'USD' or 'COP'
     let weightUnit = 'kg'; // 'kg' or 'lbs'
     
     document.addEventListener('DOMContentLoaded', function() {
       const priceInput = document.getElementById('pricePerSquareMeter');
-      if (priceInput) {
-        priceInput.form.addEventListener('submit', function() {
-          priceInput.value = priceInput.value.replace(/\D/g, '');
-        });
+      const currencyHidden = document.getElementById('currency');
+      const form = document.querySelector('form');
+      
+      // Initialize from global preferences
+      currentPriceUnit = window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches';
+      currentCurrency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'USD';
+      
+      // Format number with commas (integer part only)
+      function formatNumberWithCommas(value) {
+        if (!value) return '';
+        let numStr = value.toString().replace(/,/g, '');
+        if (numStr === '' || numStr === '.') return numStr;
+        if (!/^\d*\.?\d*$/.test(numStr)) return value.toString();
+        
+        const hasDecimal = numStr.includes('.');
+        const parts = numStr.split('.');
+        const integerPart = parts[0] || '';
+        const decimalPart = parts.length > 1 ? parts[1] : '';
+        
+        let formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        
+        if (hasDecimal) {
+          return decimalPart !== '' ? formattedInteger + '.' + decimalPart : formattedInteger + '.';
+        }
+        return formattedInteger;
       }
+      
+      // Remove commas from number
+      function removeCommas(value) {
+        return value.toString().replace(/,/g, '');
+      }
+      
+      function updatePriceDisplay() {
+        const priceUnitDisplay = document.getElementById('priceUnitDisplay');
+        const priceUnitSuffix = document.getElementById('priceUnitSuffix');
+        const currencySymbol = document.getElementById('currencySymbol');
+        const priceCurrencyLabel = document.getElementById('priceCurrencyLabel');
+        const priceUnitLabel = document.getElementById('priceUnitLabel');
+        
+        // Update unit display
+        if (currentPriceUnit === 'mm') {
+          priceUnitDisplay.textContent = 'm²';
+          priceUnitSuffix.textContent = '/m²';
+          priceUnitLabel.textContent = 'square meter';
+        } else {
+          priceUnitDisplay.textContent = 'sq in';
+          priceUnitSuffix.textContent = '/sq in';
+          priceUnitLabel.textContent = 'square inch';
+        }
+        
+        // Update currency display
+        if (currentCurrency === 'COP') {
+          currencySymbol.textContent = 'COP';
+          priceCurrencyLabel.textContent = 'COP';
+        } else {
+          currencySymbol.textContent = 'USD';
+          priceCurrencyLabel.textContent = 'USD';
+        }
+      }
+      
+      // Initialize display
+      updatePriceDisplay();
+      
+      // Real-time comma formatting for price input
+      priceInput.addEventListener('input', function(e) {
+        const input = e.target;
+        const oldValue = input.value;
+        const cursorPos = input.selectionStart;
+        
+        const beforeCursor = oldValue.substring(0, cursorPos);
+        const digitCountBefore = beforeCursor.replace(/[^\d]/g, '').length;
+        
+        let raw = oldValue.replace(/[^\d.]/g, '');
+        
+        const dotPos = raw.indexOf('.');
+        if (dotPos >= 0) {
+          raw = raw.substring(0, dotPos) + '.' + raw.substring(dotPos + 1).replace(/\./g, '');
+        }
+        
+        if (raw === '') {
+          return;
+        }
+        
+        const formatted = formatNumberWithCommas(raw);
+        input.value = formatted;
+        
+        let newCursorPos = 0;
+        let digitsSeen = 0;
+        for (let i = 0; i < formatted.length; i++) {
+          if (formatted[i].match(/\d/)) {
+            digitsSeen++;
+          }
+          if (digitsSeen >= digitCountBefore) {
+            newCursorPos = i + 1;
+            break;
+          }
+          newCursorPos = i + 1;
+        }
+        
+        setTimeout(() => {
+          try {
+            input.setSelectionRange(newCursorPos, newCursorPos);
+          } catch(e) {}
+        }, 0);
+      });
+      
+      // Listen for unit changes
+      window.addEventListener('unitChanged', function(event) {
+        const newUnit = event.detail.unit;
+        const currentPriceStr = removeCommas(priceInput.value);
+        const currentPrice = parseFloat(currentPriceStr) || 0;
+        
+        if (currentPrice > 0) {
+          let pricePerSqMeter;
+          if (currentPriceUnit === 'mm') {
+            pricePerSqMeter = currentPrice;
+          } else {
+            pricePerSqMeter = currentPrice * SQ_INCHES_PER_SQ_METER;
+          }
+          
+          let newPrice;
+          if (newUnit === 'mm') {
+            newPrice = pricePerSqMeter.toFixed(2);
+          } else {
+            newPrice = (pricePerSqMeter / SQ_INCHES_PER_SQ_METER).toFixed(4);
+          }
+          priceInput.value = formatNumberWithCommas(newPrice);
+        }
+        
+        currentPriceUnit = newUnit;
+        updatePriceDisplay();
+      });
+      
+      // Listen for currency changes
+      window.addEventListener('currencyChanged', function(event) {
+        const newCurrency = event.detail.currency;
+        const currentPriceStr = removeCommas(priceInput.value);
+        const currentPrice = parseFloat(currentPriceStr) || 0;
+        
+        if (currentPrice > 0) {
+          let newPrice;
+          if (currentCurrency === 'USD' && newCurrency === 'COP') {
+            newPrice = (currentPrice * exchangeRate).toFixed(2);
+          } else if (currentCurrency === 'COP' && newCurrency === 'USD') {
+            newPrice = (currentPrice / exchangeRate).toFixed(4);
+          } else {
+            newPrice = currentPrice.toFixed(4);
+          }
+          priceInput.value = formatNumberWithCommas(newPrice);
+        }
+        
+        currentCurrency = newCurrency;
+        updatePriceDisplay();
+      });
       
       // Weight unit toggle
       const weightInput = document.getElementById('weight');
@@ -368,7 +527,6 @@
       
       weightUnitToggle.addEventListener('click', function() {
         if (weightUnit === 'lbs') {
-          // Convert from lbs/ft² to kg/m²
           const currentValue = parseFloat(weightInput.value);
           if (!isNaN(currentValue) && currentValue > 0) {
             weightInput.value = (currentValue * LBS_PER_FT2_TO_KG_PER_M2).toFixed(2);
@@ -380,7 +538,6 @@
       
       weightUnitToggleLbs.addEventListener('click', function() {
         if (weightUnit === 'kg') {
-          // Convert from kg/m² to lbs/ft²
           const currentValue = parseFloat(weightInput.value);
           if (!isNaN(currentValue) && currentValue > 0) {
             weightInput.value = (currentValue * KG_PER_M2_TO_LBS_PER_FT2).toFixed(2);
@@ -392,9 +549,28 @@
       
       updateWeightUnitDisplay();
       
-      // Convert weight to kg/m² before form submission if in lbs/ft²
-      const form = document.querySelector('form');
+      // Convert values to storage format before form submission
       form.addEventListener('submit', function(e) {
+        // Convert price to USD per square meter
+        let priceValue = parseFloat(removeCommas(priceInput.value));
+        if (!isNaN(priceValue) && priceValue > 0) {
+          // Step 1: Convert to USD if in COP
+          if (currentCurrency === 'COP') {
+            priceValue = priceValue / exchangeRate;
+          }
+          
+          // Step 2: Convert to per square meter if in per sq inch
+          if (currentPriceUnit === 'inches') {
+            priceValue = priceValue * SQ_INCHES_PER_SQ_METER;
+          }
+          
+          priceInput.value = priceValue.toFixed(4);
+        }
+        
+        // Always store as USD
+        currencyHidden.value = 'USD';
+        
+        // Convert weight to kg/m² if in lbs/ft²
         if (weightInput && weightUnit === 'lbs') {
           const lbsPerFt2Value = parseFloat(weightInput.value);
           if (!isNaN(lbsPerFt2Value) && lbsPerFt2Value > 0) {

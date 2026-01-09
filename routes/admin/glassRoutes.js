@@ -32,8 +32,17 @@ router.get('/', isAdmin, async (req, res) => {
 });
 
 // Route to show the form for adding a new glass
-router.get('/add', isAdmin, (req, res) => {
-  res.render('admin/addGlass');
+router.get('/add', isAdmin, async (req, res) => {
+  try {
+    const CostSettings = require('../../models/CostSettings');
+    const costSettings = await CostSettings.findOne();
+    const exchangeRate = costSettings?.exchangeRate || 4000;
+    
+    res.render('admin/addGlass', { exchangeRate });
+  } catch (error) {
+    console.error('Error loading add glass page:', error);
+    res.render('admin/addGlass', { exchangeRate: 4000 });
+  }
 });
 
 router.post('/add', isAdmin, async (req, res) => {
@@ -68,7 +77,12 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
       logger.warn(`Glass with ID: ${req.params.id} not found.`);
       return res.status(404).send('Glass not found');
     }
-    res.render('admin/editGlass', { glass });
+    
+    const CostSettings = require('../../models/CostSettings');
+    const costSettings = await CostSettings.findOne();
+    const exchangeRate = costSettings?.exchangeRate || 4000;
+    
+    res.render('admin/editGlass', { glass, exchangeRate });
   } catch (error) {
     logger.error('Failed to fetch glass for editing:', error);
     res.status(500).send('Failed to fetch glass for editing');

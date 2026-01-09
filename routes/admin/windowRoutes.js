@@ -580,9 +580,18 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
       accessoryCount: accessoryEntries.length
     });
 
-    // Get glass size equations from request
-    const glassWidthEquation = req.body.glassWidthEquation ? req.body.glassWidthEquation.trim() : null;
-    const glassHeightEquation = req.body.glassHeightEquation ? req.body.glassHeightEquation.trim() : null;
+    // Get glass size equations from request (handle both string and array cases)
+    let glassWidthEquation = req.body.glassWidthEquation;
+    if (Array.isArray(glassWidthEquation)) {
+      glassWidthEquation = glassWidthEquation.find(v => v && typeof v === 'string' && v.trim()) || null;
+    }
+    glassWidthEquation = glassWidthEquation && typeof glassWidthEquation === 'string' ? glassWidthEquation.trim() : null;
+    
+    let glassHeightEquation = req.body.glassHeightEquation;
+    if (Array.isArray(glassHeightEquation)) {
+      glassHeightEquation = glassHeightEquation.find(v => v && typeof v === 'string' && v.trim()) || null;
+    }
+    glassHeightEquation = glassHeightEquation && typeof glassHeightEquation === 'string' ? glassHeightEquation.trim() : null;
 
     const newWindow = new WindowSystem({
       type,
@@ -769,9 +778,18 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
       missileImpactConfigurationData = { supportsLMI: false, supportsSMI: false, lmiGlasses: [], smiGlasses: [] };
     }
     
-    // Get glass size equations from request
-    const glassWidthEquation = req.body.glassWidthEquation ? req.body.glassWidthEquation.trim() : null;
-    const glassHeightEquation = req.body.glassHeightEquation ? req.body.glassHeightEquation.trim() : null;
+    // Get glass size equations from request (handle both string and array cases)
+    let glassWidthEquation = req.body.glassWidthEquation;
+    if (Array.isArray(glassWidthEquation)) {
+      glassWidthEquation = glassWidthEquation.find(v => v && typeof v === 'string' && v.trim()) || null;
+    }
+    glassWidthEquation = glassWidthEquation && typeof glassWidthEquation === 'string' ? glassWidthEquation.trim() : null;
+    
+    let glassHeightEquation = req.body.glassHeightEquation;
+    if (Array.isArray(glassHeightEquation)) {
+      glassHeightEquation = glassHeightEquation.find(v => v && typeof v === 'string' && v.trim()) || null;
+    }
+    glassHeightEquation = glassHeightEquation && typeof glassHeightEquation === 'string' ? glassHeightEquation.trim() : null;
 
     // Prepare update object
     const updateData = {
