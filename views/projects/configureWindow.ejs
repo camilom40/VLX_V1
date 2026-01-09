@@ -3471,8 +3471,8 @@
                 <div class="border-b border-purple-200 pb-2 ${idx === details.profiles.length - 1 ? 'border-b-0 pb-0' : ''}">
                   <div class="font-medium">Profile ${idx + 1}: ${profile.name}</div>
                   <div class="ml-4 space-y-1 text-xs">
-                    <div>Price (${profile.currency}): ${profile.priceOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                    <div>Price (USD): $${profile.priceUSD.toFixed(2)}</div>
+                    <div>Price per meter (USD): $${profile.priceUSD.toFixed(2)}</div>
+                    <div>Price per meter (COP): ${formatCOP(profile.priceUSD, rate)}</div>
                     <div>Quantity: ${profile.quantity}</div>
                     <div>Length: ${(profile.lengthMeters || 0).toFixed(4)} m</div>
                     ${profile.perimeterMeters ? `<div>Perimeter: ${profile.perimeterMeters.toFixed(4)} m</div>` : ''}

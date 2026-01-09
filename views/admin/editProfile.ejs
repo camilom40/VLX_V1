@@ -301,7 +301,7 @@
                                     <span class="text-sm font-semibold text-emerald-700" id="currencySymbol">USD</span>
                                 </div>
                                 <div class="flex-1">
-                                    <input type="number" id="pricePerMeter" name="pricePerMeter" step="0.0001" min="0" required 
+                                    <input type="text" id="pricePerMeter" name="pricePerMeter" inputmode="decimal" required 
                                         class="form-input-simple price-input w-full" placeholder="0.00" data-stored-price-per-meter="<%= profile.pricePerMeter %>">
                                     <input type="hidden" id="currency" name="currency" value="USD">
                                 </div>
@@ -333,7 +333,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                                         </svg>
                                     </div>
-                                    <input type="number" id="weight" name="weight" step="0.01" min="0" value="<%= profile.weight %>" required 
+                                    <input type="number" id="weight" name="weight" step="any" min="0" value="<%= profile.weight %>" required 
                                         class="form-input !pr-16" placeholder="0.00">
                                     <div class="input-suffix" id="weightUnit">kg/m</div>
                                 </div>
@@ -475,6 +475,52 @@
                 }
             }
             
+            // Format number with commas - only format integer part, keep decimals unchanged
+            function formatNumberWithCommas(value) {
+                if (!value) return '';
+                
+                // Convert to string and remove existing commas
+                let numStr = value.toString().replace(/,/g, '');
+                
+                // If empty, return empty
+                if (numStr === '') return '';
+                
+                // Check if valid format (digits and optional decimal point)
+                if (!/^\d*\.?\d*$/.test(numStr)) {
+                    return value.toString(); // Return original if invalid
+                }
+                
+                // Split at decimal point
+                const hasDecimal = numStr.includes('.');
+                const parts = numStr.split('.');
+                const integerPart = parts[0] || '';
+                const decimalPart = parts.length > 1 ? parts[1] : '';
+                
+                // Format integer part with commas (only if it has digits)
+                let formattedInteger = integerPart;
+                if (integerPart.length > 0) {
+                    // Add commas every 3 digits from right
+                    formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                }
+                
+                // Reconstruct: formatted integer + decimal part (unchanged)
+                if (hasDecimal) {
+                    if (decimalPart !== '') {
+                        return formattedInteger + '.' + decimalPart;
+                    } else {
+                        // Just a decimal point, no decimals yet
+                        return formattedInteger + '.';
+                    }
+                } else {
+                    return formattedInteger;
+                }
+            }
+            
+            // Remove commas from number
+            function removeCommas(value) {
+                return value.toString().replace(/,/g, '');
+            }
+            
             function initializePriceFromStored() {
                 // Convert stored USD per meter to display unit and currency
                 let displayPrice = storedPricePerMeter;
@@ -494,19 +540,121 @@
                 }
                 
                 if (storedPricePerMeter > 0) {
-                    priceInput.value = displayPrice.toFixed(4);
+                    priceInput.value = formatNumberWithCommas(displayPrice.toFixed(4));
                 }
                 
                 updatePriceDisplay();
             }
             
-            // Initialize price display
+            // Simple and reliable formatting with commas
+            priceInput.addEventListener('input', function(e) {
+                const input = e.target;
+                const oldValue = input.value;
+                const cursorPos = input.selectionStart;
+                
+                // Get digits before cursor
+                const beforeCursor = oldValue.substring(0, cursorPos);
+                const digitCountBefore = beforeCursor.replace(/[^\d]/g, '').length;
+                
+                // Remove all non-digits except decimal point
+                let raw = oldValue.replace(/[^\d.]/g, '');
+                
+                // Fix multiple decimal points
+                const dotPos = raw.indexOf('.');
+                if (dotPos >= 0) {
+                    raw = raw.substring(0, dotPos) + '.' + raw.substring(dotPos + 1).replace(/\./g, '');
+                }
+                
+                // Format the number
+                let formatted = '';
+                if (raw === '') {
+                    formatted = '';
+                } else if (raw === '.') {
+                    formatted = '0.';
+                } else {
+                    // Split integer and decimal parts
+                    const parts = raw.split('.');
+                    const intPart = parts[0] || '';
+                    const decPart = parts[1] || '';
+                    
+                    // Add commas to integer part only
+                    let formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    
+                    // Reconstruct
+                    if (decPart) {
+                        formatted = formattedInt + '.' + decPart;
+                    } else if (raw.includes('.')) {
+                        formatted = formattedInt + '.';
+                    } else {
+                        formatted = formattedInt;
+                    }
+                }
+                
+                // Always update to ensure formatting
+                input.value = formatted;
+                
+                // Restore cursor position
+                let newCursorPos = 0;
+                let digitsSeen = 0;
+                for (let i = 0; i < formatted.length; i++) {
+                    if (formatted[i].match(/\d/)) {
+                        digitsSeen++;
+                    }
+                    if (digitsSeen >= digitCountBefore) {
+                        newCursorPos = i + 1;
+                        break;
+                    }
+                    newCursorPos = i + 1;
+                }
+                
+                // Restore cursor after a brief delay
+                setTimeout(() => {
+                    try {
+                        input.setSelectionRange(newCursorPos, newCursorPos);
+                    } catch(e) {
+                        // Ignore if selection fails
+                    }
+                }, 0);
+                
+                validatePrice();
+            });
+            
+            // Final format on blur
+            priceInput.addEventListener('blur', function(e) {
+                const input = e.target;
+                let val = input.value.replace(/[^\d.]/g, '');
+                
+                if (val && val !== '') {
+                    const dotPos = val.indexOf('.');
+                    if (dotPos >= 0) {
+                        val = val.substring(0, dotPos) + '.' + val.substring(dotPos + 1).replace(/\./g, '');
+                    }
+                    
+                    const parts = val.split('.');
+                    const intPart = parts[0] || '';
+                    const decPart = parts[1] || '';
+                    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    
+                    if (decPart) {
+                        input.value = formattedInt + '.' + decPart;
+                    } else if (val.includes('.')) {
+                        input.value = formattedInt + '.';
+                    } else {
+                        input.value = formattedInt;
+                    }
+                }
+                
+                validatePrice();
+            });
+            
+            // Initialize price display (this will format the value with commas)
             initializePriceFromStored();
             
             // Listen for unit changes
             window.addEventListener('unitChanged', function(event) {
                 const newUnit = event.detail.unit;
-                const currentPrice = parseFloat(priceInput.value) || 0;
+                const currentPriceStr = removeCommas(priceInput.value);
+                const currentPrice = parseFloat(currentPriceStr) || 0;
                 
                 if (currentPrice > 0) {
                     // Convert current price to per meter (in current currency)
@@ -518,11 +666,13 @@
                     }
                     
                     // Convert to new unit
+                    let newPrice;
                     if (newUnit === 'mm') {
-                        priceInput.value = pricePerMeter.toFixed(4);
+                        newPrice = pricePerMeter.toFixed(4);
                     } else {
-                        priceInput.value = (pricePerMeter / INCHES_PER_METER).toFixed(4);
+                        newPrice = (pricePerMeter / INCHES_PER_METER).toFixed(4);
                     }
+                    priceInput.value = formatNumberWithCommas(newPrice);
                 }
                 
                 currentPriceUnit = newUnit;
@@ -532,15 +682,20 @@
             // Listen for currency changes
             window.addEventListener('currencyChanged', function(event) {
                 const newCurrency = event.detail.currency;
-                const currentPrice = parseFloat(priceInput.value) || 0;
+                const currentPriceStr = removeCommas(priceInput.value);
+                const currentPrice = parseFloat(currentPriceStr) || 0;
                 
                 if (currentPrice > 0) {
                     // Convert between currencies
+                    let newPrice;
                     if (currentCurrency === 'USD' && newCurrency === 'COP') {
-                        priceInput.value = (currentPrice * exchangeRate).toFixed(2);
+                        newPrice = (currentPrice * exchangeRate).toFixed(2);
                     } else if (currentCurrency === 'COP' && newCurrency === 'USD') {
-                        priceInput.value = (currentPrice / exchangeRate).toFixed(4);
+                        newPrice = (currentPrice / exchangeRate).toFixed(4);
+                    } else {
+                        newPrice = currentPrice.toFixed(4);
                     }
+                    priceInput.value = formatNumberWithCommas(newPrice);
                 }
                 
                 currentCurrency = newCurrency;
@@ -549,8 +704,9 @@
             
             // Convert price back to USD per meter and weight to kg/m on form submission
             form.addEventListener('submit', function(e) {
-                // Convert price
-                let priceValue = parseFloat(priceInput.value);
+                // Remove commas from price before processing
+                const priceValueStr = removeCommas(priceInput.value);
+                let priceValue = parseFloat(priceValueStr);
                 if (!isNaN(priceValue) && priceValue > 0) {
                     // Step 1: Convert to USD if in COP
                     if (currentCurrency === 'COP') {
@@ -620,7 +776,7 @@
             
             // Validation listeners
             nameInput.addEventListener('input', validateName);
-            priceInput.addEventListener('input', validatePrice);
+            // priceInput validation is handled in the formatting input handler above
             weightInput.addEventListener('input', validateWeight);
             
             // Delete button - use fetch API for DELETE request

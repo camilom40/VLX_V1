@@ -1433,11 +1433,79 @@ npm run dev
 
 ---
 
-## 🔮 TODO / Future Enhancements
+## January 2026 - Frozen Exchange Rate Per Project
 
-- **Profile Quantity Equations**: Consider implementing equation support for profile quantities, similar to accessory equations. This would allow profiles to use formulas based on window dimensions (e.g., perimeter-based calculations for frame profiles).
+### What We Worked On
+
+1. **Exchange Rate Freezing for Projects**
+   - **Problem**: Exchange rates fluctuate, but once a project quote is created, the prices should remain consistent
+   - **Solution**: When the first window is added to a project, the current exchange rate is "frozen" and stored in the project
+   - **Behavior**: All subsequent windows added to that project use the frozen exchange rate, ensuring price consistency
+
+2. **Project Duplication with New Exchange Rate**
+   - **Key Feature**: When a project is duplicated, the NEW project gets the CURRENT exchange rate (not the original's frozen rate)
+   - **Use Case**: Client wants an updated quote - duplicate the project and prices are recalculated with today's exchange rate
+   - **Result**: Original project retains its frozen rate, duplicate has fresh rate
+
+3. **Window Item Duplication**
+   - **Same Project**: When duplicating a window within the same project, uses the project's frozen exchange rate
+   - **Different Projects**: Not applicable (windows can't be copied between projects directly)
+
+### Key Files Modified
+
+1. **`models/Project.js`**
+   - Added `frozenExchangeRate` field (Number, default: null)
+   - Added `exchangeRateFrozenAt` field (Date, default: null)
+   - Null value means no windows added yet (rate not frozen)
+
+2. **`routes/projectRoutes.js`**
+   - **Save Window Route**: Checks if project has frozen rate; if not, freezes current rate
+   - **Update Window Route**: Uses project's frozen rate for recalculations
+   - **Duplicate Window Item Route**: Uses project's frozen rate (not current)
+   - **Duplicate Project Route**: Gets CURRENT rate and freezes it for the new project
+   - **Project Details Route**: Passes frozen rate info to frontend for display
+   - **Configure Window Routes (new/edit)**: Pass frozen exchange rate to frontend
+
+3. **`views/projects/projectDetails.ejs`**
+   - Added exchange rate indicator in project header
+   - Shows lock icon with frozen rate (e.g., "Rate: 4,200 COP/USD")
+   - Tooltip shows when rate was frozen
+
+### Technical Notes
+
+- **Helper Function Updated**: `recalculateWindowItemPrices()` now accepts optional `exchangeRateOverride` parameter
+- **Backward Compatibility**: Projects without frozen rate will freeze the rate when first window is added
+- **Display**: Project details page shows the frozen exchange rate with a lock icon
+- **No Manual Override**: Exchange rate cannot be manually changed for a project (by design)
+
+### Example Scenarios
+
+**Scenario 1: New Project**
+1. Create project → no frozen rate
+2. Add first window → current rate (e.g., 4,200) is frozen
+3. Add second window → uses frozen rate (4,200), not current market rate
+4. Edit window → still uses 4,200
+
+**Scenario 2: Duplicate Project**
+1. Original project has frozen rate of 4,200 (from 6 months ago)
+2. Duplicate project → new project gets TODAY's rate (e.g., 4,350)
+3. All window prices in duplicate are recalculated with 4,350
+4. Original project still shows prices at 4,200
+
+**Scenario 3: Duplicate Window Within Project**
+1. Project has frozen rate of 4,200
+2. Duplicate window item "V1" → creates "V1 (2)"
+3. New window uses same frozen rate (4,200)
+4. Prices recalculated with current profile/glass costs but frozen exchange rate
 
 ---
 
-*Last Updated: January 2026 - Optional Glass Configuration, COP Display & Duplicate Fixes*
+## 🔮 TODO / Future Enhancements
+
+- **Profile Quantity Equations**: Consider implementing equation support for profile quantities, similar to accessory equations. This would allow profiles to use formulas based on window dimensions (e.g., perimeter-based calculations for frame profiles).
+- **Manual Exchange Rate Override**: Consider allowing admin users to manually set/update a project's frozen exchange rate if needed
+
+---
+
+*Last Updated: January 2026 - Frozen Exchange Rate Per Project*
 

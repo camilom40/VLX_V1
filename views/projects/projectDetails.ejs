@@ -333,15 +333,48 @@
               </svg>
               <span>Updated: <%= project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : 'N/A' %></span>
             </div>
+            <% if (typeof frozenExchangeRate !== 'undefined' && frozenExchangeRate) { %>
+            <div class="flex items-center" title="Exchange rate frozen when first window was added. Rate: 1 USD = <%= frozenExchangeRate.toLocaleString() %> COP<% if (typeof exchangeRateFrozenAt !== 'undefined' && exchangeRateFrozenAt) { %> (Frozen: <%= new Date(exchangeRateFrozenAt).toLocaleDateString() %>)<% } %>">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span class="text-amber-600">Rate: <%= frozenExchangeRate.toLocaleString() %> COP/USD</span>
+            </div>
+            <% } %>
           </div>
         </div>
         
-        <div class="mt-4 md:mt-0">
+        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-4">
           <div class="bg-blue-50 rounded-lg px-6 py-4 border border-blue-100" 
                data-project-total="<%= projectTotal %>"
                data-cost-settings='<%= JSON.stringify(costSettings || {}) %>'>
             <div class="text-blue-800 text-xl font-bold" id="displayTotal">$<%= projectTotal %></div>
             <div class="text-blue-600 text-sm">Total Project Value</div>
+          </div>
+          
+          <!-- Exchange Rate Card -->
+          <div class="bg-amber-50 rounded-lg px-6 py-4 border border-amber-200">
+            <% if (typeof frozenExchangeRate !== 'undefined' && frozenExchangeRate) { %>
+              <div class="flex items-center gap-2 mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <div class="text-amber-800 text-xl font-bold"><%= frozenExchangeRate.toLocaleString() %> COP/USD</div>
+              </div>
+              <div class="text-amber-600 text-sm">Exchange Rate (Frozen)</div>
+              <% if (typeof exchangeRateFrozenAt !== 'undefined' && exchangeRateFrozenAt) { %>
+                <div class="text-amber-500 text-xs mt-1">Since <%= new Date(exchangeRateFrozenAt).toLocaleDateString() %></div>
+              <% } %>
+            <% } else { %>
+              <div class="flex items-center gap-2 mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <div class="text-amber-800 text-xl font-bold"><%= typeof currentExchangeRate !== 'undefined' && currentExchangeRate ? currentExchangeRate.toLocaleString() : (typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate.toLocaleString() : 'N/A') %> COP/USD</div>
+              </div>
+              <div class="text-amber-600 text-sm">Current Exchange Rate</div>
+              <div class="text-amber-500 text-xs mt-1">Will freeze when first window is added</div>
+            <% } %>
           </div>
         </div>
       </div>

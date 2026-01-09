@@ -24,6 +24,18 @@ const projectSchema = new Schema({
     required: true,
     index: true // Index for faster querying by user
   },
+  // Frozen exchange rate - set when first window is added to project
+  // All price calculations for this project will use this rate
+  // Only recalculated when project is duplicated (new project gets current rate)
+  frozenExchangeRate: {
+    type: Number,
+    default: null // null means not frozen yet (no windows added)
+  },
+  // Date when exchange rate was frozen
+  exchangeRateFrozenAt: {
+    type: Date,
+    default: null
+  }
   // Add other project-specific fields later if needed
   // e.g., windows: [ { type: Schema.Types.ObjectId, ref: 'WindowEstimate' } ]
 }, {

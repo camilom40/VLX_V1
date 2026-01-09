@@ -168,10 +168,11 @@ function evaluateLengthEquation(equation, width, height, inputUnit = 'inches') {
 }
 
 // Helper function to recalculate prices for a window item with current costs
-async function recalculateWindowItemPrices(windowItem) {
+// Optional exchangeRateOverride parameter allows using a specific rate (e.g., for project duplication)
+async function recalculateWindowItemPrices(windowItem, exchangeRateOverride = null) {
   try {
-    // Get current exchange rate
-    const exchangeRate = await getExchangeRate();
+    // Use provided exchange rate or get current one
+    const exchangeRate = exchangeRateOverride || await getExchangeRate();
     
     // Get current cost settings
     const CostSettings = require('../models/CostSettings');
@@ -657,8 +658,10 @@ router.get('/projects/:id', isAuthenticated, async (req, res) => {
     const companyLogo = user?.companyLogo || null;
 
     // Get exchange rate for currency conversion
+    // Use the project's frozen exchange rate if available, otherwise get current
     const { getExchangeRate } = require('../utils/currencyConverter');
-    const exchangeRate = await getExchangeRate();
+    const currentExchangeRate = await getExchangeRate();
+    const exchangeRate = project.frozenExchangeRate || currentExchangeRate;
     
     // Get cost settings for project-level costs
     const CostSettings = require('../models/CostSettings');
@@ -671,6 +674,9 @@ router.get('/projects/:id', isAuthenticated, async (req, res) => {
       projectTotal: projectTotal.toFixed(2),
       companyLogo: companyLogo,
       exchangeRate: exchangeRate,
+      currentExchangeRate: currentExchangeRate, // For display purposes
+      frozenExchangeRate: project.frozenExchangeRate, // For info display
+      exchangeRateFrozenAt: project.exchangeRateFrozenAt,
       costSettings: costSettings || {}
     });
 
@@ -795,8 +801,9 @@ router.post('/projects/:projectId/items/:itemId/duplicate', isAuthenticated, asy
       newItemName = `${baseName} (${counter})`;
     }
 
-    // Recalculate prices with current costs, exchange rate, and prices
-    const recalculatedPrices = await recalculateWindowItemPrices(originalItem);
+    // Recalculate prices using the project's frozen exchange rate (not current rate)
+    // This ensures duplicated items within the same project use consistent pricing
+    const recalculatedPrices = await recalculateWindowItemPrices(originalItem, project.frozenExchangeRate);
     
     // Create a duplicate item with the new name and recalculated prices
     // Convert Mongoose document to plain object to avoid issues
@@ -1186,6 +1193,10 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
 
 
 
+    // Use project's frozen exchange rate if available, otherwise get current
+    const currentExchangeRate = await getExchangeRate();
+    const exchangeRate = project.frozenExchangeRate || currentExchangeRate;
+    
     res.render('projects/configureWindow', {
       project,
       windowRef,
@@ -1198,7 +1209,8 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
       allAccessories,
       allGlasses,
       costSettings: costSettings || {},
-      exchangeRate: await getExchangeRate(),
+      exchangeRate: exchangeRate,
+      frozenExchangeRate: project.frozenExchangeRate,
       existingWindow: null, // No existing window for new configuration
       isEdit: false        // This is not edit mode
     });
@@ -1269,8 +1281,20 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
       CostSettings.findOne()
     ]);
 
-    // Get exchange rate for currency conversion
-    const exchangeRate = await getExchangeRate();
+    // Get exchange rate - use frozen rate if project has one, otherwise get current and freeze it
+    let exchangeRate;
+    if (project.frozenExchangeRate) {
+      // Use the frozen exchange rate for this project
+      exchangeRate = project.frozenExchangeRate;
+      console.log('Using frozen exchange rate for project:', exchangeRate);
+    } else {
+      // First window in project - freeze the current exchange rate
+      exchangeRate = await getExchangeRate();
+      project.frozenExchangeRate = exchangeRate;
+      project.exchangeRateFrozenAt = new Date();
+      await project.save();
+      console.log('Froze exchange rate for project:', exchangeRate);
+    }
 
     // Calculate pricing
     const windowWidth = parseFloat(width);
@@ -1995,6 +2019,10 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
     // Extract missile type for pre-selection
     const preSelectedMissileType = existingWindow.missileType || '';
 
+    // Use project's frozen exchange rate (should exist since window already exists)
+    const currentExchangeRate = await getExchangeRate();
+    const exchangeRate = project.frozenExchangeRate || currentExchangeRate;
+    
     res.render('projects/configureWindow', {
       project,
       windowRef,
@@ -2007,7 +2035,8 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       allAccessories,
       allGlasses,
       costSettings: costSettings || {},
-      exchangeRate: await getExchangeRate(),
+      exchangeRate: exchangeRate,
+      frozenExchangeRate: project.frozenExchangeRate,
       existingWindow, // Pass existing window data for pre-filling form
       savedAccessorySelections, // Pass saved accessory selections for restoration
       savedProfileSelections, // Pass saved profile selections for restoration
@@ -2093,8 +2122,19 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     const windowHeight = parseFloat(height);
     const windowQuantity = parseInt(quantity);
     
-    // Get exchange rate for currency conversion
-    const exchangeRate = await getExchangeRate();
+    // Get exchange rate - use frozen rate from project (should already be frozen since window exists)
+    let exchangeRate;
+    if (project.frozenExchangeRate) {
+      exchangeRate = project.frozenExchangeRate;
+      console.log('Using frozen exchange rate for update:', exchangeRate);
+    } else {
+      // Edge case: project doesn't have frozen rate yet (shouldn't happen normally)
+      exchangeRate = await getExchangeRate();
+      project.frozenExchangeRate = exchangeRate;
+      project.exchangeRateFrozenAt = new Date();
+      await project.save();
+      console.log('Froze exchange rate during update:', exchangeRate);
+    }
 
     // Glass cost calculation with validation - ALL INTERNAL CALCULATIONS IN USD
     // Calculate actual glass dimensions using equations if available
@@ -2650,21 +2690,28 @@ router.post('/projects/:id/duplicate', isAuthenticated, async (req, res) => {
       ? await generateNextVersion(originalProject.quoteNumber, userId)
       : await generateQuoteNumber(userId);
 
-    // Create new project with same details but new quote number
+    // Get CURRENT exchange rate for the new project (not the frozen one from original)
+    const currentExchangeRate = await getExchangeRate();
+
+    // Create new project with same details but new quote number and CURRENT exchange rate
     const newProject = new Project({
       projectName: originalProject.projectName,
       clientName: originalProject.clientName,
       quoteNumber: newQuoteNumber,
-      userId: userId
+      userId: userId,
+      // Freeze the current exchange rate for the duplicated project
+      frozenExchangeRate: currentExchangeRate,
+      exchangeRateFrozenAt: new Date()
     });
 
     await newProject.save();
+    console.log('Duplicated project with new exchange rate:', currentExchangeRate, '(original was:', originalProject.frozenExchangeRate || 'not frozen', ')');
 
-    // Duplicate all window items with recalculated prices
+    // Duplicate all window items with recalculated prices using the NEW exchange rate
     const originalWindowItems = await WindowItem.find({ projectId: originalProject._id });
     for (const item of originalWindowItems) {
-      // Recalculate prices with current costs, exchange rate, and prices
-      const recalculatedPrices = await recalculateWindowItemPrices(item);
+      // Recalculate prices with current costs and the NEW exchange rate
+      const recalculatedPrices = await recalculateWindowItemPrices(item, currentExchangeRate);
       
       // Convert Mongoose document to plain object to avoid issues
       const itemObj = item.toObject ? item.toObject() : item;
