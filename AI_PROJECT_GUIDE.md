@@ -1500,6 +1500,70 @@ npm run dev
 
 ---
 
+## January 2026 - UI Improvements: Exchange Rate Display, Price Formatting & Profile Fields
+
+### What We Worked On
+
+1. **Exchange Rate Card on Project Details Page**
+   - **New UI Element**: Added a prominent exchange rate card next to the "Total Project Value" card
+   - **Frozen Rate Display**: Shows lock icon with frozen rate (e.g., "4,200 COP/USD") and date frozen
+   - **Unfrozen Display**: Shows lightning icon with current rate and note "Will freeze when first window is added"
+   - **Visual Design**: Amber/yellow background to distinguish from blue total value card
+
+2. **Profile Costs - Price Per Meter in Both Currencies**
+   - **Calculation Details Modal**: Profile costs now show "Price per meter (USD)" and "Price per meter (COP)"
+   - **Clear Labeling**: Changed from generic "Price" to explicit "Price per meter" for clarity
+   - **Dual Currency**: Both USD and COP values shown for easy reference
+
+3. **Comma Separators for Money Fields (Profile Pages)**
+   - **Real-time Formatting**: Price field on add/edit profile pages now formats with commas as you type
+   - **Integer Part Only**: Commas only apply to integer part (e.g., `1,234,567.89`)
+   - **Input Type Change**: Changed from `type="number"` to `type="text"` with `inputmode="decimal"` to allow commas
+   - **Form Submission**: Commas are automatically removed before sending to backend
+
+4. **Weight Field Decimal Precision**
+   - **Problem**: Weight field was rounding values to 2 decimal places
+   - **Solution**: Changed `step="0.01"` to `step="any"` to allow any decimal precision
+   - **Example**: Can now enter `0.286` kg/m without rounding
+
+### Key Files Modified
+
+1. **`views/projects/projectDetails.ejs`**
+   - Added exchange rate card with conditional display (frozen vs unfrozen)
+   - Shows rate value, freeze date, and appropriate icon
+
+2. **`views/projects/configureWindow.ejs`**
+   - Updated Profile Costs section in calculation details modal
+   - Changed labels to "Price per meter (USD)" and "Price per meter (COP)"
+
+3. **`views/admin/editProfile.ejs`**
+   - Changed price input from `type="number"` to `type="text"` with `inputmode="decimal"`
+   - Added real-time comma formatting on input
+   - Added blur formatting for final cleanup
+   - Commas removed on form submission before backend processing
+   - Weight field: `step="0.01"` → `step="any"`
+
+4. **`views/admin/addProfile.ejs`**
+   - Weight field: `step="0.01"` → `step="any"`
+
+### Technical Notes
+
+- **Number Input Limitation**: HTML `type="number"` inputs do not allow commas - browser rejects non-numeric characters
+- **Solution**: Use `type="text"` with `inputmode="decimal"` (shows numeric keyboard on mobile)
+- **Formatting Logic**: JavaScript formats on every keystroke, removes non-digits except decimal point
+- **Cursor Position**: Code maintains cursor position when commas are added during typing
+- **Backend Compatibility**: `removeCommas()` function strips commas before form submission
+
+### Example: Price Formatting
+
+```
+User types: 1234567.89
+Display shows: 1,234,567.89
+Sent to backend: 1234567.89
+```
+
+---
+
 ## 🔮 TODO / Future Enhancements
 
 - **Profile Quantity Equations**: Consider implementing equation support for profile quantities, similar to accessory equations. This would allow profiles to use formulas based on window dimensions (e.g., perimeter-based calculations for frame profiles).
@@ -1507,5 +1571,5 @@ npm run dev
 
 ---
 
-*Last Updated: January 2026 - Frozen Exchange Rate Per Project*
+*Last Updated: January 2026 - UI Improvements: Exchange Rate Display, Price Formatting & Profile Fields*
 
