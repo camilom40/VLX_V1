@@ -157,15 +157,15 @@
         }
         
         .image-thumb {
-            width: 2.5rem;
-            height: 2.5rem;
+            width: 4rem;
+            height: 4rem;
             border-radius: 0.5rem;
             object-fit: cover;
             border: 2px solid #e2e8f0;
         }
         .image-placeholder {
-            width: 2.5rem;
-            height: 2.5rem;
+            width: 4rem;
+            height: 4rem;
             border-radius: 0.5rem;
             background: #f1f5f9;
             display: flex;
@@ -352,7 +352,7 @@
                                     </td>
                                     <td>
                                         <% if (accessory.image) { %>
-                                            <img src="<%= accessory.image %>" alt="<%= accessory.name %>" class="image-thumb">
+                                            <img src="/uploads/accessories/<%= accessory.image %>" alt="<%= accessory.name %>" class="image-thumb">
                                         <% } else { %>
                                             <div class="image-placeholder">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

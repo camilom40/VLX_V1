@@ -46,6 +46,19 @@
     .form-input:hover { border-color: #cbd5e1; background: #fff; }
     .form-input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
     
+    .form-input-simple {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 0.625rem;
+      border: 2px solid #e2e8f0;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .form-input-simple:hover { border-color: #cbd5e1; background: #fff; }
+    .form-input-simple:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    
     .input-with-icon { position: relative; width: 100%; }
     .input-icon {
       position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
@@ -163,13 +176,13 @@
                   </svg>
                 </div>
                 <input type="text" id="name" name="name" required class="form-input" 
-                    placeholder="e.g., WindowHinge" maxlength="50" autocomplete="off">
+                    placeholder="e.g., Window Hinge" maxlength="50" autocomplete="off">
               </div>
               <div id="nameError" class="error-message">
                 <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                No spaces allowed
+                <span id="nameErrorText">Name is required</span>
               </div>
-              <p class="help-text">No spaces (e.g., CornerJoint)</p>
+              <p class="help-text">e.g., Window Hinge, Corner Joint</p>
             </div>
             
             <!-- Reference Number field -->
@@ -253,6 +266,7 @@
                     <option value="">Select unit...</option>
                     <option value="piece">Piece</option>
                     <option value="meter">Meter</option>
+                    <option value="inch">Inch</option>
                     <option value="set">Set</option>
                     <option value="pair">Pair</option>
                     <option value="kit">Kit</option>
@@ -285,18 +299,19 @@
                 </div>
               </div>
               <div class="flex gap-2">
-                <div class="flex-1 input-with-icon">
-                  <div class="input-icon">
-                    <span class="text-base font-bold">$</span>
-                  </div>
-                  <input type="number" id="price" name="price" step="0.01" min="0" required 
-                      class="form-input" placeholder="0.00">
+                <div class="flex items-center px-3 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-l-lg border border-gray-200 border-r-0">
+                  <span class="text-sm font-semibold text-emerald-700" id="currencySymbol">USD</span>
                 </div>
-                <select id="currency" name="currency" required class="form-input !pl-3 !w-24">
-                  <option value="COP">COP</option>
-                  <option value="USD">USD</option>
-                </select>
+                <div class="flex-1">
+                  <input type="text" id="price" name="price" inputmode="decimal" required 
+                      class="form-input-simple w-full" placeholder="0.00">
+                  <input type="hidden" id="currency" name="currency" value="USD">
+                </div>
+                <div class="flex items-center px-3 bg-gray-50 rounded-r-lg border border-gray-200 border-l-0">
+                  <span class="text-sm text-gray-600" id="priceUnitSuffix">/unit</span>
+                </div>
               </div>
+              <p class="help-text" id="priceHelpText">Enter price in <span id="priceCurrencyLabel">USD</span> per unit. Stored as USD.</p>
               <div id="priceError" class="error-message">
                 <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                 Must be positive
@@ -483,6 +498,12 @@
   <%- include('../partials/_footer.ejs') %>
   
   <script>
+    // Exchange rate from server (COP per USD)
+    const exchangeRate = <%= typeof exchangeRate !== 'undefined' ? exchangeRate : 4000 %>;
+    
+    // Current currency state
+    let currentCurrency = 'USD';
+    
     document.addEventListener('DOMContentLoaded', () => {
       const nameInput = document.getElementById('name');
       const nameError = document.getElementById('nameError');
@@ -497,6 +518,7 @@
       const submitBtn = document.getElementById('submitBtn');
       const referenceNumberInput = document.getElementById('referenceNumber');
       const referenceNumberError = document.getElementById('referenceNumberError');
+      const currencyHidden = document.getElementById('currency');
       
       // Image upload elements
       const imageInput = document.getElementById('image');
@@ -506,6 +528,134 @@
       const previewImg = document.getElementById('previewImg');
       const fileName = document.getElementById('fileName');
       const removeImageBtn = document.getElementById('removeImage');
+      
+      // Initialize currency from global preferences
+      currentCurrency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'USD';
+      
+      // Format number with commas (integer part only)
+      function formatNumberWithCommas(value) {
+        if (!value) return '';
+        let numStr = value.toString().replace(/,/g, '');
+        if (numStr === '' || numStr === '.') return numStr;
+        if (!/^\d*\.?\d*$/.test(numStr)) return value.toString();
+        
+        const hasDecimal = numStr.includes('.');
+        const parts = numStr.split('.');
+        const integerPart = parts[0] || '';
+        const decimalPart = parts.length > 1 ? parts[1] : '';
+        
+        let formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        
+        if (hasDecimal) {
+          return decimalPart !== '' ? formattedInteger + '.' + decimalPart : formattedInteger + '.';
+        }
+        return formattedInteger;
+      }
+      
+      // Remove commas from number
+      function removeCommas(value) {
+        return value.toString().replace(/,/g, '');
+      }
+      
+      // Update currency display
+      function updateCurrencyDisplay() {
+        const currencySymbol = document.getElementById('currencySymbol');
+        const priceCurrencyLabel = document.getElementById('priceCurrencyLabel');
+        
+        if (currentCurrency === 'COP') {
+          currencySymbol.textContent = 'COP';
+          priceCurrencyLabel.textContent = 'COP';
+        } else {
+          currencySymbol.textContent = 'USD';
+          priceCurrencyLabel.textContent = 'USD';
+        }
+      }
+      
+      // Initialize display
+      updateCurrencyDisplay();
+      
+      // Real-time comma formatting for price input
+      priceInput.addEventListener('input', function(e) {
+        const input = e.target;
+        const oldValue = input.value;
+        const cursorPos = input.selectionStart;
+        
+        const beforeCursor = oldValue.substring(0, cursorPos);
+        const digitCountBefore = beforeCursor.replace(/[^\d]/g, '').length;
+        
+        let raw = oldValue.replace(/[^\d.]/g, '');
+        
+        const dotPos = raw.indexOf('.');
+        if (dotPos >= 0) {
+          raw = raw.substring(0, dotPos) + '.' + raw.substring(dotPos + 1).replace(/\./g, '');
+        }
+        
+        if (raw === '') {
+          return;
+        }
+        
+        const formatted = formatNumberWithCommas(raw);
+        input.value = formatted;
+        
+        let newCursorPos = 0;
+        let digitsSeen = 0;
+        for (let i = 0; i < formatted.length; i++) {
+          if (formatted[i].match(/\d/)) {
+            digitsSeen++;
+          }
+          if (digitsSeen >= digitCountBefore) {
+            newCursorPos = i + 1;
+            break;
+          }
+          newCursorPos = i + 1;
+        }
+        
+        setTimeout(() => {
+          try {
+            input.setSelectionRange(newCursorPos, newCursorPos);
+          } catch(e) {}
+        }, 0);
+        
+        // Also validate
+        validatePrice();
+      });
+      
+      // Listen for currency changes
+      window.addEventListener('currencyChanged', function(event) {
+        const newCurrency = event.detail.currency;
+        const currentPriceStr = removeCommas(priceInput.value);
+        const currentPrice = parseFloat(currentPriceStr) || 0;
+        
+        if (currentPrice > 0) {
+          let newPrice;
+          if (currentCurrency === 'USD' && newCurrency === 'COP') {
+            newPrice = (currentPrice * exchangeRate).toFixed(2);
+          } else if (currentCurrency === 'COP' && newCurrency === 'USD') {
+            newPrice = (currentPrice / exchangeRate).toFixed(4);
+          } else {
+            newPrice = currentPrice.toFixed(4);
+          }
+          priceInput.value = formatNumberWithCommas(newPrice);
+        }
+        
+        currentCurrency = newCurrency;
+        updateCurrencyDisplay();
+      });
+      
+      // Update price unit suffix based on selected unit
+      function updatePriceUnitSuffix() {
+        const priceUnitSuffix = document.getElementById('priceUnitSuffix');
+        const selectedUnit = unitSelect.value;
+        
+        if (selectedUnit === 'custom') {
+          const customValue = customUnitInput.value.trim();
+          priceUnitSuffix.textContent = customValue ? '/' + customValue : '/unit';
+        } else if (selectedUnit) {
+          priceUnitSuffix.textContent = '/' + selectedUnit;
+        } else {
+          priceUnitSuffix.textContent = '/unit';
+        }
+      }
       
       // Handle custom unit selection
       unitSelect.addEventListener('change', function() {
@@ -517,12 +667,15 @@
           customUnitContainer.classList.add('hidden');
           customUnitInput.required = false;
         }
+        updatePriceUnitSuffix();
       });
+      
+      // Update suffix when custom unit input changes
+      customUnitInput.addEventListener('input', updatePriceUnitSuffix);
       
       // Validation listeners
       nameInput.addEventListener('input', validateName);
       referenceNumberInput.addEventListener('input', validateReferenceNumber);
-      priceInput.addEventListener('input', validatePrice);
       weightInput.addEventListener('input', validateWeight);
       
       // Weight unit conversion
@@ -636,7 +789,7 @@
       }
       
       // Form submission
-      submitBtn.addEventListener('click', function(e) {
+      submitBtn.addEventListener('click', async function(e) {
         e.preventDefault();
         
         // Convert weight to kg before submission if in lbs
@@ -649,7 +802,7 @@
         
         const nameValue = nameInput.value.trim();
         const refValue = referenceNumberInput.value.trim();
-        const priceValue = priceInput.value;
+        const priceValue = removeCommas(priceInput.value);
         const unitValue = unitSelect.value;
         
         if (!nameValue) {
@@ -658,8 +811,9 @@
           return;
         }
         
-        if (/\s/.test(nameValue)) {
-          alert('Accessory name cannot contain spaces');
+        // Check for duplicate name before submitting
+        const nameCheck = await validateName();
+        if (!nameCheck) {
           nameInput.focus();
           return;
         }
@@ -688,6 +842,16 @@
           return;
         }
         
+        // Convert price to USD before submission
+        let priceUSD = parseFloat(priceValue);
+        if (!isNaN(priceUSD) && priceUSD > 0 && currentCurrency === 'COP') {
+          priceUSD = priceUSD / exchangeRate;
+        }
+        priceInput.value = priceUSD.toFixed(4);
+        
+        // Always store as USD
+        currencyHidden.value = 'USD';
+        
         // Show loading state
         submitBtn.innerHTML = '<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Creating...';
         submitBtn.disabled = true;
@@ -695,17 +859,55 @@
         form.submit();
       });
       
-      function validateName() {
+      let nameValidationTimeout;
+      let isCheckingName = false;
+      
+      async function validateName() {
         const name = nameInput.value.trim();
-        if (/\s/.test(name)) {
+        const nameErrorText = document.getElementById('nameErrorText');
+        
+        if (!name) {
+          nameErrorText.textContent = 'Name is required';
           nameError.style.display = 'flex';
           nameInput.style.borderColor = '#f87171';
           return false;
-        } else {
-          nameError.style.display = 'none';
-          nameInput.style.borderColor = '';
-          return true;
         }
+        
+        // Clear previous timeout
+        clearTimeout(nameValidationTimeout);
+        
+        // Debounce the API call
+        return new Promise((resolve) => {
+          nameValidationTimeout = setTimeout(async () => {
+            if (isCheckingName) return resolve(false);
+            isCheckingName = true;
+            
+            try {
+              const response = await fetch(`/admin/accessories/check-name/${encodeURIComponent(name)}`);
+              const data = await response.json();
+              
+              if (data.exists) {
+                nameErrorText.textContent = 'This accessory name is already taken';
+                nameError.style.display = 'flex';
+                nameInput.style.borderColor = '#f87171';
+                isCheckingName = false;
+                resolve(false);
+              } else {
+                nameError.style.display = 'none';
+                nameInput.style.borderColor = '';
+                isCheckingName = false;
+                resolve(true);
+              }
+            } catch (error) {
+              console.error('Error checking name:', error);
+              // On error, allow submission (server will catch duplicates)
+              nameError.style.display = 'none';
+              nameInput.style.borderColor = '';
+              isCheckingName = false;
+              resolve(true);
+            }
+          }, 500); // Wait 500ms after user stops typing
+        });
       }
       
       function validateReferenceNumber() {
@@ -722,8 +924,9 @@
       }
       
       function validatePrice() {
-        const price = parseFloat(priceInput.value);
-        if (priceInput.value && (isNaN(price) || price < 0)) {
+        const priceStr = removeCommas(priceInput.value);
+        const price = parseFloat(priceStr);
+        if (priceStr && (isNaN(price) || price < 0)) {
           priceError.style.display = 'flex';
           priceInput.style.borderColor = '#f87171';
           return false;
@@ -763,6 +966,17 @@
       const customUnitContainer = document.getElementById('customUnitContainer');
       const customUnitInput = document.getElementById('customUnit');
       
+      // Helper to format with commas
+      function formatWithCommas(value) {
+        if (!value) return '';
+        let numStr = value.toString().replace(/,/g, '');
+        const parts = numStr.split('.');
+        const integerPart = parts[0] || '';
+        const decimalPart = parts.length > 1 ? parts[1] : '';
+        let formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return decimalPart ? formattedInteger + '.' + decimalPart : formattedInteger;
+      }
+      
       // Animate fields with green highlight
       [nameInput, unitSelect, priceInput, weightInput].forEach(el => {
         el.style.transition = 'all 0.3s ease';
@@ -773,7 +987,7 @@
       nameInput.value = name;
       
       // Handle both standard and custom units
-      if (['piece', 'set', 'meter', 'roll', 'box', 'pair', 'kit', 'sheet'].includes(unit)) {
+      if (['piece', 'set', 'meter', 'inch', 'roll', 'box', 'pair', 'kit', 'sheet'].includes(unit)) {
         unitSelect.value = unit;
         customUnitContainer.classList.add('hidden');
         customUnitInput.required = false;
@@ -784,7 +998,12 @@
         customUnitInput.required = true;
       }
       
-      priceInput.value = price;
+      // Format price with commas and convert to current currency if needed
+      let displayPrice = price;
+      if (currentCurrency === 'COP') {
+        displayPrice = price * exchangeRate;
+      }
+      priceInput.value = formatWithCommas(displayPrice.toFixed(2));
       weightInput.value = weight;
       
       // Scroll to form

@@ -12,7 +12,12 @@ const upload = multer({ dest: 'uploads/' });
 // Middleware specifically for accessory image uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/accessories/')
+    const uploadDir = 'uploads/accessories/';
+    // Ensure directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -57,9 +62,37 @@ router.get('/', isAdmin, async (req, res) => {
   }
 });
 
+// API endpoint to check if accessory name exists
+router.get('/check-name/:name', isAdmin, async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { excludeId } = req.query; // For edit page - exclude current accessory
+    
+    const query = { name: { $regex: new RegExp(`^${name}$`, 'i') } }; // Case-insensitive
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+    
+    const existingAccessory = await Accessory.findOne(query);
+    res.json({ exists: !!existingAccessory });
+  } catch (error) {
+    logger.error('Error checking accessory name:', error);
+    res.status(500).json({ exists: false });
+  }
+});
+
 // Route to show the form for adding a new accessory
-router.get('/add', isAdmin, (req, res) => {
-  res.render('admin/addAccessory');
+router.get('/add', isAdmin, async (req, res) => {
+  try {
+    const CostSettings = require('../../models/CostSettings');
+    const costSettings = await CostSettings.findOne();
+    res.render('admin/addAccessory', {
+      exchangeRate: costSettings?.exchangeRate || 4000
+    });
+  } catch (error) {
+    logger.error('Failed to load add accessory page:', error);
+    res.render('admin/addAccessory', { exchangeRate: 4000 });
+  }
 });
 
 router.post('/add', isAdmin, accessoryImageUpload.single('image'), async (req, res) => {
@@ -93,6 +126,14 @@ router.post('/add', isAdmin, accessoryImageUpload.single('image'), async (req, r
     
     // Handle custom unit
     const finalUnit = unit === 'custom' ? customUnit : unit;
+    
+    // Check for duplicate name (case-insensitive)
+    const existingAccessory = await Accessory.findOne({ 
+      name: { $regex: new RegExp(`^${name}$`, 'i') } 
+    });
+    if (existingAccessory) {
+      return res.status(400).send(`An accessory with the name "${name}" already exists.`);
+    }
     
     // Enhanced debug logging
     console.log('=== ENHANCED DEBUGGING ===');
@@ -148,12 +189,19 @@ router.post('/add', isAdmin, accessoryImageUpload.single('image'), async (req, r
 // Route to show the form for editing an accessory
 router.get('/edit/:id', isAdmin, async (req, res) => {
   try {
-    const accessory = await Accessory.findById(req.params.id);
+    const CostSettings = require('../../models/CostSettings');
+    const [accessory, costSettings] = await Promise.all([
+      Accessory.findById(req.params.id),
+      CostSettings.findOne()
+    ]);
     if (!accessory) {
       logger.warn(`Accessory with ID: ${req.params.id} not found.`);
       return res.status(404).send('Accessory not found');
     }
-    res.render('admin/editAccessory', { accessory });
+    res.render('admin/editAccessory', { 
+      accessory,
+      exchangeRate: costSettings?.exchangeRate || 4000
+    });
   } catch (error) {
     logger.error('Failed to fetch accessory for editing:', error);
     res.status(500).send('Failed to fetch accessory for editing');
@@ -164,6 +212,15 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
 router.post('/update/:id', isAdmin, accessoryImageUpload.single('image'), async (req, res) => {
   try {
     const { name, price, currency, weight, unit, referenceNumber, providerName, removeImage } = req.body;
+    
+    // Check for duplicate name (case-insensitive, excluding current accessory)
+    const existingAccessory = await Accessory.findOne({ 
+      name: { $regex: new RegExp(`^${name}$`, 'i') },
+      _id: { $ne: req.params.id }
+    });
+    if (existingAccessory) {
+      return res.status(400).send(`An accessory with the name "${name}" already exists.`);
+    }
     
     // Debug logging
     console.log('=== UPDATING ACCESSORY ===');

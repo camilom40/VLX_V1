@@ -53,8 +53,22 @@ app.set("view engine", "ejs");
 
 // Serve static files
 app.use(express.static("public"));
-// Serve uploaded files
-app.use("/uploads", express.static("public/uploads"));
+
+// Ensure uploads directories exist
+const uploadsDirs = ['uploads', 'uploads/accessories'];
+uploadsDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`Created directory: ${dir}`);
+  }
+});
+
+// Serve uploaded files (from project root uploads directory)
+app.use("/uploads", express.static("uploads", {
+  setHeaders: (res, path) => {
+    // Don't throw errors for missing files, just return 404
+  }
+}));
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Change to memory storage for processing

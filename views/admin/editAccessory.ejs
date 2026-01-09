@@ -181,10 +181,10 @@
                                     </svg>
                                 </div>
                                 <input type="text" id="name" name="name" value="<%= accessory.name %>" required class="form-input" 
-                                    placeholder="e.g., WindowHinge" maxlength="50">
+                                    placeholder="e.g., Window Hinge" maxlength="50">
                             </div>
-                            <p id="nameError" class="error-text">No spaces allowed</p>
-                            <p class="help-text">No spaces (e.g., CornerJoint)</p>
+                            <p id="nameError" class="error-text"><span id="nameErrorText">Name is required</span></p>
+                            <p class="help-text">e.g., Window Hinge, Corner Joint</p>
                         </div>
 
                         <!-- Reference Number field -->
@@ -283,18 +283,20 @@
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <div class="flex-1 input-with-icon">
-                                    <div class="input-icon">
-                                        <span class="text-base font-bold">$</span>
-                                    </div>
-                                    <input type="number" id="price" name="price" step="0.01" min="0" value="<%= accessory.price %>" required 
-                                        class="form-input" placeholder="0.00">
+                                <div class="flex items-center px-3 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-l-lg border border-gray-200 border-r-0">
+                                    <span class="text-sm font-semibold text-emerald-700" id="currencySymbol">USD</span>
                                 </div>
-                                <select id="currency" name="currency" required class="form-input-simple !w-24">
-                                    <option value="COP" <%= (accessory.currency || 'COP') === 'COP' ? 'selected' : '' %>>COP</option>
-                                    <option value="USD" <%= (accessory.currency || 'COP') === 'USD' ? 'selected' : '' %>>USD</option>
-                                </select>
+                                <div class="flex-1">
+                                    <input type="text" id="price" name="price" inputmode="decimal" required 
+                                        class="form-input-simple w-full" placeholder="0.00"
+                                        data-stored-price="<%= accessory.price %>">
+                                    <input type="hidden" id="currency" name="currency" value="USD">
+                                </div>
+                                <div class="flex items-center px-3 bg-gray-50 rounded-r-lg border border-gray-200 border-l-0">
+                                    <span class="text-sm text-gray-600" id="priceUnitSuffix">/unit</span>
+                                </div>
                             </div>
+                            <p class="help-text" id="priceHelpText">Enter price in <span id="priceCurrencyLabel">USD</span> per unit. Stored as USD.</p>
                             <p id="priceError" class="error-text">Must be positive</p>
                         </div>
 
@@ -441,6 +443,12 @@
     <%- include('../partials/_footer.ejs') %>
     
     <script>
+        // Exchange rate from server (COP per USD)
+        const exchangeRate = <%= typeof exchangeRate !== 'undefined' ? exchangeRate : 4000 %>;
+        
+        // Current currency state
+        let currentCurrency = 'USD';
+        
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('editAccessoryForm');
             const nameInput = document.getElementById('name');
@@ -452,6 +460,7 @@
             const referenceNumberInput = document.getElementById('referenceNumber');
             const referenceNumberError = document.getElementById('referenceNumberError');
             const deleteButton = document.getElementById('deleteButton');
+            const currencyHidden = document.getElementById('currency');
             
             // Image elements
             const imageInput = document.getElementById('image');
@@ -466,18 +475,186 @@
             const currentImageContainer = document.getElementById('currentImageContainer');
             const removeImageFlag = document.getElementById('removeImageFlag');
             
+            // Initialize currency from global preferences
+            currentCurrency = window.globalPreferences?.currency || localStorage.getItem('globalCurrency') || 'USD';
+            
+            // Format number with commas (integer part only)
+            function formatNumberWithCommas(value) {
+                if (!value) return '';
+                let numStr = value.toString().replace(/,/g, '');
+                if (numStr === '' || numStr === '.') return numStr;
+                if (!/^\d*\.?\d*$/.test(numStr)) return value.toString();
+                
+                const hasDecimal = numStr.includes('.');
+                const parts = numStr.split('.');
+                const integerPart = parts[0] || '';
+                const decimalPart = parts.length > 1 ? parts[1] : '';
+                
+                let formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                
+                if (hasDecimal) {
+                    return decimalPart !== '' ? formattedInteger + '.' + decimalPart : formattedInteger + '.';
+                }
+                return formattedInteger;
+            }
+            
+            // Remove commas from number
+            function removeCommas(value) {
+                return value.toString().replace(/,/g, '');
+            }
+            
+            // Update currency display
+            function updateCurrencyDisplay() {
+                const currencySymbol = document.getElementById('currencySymbol');
+                const priceCurrencyLabel = document.getElementById('priceCurrencyLabel');
+                
+                if (currentCurrency === 'COP') {
+                    currencySymbol.textContent = 'COP';
+                    priceCurrencyLabel.textContent = 'COP';
+                } else {
+                    currencySymbol.textContent = 'USD';
+                    priceCurrencyLabel.textContent = 'USD';
+                }
+            }
+            
+            // Initialize price from stored value
+            function initializePriceFromStored() {
+                const storedPrice = parseFloat(priceInput.dataset.storedPrice) || 0;
+                let displayPrice = storedPrice;
+                
+                // Convert to COP if that's the current currency
+                if (currentCurrency === 'COP') {
+                    displayPrice = storedPrice * exchangeRate;
+                }
+                
+                if (displayPrice > 0) {
+                    priceInput.value = formatNumberWithCommas(displayPrice.toFixed(2));
+                }
+            }
+            
+            // Initialize display
+            updateCurrencyDisplay();
+            initializePriceFromStored();
+            
+            // Real-time comma formatting for price input
+            priceInput.addEventListener('input', function(e) {
+                const input = e.target;
+                const oldValue = input.value;
+                const cursorPos = input.selectionStart;
+                
+                const beforeCursor = oldValue.substring(0, cursorPos);
+                const digitCountBefore = beforeCursor.replace(/[^\d]/g, '').length;
+                
+                let raw = oldValue.replace(/[^\d.]/g, '');
+                
+                const dotPos = raw.indexOf('.');
+                if (dotPos >= 0) {
+                    raw = raw.substring(0, dotPos) + '.' + raw.substring(dotPos + 1).replace(/\./g, '');
+                }
+                
+                if (raw === '') {
+                    return;
+                }
+                
+                const formatted = formatNumberWithCommas(raw);
+                input.value = formatted;
+                
+                let newCursorPos = 0;
+                let digitsSeen = 0;
+                for (let i = 0; i < formatted.length; i++) {
+                    if (formatted[i].match(/\d/)) {
+                        digitsSeen++;
+                    }
+                    if (digitsSeen >= digitCountBefore) {
+                        newCursorPos = i + 1;
+                        break;
+                    }
+                    newCursorPos = i + 1;
+                }
+                
+                setTimeout(() => {
+                    try {
+                        input.setSelectionRange(newCursorPos, newCursorPos);
+                    } catch(e) {}
+                }, 0);
+                
+                // Also validate
+                validatePrice();
+            });
+            
+            // Listen for currency changes
+            window.addEventListener('currencyChanged', function(event) {
+                const newCurrency = event.detail.currency;
+                const currentPriceStr = removeCommas(priceInput.value);
+                const currentPrice = parseFloat(currentPriceStr) || 0;
+                
+                if (currentPrice > 0) {
+                    let newPrice;
+                    if (currentCurrency === 'USD' && newCurrency === 'COP') {
+                        newPrice = (currentPrice * exchangeRate).toFixed(2);
+                    } else if (currentCurrency === 'COP' && newCurrency === 'USD') {
+                        newPrice = (currentPrice / exchangeRate).toFixed(4);
+                    } else {
+                        newPrice = currentPrice.toFixed(4);
+                    }
+                    priceInput.value = formatNumberWithCommas(newPrice);
+                }
+                
+                currentCurrency = newCurrency;
+                updateCurrencyDisplay();
+            });
+            
             // Validation functions
-            function validateName() {
+            let nameValidationTimeout;
+            let isCheckingName = false;
+            const accessoryId = '<%= accessory._id %>';
+            
+            async function validateName() {
                 const name = nameInput.value.trim();
-                if (/\s/.test(name)) {
+                const nameErrorText = document.getElementById('nameErrorText');
+                
+                if (!name) {
+                    nameErrorText.textContent = 'Name is required';
                     nameError.style.display = 'block';
                     nameInput.style.borderColor = '#f87171';
                     return false;
-                } else {
-                    nameError.style.display = 'none';
-                    nameInput.style.borderColor = '';
-                    return true;
                 }
+                
+                // Clear previous timeout
+                clearTimeout(nameValidationTimeout);
+                
+                // Debounce the API call
+                return new Promise((resolve) => {
+                    nameValidationTimeout = setTimeout(async () => {
+                        if (isCheckingName) return resolve(false);
+                        isCheckingName = true;
+                        
+                        try {
+                            const response = await fetch(`/admin/accessories/check-name/${encodeURIComponent(name)}?excludeId=${accessoryId}`);
+                            const data = await response.json();
+                            
+                            if (data.exists) {
+                                nameErrorText.textContent = 'This accessory name is already taken';
+                                nameError.style.display = 'block';
+                                nameInput.style.borderColor = '#f87171';
+                                isCheckingName = false;
+                                resolve(false);
+                            } else {
+                                nameError.style.display = 'none';
+                                nameInput.style.borderColor = '';
+                                isCheckingName = false;
+                                resolve(true);
+                            }
+                        } catch (error) {
+                            console.error('Error checking name:', error);
+                            // On error, allow submission (server will catch duplicates)
+                            nameError.style.display = 'none';
+                            nameInput.style.borderColor = '';
+                            isCheckingName = false;
+                            resolve(true);
+                        }
+                    }, 500); // Wait 500ms after user stops typing
+                });
             }
             
             function validateReferenceNumber() {
@@ -493,8 +670,9 @@
             }
             
             function validatePrice() {
-                const price = parseFloat(priceInput.value);
-                if (priceInput.value && (isNaN(price) || price < 0)) {
+                const priceStr = removeCommas(priceInput.value);
+                const price = parseFloat(priceStr);
+                if (priceStr && (isNaN(price) || price < 0)) {
                     priceError.style.display = 'block';
                     priceInput.style.borderColor = '#f87171';
                     return false;
@@ -519,10 +697,23 @@
                 }
             }
             
+            // Update price unit suffix based on unit input
+            const unitInput = document.getElementById('unit');
+            function updatePriceUnitSuffix() {
+                const priceUnitSuffix = document.getElementById('priceUnitSuffix');
+                const unitValue = unitInput.value.trim();
+                priceUnitSuffix.textContent = unitValue ? '/' + unitValue : '/unit';
+            }
+            
+            // Initialize price unit suffix
+            updatePriceUnitSuffix();
+            
+            // Update suffix when unit input changes
+            unitInput.addEventListener('input', updatePriceUnitSuffix);
+            
             // Validation listeners
             nameInput.addEventListener('input', validateName);
             referenceNumberInput.addEventListener('input', validateReferenceNumber);
-            priceInput.addEventListener('input', validatePrice);
             weightInput.addEventListener('input', validateWeight);
             
             // Weight unit conversion
@@ -578,14 +769,37 @@
             
             updateWeightUnitDisplay();
             
-            // Convert weight to kg before form submission if in lbs
-            form.addEventListener('submit', function(e) {
+            // Convert values before form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Check for duplicate name before submitting
+                const nameCheck = await validateName();
+                if (!nameCheck) {
+                    nameInput.focus();
+                    return;
+                }
+                
+                // Convert weight to kg if in lbs
                 if (weightInput && weightUnit === 'lbs') {
                     const lbsValue = parseFloat(weightInput.value);
                     if (!isNaN(lbsValue) && lbsValue > 0) {
                         weightInput.value = (lbsValue * LBS_TO_KG).toFixed(2);
                     }
                 }
+                
+                // Convert price to USD before submission
+                let priceValue = parseFloat(removeCommas(priceInput.value));
+                if (!isNaN(priceValue) && priceValue > 0 && currentCurrency === 'COP') {
+                    priceValue = priceValue / exchangeRate;
+                }
+                priceInput.value = priceValue.toFixed(4);
+                
+                // Always store as USD
+                currencyHidden.value = 'USD';
+                
+                // Submit the form
+                form.submit();
             });
             
             // Image handling
