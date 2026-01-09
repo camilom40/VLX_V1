@@ -747,12 +747,94 @@
                 </select>
               </div>
               <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                <input type="text" id="accessory-unit" readonly class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg bg-gray-50">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">User Configurable</label>
+                <div class="flex items-center mt-2">
+                  <input type="checkbox" id="accessory-show-to-user" class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                  <label for="accessory-show-to-user" class="ml-2 text-sm text-gray-700">Show to users</label>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Allow users to modify this accessory</p>
+              </div>
+            </div>
+            
+            <!-- Quantity Type Selection -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity Type</label>
+                <select id="accessory-quantity-type" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" onchange="toggleAccessoryQuantityType()">
+                  <option value="fixed">Fixed Quantity</option>
+                  <option value="equation">Equation</option>
+                </select>
+              </div>
+              
+              <div id="accessory-quantity-fixed-container">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
                 <input type="number" id="accessory-quantity" min="1" value="1" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
               </div>
+              
+              <div id="accessory-quantity-equation-container" style="display: none;" class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity Equation</label>
+                <input type="text" id="accessory-quantity-equation" placeholder="e.g., 5 * height, 2 * perimeter" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                <div id="equation-validation-message" class="mt-2 text-sm"></div>
+                <div id="equation-preview" class="mt-2 text-xs text-gray-600"></div>
+                
+                <!-- Variable & Operator Buttons -->
+                <div class="mt-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                  <p class="text-xs font-semibold text-green-800 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>Available Variables (click to insert):
+                  </p>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-green-700 border border-green-300 hover:bg-green-100 hover:border-green-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('width', 'accessory-quantity-equation')">
+                      width
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-green-700 border border-green-300 hover:bg-green-100 hover:border-green-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('height', 'accessory-quantity-equation')">
+                      height
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-green-700 border border-green-300 hover:bg-green-100 hover:border-green-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('perimeter', 'accessory-quantity-equation')">
+                      perimeter
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-white rounded-md text-xs font-mono text-green-700 border border-green-300 hover:bg-green-100 hover:border-green-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('area', 'accessory-quantity-equation')">
+                      area
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5 mb-2">
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' + ', 'accessory-quantity-equation')">+</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' - ', 'accessory-quantity-equation')">-</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' * ', 'accessory-quantity-equation')">×</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' / ', 'accessory-quantity-equation')">÷</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable('(', 'accessory-quantity-equation')">(</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-white rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(')', 'accessory-quantity-equation')">)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Advanced Configuration (only show when user configurable is checked) -->
+            <div id="accessory-advanced-config" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200" style="display: none;">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                <input type="text" id="accessory-unit" readonly class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg bg-gray-50">
+                <label for="accessory-component-group-select" class="block text-sm font-medium text-gray-700 mb-1">Component Group:</label>
+                <select id="accessory-component-group-select" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" onchange="toggleCustomGroupInput()">
+                  <option value="">Select a group...</option>
+                  <% componentGroups.forEach(group => { %>
+                    <option value="<%= group.name %>"><%= group.displayName %></option>
+                  <% }); %>
+                  <option value="custom">Custom (Type your own)</option>
+                </select>
+                <input type="text" id="accessory-component-group-custom" placeholder="Enter custom group name" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none mt-2" style="display: none;">
+                <input type="hidden" id="accessory-component-group" value="">
+                <p class="text-xs text-gray-500 mt-1">Group related components together for user selection</p>
+              </div>
+              
+              <div class="md:col-span-2">
+                <label for="accessory-is-default" class="block text-sm font-medium text-gray-700 mb-1">Default Choice:</label>
+                <div class="flex items-center mt-2">
+                  <input type="checkbox" id="accessory-is-default" class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                  <label for="accessory-is-default" class="ml-2 text-sm text-gray-700">Default selection</label>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Pre-select this in choice groups</p>
               </div>
             </div>
             
@@ -772,6 +854,8 @@
                   <th>Accessory</th>
                   <th>Quantity</th>
                   <th>Unit</th>
+                  <th>User Config</th>
+                  <th>Component Group</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -1276,8 +1360,12 @@
       .map(a => ({
         accessoryId: a.accessory?._id || a.accessory,
         accessoryName: a.accessory?.name || 'Unknown',
-        quantity: a.quantity || 1,
-        unit: a.unit || 'unit'
+        quantity: a.quantity || null,
+        quantityEquation: a.quantityEquation || null,
+        unit: a.unit || 'unit',
+        showToUser: a.showToUser || false,
+        componentGroup: a.componentGroup || null,
+        isDefault: a.isDefault || false
       }));
     
     // Use different variable name to avoid conflict with EJS accessories variable
@@ -2298,9 +2386,160 @@
       }
     }
 
+    // Validate equation syntax and variables
+    function validateEquation(equation) {
+      const validationMsg = document.getElementById('equation-validation-message');
+      const previewDiv = document.getElementById('equation-preview');
+      const input = document.getElementById('accessory-quantity-equation');
+      
+      if (!equation || equation.trim() === '') {
+        if (validationMsg) validationMsg.innerHTML = '';
+        if (previewDiv) previewDiv.innerHTML = '';
+        if (input) {
+          input.classList.remove('border-red-500', 'border-green-500');
+        }
+        return { valid: false, message: '' };
+      }
+      
+      const trimmed = equation.trim();
+      const validVariables = ['width', 'height', 'perimeter', 'area'];
+      
+      // Check for invalid variable names (case-insensitive)
+      const variablePattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+      const foundVariables = [];
+      let match;
+      while ((match = variablePattern.exec(trimmed)) !== null) {
+        const varName = match[1].toLowerCase();
+        // Skip JavaScript keywords and math functions
+        if (!['width', 'height', 'perimeter', 'area', 'sqrt', 'abs', 'round', 'floor', 'ceil', 'max', 'min', 'pow'].includes(varName)) {
+          foundVariables.push(match[1]);
+        }
+      }
+      
+      // Filter out valid variables
+      const invalidVars = foundVariables.filter(v => !validVariables.includes(v.toLowerCase()));
+      
+      if (invalidVars.length > 0) {
+        const uniqueInvalid = [...new Set(invalidVars)];
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = `<span class="text-red-600 font-medium">❌ Invalid variable(s): ${uniqueInvalid.join(', ')}</span><br><span class="text-red-500 text-xs">Valid variables are: width, height, perimeter, area</span>`;
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: `Invalid variables: ${uniqueInvalid.join(', ')}` };
+      }
+      
+      // Try to evaluate with sample values
+      try {
+        // Test with sample values: width=10, height=20
+        const testWidth = 10;
+        const testHeight = 20;
+        const testPerimeter = 2 * (testWidth + testHeight);
+        const testArea = testWidth * testHeight;
+        
+        let testExpression = trimmed;
+        // Replace variables with test values (case-insensitive)
+        testExpression = testExpression.replace(/\bwidth\b/gi, testWidth);
+        testExpression = testExpression.replace(/\bheight\b/gi, testHeight);
+        testExpression = testExpression.replace(/\bperimeter\b/gi, testPerimeter);
+        testExpression = testExpression.replace(/\barea\b/gi, testArea);
+        
+        // Safe evaluation using Function constructor
+        const result = Function('"use strict"; return (' + testExpression + ')')();
+        
+        if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+          if (input) input.classList.add('border-red-500');
+          if (input) input.classList.remove('border-green-500');
+          if (validationMsg) {
+            validationMsg.innerHTML = '<span class="text-red-600 font-medium">❌ Invalid equation syntax</span><br><span class="text-red-500 text-xs">The equation must evaluate to a valid number</span>';
+          }
+          if (previewDiv) previewDiv.innerHTML = '';
+          return { valid: false, message: 'Invalid equation syntax' };
+        }
+        
+        // Valid equation
+        if (input) input.classList.add('border-green-500');
+        if (input) input.classList.remove('border-red-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = '<span class="text-green-600 font-medium">✓ Valid equation</span>';
+        }
+        
+        // Show preview with sample calculation
+        if (previewDiv) {
+          previewDiv.innerHTML = `<span class="text-gray-600">Preview (width=10, height=20): ${result.toFixed(2)}</span>`;
+        }
+        
+        return { valid: true, message: 'Valid equation' };
+      } catch (error) {
+        if (input) input.classList.add('border-red-500');
+        if (input) input.classList.remove('border-green-500');
+        if (validationMsg) {
+          validationMsg.innerHTML = '<span class="text-red-600 font-medium">❌ Invalid equation syntax</span><br><span class="text-red-500 text-xs">' + error.message + '</span>';
+        }
+        if (previewDiv) previewDiv.innerHTML = '';
+        return { valid: false, message: error.message };
+      }
+    }
+    
+    // Setup advanced configuration toggle for accessories
+    function setupAccessoryAdvancedConfigToggle() {
+      const showToUserCheckbox = document.getElementById('accessory-show-to-user');
+      const advancedConfig = document.getElementById('accessory-advanced-config');
+      
+      if (showToUserCheckbox && advancedConfig) {
+        showToUserCheckbox.addEventListener('change', function() {
+          if (this.checked) {
+            advancedConfig.style.display = 'grid';
+          } else {
+            advancedConfig.style.display = 'none';
+            // Reset advanced config fields when hiding
+            const componentGroupSelect = document.getElementById('accessory-component-group-select');
+            const componentGroupCustom = document.getElementById('accessory-component-group-custom');
+            const componentGroup = document.getElementById('accessory-component-group');
+            const isDefault = document.getElementById('accessory-is-default');
+            
+            if (componentGroupSelect) componentGroupSelect.value = '';
+            if (componentGroupCustom) {
+              componentGroupCustom.style.display = 'none';
+              componentGroupCustom.value = '';
+            }
+            if (componentGroup) componentGroup.value = '';
+            if (isDefault) isDefault.checked = false;
+          }
+        });
+      }
+      
+      // Update hidden input when custom group text changes
+      const customInput = document.getElementById('accessory-component-group-custom');
+      const hiddenInput = document.getElementById('accessory-component-group');
+      if (customInput && hiddenInput) {
+        customInput.addEventListener('input', function() {
+          hiddenInput.value = this.value;
+        });
+      }
+      
+      // Add validation for quantity equation
+      const quantityEquationInput = document.getElementById('accessory-quantity-equation');
+      if (quantityEquationInput) {
+        let validationTimeout;
+        quantityEquationInput.addEventListener('input', function() {
+          clearTimeout(validationTimeout);
+          validationTimeout = setTimeout(() => {
+            validateEquation(this.value);
+          }, 300);
+        });
+        
+        quantityEquationInput.addEventListener('blur', function() {
+          validateEquation(this.value);
+        });
+      }
+    }
+    
     // Initialize equation validation and profile search on page load
     document.addEventListener('DOMContentLoaded', function() {
       initProfileSearch();
+      setupAccessoryAdvancedConfigToggle();
       
       // Initialize glass size equation unit display
       updateGlassSizeEquationUnitDisplay();
@@ -2574,28 +2813,100 @@
       document.getElementById('accessory-unit').value = unit;
     }
     
+    function toggleAccessoryQuantityType() {
+      const quantityType = document.getElementById('accessory-quantity-type').value;
+      const fixedContainer = document.getElementById('accessory-quantity-fixed-container');
+      const equationContainer = document.getElementById('accessory-quantity-equation-container');
+      
+      if (quantityType === 'fixed') {
+        fixedContainer.style.display = 'block';
+        equationContainer.style.display = 'none';
+      } else {
+        fixedContainer.style.display = 'none';
+        equationContainer.style.display = 'block';
+      }
+    }
+    
+    function toggleCustomGroupInput() {
+      const select = document.getElementById('accessory-component-group-select');
+      const customInput = document.getElementById('accessory-component-group-custom');
+      const hiddenInput = document.getElementById('accessory-component-group');
+      
+      if (select.value === 'custom') {
+        customInput.style.display = 'block';
+        customInput.focus();
+        hiddenInput.value = customInput.value;
+      } else {
+        customInput.style.display = 'none';
+        customInput.value = '';
+        hiddenInput.value = select.value;
+      }
+    }
+    
     function addAccessoryEntry() {
       const select = document.getElementById('accessory-id');
       const accessoryId = select.value;
       const accessoryName = select.options[select.selectedIndex]?.text || '';
-      const quantity = document.getElementById('accessory-quantity').value;
       const unit = document.getElementById('accessory-unit').value;
+      const quantityType = document.getElementById('accessory-quantity-type').value;
+      const showToUser = document.getElementById('accessory-show-to-user').checked;
       
-      if (!accessoryId || !quantity) {
-        alert('Please select an accessory and enter quantity');
+      // Get advanced configuration fields
+      const componentGroup = document.getElementById('accessory-component-group').value;
+      const isDefault = document.getElementById('accessory-is-default').checked;
+      
+      if (!accessoryId) {
+        alert('Please select an accessory');
         return;
       }
       
-      accessories.push({
+      if (quantityType === 'fixed') {
+        const quantity = document.getElementById('accessory-quantity').value;
+        if (!quantity || quantity <= 0) {
+          alert('Please enter a valid quantity');
+          return;
+        }
+      } else {
+        const quantityEquation = document.getElementById('accessory-quantity-equation').value;
+        if (!quantityEquation || quantityEquation.trim() === '') {
+          alert('Please enter a valid quantity equation');
+          return;
+        }
+      }
+      
+      const accessoryEntry = {
         accessoryId,
         accessoryName,
-        quantity: parseInt(quantity),
-        unit
-      });
+        unit,
+        showToUser,
+        componentGroup: componentGroup || null,
+        isDefault
+      };
       
+      if (quantityType === 'fixed') {
+        accessoryEntry.quantity = parseInt(document.getElementById('accessory-quantity').value);
+        accessoryEntry.quantityEquation = null;
+      } else {
+        accessoryEntry.quantity = null;
+        accessoryEntry.quantityEquation = document.getElementById('accessory-quantity-equation').value.trim();
+      }
+      
+      accessories.push(accessoryEntry);
+      
+      // Reset form
       select.value = '';
       document.getElementById('accessory-quantity').value = '1';
+      document.getElementById('accessory-quantity-equation').value = '';
       document.getElementById('accessory-unit').value = '';
+      document.getElementById('accessory-show-to-user').checked = false;
+      document.getElementById('accessory-quantity-type').value = 'fixed';
+      toggleAccessoryQuantityType();
+      document.getElementById('accessory-component-group-select').value = '';
+      document.getElementById('accessory-component-group-custom').style.display = 'none';
+      document.getElementById('accessory-component-group-custom').value = '';
+      document.getElementById('accessory-component-group').value = '';
+      document.getElementById('accessory-is-default').checked = false;
+      document.getElementById('accessory-advanced-config').style.display = 'none';
       
       renderAccessoriesTable();
     }
@@ -2626,10 +2937,22 @@
       let html = '';
       for (let i = 0; i < accessories.length; i++) {
         const acc = accessories[i];
+        const quantityDisplay = acc.quantityEquation ? 
+          `<code class="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-mono border border-purple-200" title="Quantity Equation">${acc.quantityEquation}</code>` :
+          (acc.quantity || 1);
+        const showToUserBadge = acc.showToUser ? 
+          '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Yes</span>' :
+          '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">No</span>';
+        const componentGroupDisplay = acc.componentGroup ? 
+          `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">${acc.componentGroup}</span>` :
+          '<span class="text-xs text-gray-400">-</span>';
+        
         html += '<tr>';
         html += '<td class="font-medium">' + (acc.accessoryName || 'Unknown') + '</td>';
-        html += '<td>' + (acc.quantity || 1) + '</td>';
+        html += '<td>' + quantityDisplay + '</td>';
         html += '<td>' + (acc.unit || 'unit') + '</td>';
+        html += '<td>' + showToUserBadge + '</td>';
+        html += '<td>' + componentGroupDisplay + '</td>';
         html += '<td><button type="button" onclick="removeAccessory(' + i + ')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button></td>';
         html += '</tr>';
       }

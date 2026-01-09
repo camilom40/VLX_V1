@@ -150,7 +150,14 @@
         glassWidthEquation: selectedWindowSystem.glassWidthEquation || null,
         glassHeightEquation: selectedWindowSystem.glassHeightEquation || null
       }) : '{}' %>"
-      data-is-edit="<%= typeof isEdit !== 'undefined' && isEdit ? 'true' : 'false' %>">
+      data-is-edit="<%= typeof isEdit !== 'undefined' && isEdit ? 'true' : 'false' %>"
+      data-all-accessories="<%= typeof allAccessories !== 'undefined' ? JSON.stringify(allAccessories.map(a => ({
+        _id: a._id.toString(),
+        name: a.name,
+        price: a.price,
+        currency: a.currency || 'COP',
+        unit: a.unit
+      }))) : '[]' %>">
   <%- include('../partials/_header.ejs') %>
 
   <main role="main" class="container mx-auto mt-6 px-4 flex-grow mb-16">
@@ -762,7 +769,7 @@
                               <div class="flex-shrink-0 mr-4">
                                 <img src="/uploads/accessories/<%= accessory.image %>" 
                                      alt="<%= accessory.name %>" 
-                                     class="w-16 h-16 object-cover rounded-lg shadow-sm border border-gray-200">
+                                     class="w-24 h-24 object-cover rounded-lg shadow-sm border border-gray-200">
                               </div>
                             <% } %>
                             
@@ -799,7 +806,9 @@
                                 <% } %>
                                 <%= accessory.description || 'High-quality window accessory' %>
                               </p>
-                              <div class="text-sm font-medium text-green-600">
+                              <div class="text-sm font-medium text-green-600 accessory-price-display" 
+                                   data-price-usd="<%= accessory.price %>" 
+                                   data-unit="<%= accessory.unit %>">
                                 $<%= accessory.price.toFixed(2) %>/<%= accessory.unit %>
                               </div>
                             </div>
@@ -1735,6 +1744,8 @@
     function calculatePricingWithUnits() {
       // Get window system data from data attribute
       const windowSystemData = JSON.parse(document.body.getAttribute('data-window-system') || '{}');
+      // Get all accessories data for currency lookup
+      const allAccessories = JSON.parse(document.body.getAttribute('data-all-accessories') || '[]');
       
       // Get current unit from hidden input or global variable (ensure we have the latest value)
       const currentUnitInput = document.getElementById('currentUnit');
@@ -1973,14 +1984,18 @@
         // Find the corresponding price and quantity inputs
         const priceInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_price"]`;
         const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
-        const currencyInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_currency"]`;
         const priceInput = document.querySelector(priceInputSelector);
         const quantityInput = document.querySelector(quantityInputSelector);
-        const currencyInput = document.querySelector(currencyInputSelector);
         
         if (priceInput && quantityInput) {
+          // Get the price from the hidden field (this is the original price in the accessory's currency)
           const price = parseFloat(priceInput.value) || 0;
-          const accessoryCurrency = currencyInput?.value || 'COP';
+          
+          // Find the accessory to get its currency
+          const accessoryDoc = allAccessories.find(a => a._id?.toString() === accessoryId);
+          const accessoryCurrency = accessoryDoc?.currency || 'COP';
+          
+          // Convert to USD for internal calculations
           const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
           const qty = parseInt(quantityInput.value) || 1;
           const accessoryCost = priceUSD * qty;
@@ -1988,7 +2003,7 @@
           
           // Try to get accessory name from label or nearby element
           const label = document.querySelector(`label[for="${choice.id}"]`) || choice.closest('label');
-          const accessoryName = label?.textContent?.trim() || `Accessory ${accessoryId}`;
+          const accessoryName = label?.textContent?.trim() || accessoryDoc?.name || `Accessory ${accessoryId}`;
           
           accessoryDetails.push({
             name: accessoryName,
@@ -3282,9 +3297,37 @@
         updateCurrencyFromGlobal();
       }
       
+      // Update accessory price displays on page load
+      updateAccessoryPriceDisplays();
+      
+      // Function to update accessory price displays
+      function updateAccessoryPriceDisplays() {
+        const priceDisplays = document.querySelectorAll('.accessory-price-display');
+        priceDisplays.forEach(display => {
+          const priceUSD = parseFloat(display.getAttribute('data-price-usd'));
+          const unit = display.getAttribute('data-unit');
+          
+          if (!isNaN(priceUSD)) {
+            if (currentCurrency === 'USD') {
+              display.textContent = `$${priceUSD.toFixed(2)}/${unit}`;
+            } else {
+              // Convert to COP
+              const priceCOP = priceUSD * exchangeRateValue;
+              display.textContent = `${new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+              }).format(priceCOP)}/${unit}`;
+            }
+          }
+        });
+      }
+      
       // Listen to global preference changes
       window.addEventListener('currencyChanged', (event) => {
         currentCurrency = event.detail.currency;
+        updateAccessoryPriceDisplays();
         if(typeof window.calculatePricing==='function')window.calculatePricing();
       });
       

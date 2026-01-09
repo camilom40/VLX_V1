@@ -83,21 +83,40 @@
             </div>
 
             <div>
-              <label for="isActive" class="block text-sm font-medium text-gray-700 mb-2">
-                Status
+              <label for="selectionType" class="block text-sm font-medium text-gray-700 mb-2">
+                Selection Type *
               </label>
-              <div class="flex items-center mt-2">
-                <input type="checkbox" 
-                       id="isActive" 
-                       name="isActive" 
-                       <%= componentGroup.isActive ? 'checked' : '' %>
-                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                <label for="isActive" class="ml-2 text-sm text-gray-700">
-                  Active (appears in dropdown lists)
-                </label>
-              </div>
-              <p class="text-xs text-gray-500 mt-1">Inactive groups are hidden from users but not deleted</p>
+              <select id="selectionType" 
+                      name="selectionType" 
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="quantity" <%= componentGroup.selectionType === 'quantity' || !componentGroup.selectionType ? 'selected' : '' %>>Quantity (Default)</option>
+                <option value="single" <%= componentGroup.selectionType === 'single' ? 'selected' : '' %>>Single Choice</option>
+                <option value="multiple" <%= componentGroup.selectionType === 'multiple' ? 'selected' : '' %>>Multiple Choice</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                <strong>Quantity:</strong> Users enter quantity manually<br>
+                <strong>Single Choice:</strong> Users select one option (radio buttons)<br>
+                <strong>Multiple Choice:</strong> Users select multiple options (checkboxes)
+              </p>
             </div>
+          </div>
+
+          <div>
+            <label for="isActive" class="block text-sm font-medium text-gray-700 mb-2">
+              Status
+            </label>
+            <div class="flex items-center mt-2">
+              <input type="checkbox" 
+                     id="isActive" 
+                     name="isActive" 
+                     <%= componentGroup.isActive ? 'checked' : '' %>
+                     class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label for="isActive" class="ml-2 text-sm text-gray-700">
+                Active (appears in dropdown lists)
+              </label>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Inactive groups are hidden from users but not deleted</p>
           </div>
 
           <div class="border-t border-gray-200 pt-6">

@@ -67,17 +67,38 @@
             <p class="text-xs text-gray-500 mt-1">Optional description to help other admins understand this group's purpose</p>
           </div>
 
-          <div>
-            <label for="sortOrder" class="block text-sm font-medium text-gray-700 mb-2">
-              Sort Order
-            </label>
-            <input type="number" 
-                   id="sortOrder" 
-                   name="sortOrder" 
-                   value="0"
-                   min="0"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 md:w-32">
-            <p class="text-xs text-gray-500 mt-1">Lower numbers appear first in dropdown lists (0 = first)</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="sortOrder" class="block text-sm font-medium text-gray-700 mb-2">
+                Sort Order
+              </label>
+              <input type="number" 
+                     id="sortOrder" 
+                     name="sortOrder" 
+                     value="0"
+                     min="0"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 md:w-32">
+              <p class="text-xs text-gray-500 mt-1">Lower numbers appear first in dropdown lists (0 = first)</p>
+            </div>
+
+            <div>
+              <label for="selectionType" class="block text-sm font-medium text-gray-700 mb-2">
+                Selection Type *
+              </label>
+              <select id="selectionType" 
+                      name="selectionType" 
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="quantity">Quantity (Default)</option>
+                <option value="single">Single Choice</option>
+                <option value="multiple">Multiple Choice</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                <strong>Quantity:</strong> Users enter quantity manually<br>
+                <strong>Single Choice:</strong> Users select one option (radio buttons)<br>
+                <strong>Multiple Choice:</strong> Users select multiple options (checkboxes)
+              </p>
+            </div>
           </div>
 
           <div class="border-t border-gray-200 pt-6">

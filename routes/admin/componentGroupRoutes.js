@@ -22,7 +22,7 @@ router.get('/component-groups/add', isAdmin, (req, res) => {
 // Create new component group
 router.post('/component-groups/add', isAdmin, async (req, res) => {
   try {
-    const { name, displayName, description, sortOrder } = req.body;
+    const { name, displayName, description, sortOrder, selectionType } = req.body;
     
     // Create the component group
     const componentGroup = new ComponentGroup({
@@ -30,6 +30,7 @@ router.post('/component-groups/add', isAdmin, async (req, res) => {
       displayName: displayName.trim(),
       description: description || '',
       sortOrder: parseInt(sortOrder) || 0,
+      selectionType: selectionType || 'quantity',
       isActive: true
     });
     
@@ -64,7 +65,7 @@ router.get('/component-groups/edit/:id', isAdmin, async (req, res) => {
 // Update component group
 router.post('/component-groups/edit/:id', isAdmin, async (req, res) => {
   try {
-    const { name, displayName, description, sortOrder, isActive } = req.body;
+    const { name, displayName, description, sortOrder, selectionType, isActive } = req.body;
     
     const componentGroup = await ComponentGroup.findByIdAndUpdate(
       req.params.id,
@@ -73,6 +74,7 @@ router.post('/component-groups/edit/:id', isAdmin, async (req, res) => {
         displayName: displayName.trim(),
         description: description || '',
         sortOrder: parseInt(sortOrder) || 0,
+        selectionType: selectionType || 'quantity',
         isActive: isActive === 'on'
       },
       { new: true }

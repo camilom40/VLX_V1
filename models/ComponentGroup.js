@@ -25,6 +25,11 @@ const componentGroupSchema = new Schema({
   sortOrder: { 
     type: Number, 
     default: 0 
+  },
+  selectionType: {
+    type: String,
+    enum: ['quantity', 'single', 'multiple'],
+    default: 'quantity'
   }
 }, {
   timestamps: true

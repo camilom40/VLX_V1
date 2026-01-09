@@ -558,7 +558,6 @@ router.post('/compose-window/compose', isAdmin, async (req, res) => {
         unit: accessory.unit,
         showToUser: Boolean(accessory.showToUser),
         componentGroup: accessory.componentGroup || null,
-        selectionType: accessory.selectionType || 'quantity',
         isDefault: Boolean(accessory.isDefault),
       };
       
@@ -718,7 +717,6 @@ router.post('/edit/:id', isAdmin, async (req, res) => {
         unit: accessory.unit,
         showToUser: Boolean(accessory.showToUser),
         componentGroup: accessory.componentGroup || null,
-        selectionType: accessory.selectionType || 'quantity',
         isDefault: Boolean(accessory.isDefault),
       };
       

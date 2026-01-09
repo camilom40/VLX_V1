@@ -1160,12 +1160,23 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
     const Glass = require('../models/Glass');
     const CostSettings = require('../models/CostSettings');
 
-    const [allProfiles, allAccessories, allGlasses, costSettings] = await Promise.all([
+    const ComponentGroup = require('../models/ComponentGroup');
+    const [allProfiles, allAccessories, allGlasses, costSettings, componentGroups] = await Promise.all([
       Profile.find({}).sort({ name: 1 }),
       Accessory.find({}).sort({ name: 1 }),
       Glass.find({}).sort({ glass_type: 1 }),
-      CostSettings.findOne() // Get cost settings for pricing calculations
+      CostSettings.findOne(), // Get cost settings for pricing calculations
+      ComponentGroup.find({ isActive: true }).sort({ sortOrder: 1, displayName: 1 })
     ]);
+
+    // Create a lookup map for component groups by name
+    const componentGroupLookup = {};
+    componentGroups.forEach(group => {
+      componentGroupLookup[group.name] = {
+        displayName: group.displayName,
+        selectionType: group.selectionType || 'quantity'
+      };
+    });
 
     // Filter user-configurable items
     const userConfigurableProfiles = selectedWindowSystem.profiles.filter(profile => profile.showToUser);
@@ -1176,17 +1187,26 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
     const individualAccessories = [];
     
     userConfigurableAccessories.forEach(accessoryItem => {
-      if (accessoryItem.componentGroup && accessoryItem.selectionType !== 'quantity') {
-        if (!accessoryChoiceGroups[accessoryItem.componentGroup]) {
-          accessoryChoiceGroups[accessoryItem.componentGroup] = {
-            name: accessoryItem.componentGroup,
-            selectionType: accessoryItem.selectionType,
-            accessories: []
-          };
+      if (accessoryItem.componentGroup) {
+        const groupData = componentGroupLookup[accessoryItem.componentGroup];
+        const selectionType = groupData ? groupData.selectionType : 'quantity';
+        
+        if (selectionType !== 'quantity') {
+          if (!accessoryChoiceGroups[accessoryItem.componentGroup]) {
+            accessoryChoiceGroups[accessoryItem.componentGroup] = {
+              name: accessoryItem.componentGroup,
+              displayName: groupData ? groupData.displayName : accessoryItem.componentGroup,
+              selectionType: selectionType,
+              accessories: []
+            };
+          }
+          accessoryChoiceGroups[accessoryItem.componentGroup].accessories.push(accessoryItem);
+        } else {
+          // Regular quantity-based accessories
+          individualAccessories.push(accessoryItem);
         }
-        accessoryChoiceGroups[accessoryItem.componentGroup].accessories.push(accessoryItem);
       } else {
-        // Regular quantity-based accessories
+        // Regular quantity-based accessories (no component group)
         individualAccessories.push(accessoryItem);
       }
     });
@@ -1922,12 +1942,14 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
     const Accessory = require('../models/Accessory');
     const Glass = require('../models/Glass');
     const CostSettings = require('../models/CostSettings');
+    const ComponentGroup = require('../models/ComponentGroup');
 
-    const [allProfiles, allAccessories, allGlasses, costSettings] = await Promise.all([
+    const [allProfiles, allAccessories, allGlasses, costSettings, componentGroups] = await Promise.all([
       Profile.find({}).sort({ name: 1 }),
       Accessory.find({}).sort({ name: 1 }),
       Glass.find({}).sort({ glass_type: 1 }),
-      CostSettings.findOne()
+      CostSettings.findOne(),
+      ComponentGroup.find({ isActive: true }).sort({ sortOrder: 1, displayName: 1 })
     ]);
 
     // Filter user-configurable items
@@ -1960,22 +1982,40 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       });
     }
 
+    // Create a lookup map for component groups by name
+    const componentGroupLookup = {};
+    componentGroups.forEach(group => {
+      componentGroupLookup[group.name] = {
+        displayName: group.displayName,
+        selectionType: group.selectionType || 'quantity'
+      };
+    });
+
     // Group accessories by component groups for choice selection
     const accessoryChoiceGroups = {};
     const individualAccessories = [];
     
     userConfigurableAccessories.forEach(accessoryItem => {
-      if (accessoryItem.componentGroup && accessoryItem.selectionType !== 'quantity') {
-        if (!accessoryChoiceGroups[accessoryItem.componentGroup]) {
-          accessoryChoiceGroups[accessoryItem.componentGroup] = {
-            name: accessoryItem.componentGroup,
-            selectionType: accessoryItem.selectionType,
-            accessories: []
-          };
+      if (accessoryItem.componentGroup) {
+        const groupData = componentGroupLookup[accessoryItem.componentGroup];
+        const selectionType = groupData ? groupData.selectionType : 'quantity';
+        
+        if (selectionType !== 'quantity') {
+          if (!accessoryChoiceGroups[accessoryItem.componentGroup]) {
+            accessoryChoiceGroups[accessoryItem.componentGroup] = {
+              name: accessoryItem.componentGroup,
+              displayName: groupData ? groupData.displayName : accessoryItem.componentGroup,
+              selectionType: selectionType,
+              accessories: []
+            };
+          }
+          accessoryChoiceGroups[accessoryItem.componentGroup].accessories.push(accessoryItem);
+        } else {
+          // Regular quantity-based accessories
+          individualAccessories.push(accessoryItem);
         }
-        accessoryChoiceGroups[accessoryItem.componentGroup].accessories.push(accessoryItem);
       } else {
-        // Regular quantity-based accessories
+        // Regular quantity-based accessories (no component group)
         individualAccessories.push(accessoryItem);
       }
     });
@@ -1986,10 +2026,17 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       existingWindow.selectedAccessories.forEach(savedAcc => {
         const accId = savedAcc.accessoryId ? savedAcc.accessoryId.toString() : null;
         if (accId) {
+          // Get selectionType from component group if available
+          let selectionType = 'quantity';
+          if (savedAcc.componentGroup) {
+            const groupData = componentGroupLookup[savedAcc.componentGroup];
+            selectionType = groupData ? groupData.selectionType : 'quantity';
+          }
+          
           savedAccessorySelections[accId] = {
             quantity: savedAcc.quantity || 1,
             componentGroup: savedAcc.componentGroup,
-            selectionType: savedAcc.selectionType || 'quantity'
+            selectionType: selectionType
           };
         }
       });

@@ -1075,17 +1075,7 @@
                   <p class="text-xs text-gray-500 mt-1">Group related components together for user selection</p>
                 </div>
                 
-                <div>
-                  <label for="accessory-selection-type" class="block text-gray-700 font-medium mb-1">Selection Type:</label>
-                  <select id="accessory-selection-type" class="form-control shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
-                    <option value="quantity">Quantity (Default)</option>
-                    <option value="single">Single Choice</option>
-                    <option value="multiple">Multiple Choice</option>
-                  </select>
-                  <p class="text-xs text-gray-500 mt-1">How users can select this component</p>
-                </div>
-                
-                <div>
+                <div class="md:col-span-2">
                   <label for="accessory-is-default" class="block text-gray-700 font-medium mb-1">Default Choice:</label>
                   <div class="flex items-center mt-2">
                     <input type="checkbox" id="accessory-is-default" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
@@ -1591,6 +1581,16 @@
   <%- include('../partials/_footer.ejs') %>
 
   <script>
+    // Component groups lookup for selectionType
+    const componentGroupsLookup = {
+      <% componentGroups.forEach(group => { %>
+      '<%= group.name %>': {
+        displayName: '<%= group.displayName %>',
+        selectionType: '<%= group.selectionType || "quantity" %>'
+      },
+      <% }); %>
+    };
+    
     let profiles = [];
     let accessories = [];
     let currentStep = 1;
@@ -3249,7 +3249,6 @@
               const componentGroupSelect = document.getElementById('accessory-component-group-select');
               const componentGroupCustom = document.getElementById('accessory-component-group-custom');
               const componentGroup = document.getElementById('accessory-component-group');
-              const selectionType = document.getElementById('accessory-selection-type');
               const isDefault = document.getElementById('accessory-is-default');
               
               if (componentGroupSelect) componentGroupSelect.value = '';
@@ -3258,7 +3257,6 @@
                 componentGroupCustom.value = '';
               }
               if (componentGroup) componentGroup.value = '';
-              if (selectionType) selectionType.value = 'quantity';
               if (isDefault) isDefault.checked = false;
             }
           });
@@ -4836,7 +4834,6 @@
       
       // Get advanced configuration fields
       const componentGroup = document.getElementById('accessory-component-group').value;
-      const selectionType = document.getElementById('accessory-selection-type').value;
       const isDefault = document.getElementById('accessory-is-default').checked;
 
       if (!accessoryId) {
@@ -4869,7 +4866,6 @@
         unit, 
         showToUser,
         componentGroup: componentGroup || null,
-        selectionType,
         isDefault
       };
       
@@ -4897,7 +4893,6 @@
       document.getElementById('accessory-component-group-custom').style.display = 'none';
       document.getElementById('accessory-component-group-custom').value = '';
       document.getElementById('accessory-component-group').value = '';
-      document.getElementById('accessory-selection-type').value = 'quantity';
       document.getElementById('accessory-is-default').checked = false;
       
       // Hide advanced config
@@ -4917,16 +4912,20 @@
         // Choice group information
         let choiceGroupInfo = '<span class="text-gray-400">-</span>';
         if (accessory.showToUser && accessory.componentGroup) {
+          // Get selectionType from component group
+          const groupData = componentGroupsLookup[accessory.componentGroup];
+          const selectionType = groupData ? groupData.selectionType : 'quantity';
           const selectionTypeLabel = {
             'single': 'Single Choice',
             'multiple': 'Multiple Choice', 
             'quantity': 'Quantity'
-          }[accessory.selectionType] || 'Quantity';
+          }[selectionType] || 'Quantity';
           
           const defaultMarker = accessory.isDefault ? ' ⭐' : '';
+          const displayName = groupData ? groupData.displayName : accessory.componentGroup;
           choiceGroupInfo = `
             <div class="text-sm">
-              <strong>${accessory.componentGroup}</strong><br>
+              <strong>${displayName}</strong><br>
               <span class="text-xs text-gray-600">${selectionTypeLabel}${defaultMarker}</span>
             </div>
           `;
