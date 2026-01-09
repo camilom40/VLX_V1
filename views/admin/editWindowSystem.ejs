@@ -819,11 +819,42 @@
                        placeholder="e.g., width - 20, width - 20mm" 
                        class="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" 
                        style="min-height: 50px;">
+                
+                <!-- Variable & Operator Buttons for Glass Width -->
+                <div class="mt-3 p-3 bg-white rounded-lg border border-blue-100">
+                  <p class="text-xs font-semibold text-blue-800 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>Available Variables (click to insert):
+                  </p>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-blue-50 rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('width', 'glass-width-equation')">
+                      width
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-blue-50 rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('height', 'glass-width-equation')">
+                      height
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-blue-50 rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('perimeter', 'glass-width-equation')">
+                      perimeter
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-blue-50 rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('area', 'glass-width-equation')">
+                      area
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5 mb-2">
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' + ', 'glass-width-equation')">+</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' - ', 'glass-width-equation')">-</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' * ', 'glass-width-equation')">×</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' / ', 'glass-width-equation')">÷</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable('(', 'glass-width-equation')">(</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(')', 'glass-width-equation')">)</button>
+                  </div>
+                  <p class="text-xs text-blue-700">
+                    <strong>Examples:</strong> "width - 20", "width - 38", "width * 0.9"
+                  </p>
+                </div>
+                
                 <p class="mt-2 text-xs text-gray-600">
                   <i class="fas fa-info-circle mr-1"></i>
-                  Enter an equation to calculate glass width. Use variables: <code class="bg-gray-100 px-1 rounded">width</code>, <code class="bg-gray-100 px-1 rounded">height</code>, <code class="bg-gray-100 px-1 rounded">perimeter</code>, or <code class="bg-gray-100 px-1 rounded">area</code>.
-                  <br>Numeric constants (e.g., 20, 38) are assumed to be in mm and will be converted to inches automatically.
-                  <br>Example: <code class="bg-gray-100 px-1 rounded">width - 20</code> means glass width = window width - 20mm
+                  Numeric constants (e.g., 20, 38) are assumed to be in mm and will be converted to inches automatically.
                 </p>
                 <div id="glass-width-equation-preview" class="mt-2 text-sm text-gray-700 hidden">
                   <strong>Preview:</strong> <span id="glass-width-equation-preview-value"></span>
@@ -842,11 +873,42 @@
                        placeholder="e.g., height - 38, height - 38mm" 
                        class="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" 
                        style="min-height: 50px;">
+                
+                <!-- Variable & Operator Buttons for Glass Height -->
+                <div class="mt-3 p-3 bg-white rounded-lg border border-blue-100">
+                  <p class="text-xs font-semibold text-blue-800 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>Available Variables (click to insert):
+                  </p>
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-blue-50 rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('width', 'glass-height-equation')">
+                      width
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-blue-50 rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('height', 'glass-height-equation')">
+                      height
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-blue-50 rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('perimeter', 'glass-height-equation')">
+                      perimeter
+                    </button>
+                    <button type="button" class="variable-btn px-3 py-1.5 bg-blue-50 rounded-md text-xs font-mono text-blue-700 border border-blue-300 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer" onclick="insertVariable('area', 'glass-height-equation')">
+                      area
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5 mb-2">
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' + ', 'glass-height-equation')">+</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' - ', 'glass-height-equation')">-</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' * ', 'glass-height-equation')">×</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(' / ', 'glass-height-equation')">÷</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable('(', 'glass-height-equation')">(</button>
+                    <button type="button" class="operator-btn px-2 py-1 bg-gray-50 rounded text-xs font-mono text-gray-700 border border-gray-300 hover:bg-gray-100 transition-all cursor-pointer" onclick="insertVariable(')', 'glass-height-equation')">)</button>
+                  </div>
+                  <p class="text-xs text-blue-700">
+                    <strong>Examples:</strong> "height - 38", "height - 20", "height * 0.9"
+                  </p>
+                </div>
+                
                 <p class="mt-2 text-xs text-gray-600">
                   <i class="fas fa-info-circle mr-1"></i>
-                  Enter an equation to calculate glass height. Use variables: <code class="bg-gray-100 px-1 rounded">width</code>, <code class="bg-gray-100 px-1 rounded">height</code>, <code class="bg-gray-100 px-1 rounded">perimeter</code>, or <code class="bg-gray-100 px-1 rounded">area</code>.
-                  <br>Numeric constants (e.g., 20, 38) are assumed to be in mm and will be converted to inches automatically.
-                  <br>Example: <code class="bg-gray-100 px-1 rounded">height - 38</code> means glass height = window height - 38mm
+                  Numeric constants (e.g., 20, 38) are assumed to be in mm and will be converted to inches automatically.
                 </p>
                 <div id="glass-height-equation-preview" class="mt-2 text-sm text-gray-700 hidden">
                   <strong>Preview:</strong> <span id="glass-height-equation-preview-value"></span>
