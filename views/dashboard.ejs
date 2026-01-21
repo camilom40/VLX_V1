@@ -832,7 +832,18 @@
                         method: 'POST',
                         body: formData
                     })
-                    .then(response => response.json())
+                    .then(async (response) => {
+                        // Always try to parse JSON, but fall back to a generic error
+                        const contentType = response.headers.get('content-type') || '';
+                        if (!contentType.includes('application/json')) {
+                            return {
+                                success: false,
+                                message: 'Upload failed. Please try a JPG, PNG, GIF, or WEBP image.'
+                            };
+                        }
+                        const data = await response.json();
+                        return data;
+                    })
                     .then(data => {
                         if (data.success) {
                             const logoImage = document.querySelector('.company-logo-image');
@@ -846,7 +857,7 @@
                             }
                             showToast('Logo uploaded successfully!', 'success');
                         } else {
-                            showToast('Failed to upload logo', 'error');
+                            showToast(data.message || 'Failed to upload logo', 'error');
                         }
                     })
                     .catch(error => {

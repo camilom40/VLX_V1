@@ -79,13 +79,31 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: function (req, file, cb) {
-    // Accept only image files
-    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-      return cb(new Error('Only image files are allowed!'), false);
+    // Accept only supported image files (by extension and mime)
+    const allowedExt = /\.(jpg|jpeg|png|gif|webp)$/i;
+    const allowedMime = /^image\/(jpeg|png|gif|webp)$/i;
+
+    const hasAllowedExt = allowedExt.test(file.originalname || '');
+    const hasAllowedMime = allowedMime.test(file.mimetype || '');
+
+    if (!hasAllowedExt || !hasAllowedMime) {
+      return cb(new Error('Unsupported file type. Please upload JPG, JPEG, PNG, GIF, or WEBP.'), false);
     }
     cb(null, true);
   }
 });
+
+// Wrapper to handle multer errors and always return JSON for this endpoint
+const uploadLogoSingle = (req, res, next) => {
+  upload.single('logo')(req, res, (err) => {
+    if (!err) return next();
+    const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    return res.status(status).json({
+      success: false,
+      message: err.message || 'File upload error'
+    });
+  });
+};
 
 // Database connection
 mongoose
@@ -251,7 +269,7 @@ app.post('/admin/users/update-pricing', isAdmin, async (req, res) => {
 });
 
 // Logo upload route
-app.post('/api/upload-logo', isAuthenticated, upload.single('logo'), async (req, res) => {
+app.post('/api/upload-logo', isAuthenticated, uploadLogoSingle, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });

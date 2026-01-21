@@ -88,14 +88,27 @@ router.get('/auth/login', (req, res) => {
 router.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+    const identifierRaw = (username || '').trim();
+    const identifier = identifierRaw.toLowerCase();
+
+    // Escape user input for regex usage (exact-match, case-insensitive)
+    const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
     // Find user
-    const user = await User.findOne({ username });
+    const user = await User.findOne({
+      $or: [
+        { username: new RegExp(`^${escapeRegExp(identifierRaw)}$`, 'i') },
+        { email: new RegExp(`^${escapeRegExp(identifierRaw)}$`, 'i') },
+        // Back-compat: some environments may have stored username already lowercased
+        { username: identifier },
+        { email: identifier }
+      ]
+    });
     if (!user) {
       // Failed login - user not found
       return res.render('login', { 
         error: 'Invalid username or password',
-        username
+        username: identifierRaw
       });
     }
     
@@ -127,7 +140,7 @@ router.post('/auth/login', async (req, res) => {
       
       return res.render('login', { 
         error: 'Invalid username or password',
-        username
+        username: identifierRaw
       });
     }
     
@@ -143,7 +156,7 @@ router.post('/auth/login', async (req, res) => {
     // Log successful login
     await activityLogger.logUserActivity(
       user._id,
-      username,
+      identifierRaw,
       'login',
       {
         successful: true,

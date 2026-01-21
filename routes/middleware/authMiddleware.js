@@ -1,6 +1,11 @@
 const User = require('../../models/User');
 
 const isAuthenticated = async (req, res, next) => {
+  const wantsJson =
+    req.xhr ||
+    (typeof req.headers?.accept === 'string' && req.headers.accept.includes('application/json')) ||
+    (typeof req.path === 'string' && req.path.startsWith('/api/'));
+
   if (req.session && req.session.userId) {
     // Check if user is active
     try {
@@ -8,6 +13,12 @@ const isAuthenticated = async (req, res, next) => {
       if (user && user.isActive === false) {
         // User account is inactive, destroy session and redirect
         req.session.destroy();
+        if (wantsJson) {
+          return res.status(403).json({
+            success: false,
+            message: 'Your account has been deactivated. Please contact an administrator.'
+          });
+        }
         return res.status(403).render('unauthorized', {
           message: 'Your account has been deactivated. Please contact an administrator.'
         });
@@ -17,6 +28,12 @@ const isAuthenticated = async (req, res, next) => {
     }
     return next(); // User is authenticated and active, proceed to the next middleware/route handler
   } else {
+    if (wantsJson) {
+      return res.status(401).json({
+        success: false,
+        message: 'You need to be logged in to access this action.'
+      });
+    }
     // Render the pretty unauthorized page instead of plain text
     return res.status(401).render('unauthorized', {
       message: 'You need to be logged in to access this page.'
