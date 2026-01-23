@@ -3143,7 +3143,8 @@
     function updateWindowPreview() {
       const width = parseFloat(document.getElementById('width').value) || 0;
       const height = parseFloat(document.getElementById('height').value) || 0;
-      const currentUnit = document.getElementById('currentUnit').value;
+      // Get current unit from global preferences or hidden input
+      const currentUnit = window.globalPreferences?.unit || document.getElementById('currentUnit').value;
       
       // Update dimension labels
       const widthLabels = document.querySelectorAll('#widthValue');
@@ -3151,12 +3152,16 @@
       const widthUnitLabels = document.querySelectorAll('#widthUnitLabel');
       const heightUnitLabels = document.querySelectorAll('#heightUnitLabel');
       
+      // Format: no decimals for mm, 2 decimals for inches
+      const widthFormatted = currentUnit === 'mm' ? Math.round(width) : width.toFixed(2);
+      const heightFormatted = currentUnit === 'mm' ? Math.round(height) : height.toFixed(2);
+      
       widthLabels.forEach(label => {
-        label.textContent = width.toFixed(2);
+        label.textContent = widthFormatted;
       });
       
       heightLabels.forEach(label => {
-        label.textContent = height.toFixed(2);
+        label.textContent = heightFormatted;
       });
       
       widthUnitLabels.forEach(label => {
