@@ -59,6 +59,17 @@
       z-index: 10;
     }
     
+    /* Toggle Switch Styles */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+    
+    .toggle-dot {
+      transition: transform 0.2s ease-in-out;
+    }
+    
     /* Responsive adjustments */
     @media (max-width: 768px) {
       #windowPreview {
@@ -750,6 +761,123 @@
           </div>
         </div>
 
+        <!-- Muntin Configuration Section -->
+        <% if (selectedWindowSystem.muntinConfiguration && selectedWindowSystem.muntinConfiguration.enabled) { %>
+          <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-lg font-medium text-gray-700">Muntin Configuration</h4>
+              <!-- Enable/Disable Muntins Toggle -->
+              <%
+                let muntinsEnabled = false; // Default to OFF
+                if (typeof isEdit !== 'undefined' && isEdit && existingWindow) {
+                  // Check if muntins were actually used (has muntinConfiguration with valid data)
+                  if (existingWindow.muntinConfiguration && 
+                      existingWindow.muntinConfiguration.horizontalDivisions && 
+                      existingWindow.muntinConfiguration.verticalDivisions) {
+                    muntinsEnabled = true;
+                  }
+                }
+              %>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <span class="text-sm font-medium text-gray-700">Use Muntins</span>
+                <div class="relative">
+                  <input type="checkbox" id="useMuntinsToggle" name="useMuntins" 
+                         class="sr-only" 
+                         <%= muntinsEnabled ? 'checked' : '' %>
+                         onchange="toggleMuntinConfiguration()">
+                  <div class="toggle-switch w-14 h-7 bg-gray-300 rounded-full shadow-inner transition-colors duration-200 ease-in-out <%= muntinsEnabled ? 'bg-blue-600' : '' %>">
+                    <div class="toggle-dot absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out <%= muntinsEnabled ? 'translate-x-7' : '' %>"></div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <div id="muntinConfigFields" class="<%= muntinsEnabled ? '' : 'hidden' %>">
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p class="text-blue-800 text-sm">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  Configure ornamental muntins for this window. Muntins are decorative dividers that create multiple panes within a single glass unit.
+                </p>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Horizontal Divisions -->
+                <div>
+                  <label class="form-label">Horizontal Divisions</label>
+                  <%
+                    let savedMuntinHorizontal = selectedWindowSystem.muntinConfiguration.horizontalDivisions;
+                    if (typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.muntinConfiguration && existingWindow.muntinConfiguration.horizontalDivisions) {
+                      savedMuntinHorizontal = existingWindow.muntinConfiguration.horizontalDivisions;
+                    }
+                  %>
+                  <input type="number" name="muntinHorizontal" id="muntinHorizontal" 
+                         value="<%= savedMuntinHorizontal %>" 
+                         min="1" max="10" class="form-input w-full" onchange="updateMuntinPreview()">
+                </div>
+                
+                <!-- Vertical Divisions -->
+                <div>
+                  <label class="form-label">Vertical Divisions</label>
+                  <%
+                    let savedMuntinVertical = selectedWindowSystem.muntinConfiguration.verticalDivisions;
+                    if (typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.muntinConfiguration && existingWindow.muntinConfiguration.verticalDivisions) {
+                      savedMuntinVertical = existingWindow.muntinConfiguration.verticalDivisions;
+                    }
+                  %>
+                  <input type="number" name="muntinVertical" id="muntinVertical" 
+                         value="<%= savedMuntinVertical %>" 
+                         min="1" max="10" class="form-input w-full" onchange="updateMuntinPreview(); if(typeof window.calculatePricing==='function')window.calculatePricing();">
+                </div>
+                
+                <!-- Muntin Profile (if available) -->
+                <% if (selectedWindowSystem.muntinConfiguration.muntinProfile) { %>
+                  <div>
+                    <label class="form-label">Muntin Profile</label>
+                    <%
+                      let savedMuntinProfileId = selectedWindowSystem.muntinConfiguration.muntinProfile;
+                      if (typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.muntinConfiguration && existingWindow.muntinConfiguration.muntinProfileId) {
+                        savedMuntinProfileId = existingWindow.muntinConfiguration.muntinProfileId;
+                      }
+                    %>
+                    <select name="muntinProfile" id="muntinProfile" class="form-input w-full">
+                      <% allProfiles.forEach(profile => { %>
+                        <% if (profile.isMuntin) { %>
+                          <%
+                            // Only show muntinType if it's not "none" or empty
+                            let muntinTypeDisplay = '';
+                            if (profile.muntinType && profile.muntinType.toLowerCase() !== 'none' && profile.muntinType.trim() !== '') {
+                              muntinTypeDisplay = ' - ' + (profile.muntinType.charAt(0).toUpperCase() + profile.muntinType.slice(1));
+                            }
+                          %>
+                          <option value="<%= profile._id %>" 
+                                  data-price="<%= profile.pricePerMeter %>"
+                                  data-currency="<%= profile.currency || 'USD' %>"
+                                  <%= savedMuntinProfileId && savedMuntinProfileId.toString() === profile._id.toString() ? 'selected' : '' %>>
+                            <%= profile.name %><%= muntinTypeDisplay %>
+                          </option>
+                        <% } %>
+                      <% }) %>
+                    </select>
+                  </div>
+                <% } %>
+              </div>
+              
+              <!-- Muntin Preview -->
+              <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 class="text-sm font-medium text-gray-700 mb-3">Muntin Preview:</h4>
+                <div class="flex items-center justify-center">
+                  <div id="muntinPreviewGrid" class="w-48 h-48 border-2 border-gray-300 bg-blue-50 relative rounded">
+                    <!-- Preview grid will be generated here -->
+                  </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center" id="muntinPreviewText">
+                  <%= selectedWindowSystem.muntinConfiguration.horizontalDivisions %>x<%= selectedWindowSystem.muntinConfiguration.verticalDivisions %> Grid
+                </p>
+              </div>
+            </div>
+          </div>
+        <% } %>
+
         <!-- Accessories Section -->
         <div class="mb-8">
           <h4 class="text-lg font-medium text-gray-700 mb-4">Accessories</h4>
@@ -935,112 +1063,6 @@
         </div>
       </div>
 
-      <!-- Muntin Configuration Section -->
-      <% if (selectedWindowSystem.muntinConfiguration && selectedWindowSystem.muntinConfiguration.enabled) { %>
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <h3 class="text-xl font-semibold text-gray-800 mb-4">Muntin Configuration</h3>
-          
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p class="text-blue-800 text-sm">
-              <i class="fas fa-info-circle mr-2"></i>
-              Configure ornamental muntins for this window. Muntins are decorative dividers that create multiple panes within a single glass unit.
-            </p>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Muntin Type -->
-            <div>
-              <label class="form-label">Muntin Type</label>
-              <%
-                let savedMuntinType = selectedWindowSystem.muntinConfiguration.muntinType;
-                if (typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.muntinConfiguration && existingWindow.muntinConfiguration.muntinType) {
-                  savedMuntinType = existingWindow.muntinConfiguration.muntinType;
-                }
-              %>
-              <select name="muntinType" id="muntinType" class="form-input w-full" onchange="updateMuntinPreview()">
-                <option value="colonial" <%= savedMuntinType === 'colonial' ? 'selected' : '' %>>Colonial</option>
-                <option value="geometric" <%= savedMuntinType === 'geometric' ? 'selected' : '' %>>Geometric</option>
-                <option value="custom" <%= savedMuntinType === 'custom' ? 'selected' : '' %>>Custom</option>
-              </select>
-            </div>
-            
-            <!-- Horizontal Divisions -->
-            <div>
-              <label class="form-label">Horizontal Divisions</label>
-              <%
-                let savedMuntinHorizontal = selectedWindowSystem.muntinConfiguration.horizontalDivisions;
-                if (typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.muntinConfiguration && existingWindow.muntinConfiguration.horizontalDivisions) {
-                  savedMuntinHorizontal = existingWindow.muntinConfiguration.horizontalDivisions;
-                }
-              %>
-              <input type="number" name="muntinHorizontal" id="muntinHorizontal" 
-                     value="<%= savedMuntinHorizontal %>" 
-                     min="1" max="10" class="form-input w-full" onchange="updateMuntinPreview()">
-            </div>
-            
-            <!-- Vertical Divisions -->
-            <div>
-              <label class="form-label">Vertical Divisions</label>
-              <%
-                let savedMuntinVertical = selectedWindowSystem.muntinConfiguration.verticalDivisions;
-                if (typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.muntinConfiguration && existingWindow.muntinConfiguration.verticalDivisions) {
-                  savedMuntinVertical = existingWindow.muntinConfiguration.verticalDivisions;
-                }
-              %>
-              <input type="number" name="muntinVertical" id="muntinVertical" 
-                     value="<%= savedMuntinVertical %>" 
-                     min="1" max="10" class="form-input w-full" onchange="updateMuntinPreview()">
-            </div>
-            
-            <!-- Spacing -->
-            <div>
-              <label class="form-label">Spacing (inches)</label>
-              <%
-                let savedMuntinSpacing = selectedWindowSystem.muntinConfiguration.spacing;
-                if (typeof isEdit !== 'undefined' && isEdit && existingWindow && existingWindow.muntinConfiguration && existingWindow.muntinConfiguration.spacing) {
-                  savedMuntinSpacing = existingWindow.muntinConfiguration.spacing;
-                }
-              %>
-              <input type="number" name="muntinSpacing" id="muntinSpacing" 
-                     value="<%= savedMuntinSpacing %>" 
-                     min="0" step="0.1" class="form-input w-full" onchange="updateMuntinPreview()">
-            </div>
-            
-            <!-- Muntin Profile (if available) -->
-            <% if (selectedWindowSystem.muntinConfiguration.muntinProfile) { %>
-              <div>
-                <label class="form-label">Muntin Profile</label>
-                <select name="muntinProfile" id="muntinProfile" class="form-input w-full">
-                  <% allProfiles.forEach(profile => { %>
-                    <% if (profile.isMuntin) { %>
-                      <option value="<%= profile._id %>" 
-                              data-price="<%= profile.pricePerMeter %>"
-                              <%= selectedWindowSystem.muntinConfiguration.muntinProfile && selectedWindowSystem.muntinConfiguration.muntinProfile.toString() === profile._id.toString() ? 'selected' : '' %>>
-                        <%= profile.name %> - <%= profile.muntinType.charAt(0).toUpperCase() + profile.muntinType.slice(1) %>
-                      </option>
-                    <% } %>
-                  <% }) %>
-                </select>
-              </div>
-            <% } %>
-          </div>
-          
-          <!-- Muntin Preview -->
-          <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 class="text-sm font-medium text-gray-700 mb-3">Muntin Preview:</h4>
-            <div class="flex items-center justify-center">
-              <div id="muntinPreviewGrid" class="w-48 h-48 border-2 border-gray-300 bg-blue-50 relative rounded">
-                <!-- Preview grid will be generated here -->
-              </div>
-            </div>
-            <p class="text-xs text-gray-500 mt-2 text-center" id="muntinPreviewText">
-              <%= selectedWindowSystem.muntinConfiguration.horizontalDivisions %>x<%= selectedWindowSystem.muntinConfiguration.verticalDivisions %> 
-              <%= selectedWindowSystem.muntinConfiguration.muntinType.charAt(0).toUpperCase() + selectedWindowSystem.muntinConfiguration.muntinType.slice(1) %> Grid
-            </p>
-          </div>
-        </div>
-      <% } %>
-
       <!-- Pricing Summary (admin only) -->
       <% if (session && session.role === 'admin') { %>
       <div class="bg-white rounded-lg shadow-sm p-6">
@@ -1198,8 +1220,6 @@
             }
           }
         });
-        
-        console.log('Initialized glass options:', allGlassOptions.length);
       }
     }
     
@@ -1222,11 +1242,9 @@
         // Also check if text matches the price value
         if (textIsPrice && dataType) {
           option.textContent = dataType;
-          console.log('Fixed glass option text from', currentText, 'to', dataType);
         } else if (dataPrice && currentText === '$' + parseFloat(dataPrice).toFixed(2)) {
           // Text matches the price format exactly
           option.textContent = dataType || 'Glass';
-          console.log('Fixed glass option text from price', currentText, 'to', dataType);
         }
       });
     }
@@ -1757,32 +1775,12 @@
       const widthDisplay = widthInput?.value || '0';
       const heightDisplay = heightInput?.value || '0';
       
-      // Debug logging (only in edit mode)
-        if (isEditMode) {
-          console.log('=== calculatePricing DEBUG ===');
-          console.log('activeUnit:', activeUnit);
-          console.log('normalizedUnit:', normalizedUnit);
-          console.log('currentUnit variable:', currentUnit);
-          console.log('currentUnit input value:', currentUnitInput?.value);
-          console.log('width input value:', widthInput?.value, 'parsed:', width);
-          console.log('height input value:', heightInput?.value, 'parsed:', height);
-        }
-      
       // Convert to inches for calculations (since backend expects inches)
       // If normalizedUnit is 'mm', the input values are in mm (user entered them in mm), so convert them
       // If normalizedUnit is 'inches', the input values are already in inches
       if (normalizedUnit === 'mm') {
-        const widthBefore = width;
-        const heightBefore = height;
         width = mmToInches(width);
         height = mmToInches(height);
-        if (isEditMode) {
-          console.log('Converted from mm: width', widthBefore, 'mm ->', width, 'inches, height', heightBefore, 'mm ->', height, 'inches');
-        }
-      } else {
-        if (isEditMode) {
-          console.log('Using inches directly: width', width, 'inches, height', height, 'inches');
-        }
       }
       
       // Calculate square footage (convert inches to square meters: 1 sqm = 1550 sq inches)
@@ -1985,9 +1983,6 @@
       const allChoiceGroupInputs = document.querySelectorAll('input[name^="choiceGroup_"]');
       const processedChoiceGroupAccessories = new Set(); // Track processed accessory IDs to avoid duplicates
       
-      console.log('=== CHOICE GROUP PROCESSING ===');
-      console.log('Total choice group inputs found:', allChoiceGroupInputs.length);
-      
       allChoiceGroupInputs.forEach(choice => {
         const accessoryId = choice.value;
         if (!accessoryId) return;
@@ -1997,13 +1992,11 @@
         
         // Skip if already processed (radio buttons in same group share same name)
         if (processedChoiceGroupAccessories.has(choiceKey)) {
-          console.log(`Skipping duplicate: ${choiceKey}`);
           return;
         }
         
         // Only process checked items (user-selected)
         if (!choice.checked) {
-          console.log(`Skipping unchecked: ${choiceKey}`);
           return;
         }
         
@@ -2014,13 +2007,6 @@
         const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
         const priceInput = document.querySelector(priceInputSelector);
         const quantityInput = document.querySelector(quantityInputSelector);
-        
-        console.log(`Processing checked choice: ${choiceKey}`, {
-          hasPriceInput: !!priceInput,
-          hasQuantityInput: !!quantityInput,
-          priceValue: priceInput?.value,
-          quantityValue: quantityInput?.value
-        });
         
         if (priceInput && quantityInput) {
           // Get the price from the hidden field (this is the original price in the accessory's currency)
@@ -2036,14 +2022,6 @@
           const accessoryCost = priceUSD * qty;
           accessoriesCost += accessoryCost;
           
-          console.log(`Added choice group accessory: ${choiceKey}`, {
-            price,
-            priceUSD,
-            qty,
-            accessoryCost,
-            totalAccessoriesCost: accessoriesCost
-          });
-          
           // Try to get accessory name from label or nearby element
           const label = document.querySelector(`label[for="${choice.id}"]`) || choice.closest('label');
           const accessoryName = label?.textContent?.trim() || accessoryDoc?.name || `Accessory ${accessoryId}`;
@@ -2057,13 +2035,8 @@
             cost: accessoryCost,
             isUserConfigurable: true
           });
-        } else {
-          console.warn(`Missing price or quantity input for ${choiceKey}`);
         }
       });
-      
-      console.log('Processed choice group accessories:', processedChoiceGroupAccessories.size);
-      console.log('=== END CHOICE GROUP PROCESSING ===');
       
       // Add auto-managed accessories (from window system, showToUser: false)
       if (windowSystemData.accessories && Array.isArray(windowSystemData.accessories)) {
@@ -2100,39 +2073,88 @@
       // Muntin costs - CONVERT TO USD
       let muntinCost = 0;
       let muntinDetails = null;
+      
+      // Check if muntins are enabled via toggle
+      const useMuntinsToggle = document.getElementById('useMuntinsToggle');
+      const muntinsEnabled = useMuntinsToggle && useMuntinsToggle.checked;
+      
       const muntinProfileSelect = document.getElementById('muntinProfile');
-      if (muntinProfileSelect) {
+      if (muntinsEnabled && muntinProfileSelect && muntinProfileSelect.selectedIndex >= 0) {
         const selectedMuntinProfile = muntinProfileSelect.options[muntinProfileSelect.selectedIndex];
-        const muntinPricePerMeter = parseFloat(selectedMuntinProfile?.getAttribute('data-price')) || 0;
-        const muntinCurrency = selectedMuntinProfile?.getAttribute('data-currency') || 'COP';
-        const muntinName = selectedMuntinProfile?.text || 'N/A';
-        const muntinPricePerMeterUSD = convertToUSD(muntinPricePerMeter, muntinCurrency, exchangeRateValue);
-        
-        // Calculate muntin length based on divisions
-        const horizontalDivisions = parseInt(document.getElementById('muntinHorizontal')?.value) || 0;
-        const verticalDivisions = parseInt(document.getElementById('muntinVertical')?.value) || 0;
-        
-        if (horizontalDivisions > 0 && verticalDivisions > 0) {
-          // Calculate total muntin length
-          const horizontalMuntins = horizontalDivisions - 1; // Number of horizontal bars
-          const verticalMuntins = verticalDivisions - 1; // Number of vertical bars
+        if (selectedMuntinProfile && selectedMuntinProfile.value) {
+          const muntinPricePerMeter = parseFloat(selectedMuntinProfile?.getAttribute('data-price')) || 0;
+          const muntinCurrency = selectedMuntinProfile?.getAttribute('data-currency') || 'USD';
+          const muntinName = selectedMuntinProfile?.text || 'N/A';
           
-          const horizontalLength = horizontalMuntins * width * 0.0254; // Convert to meters
-          const verticalLength = verticalMuntins * height * 0.0254; // Convert to meters
-          
-          const totalMuntinLength = horizontalLength + verticalLength;
-          muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
-          
-          muntinDetails = {
-            name: muntinName,
-            priceOriginal: muntinPricePerMeter,
-            currency: muntinCurrency,
-            priceUSD: muntinPricePerMeterUSD,
-            horizontal: horizontalDivisions,
-            vertical: verticalDivisions,
-            length: totalMuntinLength,
-            cost: muntinCost
-          };
+          if (muntinPricePerMeter > 0) {
+            const muntinPricePerMeterUSD = convertToUSD(muntinPricePerMeter, muntinCurrency, exchangeRateValue);
+            
+            // Calculate muntin length based on divisions
+            // IMPORTANT: width and height are already in inches at this point (converted above)
+            const horizontalDivisions = parseInt(document.getElementById('muntinHorizontal')?.value) || 0;
+            const verticalDivisions = parseInt(document.getElementById('muntinVertical')?.value) || 0;
+            
+            if (horizontalDivisions > 0 && verticalDivisions > 0 && width > 0 && height > 0) {
+              // Calculate total muntin length
+              const horizontalMuntins = horizontalDivisions - 1; // Number of horizontal bars
+              const verticalMuntins = verticalDivisions - 1; // Number of vertical bars
+              
+              // width and height are in inches, convert to meters: 1 inch = 0.0254 meters
+              const horizontalLength = horizontalMuntins * width * 0.0254; // meters
+              const verticalLength = verticalMuntins * height * 0.0254; // meters
+              
+              const totalMuntinLength = horizontalLength + verticalLength;
+              muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
+              
+              muntinDetails = {
+                name: muntinName,
+                priceOriginal: muntinPricePerMeter,
+                currency: muntinCurrency,
+                priceUSD: muntinPricePerMeterUSD,
+                horizontal: horizontalDivisions,
+                vertical: verticalDivisions,
+                length: totalMuntinLength,
+                cost: muntinCost
+              };
+              
+              // Debug logging
+              console.log('=== MUNTIN COST DEBUG ===');
+              console.log('muntinsEnabled:', muntinsEnabled);
+              console.log('width (inches):', width);
+              console.log('height (inches):', height);
+              console.log('normalizedUnit:', normalizedUnit);
+              console.log('horizontalDivisions:', horizontalDivisions);
+              console.log('verticalDivisions:', verticalDivisions);
+              console.log('horizontalMuntins (bars):', horizontalMuntins);
+              console.log('verticalMuntins (bars):', verticalMuntins);
+              console.log('horizontalLength (meters):', horizontalLength);
+              console.log('verticalLength (meters):', verticalLength);
+              console.log('totalMuntinLength (meters):', totalMuntinLength);
+              console.log('muntinPricePerMeter (original):', muntinPricePerMeter, muntinCurrency);
+              console.log('muntinPricePerMeterUSD:', muntinPricePerMeterUSD);
+              console.log('muntinCost (USD):', muntinCost);
+              console.log('=== END MUNTIN DEBUG ===');
+            } else {
+              console.log('Muntin calculation skipped: invalid divisions or dimensions', {
+                horizontalDivisions,
+                verticalDivisions,
+                width,
+                height
+              });
+            }
+          } else {
+            console.log('Muntin calculation skipped: no price per meter', muntinPricePerMeter);
+          }
+        } else {
+          console.log('Muntin calculation skipped: no profile selected');
+        }
+      } else {
+        if (!muntinsEnabled) {
+          console.log('Muntins disabled');
+        } else if (!muntinProfileSelect) {
+          console.log('Muntin profile select not found');
+        } else {
+          console.log('No muntin profile selected (selectedIndex:', muntinProfileSelect?.selectedIndex, ')');
         }
       }
       totalCost += muntinCost;
@@ -2154,25 +2176,8 @@
       const adminMarkupFactor = 1 + (adminMarkupPercent / 100);
       const finalTotalWithAdminMarkup = finalTotal * adminMarkupFactor;
       
-      // Debug logging
-      console.log('=== FRONTEND PRICING CALCULATION ===');
-      console.log('Dimensions - width:', width, 'inches, height:', height, 'inches');
-      console.log('glassCost:', glassCost);
-      console.log('profilesCost:', profilesCost);
-      console.log('profileDetails:', JSON.stringify(profileDetails, null, 2));
-      console.log('accessoriesCost:', accessoriesCost);
-      console.log('accessoryDetails (all counted accessories):', JSON.stringify(accessoryDetails, null, 2));
-      console.log('Number of accessories counted:', accessoryDetails.length);
+      // Muntin cost logging (summary)
       console.log('muntinCost:', muntinCost);
-      console.log('baseCost:', baseCost);
-      console.log('additionalCosts:', additionalCosts);
-      console.log('costPerWindow:', costPerWindow);
-      console.log('quantity:', quantity);
-      console.log('finalTotal (before admin markup):', finalTotal);
-      console.log('adminMarkupPercent:', adminMarkupPercent);
-      console.log('adminMarkupFactor:', adminMarkupFactor);
-      console.log('finalTotalWithAdminMarkup:', finalTotalWithAdminMarkup);
-      console.log('=== END FRONTEND CALCULATION ===');
       
       // Store calculation details for modal
       calculationDetails = {
@@ -2345,7 +2350,6 @@
       // Don't convert twice - if already converted and unit input says 'inches', skip
       const currentUnitInput = document.getElementById('currentUnit');
       if (dimensionsConverted && currentUnitInput && currentUnitInput.value === 'inches') {
-        console.log('✅ Dimensions already converted, skipping');
         return;
       }
       
@@ -2367,16 +2371,6 @@
       // Normalize: 'mm' or 'millimeters' = mm, everything else = inches
       const isMm = displayedUnit === 'mm' || displayedUnit === 'millimeters';
       
-      console.log('=== CONVERTING DIMENSIONS TO INCHES ===');
-      console.log('widthUnitSpan text:', widthUnitSpan?.textContent);
-      console.log('currentUnitDisplay text:', currentUnitDisplay?.textContent);
-      console.log('currentUnit variable:', currentUnit);
-      console.log('currentUnit input value:', currentUnitInput?.value);
-      console.log('displayedUnit (source of truth):', displayedUnit);
-      console.log('isMm:', isMm);
-      console.log('widthInput.value before conversion:', widthInput?.value);
-      console.log('heightInput.value before conversion:', heightInput?.value);
-      
       if (isMm) {
         // Convert width and height
         if (widthInput && widthInput.value) {
@@ -2384,7 +2378,6 @@
           if (!isNaN(originalValue) && originalValue > 0) {
             const convertedValue = mmToInches(originalValue);
             widthInput.value = convertedValue.toFixed(2);
-            console.log('✅ Converted width:', originalValue, 'mm ->', convertedValue, 'inches');
           }
         }
         if (heightInput && heightInput.value) {
@@ -2392,7 +2385,6 @@
           if (!isNaN(originalValue) && originalValue > 0) {
             const convertedValue = mmToInches(originalValue);
             heightInput.value = convertedValue.toFixed(2);
-            console.log('✅ Converted height:', originalValue, 'mm ->', convertedValue, 'inches');
           }
         }
         
@@ -2411,10 +2403,8 @@
           currentUnitInput.value = 'inches';
         }
         dimensionsConverted = true;
-        console.log('✅ Dimensions converted to inches, currentUnit input set to "inches"');
       } else {
         dimensionsConverted = true; // Mark as processed even if no conversion needed
-        console.log('✅ Dimensions already in inches, no conversion needed');
       }
     }
     
@@ -2614,8 +2604,10 @@
         panel.style.minWidth = orientation === 'horizontal' ? '40px' : 'auto';
         panel.style.minHeight = orientation === 'vertical' ? '40px' : 'auto';
         
+        const muntinGrid = generateMuntinGrid();
         panel.innerHTML = `
           <div class="absolute inset-0 glass-effect"></div>
+          ${muntinGrid}
           <div class="relative z-10 flex flex-col items-center">
             <span class="text-xl font-bold drop-shadow-sm" style="color: rgba(30,64,175,0.7);">${type}</span>
           </div>
@@ -2683,8 +2675,10 @@
       function createGlassPanel(type, isTransom = false, label = '') {
         const panel = document.createElement('div');
         panel.className = 'relative flex items-center justify-center panel-glass fixed-glass';
+        const muntinGrid = generateMuntinGrid();
         panel.innerHTML = `
           <div class="absolute inset-0 glass-effect"></div>
+          ${muntinGrid}
           ${!isTransom ? `<div class="relative z-10 flex flex-col items-center">
             <span class="text-lg font-bold drop-shadow-sm" style="color: rgba(30,64,175,0.7);">${type}</span>
             ${label ? `<span class="text-xs" style="color: rgba(30,64,175,0.5);">${label}</span>` : ''}
@@ -2711,8 +2705,10 @@
           handleSide = 'left';
         }
         
+        const muntinGrid = generateMuntinGrid();
         panel.innerHTML = `
           <div class="absolute inset-0 glass-effect"></div>
+          ${muntinGrid}
           <div class="absolute ${handleSide === 'right' ? 'right-2' : 'left-2'} top-1/2 transform -translate-y-1/2 w-1.5 h-6 rounded-full" style="background: linear-gradient(90deg, #a0a0a0, #d0d0d0, #a0a0a0);"></div>
           <div class="absolute ${hingeSidePos === 'right' ? 'right-0.5' : 'left-0.5'} top-3 w-1 h-3 rounded-sm" style="background: #808080;"></div>
           <div class="absolute ${hingeSidePos === 'right' ? 'right-0.5' : 'left-0.5'} bottom-3 w-1 h-3 rounded-sm" style="background: #808080;"></div>
@@ -2937,8 +2933,10 @@
           }
         }
         
+        const muntinGrid = generateMuntinGrid();
         panel.innerHTML = `
           <div class="absolute inset-0 glass-effect"></div>
+          ${muntinGrid}
           ${isOperable ? casementHardware : ''}
           ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35); letter-spacing: 0.5px;">VITRALUX</div>' : ''}
           <div class="relative z-10 flex flex-col items-center">
@@ -3027,8 +3025,10 @@
             : '<div class="absolute right-1 top-1/2 transform -translate-y-1/2 text-green-600 opacity-70"><i class="fas fa-arrows-alt-v text-xs"></i></div>'
         ) : '';
         
+        const muntinGrid = generateMuntinGrid();
         panel.innerHTML = `
           <div class="absolute inset-0 glass-effect"></div>
+          ${muntinGrid}
           ${isOperable ? slidingHandle : ''}
           ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35); letter-spacing: 0.5px;">VITRALUX</div>' : ''}
           <div class="relative z-10 flex flex-col items-center">
@@ -3108,8 +3108,10 @@
           `;
         }
         
+        const muntinGrid = generateMuntinGrid();
         panel.innerHTML = `
           <div class="absolute inset-0 glass-effect"></div>
+          ${muntinGrid}
           ${sashHardware}
           ${showLogo ? '<div class="absolute bottom-1 right-1 pointer-events-none" style="font-size: 6px; font-weight: 600; color: rgba(30,64,175,0.35);">VITRALUX</div>' : ''}
           <div class="relative z-10 flex flex-col items-center">
@@ -3286,10 +3288,90 @@
     };
 
     // Muntin Preview Function
+    // Toggle muntin configuration visibility
+    function toggleMuntinConfiguration() {
+      const toggle = document.getElementById('useMuntinsToggle');
+      const configFields = document.getElementById('muntinConfigFields');
+      
+      if (!toggle || !configFields) return;
+      
+      const isEnabled = toggle.checked;
+      const toggleSwitch = toggle.parentElement.querySelector('.toggle-switch');
+      const toggleDot = toggleSwitch?.querySelector('.toggle-dot');
+      
+      // Show/hide configuration fields
+      if (isEnabled) {
+        configFields.classList.remove('hidden');
+        // Update toggle switch visual state
+        if (toggleSwitch) {
+          toggleSwitch.classList.add('bg-blue-600');
+          toggleSwitch.classList.remove('bg-gray-300');
+        }
+        if (toggleDot) {
+          toggleDot.classList.add('translate-x-7');
+          toggleDot.classList.remove('translate-x-0');
+        }
+      } else {
+        configFields.classList.add('hidden');
+        // Update toggle switch visual state
+        if (toggleSwitch) {
+          toggleSwitch.classList.remove('bg-blue-600');
+          toggleSwitch.classList.add('bg-gray-300');
+        }
+        if (toggleDot) {
+          toggleDot.classList.remove('translate-x-7');
+          toggleDot.classList.add('translate-x-0');
+        }
+      }
+      
+      // Update window preview to show/hide muntins
+      if (typeof renderWindowPreview === 'function') {
+        renderWindowPreview();
+      }
+      
+      // Update pricing when muntin toggle changes
+      if(typeof window.calculatePricing==='function')window.calculatePricing();
+    }
+    
+    // Generate muntin grid HTML for glass panels
+    function generateMuntinGrid() {
+      // Check if muntins toggle is enabled
+      const useMuntinsToggle = document.getElementById('useMuntinsToggle');
+      if (!useMuntinsToggle || !useMuntinsToggle.checked) {
+        return ''; // Muntins are disabled
+      }
+      
+      const horizontal = parseInt(document.getElementById('muntinHorizontal')?.value) || 1;
+      const vertical = parseInt(document.getElementById('muntinVertical')?.value) || 1;
+      
+      // If divisions are 1, no grid needed
+      if (horizontal <= 1 && vertical <= 1) return '';
+      
+      let gridHTML = '<div class="absolute inset-0 muntin-grid" style="pointer-events: none; z-index: 5;">';
+      
+      // Calculate spacing for grid lines
+      const horizontalSpacing = 100 / horizontal;
+      const verticalSpacing = 100 / vertical;
+      
+      // Draw horizontal muntin lines (divisions - 1 lines)
+      for (let i = 1; i < horizontal; i++) {
+        const position = (i * horizontalSpacing) + '%';
+        gridHTML += `<div class="absolute left-0 right-0" style="top: ${position}; height: 2px; background: linear-gradient(90deg, transparent, #4a5568, transparent); box-shadow: 0 0 1px rgba(0,0,0,0.3);"></div>`;
+      }
+      
+      // Draw vertical muntin lines (divisions - 1 lines)
+      for (let i = 1; i < vertical; i++) {
+        const position = (i * verticalSpacing) + '%';
+        gridHTML += `<div class="absolute top-0 bottom-0" style="left: ${position}; width: 2px; background: linear-gradient(180deg, transparent, #4a5568, transparent); box-shadow: 0 0 1px rgba(0,0,0,0.3);"></div>`;
+      }
+      
+      gridHTML += '</div>';
+      return gridHTML;
+    }
+    
     function updateMuntinPreview() {
       const horizontal = parseInt(document.getElementById('muntinHorizontal')?.value) || 1;
       const vertical = parseInt(document.getElementById('muntinVertical')?.value) || 1;
-      const type = document.getElementById('muntinType')?.value || 'colonial';
       const previewGrid = document.getElementById('muntinPreviewGrid');
       const previewText = document.getElementById('muntinPreviewText');
       
@@ -3314,9 +3396,13 @@
         }
       }
       
-      // Update preview text
-      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
-      previewText.textContent = `${horizontal}x${vertical} ${typeLabel} Grid`;
+      // Update preview text (muntin type removed from display)
+      previewText.textContent = `${horizontal}x${vertical} Grid`;
+      
+      // Update window preview to show muntins
+      if (typeof renderWindowPreview === 'function') {
+        renderWindowPreview();
+      }
       
       // Update pricing when muntin settings change
       if(typeof window.calculatePricing==='function')window.calculatePricing();
@@ -3428,6 +3514,18 @@
       });
       
       initializeChoiceGroups();
+      
+      // Initialize muntin toggle state and preview
+      const useMuntinsToggle = document.getElementById('useMuntinsToggle');
+      if (useMuntinsToggle) {
+        // Ensure toggle visual state matches checked state on page load
+        toggleMuntinConfiguration();
+        // Initialize muntin preview if muntins are enabled
+        if (useMuntinsToggle.checked) {
+          updateMuntinPreview();
+        }
+      }
+      
       renderWindowPreview(); // Render the panel preview based on configuration
       
       // Format saved values display in edit mode

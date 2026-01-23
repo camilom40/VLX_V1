@@ -408,6 +408,7 @@
                   <i class="fas fa-columns text-blue-500 mr-2"></i>Number of Panels
                 </label>
                 <select id="panelCount" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors" onchange="updatePanelCount()">
+                  <option value="1">1 Panel</option>
                   <option value="2">2 Panels</option>
                   <option value="3">3 Panels</option>
                   <option value="4">4 Panels</option>
@@ -1160,9 +1161,64 @@
                   </label>
                   <select id="muntin-profile" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-amber-500 focus:outline-none">
                     <option value="">Select Muntin Profile</option>
-                    <% profiles.forEach(profile => { %>
-                      <option value="<%= profile._id %>"
-                              <%= windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.muntinProfile && windowSystem.muntinConfiguration.muntinProfile.toString() === profile._id.toString() ? 'selected' : '' %>>
+                    <% 
+                      // Extract muntin profile ID for comparison - normalize to string
+                      let savedMuntinProfileId = null;
+                      let savedMuntinProfileName = null;
+                      if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.muntinProfile) {
+                        const mp = windowSystem.muntinConfiguration.muntinProfile;
+                        // Handle all possible formats
+                        if (mp) {
+                          // Check if it's a populated object (has _id property)
+                          if (mp._id) {
+                            // Populated object: { _id: ObjectId(...), name: "..." }
+                            savedMuntinProfileId = String(mp._id);
+                            savedMuntinProfileName = mp.name || 'Unknown';
+                          } else if (typeof mp === 'object' && mp.toString && typeof mp.toString === 'function') {
+                            // ObjectId object (not populated)
+                            savedMuntinProfileId = String(mp);
+                          } else {
+                            // Already a string or number
+                            savedMuntinProfileId = String(mp);
+                          }
+                        }
+                      }
+                    %>
+                    <% 
+                      // Get all muntin profiles
+                      const muntinProfiles = profiles.filter(p => p && p.isMuntin);
+                    %>
+                    <script>
+                      // Client-side console logging for muntin profile debugging
+                      console.log('=== MUNTIN PROFILE DEBUG (Browser Console) ===');
+                      console.log('Total profiles passed to template:', <%= profiles.length %>);
+                      console.log('Muntin profiles found:', <%= muntinProfiles.length %>);
+                      console.log('Saved muntin profile ID:', '<%= savedMuntinProfileId || "null" %>');
+                      console.log('Saved muntin profile name:', '<%= savedMuntinProfileName || "null" %>');
+                      <% if (windowSystem.muntinConfiguration) { %>
+                        console.log('Window system muntin config exists');
+                        console.log('Muntin config enabled:', <%= windowSystem.muntinConfiguration.enabled %>);
+                        console.log('Muntin profile raw value:', '<%= windowSystem.muntinConfiguration.muntinProfile ? (windowSystem.muntinConfiguration.muntinProfile._id ? windowSystem.muntinConfiguration.muntinProfile._id.toString() : windowSystem.muntinConfiguration.muntinProfile.toString()) : "null" %>');
+                      <% } else { %>
+                        console.log('Window system muntin config is null');
+                      <% } %>
+                      <% muntinProfiles.forEach((p, index) => { %>
+                        console.log('Available muntin profile <%= index + 1 %>:', '<%= p.name %>', 'ID:', '<%= p._id %>', 'isMuntin:', <%= p.isMuntin %>);
+                      <% }); %>
+                      console.log('=== END MUNTIN PROFILE DEBUG ===');
+                    </script>
+                    <% muntinProfiles.forEach(profile => { %>
+                      <%
+                        // Normalize both IDs to strings for comparison
+                        const profileIdStr = String(profile._id);
+                        // Use loose comparison to handle any type mismatches
+                        const isSelected = savedMuntinProfileId && (
+                          String(savedMuntinProfileId) === profileIdStr || 
+                          savedMuntinProfileId == profileIdStr ||
+                          String(savedMuntinProfileId).trim() === profileIdStr.trim()
+                        );
+                      %>
+                      <option value="<%= profile._id %>" <%= isSelected ? 'selected' : '' %>>
                         <%= profile.name %>
                       </option>
                     <% }); %>
@@ -1374,9 +1430,23 @@
     console.log('Loaded accessories:', accessories);
     
     // Muntin configuration
+    let muntinProfileId = null;
+    if (windowSystemData.muntinConfiguration?.muntinProfile) {
+      const muntinProfile = windowSystemData.muntinConfiguration.muntinProfile;
+      // Handle both populated object and ObjectId cases after JSON serialization
+      if (typeof muntinProfile === 'object') {
+        muntinProfileId = muntinProfile._id || muntinProfile.$oid || muntinProfile;
+      } else {
+        muntinProfileId = muntinProfile;
+      }
+      // Convert to string if it's still an object
+      if (typeof muntinProfileId === 'object' && muntinProfileId.toString) {
+        muntinProfileId = muntinProfileId.toString();
+      }
+    }
     let muntinConfiguration = {
       enabled: windowSystemData.muntinConfiguration?.enabled || false,
-      muntinProfile: windowSystemData.muntinConfiguration?.muntinProfile || null,
+      muntinProfile: muntinProfileId,
       showToUser: windowSystemData.muntinConfiguration?.showToUser || true
     };
     
@@ -1430,14 +1500,47 @@
         }
         
         // Muntin settings
+        console.log('=== MUNTIN PROFILE DEBUG (Client-side) ===');
+        console.log('Muntin configuration enabled:', muntinConfiguration.enabled);
+        console.log('Muntin profile from data:', muntinConfiguration.muntinProfile);
+        console.log('Window system data muntin config:', windowSystemData.muntinConfiguration);
+        
         if (muntinConfiguration.enabled) {
           document.getElementById('muntin-enabled').checked = true;
           if (muntinConfiguration.muntinProfile) {
-            document.getElementById('muntin-profile').value = muntinConfiguration.muntinProfile;
+            // Handle both ObjectId object and string ID cases
+            let muntinProfileId = muntinConfiguration.muntinProfile;
+            if (typeof muntinProfileId === 'object') {
+              if (muntinProfileId._id) {
+                muntinProfileId = String(muntinProfileId._id);
+              } else if (muntinProfileId.toString) {
+                muntinProfileId = String(muntinProfileId);
+              }
+            } else {
+              muntinProfileId = String(muntinProfileId);
+            }
+            const muntinProfileSelect = document.getElementById('muntin-profile');
+            if (muntinProfileSelect) {
+              console.log('Muntin profile select element found');
+              console.log('Available options:', muntinProfileSelect.options.length);
+              for (let i = 0; i < muntinProfileSelect.options.length; i++) {
+                console.log(`Option ${i}: value="${muntinProfileSelect.options[i].value}", text="${muntinProfileSelect.options[i].text}"`);
+              }
+              console.log('Setting muntin profile to:', muntinProfileId);
+              muntinProfileSelect.value = muntinProfileId;
+              console.log('Selected value after setting:', muntinProfileSelect.value);
+            } else {
+              console.log('Muntin profile select element NOT found');
+            }
+          } else {
+            console.log('No muntin profile in muntinConfiguration');
           }
           document.getElementById('muntin-show-to-user').checked = muntinConfiguration.showToUser;
           toggleMuntinConfiguration();
+        } else {
+          console.log('Muntin configuration is disabled');
         }
+        console.log('=== END MUNTIN PROFILE DEBUG ===');
         
         // Set unit selector if there are existing profiles
         if (lockedLengthUnit) {

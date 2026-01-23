@@ -1644,16 +1644,20 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     });
 
     // Muntin cost calculation
+    // Check if muntins are enabled via toggle AND window system supports muntins
+    const useMuntins = req.body.useMuntins === 'on' || req.body.useMuntins === true;
     let muntinCost = 0;
-    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
-      const muntinType = req.body.muntinType;
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled && useMuntins) {
+      // Muntin type and spacing are no longer user-selectable, use window system defaults
       const muntinHorizontal = parseInt(req.body.muntinHorizontal) || 1;
       const muntinVertical = parseInt(req.body.muntinVertical) || 1;
-      const muntinSpacing = parseFloat(req.body.muntinSpacing) || 0;
+      
+      // Use user-selected muntin profile, or fall back to window system default
+      const muntinProfileId = req.body.muntinProfile || windowSystem.muntinConfiguration.muntinProfile;
       
       // Calculate muntin cost if muntin profile is selected
-      if (windowSystem.muntinConfiguration.muntinProfile) {
-        const muntinProfile = allProfiles.find(p => p._id.toString() === windowSystem.muntinConfiguration.muntinProfile.toString());
+      if (muntinProfileId) {
+        const muntinProfile = allProfiles.find(p => p._id.toString() === muntinProfileId.toString());
         if (muntinProfile) {
           const muntinPricePerMeter = parseFloat(muntinProfile.pricePerMeter) || 0;
           const muntinCurrency = muntinProfile.currency || 'COP';
@@ -1709,12 +1713,13 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     const autoManagedAccessories = windowSystem.accessories.filter(a => !a.showToUser);
     
     // Add muntin information to description
+    // useMuntins is already defined above in muntin cost calculation
     let muntinInfo = '';
-    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
-      const muntinType = req.body.muntinType || windowSystem.muntinConfiguration.muntinType;
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled && useMuntins) {
+      // Muntin type is no longer user-selectable, use window system default
       const muntinHorizontal = parseInt(req.body.muntinHorizontal) || windowSystem.muntinConfiguration.horizontalDivisions;
       const muntinVertical = parseInt(req.body.muntinVertical) || windowSystem.muntinConfiguration.verticalDivisions;
-      muntinInfo = `Muntins: ${muntinHorizontal}x${muntinVertical} ${muntinType.charAt(0).toUpperCase() + muntinType.slice(1)} Grid`;
+      muntinInfo = `Muntins: ${muntinHorizontal}x${muntinVertical} Grid`;
     }
     
     // Add flange information to description
@@ -1886,14 +1891,15 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     }
     
     // Extract muntin configuration if applicable
+    // useMuntins is already defined above in muntin cost calculation
     let muntinConfig = null;
-    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled && useMuntins) {
       muntinConfig = {
-        muntinType: req.body.muntinType || windowSystem.muntinConfiguration.muntinType || null,
+        muntinType: windowSystem.muntinConfiguration.muntinType || 'colonial',
         horizontalDivisions: parseInt(req.body.muntinHorizontal) || windowSystem.muntinConfiguration.horizontalDivisions || null,
         verticalDivisions: parseInt(req.body.muntinVertical) || windowSystem.muntinConfiguration.verticalDivisions || null,
-        spacing: parseFloat(req.body.muntinSpacing) || windowSystem.muntinConfiguration.spacing || null,
-        muntinProfileId: windowSystem.muntinConfiguration.muntinProfile || null
+        spacing: windowSystem.muntinConfiguration.spacing || null,
+        muntinProfileId: req.body.muntinProfile || windowSystem.muntinConfiguration.muntinProfile || null
       };
     }
     
@@ -2542,16 +2548,20 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     });
 
     // Muntin cost calculation
+    // Check if muntins are enabled via toggle AND window system supports muntins
+    const useMuntins = req.body.useMuntins === 'on' || req.body.useMuntins === true;
     let muntinCost = 0;
-    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
-      const muntinType = req.body.muntinType;
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled && useMuntins) {
+      // Muntin type and spacing are no longer user-selectable, use window system defaults
       const muntinHorizontal = parseInt(req.body.muntinHorizontal) || 1;
       const muntinVertical = parseInt(req.body.muntinVertical) || 1;
-      const muntinSpacing = parseFloat(req.body.muntinSpacing) || 0;
+      
+      // Use user-selected muntin profile, or fall back to window system default
+      const muntinProfileId = req.body.muntinProfile || windowSystem.muntinConfiguration.muntinProfile;
       
       // Calculate muntin cost if muntin profile is selected
-      if (windowSystem.muntinConfiguration.muntinProfile) {
-        const muntinProfile = allProfiles.find(p => p._id.toString() === windowSystem.muntinConfiguration.muntinProfile.toString());
+      if (muntinProfileId) {
+        const muntinProfile = allProfiles.find(p => p._id.toString() === muntinProfileId.toString());
         if (muntinProfile) {
           const muntinPricePerMeter = parseFloat(muntinProfile.pricePerMeter) || 0;
           const muntinCurrency = muntinProfile.currency || 'COP';
@@ -2628,12 +2638,13 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     const autoManagedAccessories = windowSystem.accessories.filter(a => !a.showToUser);
     
     // Add muntin information to description
+    // useMuntins is already defined above in muntin cost calculation
     let muntinInfo = '';
-    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
-      const muntinType = req.body.muntinType || windowSystem.muntinConfiguration.muntinType;
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled && useMuntins) {
+      // Muntin type is no longer user-selectable, use window system default
       const muntinHorizontal = parseInt(req.body.muntinHorizontal) || windowSystem.muntinConfiguration.horizontalDivisions;
       const muntinVertical = parseInt(req.body.muntinVertical) || windowSystem.muntinConfiguration.verticalDivisions;
-      muntinInfo = `Muntins: ${muntinHorizontal}x${muntinVertical} ${muntinType.charAt(0).toUpperCase() + muntinType.slice(1)} Grid`;
+      muntinInfo = `Muntins: ${muntinHorizontal}x${muntinVertical} Grid`;
     }
     
     // Add flange information to description
@@ -2789,14 +2800,15 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
     }
     
     // Extract muntin configuration if applicable
+    // useMuntins is already defined above in muntin cost calculation
     let muntinConfig = null;
-    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
+    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled && useMuntins) {
       muntinConfig = {
-        muntinType: req.body.muntinType || windowSystem.muntinConfiguration.muntinType || null,
+        muntinType: windowSystem.muntinConfiguration.muntinType || 'colonial',
         horizontalDivisions: parseInt(req.body.muntinHorizontal) || windowSystem.muntinConfiguration.horizontalDivisions || null,
         verticalDivisions: parseInt(req.body.muntinVertical) || windowSystem.muntinConfiguration.verticalDivisions || null,
-        spacing: parseFloat(req.body.muntinSpacing) || windowSystem.muntinConfiguration.spacing || null,
-        muntinProfileId: windowSystem.muntinConfiguration.muntinProfile || null
+        spacing: windowSystem.muntinConfiguration.spacing || null,
+        muntinProfileId: req.body.muntinProfile || windowSystem.muntinConfiguration.muntinProfile || null
       };
     }
     

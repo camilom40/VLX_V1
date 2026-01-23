@@ -1868,8 +1868,16 @@
       return `${days} day${days > 1 ? 's' : ''} ago`;
     }
     
+    // Flag to track if form is being submitted (prevents beforeunload warning)
+    let isSubmittingForm = false;
+    
     // Warn before leaving page with unsaved changes
     window.addEventListener('beforeunload', function(e) {
+      // Don't show warning if form is being submitted
+      if (isSubmittingForm) {
+        return;
+      }
+      
       // Save draft before leaving
       if (hasUnsavedChanges || profiles.length > 0 || accessories.length > 0) {
         saveDraft();
@@ -5023,6 +5031,9 @@
     document.getElementById('window-form').addEventListener('submit', async function(event) {
       event.preventDefault();
       
+      // Set flag to prevent beforeunload warning
+      isSubmittingForm = true;
+      
       console.log('Form submission started...');
       
       try {
@@ -5195,8 +5206,12 @@
       clearDraft();
       
       // Submit the form
+      // Set flag to prevent beforeunload warning (in case it wasn't set earlier)
+      isSubmittingForm = true;
       form.submit();
       } catch (error) {
+        // Reset flag if submission failed
+        isSubmittingForm = false;
         console.error('Error during form submission:', error);
         showAlert('An error occurred while submitting the form. Please check the console for details.');
       }

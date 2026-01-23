@@ -669,6 +669,19 @@ router.get('/edit/:id', isAdmin, async (req, res) => {
       .populate('accessories.accessory')
       .populate('missileImpactConfiguration.lmiGlasses')
       .populate('missileImpactConfiguration.smiGlasses');
+    
+    // Manually populate muntin profile if it exists (Mongoose doesn't always populate nested paths correctly)
+    if (windowSystem && windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.muntinProfile) {
+      const Profile = require('../../models/Profile');
+      const muntinProfileId = windowSystem.muntinConfiguration.muntinProfile._id 
+        ? windowSystem.muntinConfiguration.muntinProfile._id 
+        : windowSystem.muntinConfiguration.muntinProfile;
+      const muntinProfile = await Profile.findById(muntinProfileId);
+      if (muntinProfile) {
+        windowSystem.muntinConfiguration.muntinProfile = muntinProfile;
+      }
+    }
+    
     const profiles = await Profile.find({});
     const accessories = await Accessory.find({});
     const Glass = require('../../models/Glass');
