@@ -655,15 +655,21 @@
             const rows = document.querySelectorAll('#projectTableBody .project-row');
             
             let visibleCount = 0;
+            const processedProjects = new Set(); // Track processed project IDs to avoid double counting
             
             [...cards, ...rows].forEach(item => {
+                const projectId = item.getAttribute('data-project-id');
                 const name = item.getAttribute('data-project-name');
                 const client = item.getAttribute('data-client-name');
                 const quoteNumber = item.getAttribute('data-quote-number') || '';
                 
                 if (name.includes(searchTerm) || client.includes(searchTerm) || quoteNumber.includes(searchTerm)) {
                     item.style.display = '';
-                    visibleCount++;
+                    // Only count each project once (avoid counting both card and row)
+                    if (!processedProjects.has(projectId)) {
+                        visibleCount++;
+                        processedProjects.add(projectId);
+                    }
                 } else {
                     item.style.display = 'none';
                 }
@@ -800,9 +806,14 @@
                                 if (card) card.remove();
                             });
                             clearSelection();
-                            // Update project count
-                            const remainingProjects = document.querySelectorAll('.project-row, .project-card').length / 2; // Divided by 2 because both mobile and desktop views
-                            document.getElementById('projectCount').textContent = `${Math.floor(remainingProjects)} projects`;
+                            // Update project count - count unique projects (avoid double counting mobile/desktop views)
+                            const allProjectElements = document.querySelectorAll('.project-row, .project-card');
+                            const uniqueProjectIds = new Set();
+                            allProjectElements.forEach(el => {
+                                const projectId = el.getAttribute('data-project-id');
+                                if (projectId) uniqueProjectIds.add(projectId);
+                            });
+                            document.getElementById('projectCount').textContent = `${uniqueProjectIds.size} projects`;
                             // Reload page after a short delay to update stats
                             setTimeout(() => window.location.reload(), 1500);
                         } else {
