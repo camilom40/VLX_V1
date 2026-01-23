@@ -1706,3 +1706,62 @@ Moved selection type configuration from individual accessories to component grou
 
 *Last Updated: January 2026 - Terminology Update: "Accessories" to "Hardware"*
 
+---
+
+## January 2026 - Frontend-Backend Price Calculation Alignment Fix
+
+### What We Worked On
+
+1. **Critical Price Calculation Mismatch Fix**
+   - **Problem**: Frontend showed different prices than backend (e.g., $302.24 vs $301.87), with discrepancies scaling with window size
+   - **Root Cause**: Frontend's `evaluateLengthEquation()` function was NOT converting numeric constants from mm to inches, while the backend was doing this conversion
+   - **Impact**: Equations like `width - 44.45` were evaluated differently:
+     - Backend: `width - (44.45 / 25.4)` = `width - 1.75` inches (correct)
+     - Frontend (before fix): `width - 44.45` inches (treating 44.45 as inches, incorrect)
+   - **Solution**: Added mm-to-inches conversion logic to frontend's `evaluateLengthEquation()` to match backend exactly
+
+2. **Equation Evaluation Consistency**
+   - **Numeric Constant Conversion**: Both frontend and backend now convert numeric constants from mm to inches
+   - **Multiplier Detection**: Smart detection prevents conversion of multipliers (right operand of `*` or `/`)
+   - **Variable Replacement**: Both use identical logic for replacing variables (`width`, `height`, `perimeter`, `area`)
+   - **Result**: Frontend and backend now produce identical price calculations
+
+3. **Price Display Alignment**
+   - **Configure Window Page**: Live price estimate now matches saved price exactly
+   - **Project Details Page**: Displayed prices match saved database prices
+   - **Edit Mode**: Prices remain consistent when editing and saving windows
+   - **Duplicate Mode**: Duplicated windows maintain correct prices
+
+### Key Files Modified
+
+- `views/projects/configureWindow.ejs` - Updated `evaluateLengthEquation()` function to convert numeric constants from mm to inches, matching backend logic exactly
+
+### Technical Notes
+
+- **Equation Format**: Equations are written with numeric constants in mm (industry standard)
+- **Conversion Logic**: Numeric constants are divided by 25.4 to convert from mm to inches
+- **Multiplier Protection**: Numbers that are right operands of `*` or `/` are NOT converted (they're multipliers, not measurements)
+- **Variable Handling**: Variables (`width`, `height`, `perimeter`, `area`) are already in inches when passed to the function
+- **Consistency**: Frontend and backend now use identical evaluation logic, ensuring price calculations match exactly
+
+### Example Equation Evaluation
+
+**Equation**: `height - (38 * 2)`
+
+**Before Fix (Frontend)**:
+- Evaluated as: `height - 76` inches (incorrect - treating 38 as inches)
+- Result for 1000mm window: `39.37 - 76 = -36.63` (clamped to 0)
+
+**After Fix (Frontend & Backend)**:
+- Evaluated as: `height - ((38 / 25.4) * 2)` = `height - 2.992` inches (correct)
+- Result for 1000mm window: `39.37 - 2.992 = 36.378` inches (correct)
+
+### Impact
+
+- **Price Accuracy**: All price calculations now match between frontend and backend
+- **User Trust**: Users see consistent prices across all pages
+- **Data Integrity**: Saved prices accurately reflect the intended calculations
+- **Scaling**: Price discrepancies no longer scale with window size
+
+*Last Updated: January 2026 - Frontend-Backend Price Calculation Alignment Fix*
+

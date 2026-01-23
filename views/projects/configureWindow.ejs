@@ -124,6 +124,8 @@
 <body class="bg-gray-50 min-h-screen flex flex-col" 
       data-cost-settings="<%= typeof costSettings !== 'undefined' ? JSON.stringify(costSettings) : '{}' %>"
       data-exchange-rate="<%= typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate : 4000 %>"
+      data-admin-markup-percent="<%= typeof adminMarkupPercent !== 'undefined' ? adminMarkupPercent : 0 %>"
+      data-is-admin="<%= session && session.role === 'admin' ? 'true' : 'false' %>"
       data-panel-configuration="<%= typeof selectedWindowSystem !== 'undefined' && selectedWindowSystem.panelConfiguration ? JSON.stringify(selectedWindowSystem.panelConfiguration) : '{}' %>"
       data-window-system="<%= typeof selectedWindowSystem !== 'undefined' ? JSON.stringify({
         profiles: selectedWindowSystem.profiles.map(p => ({
@@ -145,6 +147,9 @@
           currency: a.accessory ? (a.accessory.currency || 'USD') : 'USD',
           unit: a.unit || 'piece',
           quantity: a.quantity || 1,
+          quantityEquation: a.quantityEquation || null,
+          componentGroup: a.componentGroup || null,
+          selectionType: a.selectionType || 'quantity',
           showToUser: a.showToUser || false
         })),
         glassWidthEquation: selectedWindowSystem.glassWidthEquation || null,
@@ -182,16 +187,24 @@
         
         <div class="mt-4 lg:mt-0 flex flex-col gap-2">
           <div class="bg-green-50 rounded-lg px-6 py-4 border border-green-100">
-            <div class="text-green-800 text-xl font-bold" id="totalPrice">$0.00</div>
-            <div class="text-green-600 text-sm">Estimated Total</div>
+            <div class="text-green-800 text-xl font-bold" id="totalPrice">
+              <% if (typeof isEdit !== 'undefined' && isEdit && existingWindow) { %>
+                $<%= parseFloat(existingWindow.totalPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+              <% } else { %>
+                $0.00
+              <% } %>
+            </div>
+            <div class="text-green-600 text-sm"><%= (typeof isEdit !== 'undefined' && isEdit && existingWindow) ? 'Saved Total' : 'Estimated Total' %></div>
           </div>
           <div class="flex gap-2">
-            <button type="button" onclick="showCalculationDetails()" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              Show Calculation Details
-            </button>
+            <% if (session && session.role === 'admin') { %>
+              <button type="button" onclick="showCalculationDetails()" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Show Calculation Details
+              </button>
+            <% } %>
             <button type="button" onclick="showWorkshopDetails()" class="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -1028,7 +1041,8 @@
         </div>
       <% } %>
 
-      <!-- Pricing Summary -->
+      <!-- Pricing Summary (admin only) -->
+      <% if (session && session.role === 'admin') { %>
       <div class="bg-white rounded-lg shadow-sm p-6">
         <h3 class="text-xl font-semibold text-gray-800 mb-4">Pricing Summary</h3>
         
@@ -1102,6 +1116,7 @@
           </div>
         </div>
       </div>
+      <% } %>
 
       <!-- Action Buttons -->
       <div class="flex justify-between items-center">
@@ -1446,73 +1461,37 @@
         const perimeter = 2 * (width + height);
         const area = width * height;
         
-        // Replace variable names with actual values (safe string replacement)
-        // Normalize the equation: remove extra spaces, but preserve structure
+        // Backend-style substitution: equations are evaluated in inches.
+        // Numeric constants in equations are ALWAYS in mm (standard unit for window manufacturing)
+        // We need to convert them to inches to match the width/height units (which are already in inches)
+        // This MUST match the backend logic in routes/projectRoutes.js evaluateLengthEquation
         let expression = equation.trim().replace(/\s+/g, ' '); // Replace multiple spaces with single space
         
-        // If input was in mm, numeric constants in the equation are likely also in mm
-        // We need to convert them to inches to match the width/height units
-        // This is a heuristic: if we see numbers that look like they could be mm (e.g., 38, 76, etc.)
-        // and the input unit is mm, we should convert them
-        // However, this is complex to detect automatically, so we'll use a simpler approach:
-        // The equation should be written assuming the input values are in the same units as the constants
-        // Since we always convert to inches, numeric constants should be in inches too
-        // BUT: if the user wrote the equation thinking in mm, we need to handle that
-        
-        // Numeric constants in equations are always assumed to be in mm (standard unit for window manufacturing)
-        // We need to convert them to inches to match the width/height units (which are already in inches)
-        // This applies regardless of the input unit, because equations are written with mm constants
-        // However, we need to be smart: only convert standalone numbers or numbers in arithmetic expressions
-        // For example: "height-(38*2)" should become "height-((38/25.4)*2)" = "height-(1.496*2)"
-        // NOT "height-(1.496*0.07874)" which would be wrong (2 is a multiplier, not a measurement)
-        // Always convert numeric constants from mm to inches
+        // Convert numeric constants from mm to inches (equations are written with mm constants)
+        // Strategy: Only convert numbers that are measurements, not multipliers.
+        // A number is considered a multiplier if it's the right operand of a '*' or '/' operator.
         {
-          // Strategy: Find all numeric expressions (numbers and their arithmetic operations)
-          // and wrap them in parentheses with division by 25.4
-          // But we need to avoid converting numbers that are part of variable names
-          
-          // First, protect variable names by temporarily replacing them
+          // Temporarily replace variable names to avoid matching numbers within them
           const variableNames = ['width', 'height', 'perimeter', 'area'];
           const placeholders = {};
           variableNames.forEach((varName, index) => {
             const placeholder = `__VAR${index}__`;
             placeholders[placeholder] = varName;
-            // Use word boundaries to match whole variable names only
             expression = expression.replace(new RegExp(`\\b${varName}\\b`, 'gi'), placeholder);
           });
-          
-          // Now convert numeric constants, but NOT multipliers in multiplication/division
-          // Strategy: Only convert numbers that are:
-          // - Standalone (not part of * or / operations as the second operand)
-          // - The first operand in * or / (the measurement value)
-          // - Part of + or - operations (all operands are measurements)
-          
-          // Convert numeric constants, but skip numbers that are multipliers (right side of * or /)
+
           expression = expression.replace(/\b(\d+\.?\d*)\b/g, (match, number, offset, fullString) => {
             const numValue = parseFloat(number);
             if (isNaN(numValue)) {
               return match;
             }
-            
-            // Check if preceded by a letter (part of variable name - but we already replaced variables)
+
+            // Check if this number is a multiplier (right operand in * or /)
+            // Look at the character immediately before this number
             if (offset > 0) {
               const beforeChar = fullString[offset - 1];
-              if (/[a-zA-Z_]/.test(beforeChar)) {
-                return match; // Don't convert (shouldn't happen after variable replacement, but safety check)
-              }
-            }
-            
-            // Check if this number is a multiplier (right operand in * or /)
-            // Example: "38*2" - we convert 38 (measurement) but not 2 (multiplier)
-            // Note: This assumes the user writes equations as "measurement*multiplier" not "multiplier*measurement"
-            if (offset > 0) {
-              // Look at characters before this number
-              const beforeText = fullString.substring(Math.max(0, offset - 5), offset).trim();
-              // Check if immediately preceded by * or / (with optional whitespace)
-              if (beforeText.endsWith('*') || beforeText.endsWith('/')) {
+              if (beforeChar === '*' || beforeChar === '/') {
                 // This is a multiplier (right operand), don't convert it
-                // Example: "38*2" -> we'll convert 38 to 1.496, keep 2 as 2
-                // Result: "1.496*2" = "2.992" ✓
                 return match;
               }
             }
@@ -1521,17 +1500,14 @@
             const converted = numValue / 25.4;
             return converted.toString();
           });
-          
+
           // Restore variable names
           Object.keys(placeholders).forEach(placeholder => {
             expression = expression.replace(new RegExp(placeholder, 'g'), placeholders[placeholder]);
           });
-          
         }
         
-        // Replace variable names with their values (using word boundaries to avoid partial matches)
-        // Replace in order: perimeter and area first (longer names), then width and height
-        // Use parentheses to ensure proper evaluation
+        // Now replace variable names with their values
         expression = expression.replace(/\bperimeter\b/gi, `(${perimeter})`);
         expression = expression.replace(/\barea\b/gi, `(${area})`);
         expression = expression.replace(/\bwidth\b/gi, `(${width})`);
@@ -1563,6 +1539,17 @@
         console.error('Error evaluating length equation:', equation, 'Error:', error);
         return null;
       }
+    }
+
+    // Helper function to evaluate quantity equation safely (result is a number, typically a count)
+    // Uses the same equation parsing rules as length equations.
+    function evaluateQuantityEquation(equation, width, height, inputUnit = 'inches') {
+      const result = evaluateLengthEquation(equation, width, height, inputUnit);
+      if (result === null || typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+        return null;
+      }
+      // Quantity should never be negative
+      return Math.max(0, result);
     }
 
     // Exchange rate from server (default to 4000 if not provided)
@@ -1868,11 +1855,21 @@
         const profileCurrency = selectedProfile?.getAttribute('data-currency') || 'COP';
         const profileName = selectedProfile?.text || `Profile ${index + 1}`;
         const pricePerMeterUSD = convertToUSD(pricePerMeter, profileCurrency, exchangeRateValue);
-        const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
         
         // Get the corresponding profile item from window system to get equation
         // Use the index to match with user-configurable profiles array
         const profileItem = userConfigurableProfilesFromData[index];
+        
+        // Calculate profile quantity - use equation if present, otherwise use user input
+        // Note: User-configurable profiles typically use user input, but check for quantityEquation as fallback
+        let qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
+        if (profileItem && profileItem.quantityEquation) {
+          // If profile has quantityEquation, use it (though rare for user-configurable)
+          const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, width, height, normalizedUnit);
+          if (calculatedQuantity !== null) {
+            qty = Math.round(calculatedQuantity); // Round to whole number (match backend)
+          }
+        }
         
         // Calculate profile length using equation
         let lengthMeters = 0;
@@ -1910,7 +1907,15 @@
         windowSystemData.profiles.forEach((profileItem) => {
           if (!profileItem.showToUser && profileItem.profileId && profileItem.pricePerMeter > 0) {
             const pricePerMeterUSD = convertToUSD(profileItem.pricePerMeter, profileItem.currency || 'USD', exchangeRateValue);
-            const qty = profileItem.quantity || 1;
+            
+            // Calculate profile quantity - use equation if present, otherwise use fixed quantity
+            let qty = profileItem.quantity || 1;
+            if (profileItem.quantityEquation) {
+              const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, width, height, normalizedUnit);
+              if (calculatedQuantity !== null) {
+                qty = Math.round(calculatedQuantity); // Round to whole number for quantity (match backend)
+              }
+            }
             
             // Calculate profile length using equation
             let lengthMeters = 0;
@@ -1975,17 +1980,47 @@
       });
       
       // Choice group hardware (radio buttons and checkboxes)
-      const checkedChoices = document.querySelectorAll('input[name^="choiceGroup_"]:checked');
+      // IMPORTANT: Match backend logic - process ALL choice group inputs, not just checked ones
+      // because the backend processes them from req.body which includes all form fields
+      const allChoiceGroupInputs = document.querySelectorAll('input[name^="choiceGroup_"]');
+      const processedChoiceGroupAccessories = new Set(); // Track processed accessory IDs to avoid duplicates
       
-      checkedChoices.forEach(choice => {
+      console.log('=== CHOICE GROUP PROCESSING ===');
+      console.log('Total choice group inputs found:', allChoiceGroupInputs.length);
+      
+      allChoiceGroupInputs.forEach(choice => {
         const accessoryId = choice.value;
+        if (!accessoryId) return;
+        
         const groupName = choice.name.replace('choiceGroup_', '');
+        const choiceKey = `${groupName}_${accessoryId}`;
+        
+        // Skip if already processed (radio buttons in same group share same name)
+        if (processedChoiceGroupAccessories.has(choiceKey)) {
+          console.log(`Skipping duplicate: ${choiceKey}`);
+          return;
+        }
+        
+        // Only process checked items (user-selected)
+        if (!choice.checked) {
+          console.log(`Skipping unchecked: ${choiceKey}`);
+          return;
+        }
+        
+        processedChoiceGroupAccessories.add(choiceKey);
         
         // Find the corresponding price and quantity inputs
         const priceInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_price"]`;
         const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
         const priceInput = document.querySelector(priceInputSelector);
         const quantityInput = document.querySelector(quantityInputSelector);
+        
+        console.log(`Processing checked choice: ${choiceKey}`, {
+          hasPriceInput: !!priceInput,
+          hasQuantityInput: !!quantityInput,
+          priceValue: priceInput?.value,
+          quantityValue: quantityInput?.value
+        });
         
         if (priceInput && quantityInput) {
           // Get the price from the hidden field (this is the original price in the accessory's currency)
@@ -1995,11 +2030,19 @@
           const accessoryDoc = allAccessories.find(a => a._id?.toString() === accessoryId);
           const accessoryCurrency = accessoryDoc?.currency || 'COP';
           
-          // Convert to USD for internal calculations
+          // Convert to USD for internal calculations (must match backend convertToUSD logic)
           const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
           const qty = parseInt(quantityInput.value) || 1;
           const accessoryCost = priceUSD * qty;
           accessoriesCost += accessoryCost;
+          
+          console.log(`Added choice group accessory: ${choiceKey}`, {
+            price,
+            priceUSD,
+            qty,
+            accessoryCost,
+            totalAccessoriesCost: accessoriesCost
+          });
           
           // Try to get accessory name from label or nearby element
           const label = document.querySelector(`label[for="${choice.id}"]`) || choice.closest('label');
@@ -2014,15 +2057,28 @@
             cost: accessoryCost,
             isUserConfigurable: true
           });
+        } else {
+          console.warn(`Missing price or quantity input for ${choiceKey}`);
         }
       });
+      
+      console.log('Processed choice group accessories:', processedChoiceGroupAccessories.size);
+      console.log('=== END CHOICE GROUP PROCESSING ===');
       
       // Add auto-managed accessories (from window system, showToUser: false)
       if (windowSystemData.accessories && Array.isArray(windowSystemData.accessories)) {
         windowSystemData.accessories.forEach((accessoryItem) => {
           if (!accessoryItem.showToUser && accessoryItem.accessoryId && accessoryItem.price > 0) {
             const priceUSD = convertToUSD(accessoryItem.price, accessoryItem.currency || 'USD', exchangeRateValue);
-            const qty = accessoryItem.quantity || 1;
+            // If a quantity equation exists, use it; otherwise use fixed quantity.
+            // (Width/height are in inches at this point.)
+            let qty = accessoryItem.quantity || 1;
+            if (accessoryItem.quantityEquation) {
+              const calculatedQty = evaluateQuantityEquation(accessoryItem.quantityEquation, width, height, normalizedUnit);
+              if (calculatedQty !== null) {
+                qty = calculatedQty;
+              }
+            }
             const accessoryCost = priceUSD * qty;
             accessoriesCost += accessoryCost;
             
@@ -2092,18 +2148,30 @@
       
       const costPerWindow = baseCost + additionalCosts; // Cost per single window
       const finalTotal = costPerWindow * quantity; // Total for all windows (costPerWindow × quantity)
+
+      // Apply hidden admin markup to the SELLING price displayed to the user
+      const adminMarkupPercent = parseFloat(document.body.getAttribute('data-admin-markup-percent')) || 0;
+      const adminMarkupFactor = 1 + (adminMarkupPercent / 100);
+      const finalTotalWithAdminMarkup = finalTotal * adminMarkupFactor;
       
       // Debug logging
       console.log('=== FRONTEND PRICING CALCULATION ===');
+      console.log('Dimensions - width:', width, 'inches, height:', height, 'inches');
       console.log('glassCost:', glassCost);
       console.log('profilesCost:', profilesCost);
+      console.log('profileDetails:', JSON.stringify(profileDetails, null, 2));
       console.log('accessoriesCost:', accessoriesCost);
+      console.log('accessoryDetails (all counted accessories):', JSON.stringify(accessoryDetails, null, 2));
+      console.log('Number of accessories counted:', accessoryDetails.length);
       console.log('muntinCost:', muntinCost);
       console.log('baseCost:', baseCost);
       console.log('additionalCosts:', additionalCosts);
       console.log('costPerWindow:', costPerWindow);
       console.log('quantity:', quantity);
-      console.log('finalTotal:', finalTotal);
+      console.log('finalTotal (before admin markup):', finalTotal);
+      console.log('adminMarkupPercent:', adminMarkupPercent);
+      console.log('adminMarkupFactor:', adminMarkupFactor);
+      console.log('finalTotalWithAdminMarkup:', finalTotalWithAdminMarkup);
       console.log('=== END FRONTEND CALCULATION ===');
       
       // Store calculation details for modal
@@ -2145,7 +2213,7 @@
         costPerWindow: costPerWindow,
         finalTotal: finalTotal,
         displayCurrency: currentCurrency,
-        displayTotal: formatCurrency(finalTotal)
+        displayTotal: formatCurrency(finalTotalWithAdminMarkup)
       };
       
       // Show/hide muntin cost row and update value
@@ -2160,16 +2228,28 @@
       }
       
       // Update displays with comma formatting (formatCurrency will convert USD to display currency)
-      document.getElementById('totalPrice').textContent = formatCurrency(finalTotal);
+      // Note: some breakdown elements are hidden for non-admins, so guard nulls.
+      const totalPriceEl = document.getElementById('totalPrice');
+      if (totalPriceEl) totalPriceEl.textContent = formatCurrency(finalTotalWithAdminMarkup);
+
       // Base Materials should show the total of profiles (not including glass/hardware separately shown)
       // Or we could show total base cost - for now, showing profiles cost as "Base Materials"
-      document.getElementById('baseMaterialsCost').textContent = formatCurrency(profilesCost);
-      document.getElementById('glassCost').textContent = formatCurrency(glassCost);
-      document.getElementById('accessoriesCost').textContent = formatCurrency(accessoriesCost);
-      document.getElementById('additionalCosts').textContent = formatCurrency(additionalCosts);
-      document.getElementById('finalTotalPrice').textContent = formatCurrency(finalTotal);
+      const baseMaterialsCostEl = document.getElementById('baseMaterialsCost');
+      if (baseMaterialsCostEl) baseMaterialsCostEl.textContent = formatCurrency(profilesCost);
+
+      const glassCostEl = document.getElementById('glassCost');
+      if (glassCostEl) glassCostEl.textContent = formatCurrency(glassCost);
+
+      const accessoriesCostEl = document.getElementById('accessoriesCost');
+      if (accessoriesCostEl) accessoriesCostEl.textContent = formatCurrency(accessoriesCost);
+
+      const additionalCostsEl = document.getElementById('additionalCosts');
+      if (additionalCostsEl) additionalCostsEl.textContent = formatCurrency(additionalCosts);
+
+      const finalTotalPriceEl = document.getElementById('finalTotalPrice');
+      if (finalTotalPriceEl) finalTotalPriceEl.textContent = formatCurrency(finalTotalWithAdminMarkup);
       // Also display unit price (cost per window) - this should match the table's unit price column
-      const unitPrice = quantity > 0 ? costPerWindow : 0;
+      const unitPrice = quantity > 0 ? (costPerWindow * adminMarkupFactor) : 0;
       const unitPriceDisplayEl = document.getElementById('unitPriceDisplay');
       if (unitPriceDisplayEl) {
         unitPriceDisplayEl.textContent = formatCurrency(unitPrice);
@@ -3303,16 +3383,21 @@
       // Function to update accessory price displays
       function updateAccessoryPriceDisplays() {
         const priceDisplays = document.querySelectorAll('.accessory-price-display');
+        const isAdmin = document.body.getAttribute('data-is-admin') === 'true';
+        const adminMarkupPercent = parseFloat(document.body.getAttribute('data-admin-markup-percent')) || 0;
+        const adminMarkupFactor = 1 + (adminMarkupPercent / 100);
+
         priceDisplays.forEach(display => {
           const priceUSD = parseFloat(display.getAttribute('data-price-usd'));
           const unit = display.getAttribute('data-unit');
           
           if (!isNaN(priceUSD)) {
+            const displayPriceUSD = isAdmin ? priceUSD : (priceUSD * adminMarkupFactor);
             if (currentCurrency === 'USD') {
-              display.textContent = `$${priceUSD.toFixed(2)}/${unit}`;
+              display.textContent = `$${displayPriceUSD.toFixed(2)}/${unit}`;
             } else {
               // Convert to COP
-              const priceCOP = priceUSD * exchangeRateValue;
+              const priceCOP = displayPriceUSD * exchangeRateValue;
               display.textContent = `${new Intl.NumberFormat('es-CO', {
                 style: 'currency',
                 currency: 'COP',
@@ -3360,31 +3445,14 @@
       }
       
       // Calculate pricing AFTER unit is properly set
-      // In edit mode, calculate with restored selections to verify they match saved values
+      // In edit mode, DON'T recalculate on load - show saved price (already includes admin markup)
+      // Only recalculate when user changes inputs (which triggers calculatePricing via onchange handlers)
       // Use setTimeout to ensure all initialization is complete
       setTimeout(function() {
-        // In edit mode, verify that selections are restored before calculating
         if (isEditMode) {
-          // Check if profile selects have valid selections
-          const profileSelects = document.querySelectorAll('.profile-select');
-          let allProfilesSelected = true;
-          profileSelects.forEach(select => {
-            if (!select.value || select.value === '') {
-              allProfilesSelected = false;
-            }
-          });
-          
-          // Only calculate if selections are restored, otherwise wait a bit more
-          if (allProfilesSelected || profileSelects.length === 0) {
-            if(typeof window.calculatePricing==='function')window.calculatePricing();
-            updateWindowPreview(); // Update dimensions
-          } else {
-            // Wait a bit more for selections to be restored
-            setTimeout(function() {
-              if(typeof window.calculatePricing==='function')window.calculatePricing();
-              updateWindowPreview();
-            }, 300);
-          }
+          // In edit mode: show saved price initially, don't recalculate until user changes something
+          // The saved price is already correctly calculated with admin markup by backend
+          updateWindowPreview(); // Update dimensions/preview only
         } else {
           // In new mode, calculate immediately
           if(typeof window.calculatePricing==='function')window.calculatePricing();

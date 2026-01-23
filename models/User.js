@@ -11,6 +11,14 @@ const userSchema = new mongoose.Schema({
     enum: ['tier1', 'tier2', 'tier3', 'tier4', ''], 
     default: '' 
   },
+  // Admin-controlled markup that is baked into stored prices for this user.
+  // Users can add their own markup on top when quoting; they should never see this value.
+  adminMarkupPercent: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 1000
+  },
   lastLogin: { type: Date, default: null },
   companyLogo: {
     type: String,

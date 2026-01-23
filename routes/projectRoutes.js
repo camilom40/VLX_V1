@@ -169,7 +169,7 @@ function evaluateLengthEquation(equation, width, height, inputUnit = 'inches') {
 
 // Helper function to recalculate prices for a window item with current costs
 // Optional exchangeRateOverride parameter allows using a specific rate (e.g., for project duplication)
-async function recalculateWindowItemPrices(windowItem, exchangeRateOverride = null) {
+async function recalculateWindowItemPrices(windowItem, exchangeRateOverride = null, adminMarkupPercent = 0) {
   try {
     // Use provided exchange rate or get current one
     const exchangeRate = exchangeRateOverride || await getExchangeRate();
@@ -361,7 +361,10 @@ async function recalculateWindowItemPrices(windowItem, exchangeRateOverride = nu
     ) : 0;
     
     const totalCost = baseCost + additionalCosts;
-    const finalPrice = totalCost * windowQuantity;
+    // Bake in admin markup (hidden from user) at the stored-price level
+    const adminMarkupFactor = 1 + (parseFloat(adminMarkupPercent) || 0) / 100;
+    const totalCostWithAdminMarkup = totalCost * adminMarkupFactor;
+    const finalPrice = totalCostWithAdminMarkup * windowQuantity;
     const unitPrice = windowQuantity > 0 ? parseFloat((finalPrice / windowQuantity).toFixed(2)) : 0;
     
     return {
@@ -801,23 +804,22 @@ router.post('/projects/:projectId/items/:itemId/duplicate', isAuthenticated, asy
       newItemName = `${baseName} (${counter})`;
     }
 
-    // Recalculate prices using the project's frozen exchange rate (not current rate)
-    // This ensures duplicated items within the same project use consistent pricing
-    const recalculatedPrices = await recalculateWindowItemPrices(originalItem, project.frozenExchangeRate);
-    
-    // Create a duplicate item with the new name and recalculated prices
+    // For duplication within the same project (same exchange rate), preserve original prices
+    // Only recalculate if material costs might have changed, or if duplicating to a different project
+    // Since we're duplicating within the same project, preserve the exact same prices
     // Convert Mongoose document to plain object to avoid issues
     const originalItemObj = originalItem.toObject ? originalItem.toObject() : originalItem;
     
     // Build the item data object, only including fields that are not null/undefined
+    // Preserve original prices - they already include admin markup and are correct for this project
     const duplicatedItemData = {
       projectId: originalItemObj.projectId,
       itemName: newItemName,
       width: originalItemObj.width,
       height: originalItemObj.height,
       quantity: originalItemObj.quantity,
-      unitPrice: recalculatedPrices.unitPrice,
-      totalPrice: recalculatedPrices.totalPrice,
+      unitPrice: originalItemObj.unitPrice, // Preserve original price (already includes admin markup)
+      totalPrice: originalItemObj.totalPrice, // Preserve original price (already includes admin markup)
       material: originalItemObj.material,
       color: originalItemObj.color,
       style: originalItemObj.style,
@@ -1084,8 +1086,17 @@ router.post('/projects/:projectId/items/bulk-delete', isAuthenticated, async (re
     const userId = req.session.userId;
 
     // Verify project ownership
-    const project = await Project.findOne({ _id: projectId, userId });
+    const mongoose = require('mongoose');
+    const projectObjectId = mongoose.Types.ObjectId.isValid(projectId) 
+      ? new mongoose.Types.ObjectId(projectId) 
+      : projectId;
+    
+    const project = await Project.findOne({ _id: projectObjectId, userId });
     if (!project) {
+      console.log('=== BULK DELETE PROJECT CHECK FAILED ===');
+      console.log('ProjectId from params:', projectId);
+      console.log('ProjectObjectId:', projectObjectId);
+      console.log('UserId:', userId);
       return res.status(404).json({ error: 'Project not found or access denied.' });
     }
 
@@ -1095,19 +1106,42 @@ router.post('/projects/:projectId/items/bulk-delete', isAuthenticated, async (re
     }
 
     // Verify all items belong to this project
+    // Convert itemIds to ObjectIds if they're strings
+    const itemObjectIds = itemIds.map(id => {
+      try {
+        return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id;
+      } catch (e) {
+        return id;
+      }
+    });
+    
     const items = await WindowItem.find({ 
-      _id: { $in: itemIds },
-      projectId: projectId 
+      _id: { $in: itemObjectIds },
+      projectId: projectObjectId 
     });
 
+    console.log('=== BULK DELETE DEBUG ===');
+    console.log('Requested itemIds:', itemIds);
+    console.log('Converted itemObjectIds:', itemObjectIds);
+    console.log('Found items:', items.length);
+    console.log('Expected items:', itemIds.length);
+    console.log('Project ID:', projectId);
+    console.log('User ID:', userId);
+    
     if (items.length !== itemIds.length) {
-      return res.status(403).json({ error: 'Some items do not belong to this project.' });
+      const foundIds = items.map(item => item._id.toString());
+      const missingIds = itemIds.filter(id => !foundIds.includes(id.toString()));
+      console.log('Missing item IDs:', missingIds);
+      return res.status(403).json({ 
+        error: 'Some items do not belong to this project.',
+        details: `Found ${items.length} of ${itemIds.length} items. Missing IDs: ${missingIds.join(', ')}`
+      });
     }
 
     // Delete all items
     const deleteResult = await WindowItem.deleteMany({ 
-      _id: { $in: itemIds },
-      projectId: projectId 
+      _id: { $in: itemObjectIds },
+      projectId: projectObjectId 
     });
 
     console.log(`Deleted ${deleteResult.deletedCount} window item(s) from project ${projectId}`);
@@ -1216,6 +1250,10 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
     // Use project's frozen exchange rate if available, otherwise get current
     const currentExchangeRate = await getExchangeRate();
     const exchangeRate = project.frozenExchangeRate || currentExchangeRate;
+
+    // Per-user admin markup (hidden from user; used to show correct selling price)
+    const currentUser = await User.findById(userId).lean();
+    const adminMarkupPercent = currentUser?.adminMarkupPercent || 0;
     
     res.render('projects/configureWindow', {
       project,
@@ -1231,6 +1269,7 @@ router.get('/projects/:id/windows/new', isAuthenticated, async (req, res) => {
       costSettings: costSettings || {},
       exchangeRate: exchangeRate,
       frozenExchangeRate: project.frozenExchangeRate,
+      adminMarkupPercent: adminMarkupPercent,
       existingWindow: null, // No existing window for new configuration
       isEdit: false        // This is not edit mode
     });
@@ -1576,11 +1615,25 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
         }
         
         // Use user input for configurable accessories
-        if (accessoryItem.showToUser && accessories && Array.isArray(accessories)) {
-          // Find user input for this accessory
-          const userAccessory = accessories.find(a => a.accessoryId === accessoryId);
-          if (userAccessory) {
-            quantity = parseInt(userAccessory.quantity) || quantity;
+        // IMPORTANT: Only process user-configurable accessories if they're actually selected
+        if (accessoryItem.showToUser) {
+          // Already processed in choice groups, skip
+          if (alreadyProcessed) {
+            return; // Skip - already counted in choice groups
+          }
+          
+          // Check if it's in the individual accessories array (user selected it)
+          if (accessories && Array.isArray(accessories)) {
+            const userAccessory = accessories.find(a => a.accessoryId === accessoryId);
+            if (userAccessory) {
+              quantity = parseInt(userAccessory.quantity) || quantity;
+            } else {
+              // User-configurable accessory NOT selected - skip it
+              return;
+            }
+          } else {
+            // No accessories array - skip user-configurable accessories (not selected)
+            return;
           }
         }
         
@@ -1623,10 +1676,12 @@ router.post('/projects/:id/windows/save', isAuthenticated, async (req, res) => {
     // Apply cost settings with proper validation
     const baseCost = isNaN(glassCost) ? 0 : glassCost + (isNaN(profileCostTotal) ? 0 : profileCostTotal) + (isNaN(accessoryCostTotal) ? 0 : accessoryCostTotal) + (isNaN(muntinCost) ? 0 : muntinCost);
     
-    console.log('=== PRICING DEBUG ===');
+    console.log('=== BACKEND PRICING DEBUG ===');
     console.log('glassCost:', glassCost);
     console.log('profileCostTotal:', profileCostTotal);
     console.log('accessoryCostTotal:', accessoryCostTotal);
+    console.log('Number of choiceGroupAccessories:', choiceGroupAccessories.length);
+    console.log('choiceGroupAccessories:', JSON.stringify(choiceGroupAccessories, null, 2));
     console.log('muntinCost:', muntinCost);
     console.log('baseCost:', baseCost);
     console.log('costSettings:', costSettings ? 'exists' : 'null');
@@ -1711,9 +1766,15 @@ ${muntinInfo ? muntinInfo + '\n' : ''}${notes ? `Notes: ${notes}` : ''}
       return res.status(400).send(`An item with the name "${windowRef}" already exists in this project. Please choose a different name.`);
     }
 
-    // Use finalPrice as totalPrice to avoid rounding errors
-    // The finalPrice is the total cost for all units, so it should be used directly
-    const totalPrice = finalPrice;
+    // Apply admin markup (hidden) BEFORE saving prices for this user
+    const currentUser = await User.findById(userId).lean();
+    const adminMarkupPercent = currentUser?.adminMarkupPercent || 0;
+    const adminMarkupFactor = 1 + (parseFloat(adminMarkupPercent) || 0) / 100;
+    const finalPriceWithAdminMarkup = finalPrice * adminMarkupFactor;
+
+    // Use finalPriceWithAdminMarkup as totalPrice to avoid rounding errors
+    // The finalPriceWithAdminMarkup is the total SELLING price for all units for this user
+    const totalPrice = finalPriceWithAdminMarkup;
     
     // Calculate unit price from totalPrice to ensure consistency
     // Round to 2 decimals for display, but use totalPrice directly to maintain precision
@@ -2069,6 +2130,10 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
     // Use project's frozen exchange rate (should exist since window already exists)
     const currentExchangeRate = await getExchangeRate();
     const exchangeRate = project.frozenExchangeRate || currentExchangeRate;
+
+    // Per-user admin markup (hidden from user; used to show correct selling price)
+    const currentUser = await User.findById(userId).lean();
+    const adminMarkupPercent = currentUser?.adminMarkupPercent || 0;
     
     res.render('projects/configureWindow', {
       project,
@@ -2084,6 +2149,7 @@ router.get('/projects/:projectId/windows/:windowId/edit', isAuthenticated, async
       costSettings: costSettings || {},
       exchangeRate: exchangeRate,
       frozenExchangeRate: project.frozenExchangeRate,
+      adminMarkupPercent: adminMarkupPercent,
       existingWindow, // Pass existing window data for pre-filling form
       savedAccessorySelections, // Pass saved accessory selections for restoration
       savedProfileSelections, // Pass saved profile selections for restoration
@@ -2409,10 +2475,25 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
           }
         }
         
-        if (accessoryItem.showToUser && accessories && Array.isArray(accessories)) {
-          const userAccessory = accessories.find(a => a.accessoryId === accessoryItem.accessory.toString());
-          if (userAccessory) {
-            quantity = parseInt(userAccessory.quantity) || quantity;
+        // IMPORTANT: Only process user-configurable accessories if they're actually selected
+        if (accessoryItem.showToUser) {
+          // Already processed in choice groups, skip
+          if (alreadyProcessed) {
+            return; // Skip - already counted in choice groups
+          }
+          
+          // Check if it's in the individual accessories array (user selected it)
+          if (accessories && Array.isArray(accessories)) {
+            const userAccessory = accessories.find(a => a.accessoryId === accessoryItem.accessory.toString());
+            if (userAccessory) {
+              quantity = parseInt(userAccessory.quantity) || quantity;
+            } else {
+              // User-configurable accessory NOT selected - skip it
+              return;
+            }
+          } else {
+            // No accessories array - skip user-configurable accessories (not selected)
+            return;
           }
         }
         
@@ -2432,10 +2513,25 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
           }
         }
         
-        if (accessoryItem.showToUser && accessories && Array.isArray(accessories)) {
-          const userAccessory = accessories.find(a => a.accessoryId === accessoryDoc._id.toString());
-          if (userAccessory) {
-            quantity = parseInt(userAccessory.quantity) || quantity;
+        // IMPORTANT: Only process user-configurable accessories if they're actually selected
+        if (accessoryItem.showToUser) {
+          // Already processed in choice groups, skip
+          if (alreadyProcessed) {
+            return; // Skip - already counted in choice groups
+          }
+          
+          // Check if it's in the individual accessories array (user selected it)
+          if (accessories && Array.isArray(accessories)) {
+            const userAccessory = accessories.find(a => a.accessoryId === accessoryDoc._id.toString());
+            if (userAccessory) {
+              quantity = parseInt(userAccessory.quantity) || quantity;
+            } else {
+              // User-configurable accessory NOT selected - skip it
+              return;
+            }
+          } else {
+            // No accessories array - skip user-configurable accessories (not selected)
+            return;
           }
         }
         
@@ -2478,6 +2574,12 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     // Apply cost settings with validation (only per-window costs: packaging, labor, indirect)
     const baseCost = (isNaN(glassCost) ? 0 : glassCost) + (isNaN(profileCostTotal) ? 0 : profileCostTotal) + (isNaN(accessoryCostTotal) ? 0 : accessoryCostTotal) + (isNaN(muntinCost) ? 0 : muntinCost);
     
+    console.log('=== UPDATE ACCESSORY BREAKDOWN ===');
+    console.log('choiceGroupAccessories count:', choiceGroupAccessories.length);
+    console.log('choiceGroupAccessories:', JSON.stringify(choiceGroupAccessories.map(cga => ({ accessoryId: cga.accessoryId, quantity: cga.quantity, cost: cga.price * cga.quantity })), null, 2));
+    console.log('profileCosts:', JSON.stringify(profileCosts.map(p => ({ name: p.name, cost: p.cost, isUserConfigurable: p.isUserConfigurable })), null, 2));
+    console.log('=== END ACCESSORY BREAKDOWN ===');
+    
     console.log('=== UPDATE PRICING DEBUG ===');
     console.log('glassCost:', glassCost);
     console.log('profileCostTotal:', profileCostTotal);
@@ -2492,15 +2594,32 @@ router.post('/projects/:projectId/windows/:windowId/update', isAuthenticated, as
     ) : 0;
 
     const totalCost = (isNaN(baseCost) ? 0 : baseCost) + (isNaN(additionalCosts) ? 0 : additionalCosts);
-    const finalPrice = (isNaN(totalCost) ? 0 : totalCost) * (isNaN(windowQuantity) ? 1 : windowQuantity);
+    const baseFinalPrice = (isNaN(totalCost) ? 0 : totalCost) * (isNaN(windowQuantity) ? 1 : windowQuantity);
+    
+    // Apply admin markup (hidden) BEFORE saving prices for this user
+    const currentUser = await User.findById(userId).lean();
+    const adminMarkupPercent = currentUser?.adminMarkupPercent || 0;
+    const adminMarkupFactor = 1 + (parseFloat(adminMarkupPercent) || 0) / 100;
+    const finalPrice = baseFinalPrice * adminMarkupFactor;
     
     console.log('=== UPDATE PRICING CALCULATION ===');
+    console.log('glassCost:', glassCost);
+    console.log('profileCostTotal:', profileCostTotal);
+    console.log('accessoryCostTotal:', accessoryCostTotal);
+    console.log('muntinCost:', muntinCost);
     console.log('baseCost:', baseCost);
     console.log('additionalCosts:', additionalCosts);
     console.log('totalCost (per window):', totalCost);
     console.log('windowQuantity:', windowQuantity);
-    console.log('finalPrice (total for all):', finalPrice);
+    console.log('baseFinalPrice (before admin markup):', baseFinalPrice);
+    console.log('adminMarkupPercent:', adminMarkupPercent);
+    console.log('adminMarkupFactor:', adminMarkupFactor);
+    console.log('finalPrice (after admin markup, total for all):', finalPrice);
     console.log('calculated unitPrice will be:', finalPrice / windowQuantity);
+    console.log('=== DETAILED BREAKDOWN ===');
+    console.log('Profile costs:', JSON.stringify(profileCosts, null, 2));
+    console.log('Number of choiceGroupAccessories:', choiceGroupAccessories.length);
+    console.log('choiceGroupAccessories:', JSON.stringify(choiceGroupAccessories, null, 2));
     console.log('=== END UPDATE DEBUG ===');
 
     // Create updated description
@@ -2758,7 +2877,9 @@ router.post('/projects/:id/duplicate', isAuthenticated, async (req, res) => {
     const originalWindowItems = await WindowItem.find({ projectId: originalProject._id });
     for (const item of originalWindowItems) {
       // Recalculate prices with current costs and the NEW exchange rate
-      const recalculatedPrices = await recalculateWindowItemPrices(item, currentExchangeRate);
+      const currentUser = await User.findById(userId).lean();
+      const adminMarkupPercent = currentUser?.adminMarkupPercent || 0;
+      const recalculatedPrices = await recalculateWindowItemPrices(item, currentExchangeRate, adminMarkupPercent);
       
       // Convert Mongoose document to plain object to avoid issues
       const itemObj = item.toObject ? item.toObject() : item;

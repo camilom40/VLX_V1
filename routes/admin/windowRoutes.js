@@ -65,7 +65,7 @@ router.get('/users/add', async (req, res) => {
 // Route to handle adding a new user
 router.post('/users/add', async (req, res) => {
   try {
-    const { username, password, role, pricingTier, companyName, email, firstName, lastName, city } = req.body;
+    const { username, password, role, pricingTier, companyName, email, firstName, lastName, city, adminMarkupPercent } = req.body;
 
     // Validate required fields
     if (!username || !password || !companyName || !email || !firstName || !lastName) {
@@ -79,11 +79,17 @@ router.post('/users/add', async (req, res) => {
     }
 
     // Create a new user
+    const markupNum = adminMarkupPercent !== undefined && adminMarkupPercent !== null && adminMarkupPercent !== ''
+      ? parseFloat(adminMarkupPercent)
+      : 0;
+    const safeAdminMarkup = Number.isFinite(markupNum) ? Math.min(1000, Math.max(0, markupNum)) : 0;
+
     const newUser = new User({ 
       username, 
       password, 
       role, 
       pricingTier,
+      adminMarkupPercent: safeAdminMarkup,
       companyName: companyName.trim(),
       email: email.trim(),
       firstName: firstName.trim(),
@@ -344,7 +350,7 @@ router.get('/users/:id', async (req, res) => {
 router.post('/users/:id/update', async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, companyName, role, pricingTier, isActive, email, firstName, lastName, city } = req.body;
+    const { username, companyName, role, pricingTier, isActive, email, firstName, lastName, city, adminMarkupPercent } = req.body;
     
     const updateData = {};
     if (username) updateData.username = username;
@@ -357,6 +363,10 @@ router.post('/users/:id/update', async (req, res) => {
     if (pricingTier !== undefined) updateData.pricingTier = pricingTier;
     if (isActive !== undefined) {
       updateData.isActive = isActive === 'true' || isActive === true;
+    }
+    if (adminMarkupPercent !== undefined) {
+      const markupNum = adminMarkupPercent === '' ? 0 : parseFloat(adminMarkupPercent);
+      updateData.adminMarkupPercent = Number.isFinite(markupNum) ? Math.min(1000, Math.max(0, markupNum)) : 0;
     }
     
     await User.findByIdAndUpdate(id, updateData);
