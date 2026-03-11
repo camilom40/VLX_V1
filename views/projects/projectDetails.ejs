@@ -152,7 +152,7 @@
 
     .desktop-item-row .item-description-cell .item-spec-row {
       grid-template-columns: 112px minmax(0, 1fr);
-      gap: 0.75rem;
+      gap: 0.45rem;
       justify-items: start;
       text-align: left;
     }
@@ -181,14 +181,14 @@
 
     .item-specs {
       display: grid;
-      gap: 0.625rem;
+      gap: 0.35rem;
       min-width: 0;
     }
 
     .item-spec-row {
       display: grid;
       grid-template-columns: 112px minmax(0, 1fr);
-      gap: 0.75rem;
+      gap: 0.45rem;
       align-items: start;
       min-width: 0;
     }
@@ -199,13 +199,13 @@
       color: #111827;
       letter-spacing: 0.01em;
       text-transform: uppercase;
-      line-height: 1.25;
+      line-height: 1.1;
       padding-top: 0.1rem;
     }
 
     .item-spec-value {
       font-size: 0.79rem;
-      line-height: 1.4;
+      line-height: 1.2;
       color: #374151;
       min-width: 0;
       word-break: break-word;
@@ -414,7 +414,7 @@
 <body class="min-h-screen flex flex-col" data-exchange-rate="<%= typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate : 4000 %>">
   <%- include('../partials/_header.ejs') %>
 
-  <main role="main" class="container mx-auto mt-6 px-4 flex-grow mb-16">
+  <main role="main" class="max-w-[1440px] mx-auto mt-6 px-4 flex-grow mb-16">
     <!-- Back to Dashboard Button -->
     <div class="mb-4">
       <a href="/dashboard" class="btn-secondary inline-flex items-center">
@@ -690,7 +690,7 @@
             <!-- Desktop view: Table -->
             <div class="hidden lg:block overflow-x-auto rounded-lg border border-gray-200 shadow-sm" style="min-width: 100%; -webkit-overflow-scrolling: touch;" id="desktopTableContainer">
               <!-- Global Markup Control -->
-              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div class="bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <label class="text-sm font-semibold text-gray-700">Global Markup:</label>
                   <input type="number" 

@@ -1,5 +1,5 @@
 // scripts/testQuote.js
-// Test script to calculate pricing for a window configuration
+// DB-backed pricing verification using the same calculator as the app.
 // Run: node scripts/testQuote.js
 
 require('dotenv').config();
@@ -9,27 +9,245 @@ const Profile = require('../models/Profile');
 const Accessory = require('../models/Accessory');
 const Glass = require('../models/Glass');
 const CostSettings = require('../models/CostSettings');
+const { calculateWindowConfigurationPricing } = require('../utils/pricingCalculator');
 
-// MongoDB connection string
 const MONGODB_URI = process.env.DATABASE_URL || 'mongodb://localhost:27017/vlx_v1';
 
-// Test configuration
 const testConfig = {
   windowSystemName: 'Fixed',
   width: 1000, // mm
   height: 2000, // mm
-  glassType: 'Double Pane Low-E', // Looking for this glass type
-  quantity: 1
+  glassType: 'B',
+  quantity: 1,
+  exchangeRate: 4000,
+  adminMarkupPercent: 0,
+  selectedProfiles: [],
+  selectedAccessories: [],
+  muntinConfiguration: null
 };
 
-// Currency conversion helper (simplified - should match your actual conversion)
-function convertToUSD(price, currency, exchangeRate) {
-  if (currency === 'USD') {
-    return price;
-  } else if (currency === 'COP') {
-    return price / exchangeRate;
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function mmToInches(mm) {
+  return Number(mm) / 25.4;
+}
+
+function formatMoney(value) {
+  return `$${Number(value || 0).toFixed(2)}`;
+}
+
+function formatMeters(value) {
+  return `${Number(value || 0).toFixed(4)} m`;
+}
+
+function buildSelectedProfiles(windowSystem, selectedProfilesConfig = []) {
+  const userProfiles = (windowSystem.profiles || []).filter((profileItem) => profileItem.showToUser);
+
+  return userProfiles.map((profileItem) => {
+    const profileDoc = profileItem.profile;
+    const override = selectedProfilesConfig.find((entry) => {
+      const requested = entry.profileId || entry.profileName || entry.name;
+      if (!requested || !profileDoc) {
+        return false;
+      }
+
+      return String(profileDoc._id) === String(requested) || profileDoc.name === requested;
+    });
+
+    if (!override) {
+      return null;
+    }
+
+    return {
+      profileId: override.profileId || profileDoc._id,
+      quantity: override.quantity ?? profileItem.quantity,
+      lengthDiscount: override.lengthDiscount ?? profileItem.lengthDiscount
+    };
+  });
+}
+
+function buildSelectedAccessories(windowSystem, selectedAccessoriesConfig = []) {
+  const configurableAccessoryIds = new Set(
+    (windowSystem.accessories || [])
+      .filter((accessoryItem) => accessoryItem.showToUser && accessoryItem.accessory)
+      .map((accessoryItem) => String(accessoryItem.accessory._id || accessoryItem.accessory))
+  );
+
+  return selectedAccessoriesConfig
+    .map((entry) => ({
+      accessoryId: entry.accessoryId,
+      accessoryName: entry.accessoryName || entry.name,
+      quantity: entry.quantity
+    }))
+    .map((entry) => {
+      const matchingAccessory = (windowSystem.accessories || []).find((accessoryItem) => {
+        if (!accessoryItem.showToUser || !accessoryItem.accessory) {
+          return false;
+        }
+
+        const accessoryDoc = accessoryItem.accessory;
+        return (
+          (entry.accessoryId && String(accessoryDoc._id) === String(entry.accessoryId)) ||
+          (entry.accessoryName && accessoryDoc.name === entry.accessoryName)
+        );
+      });
+
+      if (!matchingAccessory || !matchingAccessory.accessory) {
+        return null;
+      }
+
+      return {
+        accessoryId: String(matchingAccessory.accessory._id),
+        quantity: entry.quantity
+      };
+    })
+    .filter((entry) => entry && configurableAccessoryIds.has(String(entry.accessoryId)));
+}
+
+function printConfigurationSummary(windowSystem, selectedGlass, widthInches, heightInches, exchangeRate) {
+  console.log('='.repeat(80));
+  console.log('QUOTE CALCULATION TEST');
+  console.log('='.repeat(80));
+  console.log(`\nWindow System: ${windowSystem.type}`);
+  console.log(`Dimensions: ${testConfig.width}mm × ${testConfig.height}mm`);
+  console.log(`Dimensions (inches): ${widthInches.toFixed(2)}" × ${heightInches.toFixed(2)}"`);
+  console.log(`Glass: ${selectedGlass ? selectedGlass.glass_type : 'None'}`);
+  console.log(`Quantity: ${testConfig.quantity}`);
+  console.log(`Exchange Rate: ${exchangeRate} COP/USD`);
+  console.log(`Admin Markup: ${testConfig.adminMarkupPercent}%`);
+}
+
+function printPricingBreakdown(pricingResult, selectedGlass, costSettings) {
+  console.log('\n📊 COST BREAKDOWN:');
+  console.log('─'.repeat(80));
+
+  if (selectedGlass) {
+    console.log('\n1. Glass Cost:');
+    console.log(`   Glass Type: ${selectedGlass.glass_type}`);
+    console.log(`   Price: ${selectedGlass.pricePerSquareMeter} ${pricingResult.glassCurrency}/m²`);
+    console.log(`   Price (USD): ${formatMoney(pricingResult.glassPriceUSD)}/m²`);
+    console.log(`   Glass Size: ${pricingResult.glassWidthInches.toFixed(2)}" × ${pricingResult.glassHeightInches.toFixed(2)}"`);
+    console.log(`   Area: ${pricingResult.glassAreaSquareMeters.toFixed(4)} m²`);
+    console.log(`   Cost: ${formatMoney(pricingResult.glassCost)}`);
   }
-  return price; // Default to USD
+
+  console.log('\n2. Profile Costs:');
+  if (pricingResult.profileBreakdown.length === 0) {
+    console.log('   No profiles priced.');
+  } else {
+    pricingResult.profileBreakdown.forEach((profile, index) => {
+      console.log(`   ${index + 1}. ${profile.name}`);
+      console.log(`      Quantity: ${profile.quantity}`);
+      console.log(`      Length: ${formatMeters(profile.lengthMeters)}`);
+      console.log(`      Price: ${profile.priceOriginal} ${profile.currency}/m`);
+      console.log(`      Price (USD): ${formatMoney(profile.pricePerMeterUSD)}/m`);
+      console.log(`      Cost: ${formatMoney(profile.cost)}`);
+      console.log(`      Source: ${profile.isUserConfigurable ? 'User-configurable' : 'Auto-managed'}`);
+    });
+  }
+  console.log(`   Total Profiles Cost: ${formatMoney(pricingResult.profileCostTotal)}`);
+
+  console.log('\n3. Accessory Costs:');
+  if (pricingResult.accessoryBreakdown.length === 0) {
+    console.log('   No accessories priced.');
+  } else {
+    pricingResult.accessoryBreakdown.forEach((accessory, index) => {
+      console.log(`   ${index + 1}. ${accessory.name}`);
+      console.log(`      Quantity: ${accessory.quantity}`);
+      console.log(`      Price: ${accessory.priceOriginal} ${accessory.currency}`);
+      console.log(`      Price (USD): ${formatMoney(accessory.priceUSD)}`);
+      console.log(`      Cost: ${formatMoney(accessory.cost)}`);
+      console.log(`      Source: ${accessory.isUserConfigurable ? 'User-configurable' : 'Auto-managed'}`);
+    });
+  }
+  console.log(`   Total Accessories Cost: ${formatMoney(pricingResult.accessoryCostTotal)}`);
+
+  console.log('\n4. Muntin Cost:');
+  if (!pricingResult.muntinDetails) {
+    console.log('   No muntins priced.');
+  } else {
+    console.log(`   Profile: ${pricingResult.muntinDetails.name}`);
+    console.log(`   Divisions: ${pricingResult.muntinDetails.horizontal} × ${pricingResult.muntinDetails.vertical}`);
+    console.log(`   Length: ${formatMeters(pricingResult.muntinDetails.length)}`);
+    console.log(`   Price (USD): ${formatMoney(pricingResult.muntinDetails.priceUSD)}/m`);
+    console.log(`   Cost: ${formatMoney(pricingResult.muntinCost)}`);
+  }
+
+  console.log('\n5. Additional Costs:');
+  console.log(`   Packaging: ${costSettings?.packaging || 0}%`);
+  console.log(`   Labor: ${costSettings?.labor || 0}%`);
+  console.log(`   Indirect Costs: ${costSettings?.indirectCosts || 0}%`);
+  console.log(`   Additional Costs: ${formatMoney(pricingResult.additionalCosts)}`);
+}
+
+function printFinalTotals(pricingResult) {
+  console.log('\n' + '='.repeat(80));
+  console.log('FINAL PRICING');
+  console.log('='.repeat(80));
+  console.log(`Area: ${pricingResult.areaSquareMeters.toFixed(4)} m² (${pricingResult.areaInches.toFixed(2)} sq in)`);
+  console.log(`Perimeter: ${formatMeters(pricingResult.perimeterMeters)} (${pricingResult.perimeterInches.toFixed(2)} in)`);
+  console.log(`Base Cost: ${formatMoney(pricingResult.baseCost)}`);
+  console.log(`Cost per Window: ${formatMoney(pricingResult.totalCostPerWindow)}`);
+  console.log(`Unit Price: ${formatMoney(pricingResult.unitPrice)}`);
+  console.log(`Quantity: ${pricingResult.quantity}`);
+  console.log(`TOTAL PRICE: ${formatMoney(pricingResult.totalPrice)}`);
+  console.log('='.repeat(80));
+}
+
+async function loadGlass(glassType) {
+  if (!glassType) {
+    return null;
+  }
+
+  const glass = await Glass.findOne({
+    glass_type: { $regex: new RegExp(escapeRegex(glassType), 'i') }
+  });
+
+  if (glass) {
+    return glass;
+  }
+
+  console.log(`❌ Glass type "${glassType}" not found.`);
+  console.log('\nAvailable glasses:');
+  const allGlasses = await Glass.find({}, 'glass_type').sort({ glass_type: 1 });
+  allGlasses.forEach((item) => {
+    console.log(`  - ${item.glass_type}`);
+  });
+
+  return null;
+}
+
+async function loadWindowSystem(windowSystemName) {
+  const exactMatch = await Window.findOne({
+    type: { $regex: new RegExp(`^${escapeRegex(windowSystemName)}$`, 'i') }
+  })
+    .populate('profiles.profile')
+    .populate('accessories.accessory')
+    .populate('muntinConfiguration.muntinProfile')
+    .populate('missileImpactConfiguration.lmiGlasses')
+    .populate('missileImpactConfiguration.smiGlasses');
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const similarSystems = await Window.find({
+    type: { $regex: new RegExp(escapeRegex(windowSystemName), 'i') }
+  }, 'type')
+    .sort({ type: 1 })
+    .lean();
+
+  console.log(`❌ Window system "${windowSystemName}" not found.`);
+  if (similarSystems.length > 0) {
+    console.log('\nSimilar window systems:');
+    similarSystems.forEach((item) => {
+      console.log(`  - ${item.type}`);
+    });
+  }
+
+  return null;
 }
 
 async function testQuote() {
@@ -38,205 +256,64 @@ async function testQuote() {
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB\n');
 
-    // Find the window system
-    const windowSystem = await Window.findOne({ 
-      type: { $regex: new RegExp(`^${testConfig.windowSystemName}$`, 'i') }
-    })
-      .populate('profiles.profile')
-      .populate('accessories.accessory')
-      .populate('muntinConfiguration.muntinProfile')
-      .populate('missileImpactConfiguration.lmiGlasses')
-      .populate('missileImpactConfiguration.smiGlasses');
+    const windowSystem = await loadWindowSystem(testConfig.windowSystemName);
 
     if (!windowSystem) {
-      console.log(`❌ Window system "${testConfig.windowSystemName}" not found.`);
       return;
     }
 
-    // Find the glass
-    const glass = await Glass.findOne({
-      glass_type: { $regex: new RegExp(testConfig.glassType, 'i') }
-    });
+    const [selectedGlass, allProfiles, allAccessories, costSettings] = await Promise.all([
+      loadGlass(testConfig.glassType),
+      Profile.find({}),
+      Accessory.find({}),
+      CostSettings.findOne()
+    ]);
 
-    if (!glass) {
-      console.log(`❌ Glass type "${testConfig.glassType}" not found.`);
-      console.log('\nAvailable glasses:');
-      const allGlasses = await Glass.find({}, 'glass_type').sort({ glass_type: 1 });
-      allGlasses.forEach(g => {
-        console.log(`  - ${g.glass_type}`);
-      });
+    if (testConfig.glassType && !selectedGlass) {
       return;
     }
 
-    // Get cost settings
-    const costSettings = await CostSettings.findOne() || {
+    const effectiveCostSettings = costSettings || {
       packaging: 5,
       labor: 15,
       indirectCosts: 10
     };
+    const exchangeRate = testConfig.exchangeRate || 4000;
+    const widthInches = mmToInches(testConfig.width);
+    const heightInches = mmToInches(testConfig.height);
+    const selectedProfiles = buildSelectedProfiles(windowSystem, testConfig.selectedProfiles);
+    const selectedAccessories = buildSelectedAccessories(windowSystem, testConfig.selectedAccessories);
 
-    // Get exchange rate (default to 4000 if not set)
-    const exchangeRate = 4000; // You may want to get this from your settings
-
-    console.log('='.repeat(80));
-    console.log('QUOTE CALCULATION TEST');
-    console.log('='.repeat(80));
-    console.log(`\nWindow System: ${windowSystem.type}`);
-    console.log(`Dimensions: ${testConfig.width}mm × ${testConfig.height}mm`);
-    console.log(`Glass: ${glass.glass_type}`);
-    console.log(`Quantity: ${testConfig.quantity}`);
-    console.log('');
-
-    // Convert dimensions from mm to inches
-    const widthInches = testConfig.width / 25.4;
-    const heightInches = testConfig.height / 25.4;
-    console.log(`Dimensions (inches): ${widthInches.toFixed(2)}" × ${heightInches.toFixed(2)}"`);
-
-    // Calculate area and perimeter
-    const areaInches = widthInches * heightInches;
-    const areaSquareMeters = areaInches / 1550; // 1 sqm = 1550 sq inches
-    const perimeterInches = 2 * (widthInches + heightInches);
-    const perimeterMeters = perimeterInches / 39.37; // Convert to meters
-
-    console.log(`Area: ${areaSquareMeters.toFixed(4)} m² (${areaInches.toFixed(2)} sq in)`);
-    console.log(`Perimeter: ${perimeterMeters.toFixed(4)} m (${perimeterInches.toFixed(2)} in)`);
-    console.log('');
-
-    // ALL CALCULATIONS IN USD
-    let totalCost = 0;
-    const costBreakdown = {
-      glass: 0,
-      profiles: 0,
-      accessories: 0,
-      muntin: 0
-    };
-
-    // 1. Glass Cost
-    console.log('📊 COST BREAKDOWN:');
-    console.log('─'.repeat(80));
-    const glassPriceUSD = convertToUSD(glass.pricePerSquareMeter, glass.currency || 'USD', exchangeRate);
-    const glassCost = glassPriceUSD * areaSquareMeters;
-    totalCost += glassCost;
-    costBreakdown.glass = glassCost;
-    console.log(`\n1. Glass Cost:`);
-    console.log(`   Glass Type: ${glass.glass_type}`);
-    console.log(`   Price: $${glass.pricePerSquareMeter} ${glass.currency || 'USD'}/m²`);
-    console.log(`   Price (USD): $${glassPriceUSD.toFixed(2)}/m²`);
-    console.log(`   Area: ${areaSquareMeters.toFixed(4)} m²`);
-    console.log(`   Cost: $${glassPriceUSD.toFixed(2)} × ${areaSquareMeters.toFixed(4)} = $${glassCost.toFixed(2)}`);
-
-    // 2. Profile Costs
-    console.log(`\n2. Profile Costs:`);
-    let profilesCost = 0;
-    windowSystem.profiles.forEach((profileItem, index) => {
-      if (profileItem.profile) {
-        const profile = profileItem.profile;
-        const pricePerMeterUSD = convertToUSD(profile.pricePerMeter, profile.currency || 'USD', exchangeRate);
-        
-        // Calculate adjusted length (perimeter minus length discount)
-        const lengthDiscountMeters = (profileItem.lengthDiscount || 0) * 0.0254; // Convert inches to meters
-        const adjustedLength = Math.max(0, perimeterMeters - lengthDiscountMeters);
-        
-        // Calculate cost for this profile
-        const profileCost = pricePerMeterUSD * adjustedLength * profileItem.quantity;
-        profilesCost += profileCost;
-        
-        console.log(`   ${index + 1}. ${profile.name}`);
-        console.log(`      Quantity: ${profileItem.quantity}`);
-        console.log(`      Orientation: ${profileItem.orientation}`);
-        console.log(`      Price: $${profile.pricePerMeter} ${profile.currency || 'USD'}/m`);
-        console.log(`      Price (USD): $${pricePerMeterUSD.toFixed(2)}/m`);
-        console.log(`      Length Discount: ${profileItem.lengthDiscount || 0} in (${lengthDiscountMeters.toFixed(4)} m)`);
-        console.log(`      Perimeter: ${perimeterMeters.toFixed(4)} m`);
-        console.log(`      Adjusted Length: ${adjustedLength.toFixed(4)} m`);
-        console.log(`      Cost: $${pricePerMeterUSD.toFixed(2)} × ${adjustedLength.toFixed(4)} × ${profileItem.quantity} = $${profileCost.toFixed(2)}`);
-      }
+    const pricingResult = calculateWindowConfigurationPricing({
+      windowSystem,
+      selectedGlass,
+      allProfiles,
+      allAccessories,
+      costSettings: effectiveCostSettings,
+      exchangeRate,
+      windowWidth: widthInches,
+      windowHeight: heightInches,
+      windowQuantity: testConfig.quantity,
+      adminMarkupPercent: testConfig.adminMarkupPercent,
+      selectedProfiles,
+      selectedAccessories,
+      muntinConfiguration: testConfig.muntinConfiguration
     });
-    totalCost += profilesCost;
-    costBreakdown.profiles = profilesCost;
-    console.log(`   Total Profiles Cost: $${profilesCost.toFixed(2)}`);
 
-    // 3. Accessory Costs
-    console.log(`\n3. Accessory Costs:`);
-    let accessoriesCost = 0;
-    windowSystem.accessories.forEach((accItem, index) => {
-      if (accItem.accessory) {
-        const accessory = accItem.accessory;
-        const priceUSD = convertToUSD(accessory.price, accessory.currency || 'USD', exchangeRate);
-        const accessoryCost = priceUSD * accItem.quantity;
-        accessoriesCost += accessoryCost;
-        
-        console.log(`   ${index + 1}. ${accessory.name}`);
-        console.log(`      Quantity: ${accItem.quantity} ${accItem.unit}`);
-        console.log(`      Price: $${accessory.price} ${accessory.currency || 'USD'}/${accessory.unit}`);
-        console.log(`      Price (USD): $${priceUSD.toFixed(2)}/${accessory.unit}`);
-        console.log(`      Cost: $${priceUSD.toFixed(2)} × ${accItem.quantity} = $${accessoryCost.toFixed(2)}`);
-      }
-    });
-    totalCost += accessoriesCost;
-    costBreakdown.accessories = accessoriesCost;
-    console.log(`   Total Accessories Cost: $${accessoriesCost.toFixed(2)}`);
+    printConfigurationSummary(windowSystem, selectedGlass, widthInches, heightInches, exchangeRate);
+    printPricingBreakdown(pricingResult, selectedGlass, effectiveCostSettings);
+    printFinalTotals(pricingResult);
 
-    // 4. Muntin Cost (if applicable)
-    if (windowSystem.muntinConfiguration && windowSystem.muntinConfiguration.enabled) {
-      console.log(`\n4. Muntin Cost:`);
-      console.log(`   (Muntin configuration is enabled but not calculated in this test)`);
-    }
-
-    // Base cost before additional costs
-    const baseCost = totalCost;
-    console.log(`\n   Base Cost (before additional costs): $${baseCost.toFixed(2)}`);
-
-    // 5. Additional Costs (percentages)
-    console.log(`\n4. Additional Costs (Percentages):`);
-    const packagingPercent = costSettings.packaging || 5;
-    const laborPercent = costSettings.labor || 15;
-    const indirectPercent = costSettings.indirectCosts || 10;
-    const totalPercent = packagingPercent + laborPercent + indirectPercent;
-    
-    const additionalCosts = baseCost * (totalPercent / 100);
-    totalCost += additionalCosts;
-    
-    console.log(`   Packaging: ${packagingPercent}%`);
-    console.log(`   Labor: ${laborPercent}%`);
-    console.log(`   Indirect Costs: ${indirectPercent}%`);
-    console.log(`   Total Percentage: ${totalPercent}%`);
-    console.log(`   Additional Costs: $${baseCost.toFixed(2)} × ${(totalPercent / 100).toFixed(4)} = $${additionalCosts.toFixed(2)}`);
-
-    // Final totals
-    const costPerWindow = totalCost;
-    const finalTotal = costPerWindow * testConfig.quantity;
-
-    console.log('\n' + '='.repeat(80));
-    console.log('FINAL PRICING:');
-    console.log('='.repeat(80));
-    console.log(`\nCost Breakdown:`);
-    console.log(`  Glass Cost:        $${costBreakdown.glass.toFixed(2)}`);
-    console.log(`  Profiles Cost:     $${costBreakdown.profiles.toFixed(2)}`);
-    console.log(`  Accessories Cost:  $${costBreakdown.accessories.toFixed(2)}`);
-    console.log(`  Additional Costs:  $${additionalCosts.toFixed(2)}`);
-    console.log(`  ─────────────────────────────────────`);
-    console.log(`  Cost per Window:   $${costPerWindow.toFixed(2)}`);
-    console.log(`  Quantity:          ${testConfig.quantity}`);
-    console.log(`  ─────────────────────────────────────`);
-    console.log(`  TOTAL PRICE:       $${finalTotal.toFixed(2)}`);
-    console.log('='.repeat(80));
-
-    // Verify glass is available for this window system
-    if (windowSystem.missileImpactConfiguration && windowSystem.missileImpactConfiguration.supportsLMI) {
+    if (selectedGlass && windowSystem.missileImpactConfiguration && windowSystem.missileImpactConfiguration.supportsLMI) {
       const lmiGlasses = windowSystem.missileImpactConfiguration.lmiGlasses || [];
-      const glassInLMI = lmiGlasses.some(g => g._id.toString() === glass._id.toString());
+      const glassInLMI = lmiGlasses.some((item) => String(item._id) === String(selectedGlass._id));
+
       if (glassInLMI) {
-        console.log(`\n✅ Glass "${glass.glass_type}" is available for LMI configuration`);
+        console.log(`\n✅ Glass "${selectedGlass.glass_type}" is available for LMI configuration`);
       } else {
-        console.log(`\n⚠️  Glass "${glass.glass_type}" is NOT in the LMI glasses list`);
-        console.log(`   Available LMI glasses:`);
-        lmiGlasses.forEach(g => {
-          console.log(`     - ${g.glass_type}`);
-        });
+        console.log(`\n⚠️  Glass "${selectedGlass.glass_type}" is NOT in the LMI glasses list`);
       }
     }
-
   } catch (error) {
     console.error('❌ Error calculating quote:', error);
     console.error(error.stack);
@@ -246,6 +323,5 @@ async function testQuote() {
   }
 }
 
-// Run the test
 testQuote();
 
