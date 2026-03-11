@@ -85,7 +85,7 @@
     }
     .data-table th {
       padding: 0.875rem 1rem;
-      text-align: left;
+      text-align: center;
       font-weight: 600;
       color: white;
       text-transform: uppercase;
@@ -96,18 +96,138 @@
     .data-table th:first-child { border-top-left-radius: 0.5rem; }
     .data-table th:last-child { border-top-right-radius: 0.5rem; }
     .data-table tbody tr {
-      border-bottom: 1px solid #e5e7eb;
       transition: all 0.2s ease;
       background: white;
     }
-    .data-table tbody tr:hover { 
-      background: #f8fafc; 
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    .data-table tbody tr:hover td { 
+      background: #f8fbff;
+      border-bottom-color: #dbeafe;
     }
-    .data-table tbody tr:last-child { border-bottom: none; }
+
+    .data-table tbody tr:hover td:first-child {
+      box-shadow: inset 1px 0 0 #dbeafe;
+    }
+
+    .data-table tbody tr:hover td:last-child {
+      box-shadow: inset -1px 0 0 #dbeafe;
+    }
     .data-table td {
       padding: 0.875rem 1rem;
       vertical-align: middle;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .desktop-item-row td {
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .desktop-item-row .item-specs {
+      justify-items: center;
+    }
+
+    .desktop-item-row .item-spec-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.2rem;
+      justify-items: center;
+      text-align: center;
+    }
+
+    .desktop-item-row .item-spec-label {
+      padding-top: 0;
+    }
+
+    .desktop-item-row .item-dimension-value {
+      justify-content: center;
+    }
+
+    .desktop-item-row .item-description-cell {
+      text-align: left;
+    }
+
+    .desktop-item-row .item-description-cell .item-specs {
+      justify-items: start;
+    }
+
+    .desktop-item-row .item-description-cell .item-spec-row {
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 0.75rem;
+      justify-items: start;
+      text-align: left;
+    }
+
+    .desktop-item-row .item-description-cell .item-spec-label {
+      padding-top: 0.1rem;
+    }
+
+    .desktop-item-row .item-description-cell .item-dimension-value {
+      justify-content: flex-start;
+    }
+
+    .data-table tbody tr + tr td {
+      border-top: 10px solid #ffffff;
+    }
+
+    .data-table tbody tr td:first-child {
+      border-top-left-radius: 0.75rem;
+      border-bottom-left-radius: 0.75rem;
+    }
+
+    .data-table tbody tr td:last-child {
+      border-top-right-radius: 0.75rem;
+      border-bottom-right-radius: 0.75rem;
+    }
+
+    .item-specs {
+      display: grid;
+      gap: 0.625rem;
+      min-width: 0;
+    }
+
+    .item-spec-row {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 0.75rem;
+      align-items: start;
+      min-width: 0;
+    }
+
+    .item-spec-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #111827;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      line-height: 1.25;
+      padding-top: 0.1rem;
+    }
+
+    .item-spec-value {
+      font-size: 0.79rem;
+      line-height: 1.4;
+      color: #374151;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .item-spec-value-muted {
+      color: #9ca3af;
+    }
+
+    .item-dimension-value {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+      color: #374151;
+    }
+
+    @media (max-width: 1280px) {
+      .item-spec-row {
+        grid-template-columns: 96px minmax(0, 1fr);
+        gap: 0.5rem;
+      }
     }
     
     /* Tailwind lg:block handles visibility */
@@ -596,9 +716,9 @@
                     </th>
                     <th class="w-16">Item</th>
                     <th class="w-48">Preview</th>
-                    <th class="min-w-48">Description</th>
+                    <th class="min-w-[320px]">Description</th>
                     <th class="text-center w-20">Qty</th>
-                    <th class="text-center w-28">Markup %</th>
+                    <th class="text-center w-20 whitespace-nowrap">Markup %</th>
                     <th class="text-right w-32">Unit Price</th>
                     <th class="text-right w-32">Total</th>
                     <th class="text-center w-28 whitespace-nowrap">Actions</th>
@@ -642,7 +762,7 @@
                     // Get window system type
                     const windowSystemType = item.style || item.windowSystem?.type || '—';
                   %>
-                    <tr data-item-id="<%= item._id %>">
+                    <tr class="desktop-item-row" data-item-id="<%= item._id %>">
                       <td class="py-3 text-center">
                         <input type="checkbox" 
                                class="item-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -669,54 +789,53 @@
                              style="width: 160px; height: 120px; margin: 0 auto;">
                         </div>
                       </td>
-                      <td class="py-3">
-                        <div class="text-xs text-gray-700 space-y-1.5">
-                          <div class="flex items-start gap-2">
-                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Dimensions:</span>
-                            <span class="text-xs font-medium text-gray-900 dimension-display" 
-                                  data-width-inches="<%= item.width %>" 
+                      <td class="py-3 item-description-cell">
+                        <div class="item-specs">
+                          <div class="item-spec-row">
+                            <span class="item-spec-label">Dimensions</span>
+                            <span class="item-spec-value item-dimension-value dimension-display"
+                                  data-width-inches="<%= item.width %>"
                                   data-height-inches="<%= item.height %>">
                               <span>Width: <%= parseFloat(item.width).toFixed(2) %> <span class="dimension-unit">in</span></span>
-                              <span class="mx-1.5 text-gray-400">×</span>
                               <span>Height: <%= parseFloat(item.height).toFixed(2) %> <span class="dimension-unit">in</span></span>
                             </span>
                           </div>
-                          
-                          <div class="flex items-start gap-2">
-                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Missile Impact:</span>
-                            <span class="text-xs text-gray-700"><%= missileType %></span>
+
+                          <div class="item-spec-row">
+                            <span class="item-spec-label">Missile Impact</span>
+                            <span class="item-spec-value"><%= missileType %></span>
                           </div>
-                          
-                          <div class="flex items-start gap-2">
-                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Aluminum Color:</span>
-                            <span class="text-xs text-gray-700"><%= aluminumColor %></span>
+
+                          <div class="item-spec-row">
+                            <span class="item-spec-label">Aluminum Color</span>
+                            <span class="item-spec-value"><%= aluminumColor %></span>
                           </div>
-                          
-                          <div class="flex items-start gap-2">
-                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Glass Type:</span>
-                            <span class="text-xs text-gray-700"><%= glassType %></span>
+
+                          <div class="item-spec-row">
+                            <span class="item-spec-label">Glass Type</span>
+                            <span class="item-spec-value"><%= glassType %></span>
                           </div>
-                          
+
                           <% if (glassDescription) { %>
-                          <div class="flex items-start gap-2">
-                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Glass Description:</span>
-                            <span class="text-xs text-gray-700"><%= glassDescription %></span>
+                          <div class="item-spec-row">
+                            <span class="item-spec-label">Glass Description</span>
+                            <span class="item-spec-value"><%= glassDescription %></span>
                           </div>
                           <% } %>
-                          
-                          <div class="flex items-start gap-2">
-                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Glass Color:</span>
-                            <span class="text-xs text-gray-700"><%= glassColor %></span>
+
+                          <div class="item-spec-row">
+                            <span class="item-spec-label">Glass Color</span>
+                            <span class="item-spec-value"><%= glassColor %></span>
                           </div>
-                          
-                          <div class="flex items-start gap-2">
-                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Low E:</span>
-                            <span class="text-xs text-gray-700"><%= lowE %></span>
+
+                          <div class="item-spec-row">
+                            <span class="item-spec-label">Low E</span>
+                            <span class="item-spec-value"><%= lowE %></span>
                           </div>
-                          
-                          <div class="flex items-start gap-2">
-                            <span class="text-xs font-semibold text-gray-900 w-28 flex-shrink-0">Flanged:</span>
-                            <span class="text-xs <%= flangeSize === 'N/A' ? 'text-gray-400' : 'text-gray-700' %>"><%= flangeSize %></span>
+
+                          <div class="item-spec-row">
+                            <span class="item-spec-label">Flanged</span>
+                            <span class="item-spec-value <%= flangeSize === 'N/A' ? 'item-spec-value-muted' : '' %>"><%= flangeSize %></span>
                           </div>
                         </div>
                       </td>
@@ -734,7 +853,7 @@
                       <td class="text-center py-3">
                         <div class="inline-flex items-center justify-center">
                           <input type="number" 
-                                 class="inline-edit-markup w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                 class="inline-edit-markup w-14 px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                  data-item-id="<%= item._id %>" 
                                  data-project-id="<%= project._id %>"
                                  data-original-markup="<%= item.markup !== undefined ? item.markup : 20 %>"

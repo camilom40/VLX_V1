@@ -1745,519 +1745,203 @@
       }
     }
     
-    // Modified calculatePricing function to handle unit conversion
-    function calculatePricingWithUnits() {
-      // Get window system data from data attribute
-      const windowSystemData = JSON.parse(document.body.getAttribute('data-window-system') || '{}');
-      // Get all hardware data for currency lookup
-      const allAccessories = JSON.parse(document.body.getAttribute('data-all-accessories') || '[]');
-      
-      // Get current unit from hidden input or global variable (ensure we have the latest value)
-      const currentUnitInput = document.getElementById('currentUnit');
-      // Priority: hidden input > currentUnit variable > global preferences > default to inches
-      const activeUnit = currentUnitInput?.value || currentUnit || (window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches');
-      
-      // Normalize unit value (handle 'mm' vs 'millimeters', 'inches' vs 'in')
-      const normalizedUnit = activeUnit === 'mm' || activeUnit === 'millimeters' ? 'mm' : 'inches';
-      
-      // Unit detection complete
-      
-      // Get values from input fields
-      // CRITICAL: In edit mode, when page first loads, values are in inches (from database)
-      // The activeUnit variable tells us how the user is currently viewing/entering values
-      const widthInput = document.getElementById('width');
-      const heightInput = document.getElementById('height');
-      let width = parseFloat(widthInput?.value) || 0;
-      let height = parseFloat(heightInput?.value) || 0;
-      const quantity = parseInt(document.getElementById('quantity').value) || 1;
-      
-      // Store display values for modal
-      const widthDisplay = widthInput?.value || '0';
-      const heightDisplay = heightInput?.value || '0';
-      
-      // Convert to inches for calculations (since backend expects inches)
-      // If normalizedUnit is 'mm', the input values are in mm (user entered them in mm), so convert them
-      // If normalizedUnit is 'inches', the input values are already in inches
-      if (normalizedUnit === 'mm') {
-        width = mmToInches(width);
-        height = mmToInches(height);
-      }
-      
-      // Calculate square footage (convert inches to square meters: 1 sqm = 1550 sq inches)
-      const areaInches = width * height;
-      const areaSquareMeters = areaInches / 1550;
-      const perimeterInches = 2 * (width + height);
-      const perimeterMeters = perimeterInches * 0.0254;
-      
-      // ALL INTERNAL CALCULATIONS IN USD
-      let totalCost = 0;
-      
-      // Glass cost - CONVERT TO USD
-      // Calculate actual glass dimensions using equations if available
-      let glassWidthInches = width; // Default to window width
-      let glassHeightInches = height; // Default to window height
-      
-      if (windowSystemData.glassWidthEquation) {
-        const calculatedWidth = evaluateLengthEquation(windowSystemData.glassWidthEquation, width, height, normalizedUnit);
-        if (calculatedWidth !== null && calculatedWidth > 0) {
-          glassWidthInches = calculatedWidth;
-        }
-      }
-      
-      if (windowSystemData.glassHeightEquation) {
-        const calculatedHeight = evaluateLengthEquation(windowSystemData.glassHeightEquation, width, height, normalizedUnit);
-        if (calculatedHeight !== null && calculatedHeight > 0) {
-          glassHeightInches = calculatedHeight;
-        }
-      }
-      
-      // Calculate glass area using actual glass dimensions
-      const glassAreaInches = glassWidthInches * glassHeightInches;
-      const glassAreaSquareMeters = glassAreaInches / 1550;
-      
-      let glassCost = 0;
-      let glassName = 'N/A';
-      let glassPrice = 0;
-      let glassCurrency = 'USD';
-      let glassPriceUSD = 0;
-      
-      const glassSelect = document.getElementById('glassType');
-      // Check if glassSelect is a select element (not a hidden input) and has a value
-      if (glassSelect && glassSelect.tagName === 'SELECT' && glassSelect.value) {
-        const selectedGlass = glassSelect.options[glassSelect.selectedIndex];
-        if (selectedGlass) {
-          glassPrice = parseFloat(selectedGlass.getAttribute('data-price')) || 0;
-          glassCurrency = selectedGlass.getAttribute('data-currency') || 'USD';
-          glassName = selectedGlass.text || 'N/A';
-          
-          // Only calculate if glass has a valid price
-          if (glassPrice > 0) {
-            glassPriceUSD = convertToUSD(glassPrice, glassCurrency, exchangeRateValue);
-            glassCost = glassPriceUSD * glassAreaSquareMeters;
-            totalCost += glassCost;
-          }
-        }
-      }
-      
-      // Profile costs - CONVERT TO USD
-      let profilesCost = 0;
-      const profileDetails = [];
-      const profileSelects = document.querySelectorAll('.profile-select');
-      
-      // Filter windowSystemData.profiles to only get user-configurable profiles (showToUser: true)
-      const userConfigurableProfilesFromData = (windowSystemData.profiles || []).filter(p => p.showToUser === true);
-      
-      profileSelects.forEach((select, index) => {
-        const selectedProfile = select.options[select.selectedIndex];
-        const pricePerMeter = parseFloat(selectedProfile?.getAttribute('data-price')) || 0;
-        const profileCurrency = selectedProfile?.getAttribute('data-currency') || 'COP';
-        const profileName = selectedProfile?.text || `Profile ${index + 1}`;
-        const pricePerMeterUSD = convertToUSD(pricePerMeter, profileCurrency, exchangeRateValue);
-        
-        // Get the corresponding profile item from window system to get equation
-        // Use the index to match with user-configurable profiles array
-        const profileItem = userConfigurableProfilesFromData[index];
-        
-        // Calculate profile quantity - use equation if present, otherwise use user input
-        // Note: User-configurable profiles typically use user input, but check for quantityEquation as fallback
-        let qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        if (profileItem && profileItem.quantityEquation) {
-          // If profile has quantityEquation, use it (though rare for user-configurable)
-          const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, width, height, normalizedUnit);
-          if (calculatedQuantity !== null) {
-            qty = Math.round(calculatedQuantity); // Round to whole number (match backend)
-          }
-        }
-        
-        // Calculate profile length using equation
-        let lengthMeters = 0;
-        if (profileItem && profileItem.lengthEquation) {
-          const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, width, height, normalizedUnit);
-          
-          if (lengthInches !== null && !isNaN(lengthInches) && lengthInches > 0) {
-            lengthMeters = lengthInches * 0.0254;
-          }
-        }
-        
-        const profileCost = pricePerMeterUSD * lengthMeters * qty;
-        profilesCost += profileCost;
-        
-        // Calculate adjusted length (perimeter - length discount)
-        const lengthDiscountMeters = 0; // Length discount is now handled by equations
-        const adjustedLength = lengthMeters; // For now, adjusted length equals calculated length
-        
-        profileDetails.push({
-          name: profileName,
-          priceOriginal: pricePerMeter,
-          currency: profileCurrency,
-          priceUSD: pricePerMeterUSD,
-          quantity: qty,
-          lengthMeters: lengthMeters,
-          lengthDiscount: 0, // Length discount is now handled by equations
-          adjustedLength: adjustedLength,
-          perimeterMeters: perimeterMeters,
-          cost: profileCost
-        });
-      });
-      
-      // Add auto-managed profiles (from window system, showToUser: false)
-      if (windowSystemData.profiles && Array.isArray(windowSystemData.profiles)) {
-        windowSystemData.profiles.forEach((profileItem) => {
-          if (!profileItem.showToUser && profileItem.profileId && profileItem.pricePerMeter > 0) {
-            const pricePerMeterUSD = convertToUSD(profileItem.pricePerMeter, profileItem.currency || 'USD', exchangeRateValue);
-            
-            // Calculate profile quantity - use equation if present, otherwise use fixed quantity
-            let qty = profileItem.quantity || 1;
-            if (profileItem.quantityEquation) {
-              const calculatedQuantity = evaluateQuantityEquation(profileItem.quantityEquation, width, height, normalizedUnit);
-              if (calculatedQuantity !== null) {
-                qty = Math.round(calculatedQuantity); // Round to whole number for quantity (match backend)
-              }
-            }
-            
-            // Calculate profile length using equation
-            let lengthMeters = 0;
-            if (profileItem.lengthEquation) {
-              const lengthInches = evaluateLengthEquation(profileItem.lengthEquation, width, height, normalizedUnit);
-              if (lengthInches !== null && lengthInches > 0) {
-                lengthMeters = lengthInches * 0.0254;
-              }
-            }
-            
-            const profileCost = pricePerMeterUSD * lengthMeters * qty;
-            profilesCost += profileCost;
-            
-            // Calculate adjusted length (same as lengthMeters since we use equations now)
-            const adjustedLength = lengthMeters;
-            
-            profileDetails.push({
-              name: profileItem.profileName || 'Auto Profile',
-              priceOriginal: profileItem.pricePerMeter,
-              currency: profileItem.currency || 'USD',
-              priceUSD: pricePerMeterUSD,
-              quantity: qty,
-              lengthMeters: lengthMeters,
-              lengthDiscount: 0, // Length discount is now handled by equations
-              adjustedLength: adjustedLength,
-              perimeterMeters: perimeterMeters || 0,
-              cost: profileCost,
-              isUserConfigurable: false
-            });
-          }
-        });
-      }
-      
-      totalCost += profilesCost;
-      
-      // Accessory costs - CONVERT TO USD
-      // Include both user-configurable (from dropdowns/choices) and auto-managed (from window system)
-      let accessoriesCost = 0;
-      const accessoryDetails = [];
-      
-      // 1. Individual accessories (dropdown selects)
-      const accessorySelects = document.querySelectorAll('.accessory-select');
-      accessorySelects.forEach(select => {
-        const selectedAccessory = select.options[select.selectedIndex];
-        const price = parseFloat(selectedAccessory?.getAttribute('data-price')) || 0;
-        const accessoryCurrency = selectedAccessory?.getAttribute('data-currency') || 'USD';
-        const accessoryName = selectedAccessory?.text || 'Accessory';
-        const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
-        const qty = parseInt(select.closest('.component-card').querySelector('input[name*="quantity"]').value) || 1;
-        const accessoryCost = priceUSD * qty;
-        accessoriesCost += accessoryCost;
-        
-        accessoryDetails.push({
-          name: accessoryName,
-          priceOriginal: price,
-          currency: accessoryCurrency,
-          priceUSD: priceUSD,
-          quantity: qty,
-          cost: accessoryCost,
-          isUserConfigurable: true
-        });
-      });
-      
-      // Choice group hardware (radio buttons and checkboxes)
-      // IMPORTANT: Match backend logic - process ALL choice group inputs, not just checked ones
-      // because the backend processes them from req.body which includes all form fields
-      const allChoiceGroupInputs = document.querySelectorAll('input[name^="choiceGroup_"]');
-      const processedChoiceGroupAccessories = new Set(); // Track processed accessory IDs to avoid duplicates
-      
-      allChoiceGroupInputs.forEach(choice => {
-        const accessoryId = choice.value;
-        if (!accessoryId) return;
-        
-        const groupName = choice.name.replace('choiceGroup_', '');
-        const choiceKey = `${groupName}_${accessoryId}`;
-        
-        // Skip if already processed (radio buttons in same group share same name)
-        if (processedChoiceGroupAccessories.has(choiceKey)) {
-          return;
-        }
-        
-        // Only process checked items (user-selected)
-        if (!choice.checked) {
-          return;
-        }
-        
-        processedChoiceGroupAccessories.add(choiceKey);
-        
-        // Find the corresponding price and quantity inputs
-        const priceInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_price"]`;
-        const quantityInputSelector = `input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`;
-        const priceInput = document.querySelector(priceInputSelector);
-        const quantityInput = document.querySelector(quantityInputSelector);
-        
-        if (priceInput && quantityInput) {
-          // Get the price from the hidden field (this is the original price in the accessory's currency)
-          const price = parseFloat(priceInput.value) || 0;
-          
-          // Find the accessory to get its currency
-          const accessoryDoc = allAccessories.find(a => a._id?.toString() === accessoryId);
-          const accessoryCurrency = accessoryDoc?.currency || 'COP';
-          
-          // Convert to USD for internal calculations (must match backend convertToUSD logic)
-          const priceUSD = convertToUSD(price, accessoryCurrency, exchangeRateValue);
-          const qty = parseInt(quantityInput.value) || 1;
-          const accessoryCost = priceUSD * qty;
-          accessoriesCost += accessoryCost;
-          
-          // Try to get accessory name from label or nearby element
-          const label = document.querySelector(`label[for="${choice.id}"]`) || choice.closest('label');
-          const accessoryName = label?.textContent?.trim() || accessoryDoc?.name || `Accessory ${accessoryId}`;
-          
-          accessoryDetails.push({
-            name: accessoryName,
-            priceOriginal: price,
-            currency: accessoryCurrency,
-            priceUSD: priceUSD,
-            quantity: qty,
-            cost: accessoryCost,
-            isUserConfigurable: true
-          });
-        }
-      });
-      
-      // Add auto-managed accessories (from window system, showToUser: false)
-      if (windowSystemData.accessories && Array.isArray(windowSystemData.accessories)) {
-        windowSystemData.accessories.forEach((accessoryItem) => {
-          if (!accessoryItem.showToUser && accessoryItem.accessoryId && accessoryItem.price > 0) {
-            const priceUSD = convertToUSD(accessoryItem.price, accessoryItem.currency || 'USD', exchangeRateValue);
-            // If a quantity equation exists, use it; otherwise use fixed quantity.
-            // (Width/height are in inches at this point.)
-            let qty = accessoryItem.quantity || 1;
-            if (accessoryItem.quantityEquation) {
-              const calculatedQty = evaluateQuantityEquation(accessoryItem.quantityEquation, width, height, normalizedUnit);
-              if (calculatedQty !== null) {
-                qty = calculatedQty;
-              }
-            }
-            const accessoryCost = priceUSD * qty;
-            accessoriesCost += accessoryCost;
-            
-            accessoryDetails.push({
-              name: accessoryItem.accessoryName || 'Auto Accessory',
-              priceOriginal: accessoryItem.price,
-              currency: accessoryItem.currency || 'USD',
-              priceUSD: priceUSD,
-              quantity: qty,
-              cost: accessoryCost,
-              isUserConfigurable: false
-            });
-          }
-        });
-      }
-      
-      totalCost += accessoriesCost;
-      
-      // Muntin costs - CONVERT TO USD
-      let muntinCost = 0;
-      let muntinDetails = null;
-      
-      // Check if muntins are enabled via toggle
-      const useMuntinsToggle = document.getElementById('useMuntinsToggle');
-      const muntinsEnabled = useMuntinsToggle && useMuntinsToggle.checked;
-      
-      const muntinProfileSelect = document.getElementById('muntinProfile');
-      if (muntinsEnabled && muntinProfileSelect && muntinProfileSelect.selectedIndex >= 0) {
-        const selectedMuntinProfile = muntinProfileSelect.options[muntinProfileSelect.selectedIndex];
-        if (selectedMuntinProfile && selectedMuntinProfile.value) {
-          const muntinPricePerMeter = parseFloat(selectedMuntinProfile?.getAttribute('data-price')) || 0;
-          const muntinCurrency = selectedMuntinProfile?.getAttribute('data-currency') || 'USD';
-          const muntinName = selectedMuntinProfile?.text || 'N/A';
-          
-          if (muntinPricePerMeter > 0) {
-            const muntinPricePerMeterUSD = convertToUSD(muntinPricePerMeter, muntinCurrency, exchangeRateValue);
-            
-            // Calculate muntin length based on divisions
-            // IMPORTANT: width and height are already in inches at this point (converted above)
-            const horizontalDivisions = parseInt(document.getElementById('muntinHorizontal')?.value) || 0;
-            const verticalDivisions = parseInt(document.getElementById('muntinVertical')?.value) || 0;
-            
-            if (horizontalDivisions > 0 && verticalDivisions > 0 && width > 0 && height > 0) {
-              // Calculate total muntin length
-              const horizontalMuntins = horizontalDivisions - 1; // Number of horizontal bars
-              const verticalMuntins = verticalDivisions - 1; // Number of vertical bars
-              
-              // width and height are in inches, convert to meters: 1 inch = 0.0254 meters
-              const horizontalLength = horizontalMuntins * width * 0.0254; // meters
-              const verticalLength = verticalMuntins * height * 0.0254; // meters
-              
-              const totalMuntinLength = horizontalLength + verticalLength;
-              muntinCost = muntinPricePerMeterUSD * totalMuntinLength;
-              
-              muntinDetails = {
-                name: muntinName,
-                priceOriginal: muntinPricePerMeter,
-                currency: muntinCurrency,
-                priceUSD: muntinPricePerMeterUSD,
-                horizontal: horizontalDivisions,
-                vertical: verticalDivisions,
-                length: totalMuntinLength,
-                cost: muntinCost
-              };
-              
-              // Debug logging
-              console.log('=== MUNTIN COST DEBUG ===');
-              console.log('muntinsEnabled:', muntinsEnabled);
-              console.log('width (inches):', width);
-              console.log('height (inches):', height);
-              console.log('normalizedUnit:', normalizedUnit);
-              console.log('horizontalDivisions:', horizontalDivisions);
-              console.log('verticalDivisions:', verticalDivisions);
-              console.log('horizontalMuntins (bars):', horizontalMuntins);
-              console.log('verticalMuntins (bars):', verticalMuntins);
-              console.log('horizontalLength (meters):', horizontalLength);
-              console.log('verticalLength (meters):', verticalLength);
-              console.log('totalMuntinLength (meters):', totalMuntinLength);
-              console.log('muntinPricePerMeter (original):', muntinPricePerMeter, muntinCurrency);
-              console.log('muntinPricePerMeterUSD:', muntinPricePerMeterUSD);
-              console.log('muntinCost (USD):', muntinCost);
-              console.log('=== END MUNTIN DEBUG ===');
-            } else {
-              console.log('Muntin calculation skipped: invalid divisions or dimensions', {
-                horizontalDivisions,
-                verticalDivisions,
-                width,
-                height
-              });
-            }
-          } else {
-            console.log('Muntin calculation skipped: no price per meter', muntinPricePerMeter);
-          }
-        } else {
-          console.log('Muntin calculation skipped: no profile selected');
-        }
-      } else {
-        if (!muntinsEnabled) {
-          console.log('Muntins disabled');
-        } else if (!muntinProfileSelect) {
-          console.log('Muntin profile select not found');
-        } else {
-          console.log('No muntin profile selected (selectedIndex:', muntinProfileSelect?.selectedIndex, ')');
-        }
-      }
-      totalCost += muntinCost;
-      
-      // Apply per-window cost settings (as percentages)
-      // All costs are in USD at this point
-      const baseCost = totalCost;
-      const additionalCosts = baseCost * (
-        (costSettings.packaging / 100) +
-        (costSettings.labor / 100) +
-        (costSettings.indirectCosts / 100)
-      );
-      
-      const costPerWindow = baseCost + additionalCosts; // Cost per single window
-      const finalTotal = costPerWindow * quantity; // Total for all windows (costPerWindow × quantity)
+    let activePricingAbortController = null;
+    let pricingRequestSequence = 0;
 
-      // Apply hidden admin markup to the SELLING price displayed to the user
-      const adminMarkupPercent = parseFloat(document.body.getAttribute('data-admin-markup-percent')) || 0;
-      const adminMarkupFactor = 1 + (adminMarkupPercent / 100);
-      const finalTotalWithAdminMarkup = finalTotal * adminMarkupFactor;
-      
-      // Muntin cost logging (summary)
-      console.log('muntinCost:', muntinCost);
-      
-      // Store calculation details for modal
+    function resetPricingDisplay() {
+      calculationDetails = null;
+
+      const totalPriceEl = document.getElementById('totalPrice');
+      if (totalPriceEl) totalPriceEl.textContent = formatCurrency(0);
+
+      const baseMaterialsCostEl = document.getElementById('baseMaterialsCost');
+      if (baseMaterialsCostEl) baseMaterialsCostEl.textContent = formatCurrency(0);
+
+      const glassCostEl = document.getElementById('glassCost');
+      if (glassCostEl) glassCostEl.textContent = formatCurrency(0);
+
+      const accessoriesCostEl = document.getElementById('accessoriesCost');
+      if (accessoriesCostEl) accessoriesCostEl.textContent = formatCurrency(0);
+
+      const additionalCostsEl = document.getElementById('additionalCosts');
+      if (additionalCostsEl) additionalCostsEl.textContent = formatCurrency(0);
+
+      const finalTotalPriceEl = document.getElementById('finalTotalPrice');
+      if (finalTotalPriceEl) finalTotalPriceEl.textContent = formatCurrency(0);
+
+      const unitPriceDisplayEl = document.getElementById('unitPriceDisplay');
+      if (unitPriceDisplayEl) unitPriceDisplayEl.textContent = formatCurrency(0);
+
+      const muntinCostRow = document.getElementById('muntinCostRow');
+      if (muntinCostRow) muntinCostRow.style.display = 'none';
+    }
+
+    function applyPricingDetails(details) {
       calculationDetails = {
-        exchangeRate: exchangeRateValue,
-        widthInches: width,
-        heightInches: height,
-        widthDisplay: widthDisplay + (currentUnit === 'mm' ? ' mm' : ' in'),
-        heightDisplay: heightDisplay + (currentUnit === 'mm' ? ' mm' : ' in'),
-        quantity: quantity,
-        areaInches: areaInches,
-        areaSquareMeters: areaSquareMeters,
-        perimeterInches: perimeterInches,
-        perimeterMeters: perimeterMeters,
-        glassName: glassName,
-        glassPriceOriginal: glassPrice,
-        glassCurrency: glassCurrency,
-        glassPriceUSD: glassPriceUSD,
-        glassCost: glassCost,
-        glassWidthInches: glassWidthInches,
-        glassHeightInches: glassHeightInches,
-        glassAreaInches: glassAreaInches,
-        glassAreaSquareMeters: glassAreaSquareMeters,
-        glassWidthEquation: windowSystemData.glassWidthEquation || null,
-        glassHeightEquation: windowSystemData.glassHeightEquation || null,
-        profiles: profileDetails,
-        profilesCost: profilesCost,
-        accessories: accessoryDetails,
-        accessoriesCost: accessoriesCost,
-        muntinCost: muntinCost,
-        muntinDetails: muntinDetails,
-        baseCost: baseCost,
-        costSettings: {
-          packaging: costSettings.packaging,
-          labor: costSettings.labor,
-          indirectCosts: costSettings.indirectCosts
-        },
-        additionalCosts: additionalCosts,
-        costPerWindow: costPerWindow,
-        finalTotal: finalTotal,
+        ...details,
         displayCurrency: currentCurrency,
-        displayTotal: formatCurrency(finalTotalWithAdminMarkup)
+        displayTotal: formatCurrency(details.finalTotal)
       };
-      
-      // Show/hide muntin cost row and update value
+
       const muntinCostRow = document.getElementById('muntinCostRow');
       if (muntinCostRow) {
-        if (muntinCost > 0) {
+        if ((details.muntinCost || 0) > 0) {
           muntinCostRow.style.display = 'flex';
-          document.getElementById('muntinCost').textContent = formatCurrency(muntinCost);
+          document.getElementById('muntinCost').textContent = formatCurrency(details.muntinCost || 0);
         } else {
           muntinCostRow.style.display = 'none';
         }
       }
-      
-      // Update displays with comma formatting (formatCurrency will convert USD to display currency)
-      // Note: some breakdown elements are hidden for non-admins, so guard nulls.
-      const totalPriceEl = document.getElementById('totalPrice');
-      if (totalPriceEl) totalPriceEl.textContent = formatCurrency(finalTotalWithAdminMarkup);
 
-      // Base Materials should show the total of profiles (not including glass/hardware separately shown)
-      // Or we could show total base cost - for now, showing profiles cost as "Base Materials"
+      const totalPriceEl = document.getElementById('totalPrice');
+      if (totalPriceEl) totalPriceEl.textContent = formatCurrency(details.finalTotal || 0);
+
       const baseMaterialsCostEl = document.getElementById('baseMaterialsCost');
-      if (baseMaterialsCostEl) baseMaterialsCostEl.textContent = formatCurrency(profilesCost);
+      if (baseMaterialsCostEl) baseMaterialsCostEl.textContent = formatCurrency(details.profilesCost || 0);
 
       const glassCostEl = document.getElementById('glassCost');
-      if (glassCostEl) glassCostEl.textContent = formatCurrency(glassCost);
+      if (glassCostEl) glassCostEl.textContent = formatCurrency(details.glassCost || 0);
 
       const accessoriesCostEl = document.getElementById('accessoriesCost');
-      if (accessoriesCostEl) accessoriesCostEl.textContent = formatCurrency(accessoriesCost);
+      if (accessoriesCostEl) accessoriesCostEl.textContent = formatCurrency(details.accessoriesCost || 0);
 
       const additionalCostsEl = document.getElementById('additionalCosts');
-      if (additionalCostsEl) additionalCostsEl.textContent = formatCurrency(additionalCosts);
+      if (additionalCostsEl) additionalCostsEl.textContent = formatCurrency(details.additionalCosts || 0);
 
       const finalTotalPriceEl = document.getElementById('finalTotalPrice');
-      if (finalTotalPriceEl) finalTotalPriceEl.textContent = formatCurrency(finalTotalWithAdminMarkup);
-      // Also display unit price (cost per window) - this should match the table's unit price column
-      const unitPrice = quantity > 0 ? (costPerWindow * adminMarkupFactor) : 0;
+      if (finalTotalPriceEl) finalTotalPriceEl.textContent = formatCurrency(details.finalTotal || 0);
+
       const unitPriceDisplayEl = document.getElementById('unitPriceDisplay');
-      if (unitPriceDisplayEl) {
-        unitPriceDisplayEl.textContent = formatCurrency(unitPrice);
+      if (unitPriceDisplayEl) unitPriceDisplayEl.textContent = formatCurrency((details.finalTotal || 0) / Math.max(details.quantity || 1, 1));
+    }
+
+    function buildPricingPreviewPayload() {
+      const currentUnitInput = document.getElementById('currentUnit');
+      const activeUnit = currentUnitInput?.value || currentUnit || (window.globalPreferences?.unit || localStorage.getItem('globalUnit') || 'inches');
+      const normalizedUnit = activeUnit === 'mm' || activeUnit === 'millimeters' ? 'mm' : 'inches';
+
+      const widthInput = document.getElementById('width');
+      const heightInput = document.getElementById('height');
+      let width = parseFloat(widthInput?.value) || 0;
+      let height = parseFloat(heightInput?.value) || 0;
+
+      if (normalizedUnit === 'mm') {
+        width = mmToInches(width);
+        height = mmToInches(height);
+      }
+
+      const selectedProfiles = Array.from(document.querySelectorAll('.profile-select')).map((select, index) => {
+        const card = select.closest('.component-card');
+        return {
+          profileId: select.value,
+          quantity: parseInt(card?.querySelector('input[name*="[quantity]"]')?.value, 10) || 1,
+          orientation: card?.querySelector('select[name*="[orientation]"]')?.value || 'horizontal',
+          lengthDiscount: parseFloat(card?.querySelector('input[name*="[lengthDiscount]"]')?.value) || 0
+        };
+      }).filter((profile) => profile.profileId);
+
+      const selectedAccessories = [];
+
+      document.querySelectorAll('input[name^="choiceGroup_"]:checked').forEach((input) => {
+        const groupName = input.name.replace('choiceGroup_', '');
+        const accessoryId = input.value;
+        if (!accessoryId) return;
+
+        const quantityInput = document.querySelector(`input[name="accessories_choice_${groupName}_${accessoryId}_quantity"]`);
+        selectedAccessories.push({
+          accessoryId,
+          quantity: parseInt(quantityInput?.value, 10) || 1,
+          componentGroup: groupName,
+          selectionType: input.type === 'radio' ? 'single' : 'multiple'
+        });
+      });
+
+      document.querySelectorAll('.accessory-select').forEach((select) => {
+        if (!select.value) return;
+        const card = select.closest('.component-card');
+        selectedAccessories.push({
+          accessoryId: select.value,
+          quantity: parseInt(card?.querySelector('input[name*="[quantity]"]')?.value, 10) || 1,
+          componentGroup: null,
+          selectionType: 'quantity'
+        });
+      });
+
+      const useMuntinsToggle = document.getElementById('useMuntinsToggle');
+      let muntinConfiguration = null;
+      if (useMuntinsToggle && useMuntinsToggle.checked) {
+        muntinConfiguration = {
+          enabled: true,
+          horizontalDivisions: parseInt(document.getElementById('muntinHorizontal')?.value, 10) || 1,
+          verticalDivisions: parseInt(document.getElementById('muntinVertical')?.value, 10) || 1,
+          muntinProfileId: document.getElementById('muntinProfile')?.value || null
+        };
+      }
+
+      const glassInput = document.getElementById('glassType');
+
+      return {
+        windowSystemId: document.querySelector('input[name="windowSystemId"]')?.value || '',
+        width,
+        height,
+        quantity: parseInt(document.getElementById('quantity')?.value, 10) || 1,
+        glassType: glassInput?.value || '',
+        selectedProfiles,
+        selectedAccessories,
+        muntinConfiguration,
+        widthDisplay: `${widthInput?.value || '0'} ${normalizedUnit === 'mm' ? 'mm' : 'in'}`,
+        heightDisplay: `${heightInput?.value || '0'} ${normalizedUnit === 'mm' ? 'mm' : 'in'}`,
+        currentUnit: normalizedUnit
+      };
+    }
+
+    // Modified calculatePricing function to use backend pricing
+    async function calculatePricingWithUnits() {
+      const payload = buildPricingPreviewPayload();
+
+      if (!payload.width || !payload.height || !payload.windowSystemId) {
+        resetPricingDisplay();
+        return null;
+      }
+
+      if (activePricingAbortController) {
+        activePricingAbortController.abort();
+      }
+
+      const requestId = ++pricingRequestSequence;
+      activePricingAbortController = new AbortController();
+
+      try {
+        const form = document.getElementById('windowConfigForm');
+        const projectId = form?.getAttribute('data-project-id');
+        const response = await fetch(`/projects/${projectId}/windows/price-preview`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload),
+          signal: activePricingAbortController.signal
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to calculate pricing.');
+        }
+
+        if (requestId !== pricingRequestSequence) {
+          return null;
+        }
+
+        applyPricingDetails(data.calculationDetails || {});
+        return data.calculationDetails || null;
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          return null;
+        }
+        console.error('Backend pricing preview failed:', error);
+        resetPricingDisplay();
+        return null;
       }
     }
     
@@ -3272,10 +2956,12 @@
     // Override the original calculatePricing function to also update preview
     const originalCalculatePricing = window.calculatePricing;
     window.calculatePricing = function() {
+      let result = null;
       if (originalCalculatePricing) {
-        originalCalculatePricing();
+        result = originalCalculatePricing();
       }
       updateWindowPreview();
+      return result;
     };
     
     // Override the switchUnits function to also update preview
@@ -3573,34 +3259,31 @@
     let calculationDetails = null;
 
     // Function to show calculation details modal
-    function showCalculationDetails() {
-      // Always run calculation first to ensure details are up-to-date
-      if (typeof window.calculatePricing === 'function') {
-        window.calculatePricing();
-        // Wait a moment for calculation to complete and populate calculationDetails
-        setTimeout(() => {
-          if (!calculationDetails) {
-            // Check if window has minimum required data
-            const width = parseFloat(document.getElementById('width')?.value) || 0;
-            const height = parseFloat(document.getElementById('height')?.value) || 0;
-            if (width === 0 || height === 0) {
-              alert('Please enter window dimensions (width and height) first to see calculation details.');
-              return;
-            }
-            // If calculation still didn't populate, show error
-            alert('Unable to calculate pricing. Please check that all required fields are filled.');
-            return;
-          }
-          const modal = document.getElementById('calculationModal');
-          if (modal) {
-            modal.classList.remove('hidden');
-            populateCalculationModal();
-          } else {
-            alert('Calculation modal not found. Please refresh the page.');
-          }
-        }, 200);
-      } else {
+    async function showCalculationDetails() {
+      if (typeof window.calculatePricing !== 'function') {
         alert('Calculation function not available. Please refresh the page.');
+        return;
+      }
+
+      await window.calculatePricing();
+
+      if (!calculationDetails) {
+        const width = parseFloat(document.getElementById('width')?.value) || 0;
+        const height = parseFloat(document.getElementById('height')?.value) || 0;
+        if (width === 0 || height === 0) {
+          alert('Please enter window dimensions (width and height) first to see calculation details.');
+          return;
+        }
+        alert('Unable to calculate pricing. Please check that all required fields are filled.');
+        return;
+      }
+
+      const modal = document.getElementById('calculationModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        populateCalculationModal();
+      } else {
+        alert('Calculation modal not found. Please refresh the page.');
       }
     }
     
@@ -3670,10 +3353,10 @@
               <div>Glass Type: ${details.glassName || 'N/A'}</div>
               <div>Price (${details.glassCurrency}): ${details.glassPriceOriginal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               <div>Price (USD): $${details.glassPriceUSD.toFixed(2)}</div>
-              <div>Area (sq m): ${details.areaSquareMeters.toFixed(4)}</div>
+              <div>Area (sq m): ${(details.glassAreaSquareMeters || 0).toFixed(4)}</div>
               <div class="font-semibold">Glass Cost (USD): $${details.glassCost.toFixed(2)}</div>
               <div class="font-semibold text-green-700">Glass Cost (COP): ${formatCOP(details.glassCost, rate)}</div>
-              <div class="text-xs text-gray-600">Formula: ${details.glassPriceUSD.toFixed(2)} × ${details.areaSquareMeters.toFixed(4)} = $${details.glassCost.toFixed(2)}</div>
+              <div class="text-xs text-gray-600">Formula: ${details.glassPriceUSD.toFixed(2)} × ${(details.glassAreaSquareMeters || 0).toFixed(4)} = $${details.glassCost.toFixed(2)}</div>
             </div>
           </div>
 
@@ -3819,34 +3502,31 @@
     }
 
     // Function to show workshop details modal
-    function showWorkshopDetails() {
-      // Always run calculation first to ensure details are up-to-date
-      if (typeof window.calculatePricing === 'function') {
-        window.calculatePricing();
-        // Wait a moment for calculation to complete and populate calculationDetails
-        setTimeout(() => {
-          if (!calculationDetails) {
-            // Check if window has minimum required data
-            const width = parseFloat(document.getElementById('width')?.value) || 0;
-            const height = parseFloat(document.getElementById('height')?.value) || 0;
-            if (width === 0 || height === 0) {
-              alert('Please enter window dimensions (width and height) first to see workshop details.');
-              return;
-            }
-            // If calculation still didn't populate, show error
-            alert('Unable to calculate pricing. Please check that all required fields are filled.');
-            return;
-          }
-          const modal = document.getElementById('workshopModal');
-          if (modal) {
-            modal.classList.remove('hidden');
-            populateWorkshopModal();
-          } else {
-            alert('Workshop modal not found. Please refresh the page.');
-          }
-        }, 200);
-      } else {
+    async function showWorkshopDetails() {
+      if (typeof window.calculatePricing !== 'function') {
         alert('Calculation function not available. Please refresh the page.');
+        return;
+      }
+
+      await window.calculatePricing();
+
+      if (!calculationDetails) {
+        const width = parseFloat(document.getElementById('width')?.value) || 0;
+        const height = parseFloat(document.getElementById('height')?.value) || 0;
+        if (width === 0 || height === 0) {
+          alert('Please enter window dimensions (width and height) first to see workshop details.');
+          return;
+        }
+        alert('Unable to calculate pricing. Please check that all required fields are filled.');
+        return;
+      }
+
+      const modal = document.getElementById('workshopModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        populateWorkshopModal();
+      } else {
+        alert('Workshop modal not found. Please refresh the page.');
       }
     }
     
