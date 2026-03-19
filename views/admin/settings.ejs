@@ -133,7 +133,50 @@
   </style>
   <script>
     // Server data passed to client
-    var currentExchangeRateValue = <%= currentExchangeRate || 4000 %>;
+    var currentExchangeRateValue = <%= (typeof effectiveExchangeRate !== 'undefined' && effectiveExchangeRate != null) ? Number(effectiveExchangeRate) : ((typeof currentExchangeRate !== 'undefined' && currentExchangeRate != null) ? Number(currentExchangeRate) : 4000) %>;
+
+    function setTrmMode(mode) {
+      var manual = mode === 'manual';
+      var input = document.getElementById('exchangeRate');
+      var manualHint = document.getElementById('trm-manual-hint');
+      var marketHint = document.getElementById('trm-market-hint');
+      var ref = document.getElementById('market-trm-ref');
+      if (!input) return;
+      input.readOnly = !manual;
+      input.required = manual;
+      input.classList.toggle('bg-gray-100', !manual);
+      input.classList.toggle('cursor-not-allowed', !manual);
+      if (manualHint) manualHint.classList.toggle('hidden', !manual);
+      if (marketHint) marketHint.classList.toggle('hidden', manual);
+      if (!manual) {
+        var v = ref ? parseFloat(ref.getAttribute('data-rate') || '0') : 0;
+        if (v > 0) {
+          input.value = v;
+          currentExchangeRateValue = v;
+        }
+        if (typeof updateCurrencyLabels === 'function') updateCurrencyLabels();
+      } else {
+        var backup = document.getElementById('savedDbExchangeRate');
+        if (backup && backup.value) {
+          input.value = backup.value;
+        }
+        currentExchangeRateValue = parseFloat(input.value) || 4000;
+        if (typeof updateCurrencyLabels === 'function') updateCurrencyLabels();
+      }
+    }
+
+    function syncManualTrmBackup() {
+      var input = document.getElementById('exchangeRate');
+      var backup = document.getElementById('savedDbExchangeRate');
+      if (input && backup && !input.readOnly) {
+        backup.value = input.value || '4000';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var src = '<%= typeof exchangeRateSource !== "undefined" ? exchangeRateSource : ((costSettings && costSettings.exchangeRateSource) || "manual") %>';
+      setTrmMode(src === 'market' ? 'market' : 'manual');
+    });
     // Database stores all values in USD
     var valuesInUSD = {
       seaFreight: <%= costSettings ? (costSettings.seaFreight || 0) : 0 %>,
@@ -722,8 +765,8 @@
           
           <!-- Currency Settings Row -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <!-- Exchange Rate Display -->
-            <div class="form-section !mb-0">
+            <!-- TRM: manual vs mercado -->
+            <div class="form-section !mb-0 md:col-span-2">
               <div class="flex items-center gap-2.5 mb-3">
                 <div class="section-icon bg-green-100 text-green-600">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -731,22 +774,60 @@
                   </svg>
                 </div>
                 <div>
-                  <label class="font-semibold text-gray-800 text-sm">Exchange Rate (USD to COP)</label>
+                  <span class="font-semibold text-gray-800 text-sm">Tipo de cambio (TRM) para cotizaciones</span>
                 </div>
               </div>
-              <div class="currency-display">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-sm text-gray-600">Current Rate:</span>
-                  <span class="font-bold text-lg text-indigo-700">$1 USD = $<%= (currentExchangeRate || costSettings.exchangeRate || 4000).toLocaleString() %> COP</span>
-                </div>
-                <p class="text-xs text-gray-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+
+              <p class="text-xs text-gray-500 mb-3">Elige si la app usa una tasa fija (como tu Excel) o la tasa del mercado (API, actualizada aprox. cada hora en caché).</p>
+
+              <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <label class="flex items-start gap-3 cursor-pointer rounded-xl border-2 border-gray-200 p-3 hover:border-blue-300 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 flex-1">
+                  <input type="radio" name="exchangeRateSource" value="manual" class="mt-1"
+                    <%= (typeof exchangeRateSource === 'undefined' || exchangeRateSource !== 'market') ? 'checked' : '' %>
+                    onchange="setTrmMode('manual')">
+                  <div>
+                    <div class="font-semibold text-gray-800 text-sm">Fija (manual)</div>
+                    <div class="text-xs text-gray-500">Tú defines el valor (ej. 4000). No cambia sola.</div>
+                  </div>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer rounded-xl border-2 border-gray-200 p-3 hover:border-emerald-300 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50 flex-1">
+                  <input type="radio" name="exchangeRateSource" value="market" class="mt-1"
+                    <%= (typeof exchangeRateSource !== 'undefined' && exchangeRateSource === 'market') ? 'checked' : '' %>
+                    onchange="setTrmMode('market')">
+                  <div>
+                    <div class="font-semibold text-gray-800 text-sm">Mercado (automática)</div>
+                    <div class="text-xs text-gray-500">Usa API de tipo de cambio; si falla, se usa el último valor guardado.</div>
+                  </div>
+                </label>
+              </div>
+
+              <input type="hidden" id="savedDbExchangeRate" value="<%= (costSettings && costSettings.exchangeRate) ? costSettings.exchangeRate : 4000 %>">
+
+              <div id="market-trm-ref" class="hidden" data-rate="<%= (typeof marketExchangeRate !== 'undefined' && marketExchangeRate && marketExchangeRate > 0) ? Number(marketExchangeRate) : ((typeof effectiveExchangeRate !== 'undefined' && effectiveExchangeRate) ? Number(effectiveExchangeRate) : 4000) %>"></div>
+
+              <label for="exchangeRate" class="block text-sm font-medium text-gray-700 mb-1">Valor TRM aplicado (COP por 1 USD)</label>
+              <div class="input-with-icon max-w-md">
+                <div class="input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
-                  Last updated: <span id="current-time"><%= new Date().toLocaleString() %></span>
-                </p>
+                </div>
+                <input type="number" step="0.01" min="1" id="exchangeRate" name="exchangeRate" required
+                  value="<%= (typeof exchangeRateSource !== 'undefined' && exchangeRateSource === 'market' && typeof effectiveExchangeRate !== 'undefined') ? effectiveExchangeRate : ((costSettings && costSettings.exchangeRate) ? costSettings.exchangeRate : 4000) %>"
+                  class="form-input pr-24"
+                  oninput="currentExchangeRateValue = parseFloat(this.value) || 4000; syncManualTrmBackup(); if (typeof updateCurrencyLabels === 'function') updateCurrencyLabels();">
+                <span class="currency-suffix">COP/USD</span>
               </div>
-              <p class="help-text">Automatically updated from live market data</p>
+
+              <p id="trm-manual-hint" class="help-text mt-2">Modo manual: edita el número para igualar tu Excel. Guarda los cambios abajo.</p>
+              <p id="trm-market-hint" class="help-text mt-2 hidden text-emerald-800">
+                Modo mercado: el número mostrado es la tasa en caché / última consulta. Al guardar se refresca desde la API cuando sea posible.
+              </p>
+              <% if (typeof marketExchangeRate !== 'undefined' && marketExchangeRate && marketExchangeRate > 0) { %>
+                <p class="text-xs text-gray-500 mt-2">
+                  Cotización API (referencia): 1 USD ≈ <%= Number(marketExchangeRate).toLocaleString('es-CO', { maximumFractionDigits: 2 }) %> COP
+                </p>
+              <% } %>
             </div>
           </div>
 

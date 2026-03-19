@@ -29,8 +29,14 @@ const costSettingsSchema = new mongoose.Schema({
   exchangeRate: {
     type: Number,
     required: true,
-    default: 4000, // Default USD to COP rate
+    default: 4000, // Default USD to COP rate (manual value, or last snapshot / fallback when mode is market)
     min: 0
+  },
+  /** manual = use exchangeRate field; market = use live API (cached ~1h), fallback to exchangeRate if API fails */
+  exchangeRateSource: {
+    type: String,
+    enum: ['manual', 'market'],
+    default: 'manual'
   },
   currency: { 
     type: String, 

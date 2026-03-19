@@ -623,7 +623,7 @@
                       <div class="text-gray-500">Markup:</div>
                       <div class="text-gray-800">
                         <input type="number" 
-                               class="inline-edit-markup w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center"
+                               class="inline-edit-markup w-20 min-w-[4.5rem] px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                data-item-id="<%= item._id %>" 
                                data-project-id="<%= project._id %>"
                                data-original-markup="<%= item.markup !== undefined ? item.markup : 20 %>"
@@ -718,7 +718,7 @@
                     <th class="w-48">Preview</th>
                     <th class="min-w-[320px]">Description</th>
                     <th class="text-center w-20">Qty</th>
-                    <th class="text-center w-20 whitespace-nowrap">Markup %</th>
+                    <th class="text-center w-24 whitespace-nowrap">Markup %</th>
                     <th class="text-right w-32">Unit Price</th>
                     <th class="text-right w-32">Total</th>
                     <th class="text-center w-28 whitespace-nowrap">Actions</th>
@@ -853,7 +853,7 @@
                       <td class="text-center py-3">
                         <div class="inline-flex items-center justify-center">
                           <input type="number" 
-                                 class="inline-edit-markup w-14 px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                 class="inline-edit-markup w-20 min-w-[4.5rem] px-2 py-1 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                  data-item-id="<%= item._id %>" 
                                  data-project-id="<%= project._id %>"
                                  data-original-markup="<%= item.markup !== undefined ? item.markup : 20 %>"

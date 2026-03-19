@@ -27,11 +27,8 @@ async function fetchLiveExchangeRate() {
     if (rate && rate > 0) {
       exchangeRateCache.rate = rate;
       exchangeRateCache.lastFetch = now;
-      
-      // Update database with latest rate
-      await updateDatabaseExchangeRate(rate);
-      
-      console.log(`Exchange rate updated: 1 USD = ${rate} COP`);
+      // Do not write API rate to MongoDB — TRM for pricing is set in Admin → Cost Settings.
+      console.log(`Exchange rate (market reference cached): 1 USD = ${rate} COP`);
       return rate;
     }
   } catch (error) {
@@ -43,45 +40,39 @@ async function fetchLiveExchangeRate() {
 }
 
 /**
- * Update database with latest exchange rate
- */
-async function updateDatabaseExchangeRate(rate) {
-  try {
-    let costSettings = await CostSettings.findOne();
-    if (costSettings) {
-      costSettings.exchangeRate = rate;
-      await costSettings.save();
-    }
-  } catch (error) {
-    console.error('Error updating database exchange rate:', error.message);
-  }
-}
-
-/**
- * Get current exchange rate (from cache, database, or API)
+ * Get current exchange rate according to Admin → Cost Settings (manual vs market).
  */
 async function getExchangeRate() {
   try {
-    // First try to get from cache if recent
-    const now = new Date().getTime();
-    if (exchangeRateCache.lastFetch && 
-        (now - exchangeRateCache.lastFetch) < exchangeRateCache.cacheExpiry) {
-      return exchangeRateCache.rate;
+    const costSettings = await CostSettings.findOne();
+    const source = costSettings?.exchangeRateSource === 'market' ? 'market' : 'manual';
+
+    if (source === 'market') {
+      try {
+        const live = await fetchLiveExchangeRate();
+        if (live && live > 0) {
+          return live;
+        }
+      } catch (e) {
+        console.warn('Market TRM unavailable, using fallback:', e.message);
+      }
+      const fallback = costSettings?.exchangeRate && costSettings.exchangeRate > 0
+        ? costSettings.exchangeRate
+        : exchangeRateCache.rate;
+      return fallback > 0 ? fallback : 4000;
     }
 
-    // Try to get from database
-    const costSettings = await CostSettings.findOne();
-    if (costSettings && costSettings.exchangeRate) {
+    // Manual: always use value stored in DB
+    if (costSettings?.exchangeRate && costSettings.exchangeRate > 0) {
       exchangeRateCache.rate = costSettings.exchangeRate;
-      exchangeRateCache.lastFetch = now;
+      exchangeRateCache.lastFetch = Date.now();
       return costSettings.exchangeRate;
     }
 
-    // Fallback to API
-    return await fetchLiveExchangeRate();
+    return exchangeRateCache.rate > 0 ? exchangeRateCache.rate : 4000;
   } catch (error) {
     console.error('Error getting exchange rate:', error.message);
-    return exchangeRateCache.rate; // Return cached fallback
+    return exchangeRateCache.rate > 0 ? exchangeRateCache.rate : 4000;
   }
 }
 

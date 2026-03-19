@@ -4,7 +4,7 @@ const fs = require('fs');
 const multer = require('multer');
 const ExcelJS = require('exceljs');
 const CostSettings = require('../../models/CostSettings');
-const { getExchangeRate } = require('../../utils/currencyConverter');
+const { fetchLiveExchangeRate, getExchangeRate } = require('../../utils/currencyConverter');
 
 // Middleware to handle file uploads
 const upload = multer({ dest: 'uploads/' });
@@ -12,15 +12,12 @@ const upload = multer({ dest: 'uploads/' });
 // Render settings page
 router.get('/settings', async (req, res) => {
   try {
-    // Get the latest exchange rate from the utility
-    const currentExchangeRate = await getExchangeRate();
-    
     let costSettings = await CostSettings.findOne();
     if (!costSettings) {
-      // Create default settings if none exist
       costSettings = new CostSettings({
         currency: 'COP',
-        exchangeRate: currentExchangeRate,
+        exchangeRate: 4000,
+        exchangeRateSource: 'manual',
         seaFreight: 0,
         landFreight: 0,
         packaging: 0,
@@ -29,15 +26,25 @@ router.get('/settings', async (req, res) => {
         administrativeExpenses: 0
       });
       await costSettings.save();
-    } else {
-      // Update exchange rate with latest from API
-      costSettings.exchangeRate = currentExchangeRate;
-      await costSettings.save();
     }
-    
-    res.render('admin/settings', { 
-      costSettings, 
-      currentExchangeRate,
+
+    const exchangeRateSource = costSettings.exchangeRateSource === 'market' ? 'market' : 'manual';
+
+    let marketExchangeRate = null;
+    try {
+      marketExchangeRate = await fetchLiveExchangeRate();
+    } catch (e) {
+      console.warn('Could not fetch market exchange rate for display:', e.message);
+    }
+
+    const effectiveExchangeRate = await getExchangeRate();
+
+    res.render('admin/settings', {
+      costSettings,
+      exchangeRateSource,
+      currentExchangeRate: costSettings.exchangeRate,
+      effectiveExchangeRate,
+      marketExchangeRate,
       success: req.query.success === 'true'
     });
   } catch (error) {
@@ -56,7 +63,9 @@ router.post('/settings', async (req, res) => {
       packaging,
       labor,
       indirectCosts,
-      administrativeExpenses
+      administrativeExpenses,
+      exchangeRate: exchangeRateBody,
+      exchangeRateSource: exchangeRateSourceBody
     } = req.body;
 
     console.log('Received form data:', req.body); // Debug log
@@ -75,13 +84,18 @@ router.post('/settings', async (req, res) => {
       console.error('Missing required fields:', missingFields);
       return res.status(400).render('admin/settings', {
         costSettings: req.body,
-        currentExchangeRate: await getExchangeRate(),
+        exchangeRateSource: exchangeRateSourceBody === 'market' ? 'market' : 'manual',
+        currentExchangeRate: parseFloat(req.body.exchangeRate) || 4000,
+        effectiveExchangeRate: parseFloat(req.body.exchangeRate) || 4000,
+        marketExchangeRate: null,
         error: `Missing required fields: ${missingFields.join(', ')}`
       });
     }
 
-    // Get the latest exchange rate
-    const currentExchangeRate = await getExchangeRate();
+    const source = exchangeRateSourceBody === 'market' ? 'market' : 'manual';
+    const parsedTrm = parseFloat(exchangeRateBody);
+    let exchangeRate =
+      Number.isFinite(parsedTrm) && parsedTrm > 0 ? parsedTrm : 4000;
 
     // Find existing settings or create new one
     let costSettings = await CostSettings.findOne();
@@ -89,7 +103,21 @@ router.post('/settings', async (req, res) => {
     if (costSettings) {
       // Update existing settings
       costSettings.currency = currency;
-      costSettings.exchangeRate = currentExchangeRate;
+      costSettings.exchangeRateSource = source;
+      if (source === 'market') {
+        try {
+          const live = await fetchLiveExchangeRate();
+          if (Number.isFinite(live) && live > 0) {
+            exchangeRate = live;
+          }
+        } catch (e) {
+          console.warn('Could not refresh market TRM on save:', e.message);
+        }
+        if (!Number.isFinite(exchangeRate) || exchangeRate <= 0) {
+          exchangeRate = costSettings.exchangeRate > 0 ? costSettings.exchangeRate : 4000;
+        }
+      }
+      costSettings.exchangeRate = exchangeRate;
       costSettings.seaFreight = parseFloat(seaFreight) || 0;
       costSettings.landFreight = parseFloat(landFreight) || 0;
       costSettings.packaging = parseFloat(packaging) || 0;
@@ -100,9 +128,20 @@ router.post('/settings', async (req, res) => {
       await costSettings.save();
     } else {
       // Create new settings
+      if (source === 'market') {
+        try {
+          const live = await fetchLiveExchangeRate();
+          if (Number.isFinite(live) && live > 0) {
+            exchangeRate = live;
+          }
+        } catch (e) {
+          console.warn('Could not fetch market TRM for new settings:', e.message);
+        }
+      }
       costSettings = new CostSettings({
         currency,
-        exchangeRate: currentExchangeRate,
+        exchangeRate,
+        exchangeRateSource: source,
         seaFreight: parseFloat(seaFreight) || 0,
         landFreight: parseFloat(landFreight) || 0,
         packaging: parseFloat(packaging) || 0,
@@ -120,7 +159,10 @@ router.post('/settings', async (req, res) => {
     console.error('Error saving settings:', error);
     res.status(500).render('admin/settings', {
       costSettings: req.body,
-      currentExchangeRate: await getExchangeRate(),
+      exchangeRateSource: req.body.exchangeRateSource === 'market' ? 'market' : 'manual',
+      currentExchangeRate: parseFloat(req.body.exchangeRate) || 4000,
+      effectiveExchangeRate: parseFloat(req.body.exchangeRate) || 4000,
+      marketExchangeRate: null,
       error: 'Server error while saving settings'
     });
   }
