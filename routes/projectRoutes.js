@@ -306,15 +306,26 @@ router.get('/projects/:id/quote-preview', isAuthenticated, async (req, res) => {
           }
         }
         
-        return {
+        const plain = {
           ...item.toObject(),
           windowSystem: windowSystem
         };
+        // Quoted prices match project details: base DB prices × (1 + markup%)
+        const m =
+          plain.markup !== undefined && plain.markup !== null && !Number.isNaN(Number(plain.markup))
+            ? Number(plain.markup)
+            : 20;
+        const baseU = Number(plain.unitPrice) || 0;
+        const baseT = Number(plain.totalPrice) || 0;
+        plain._markupPct = m;
+        plain._quotedUnit = baseU * (1 + m / 100);
+        plain._quotedLineTotal = baseT * (1 + m / 100);
+        return plain;
       })
     );
 
-    // Calculate total project value
     const projectTotal = windowItems.reduce((total, item) => total + item.totalPrice, 0);
+    const quotedProjectTotal = windowItemsWithConfig.reduce((sum, i) => sum + (i._quotedLineTotal || 0), 0);
 
     // Get the company logo from user's database record
     const user = await User.findById(userId).lean();
@@ -324,6 +335,7 @@ router.get('/projects/:id/quote-preview', isAuthenticated, async (req, res) => {
       project,
       windowItems: windowItemsWithConfig,
       projectTotal: projectTotal.toFixed(2),
+      quotedProjectTotal: quotedProjectTotal.toFixed(2),
       companyLogo: companyLogo
     });
 

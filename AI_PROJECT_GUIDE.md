@@ -1,6 +1,8 @@
 # VLX-ESTIMATOR - AI Project Guide - by camilo mejia
 
 > This document is designed to help AI assistants (or future developers) quickly understand the VLX-ESTIMATOR web application, its architecture, key features, and recent development history.
+>
+> **Latest (Mar 2026)**: TRM manual vs mercado (`CostSettings.exchangeRateSource`), `pricingCalculator` + `npm test`, y cambios en `editWindowSystem` / `projectDetails` — ver sección **“March 2026 - TRM settings…”** al final del log y **§5 Pricing / Exchange rate**.
 
 ---
 
@@ -77,7 +79,13 @@ VLX_V1/
 │   └── register.ejs
 ├── public/                  # Static assets (CSS, JS, images)
 ├── utils/
-│   └── currencyConverter.js # COP/USD conversion utilities
+│   ├── pricingCalculator.js # `calculateWindowConfigurationPricing` — profiles, glass, accessories, muntins, COP/USD
+│   ├── currencyConverter.js # `getExchangeRate()`, `fetchLiveExchangeRate()` — TRM manual vs mercado
+│   └── ... (activityLogger, logger, etc.)
+├── tests/
+│   └── pricingCalculator.test.js  # `npm test` — regression tests for pricing equations & markup
+├── scripts/
+│   └── testQuote.js         # Opcional: cotización de prueba contra MongoDB usando el mismo calculator
 └── uploads/                 # Uploaded images storage
 ```
 
@@ -135,10 +143,19 @@ The configure window page features a dynamic preview that:
 - Shows dimension labels that adjust position based on unit
 
 ### 5. Pricing System
+- **Central calculator**: `utils/pricingCalculator.js` exports `calculateWindowConfigurationPricing()` — usado en `routes/projectRoutes.js`, `scripts/testQuote.js`, y cubierto por `tests/pricingCalculator.test.js` (`npm test`).
 - Component-based pricing (profiles, glass, hardware)
-- Additional costs: freight, packaging, labor, indirect costs
-- Currency conversion (COP ↔ USD) with live exchange rates
-- Pricing tiers for different user levels
+- Additional costs: freight, packaging, labor, indirect costs (porcentajes sobre costo base)
+- **TRM (tipo de cambio COP/USD)** — ver subsección siguiente.
+- Pricing tiers / **admin markup** por usuario donde aplique
+- **Congelación por proyecto**: `Project.frozenExchangeRate` puede fijar la TRM al agregar la primera ventana (ver log “Frozen Exchange Rate”).
+
+#### Exchange rate (TRM) — comportamiento actual (2026-03)
+- **Modelo**: `CostSettings.exchangeRate` (número, COP por 1 USD) + **`exchangeRateSource`**: `'manual'` | `'market'` (default `'manual'` si el documento es antiguo).
+- **Manual (`manual`)**: Cotizaciones usan **solo** el valor guardado en `exchangeRate`. Sirve para igualar Excel u otra política fija.
+- **Mercado (`market`)**: `getExchangeRate()` usa la API (`fetchLiveExchangeRate`, caché ~1 h). Si la API falla, cae al último `exchangeRate` guardado o caché. **La API ya no sobrescribe MongoDB sola**; solo actualiza caché en memoria.
+- **Admin UI**: `/admin/settings` — radios “Fija (manual)” / “Mercado (automática)”, campo numérico de TRM (en manual editable; en mercado refleja tasa efectiva/caché). Al guardar, en modo mercado se intenta refrescar `exchangeRate` desde la API.
+- **Archivos clave**: `routes/admin/settingsRoutes.js`, `utils/currencyConverter.js`, `models/CostSettings.js`, `views/admin/settings.ejs`.
 
 ---
 
@@ -277,6 +294,21 @@ The configure window page features a dynamic preview that:
   companyLogo: String,     // Path to uploaded company logo file
   createdAt: Date,         // Automatic timestamp
   updatedAt: Date          // Automatic timestamp
+}
+```
+
+### CostSettings
+```javascript
+{
+  seaFreight: Number,
+  landFreight: Number,
+  packaging: Number,           // % sobre costo base (pricing calculator)
+  labor: Number,
+  indirectCosts: Number,
+  administrativeExpenses: Number,
+  exchangeRate: Number,        // COP por 1 USD — valor manual o último snapshot / respaldo
+  exchangeRateSource: String,  // 'manual' | 'market' (default 'manual')
+  currency: String             // 'COP' | 'USD'
 }
 ```
 
@@ -813,8 +845,9 @@ When working on this project:
 1. **To understand the data flow**: Start with `models/Window.js` and `models/WindowItem.js`
 2. **To modify admin features**: Check `routes/admin/windowRoutes.js` and `views/admin/composeWindow.ejs`
 3. **To modify user features**: Check `routes/projectRoutes.js` and `views/projects/configureWindow.ejs`
-4. **For styling**: The project uses Tailwind CSS classes
-5. **For dynamic behavior**: JavaScript is embedded in EJS templates (bottom of files)
+4. **Pricing / TRM**: `utils/pricingCalculator.js`, `utils/currencyConverter.js`, `routes/admin/settingsRoutes.js`
+5. **For styling**: The project uses Tailwind CSS classes
+6. **For dynamic behavior**: JavaScript is embedded in EJS templates (bottom of files)
 
 ### Common Patterns
 - Unit conversion: `inchesToMm()` and `mmToInches()` helper functions
@@ -827,13 +860,16 @@ When working on this project:
 ## 🔗 Useful Commands
 
 ```bash
-# Start the application
+# Start the application (uses nodemon → auto-reload)
 npm start
 
-# Development with auto-reload
-npm run dev
+# Run pricing calculator tests
+npm test
 
-# The app runs on http://localhost:3000
+# DB-backed quote smoke test (needs MongoDB + .env)
+node scripts/testQuote.js
+
+# Default URL: http://localhost:3000
 ```
 
 ---
@@ -1764,4 +1800,47 @@ Moved selection type configuration from individual accessories to component grou
 - **Scaling**: Price discrepancies no longer scale with window size
 
 *Last Updated: January 2026 - Frontend-Backend Price Calculation Alignment Fix*
+
+---
+
+## March 2026 - TRM settings, Edit Window System UX, Project details markup UI
+
+### What we worked on
+
+1. **Tipo de cambio (TRM) alineado con Excel y control explícito**
+   - **Problema**: La TRM en BD se sobrescribía al abrir/guardar Cost Settings y con la API, impidiendo usar una tasa fija (ej. 4000) como en Excel.
+   - **Cambios**:
+     - `CostSettings.exchangeRateSource`: `'manual'` | `'market'`.
+     - `getExchangeRate()` en `currencyConverter.js` lee el modo: manual → BD; mercado → API (caché) con fallback al `exchangeRate` guardado.
+     - `fetchLiveExchangeRate()` ya **no** persiste la TRM del mercado en MongoDB (solo caché en memoria).
+     - `settingsRoutes.js` GET ya **no** pisa `exchangeRate` al cargar la página; POST guarda `exchangeRate` del formulario en manual y refresca desde API en mercado.
+   - **UI** (`views/admin/settings.ejs`): radios Manual / Mercado, texto de ayuda y referencia de mercado opcional.
+
+2. **Edit Window System (`views/admin/editWindowSystem.ejs`)**
+   - **Vidrio**: al cargar edición, se rellenan `#glass-width-equation` y `#glass-height-equation` desde `windowSystemData` (antes no se precargaban).
+   - **Perfiles**: ecuaciones de cantidad y largo en la tabla pasan a **inputs editables** (`updateProfileQuantityEquation`, `updateProfileLengthEquation`) con validación; antes eran solo lectura (parecía que solo se podía borrar la fila).
+   - **Salir sin guardar**: botón de texto **Cancel** (secundario) que confirma y redirige a `/admin/list-window-systems` sin enviar el formulario.
+
+3. **Project details — markup %**
+   - Inputs `.inline-edit-markup`: ancho intermedio **`w-20 min-w-[4.5rem]`** (entre el `w-14` original y un `w-28` que se consideró grande). Global markup **`w-24`**; columna tabla **Markup %** `w-24`.
+
+4. **Validación de precios vs Excel**
+   - Perfiles en USD/m × TRM deben cuadrar con hojas en COP/m si la **misma TRM** y **mismas cantidades** (ej. verificar fila 119 vertical qty en sistema `Fixed` si el BOM difiere).
+
+### Key files modified (this cycle)
+
+- `models/CostSettings.js` — `exchangeRateSource`
+- `utils/currencyConverter.js` — `getExchangeRate()`, API sin escribir BD
+- `routes/admin/settingsRoutes.js` — GET/POST TRM
+- `views/admin/settings.ejs` — switch manual/mercado, campo TRM
+- `views/admin/editWindowSystem.ejs` — vidrio init, edición inline de ecuaciones, Cancel
+- `views/projects/projectDetails.ejs` — anchos markup
+
+### Commands / checks for AI assistants
+
+- `npm test` — suite de `pricingCalculator` (ecuaciones, muntins, markup admin, COP sin tasa, etc.).
+- `node scripts/testQuote.js` — prueba contra MongoDB con el mismo calculator (requiere `.env` / `DATABASE_URL`).
+- TRM efectiva en runtime: leer `CostSettings` y llamar `getExchangeRate()` o revisar `/admin/settings`.
+
+*Last updated: March 2026 — TRM, edit window UX, project details markup widths*
 

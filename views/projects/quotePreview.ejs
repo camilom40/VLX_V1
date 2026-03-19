@@ -3,138 +3,150 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quote Preview - <%= project.projectName %></title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Quote · <%= project.projectName %></title>
+  <%- include('../partials/_head.ejs') %>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { 
-      font-family: 'DM Sans', sans-serif; 
-      background: #f8fafc;
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f1f5f9;
       margin: 0;
-      padding: 20px;
+      padding: 1.25rem;
     }
-    
     @media print {
-      body { padding: 0; }
+      body { background: #fff; padding: 0; }
       .no-print { display: none !important; }
-      .print-break { page-break-after: always; }
-      /* Ensure dimensions display correctly when printing */
-      .dimension-display {
-        display: inline-block;
-      }
     }
-    
-    .quote-container {
-      max-width: 1000px;
+    .quote-shell {
+      max-width: 1100px;
       margin: 0 auto;
-      background: white;
-      padding: 40px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      background: #fff;
+      border-radius: 1rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 12px 40px -12px rgba(15, 23, 42, 0.1);
+      padding: 2rem 2.25rem;
     }
-    
-    .quote-header {
-      border-bottom: 3px solid #3b82f6;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
+    @media print {
+      .quote-shell { box-shadow: none; border: none; border-radius: 0; padding: 0; max-width: none; }
     }
-    
+    .quote-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.75rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .logo-box {
+      width: 112px;
+      height: 112px;
+      border-radius: 0.75rem;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .logo-box img { width: 100%; height: 100%; object-fit: contain; }
+    .quote-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .quote-table {
       width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 30px;
-    }
-    
-    .quote-table thead {
-      background: linear-gradient(135deg, #1e40af, #3b82f6);
-      color: white;
-    }
-    
-    .quote-table th {
-      padding: 12px;
-      text-align: left;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    
-    .quote-table td {
-      padding: 12px;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 0.875rem;
-    }
-    
-    .quote-table tbody tr:hover {
-      background: #f9fafb;
-    }
-    
-    .quote-total {
-      background: #eff6ff;
-      padding: 20px;
-      border-radius: 8px;
-      margin-top: 30px;
-    }
-    
-    .logo-container {
-      width: 120px;
-      height: 120px;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      border: 1px solid #e5e7eb;
+      min-width: 920px;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
       overflow: hidden;
+    }
+    .quote-table thead {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .quote-table th {
+      padding: 0.75rem 0.65rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .quote-table th.text-right { text-align: right; }
+    .quote-table th.text-center { text-align: center; }
+    .quote-table th.col-center,
+    .quote-table td.col-center {
+      text-align: center;
+      vertical-align: middle;
+    }
+    .quote-table th.col-spec {
+      text-align: center;
+      vertical-align: middle;
+    }
+    .quote-table td.col-spec {
+      text-align: right;
+      vertical-align: middle;
+    }
+    /* Whole spec table centered in column; each row still label | value (left within block) */
+    .quote-table td.col-spec .spec-grid {
+      display: inline-grid;
+      vertical-align: middle;
+      text-align: left;
+      max-width: 340px;
+    }
+    .quote-table td {
+      padding: 0.75rem 0.65rem;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.8125rem;
+      color: #334155;
+    }
+    .quote-table td.col-center .window-preview-mini {
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .quote-table tbody tr:last-child td { border-bottom: none; }
+    .quote-table tbody tr:hover td { background: #fafbfc; }
+    .spec-grid { display: grid; gap: 0.35rem; min-width: 0; max-width: 340px; }
+    .spec-row {
+      display: grid;
+      grid-template-columns: 108px minmax(0, 1fr);
+      gap: 0.5rem;
+      align-items: start;
+      font-size: 0.75rem;
+    }
+    .spec-l {
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 0.65rem;
+      line-height: 1.3;
+      padding-top: 0.15rem;
+    }
+    .spec-v { color: #0f172a; line-height: 1.35; word-break: break-word; }
+    .spec-v-muted { color: #94a3b8; }
+    .money { font-variant-numeric: tabular-nums; }
+    .total-bar {
+      margin-top: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      border-radius: 0.75rem;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px solid #e2e8f0;
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      gap: 1rem;
     }
-    
-    .logo-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-    
-    .logo-placeholder {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #f9fafb;
-    }
-    
-    .logo-placeholder svg {
-      width: 60px;
-      height: 60px;
-      color: #9ca3af;
-    }
-    
-    /* Unit Toggle Styles */
-    .unit-toggle-btn {
-      color: #374151;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-    }
-    
-    .unit-toggle-btn.active {
-      background: linear-gradient(135deg, #4f46e5, #4338ca);
-      color: white;
-      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
-    }
-    
-    .unit-toggle-btn:hover:not(.active) {
-      background: #e5e7eb;
-    }
-    
-    /* Window Preview Mini Styles - Matching Original Compose Window */
     .window-preview-mini {
       position: relative;
       border-radius: 4px;
       overflow: hidden;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    
     .window-preview-mini .aluminum-frame {
       width: 100%;
       height: 100%;
@@ -143,14 +155,7 @@
       padding: 2px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    
-    .window-preview-mini .panel-container {
-      display: flex;
-      width: 100%;
-      height: 100%;
-      gap: 1px;
-    }
-    
+    .window-preview-mini .panel-container { display: flex; width: 100%; height: 100%; gap: 1px; }
     .window-preview-mini .panel-glass {
       flex: 1;
       background: linear-gradient(180deg, rgba(191,219,254,0.8) 0%, rgba(147,197,253,0.6) 50%, rgba(191,219,254,0.7) 100%);
@@ -161,7 +166,6 @@
       justify-content: center;
       overflow: hidden;
     }
-    
     .window-preview-mini .panel-glass::after {
       content: '';
       position: absolute;
@@ -169,11 +173,9 @@
       background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%);
       pointer-events: none;
     }
-    
     .window-preview-mini .panel-glass.operable-glass {
       background: linear-gradient(180deg, rgba(186,230,253,0.75) 0%, rgba(147,197,253,0.55) 50%, rgba(186,230,253,0.65) 100%);
     }
-    
     .window-preview-mini .panel-glass .panel-label {
       font-size: 8px;
       font-weight: bold;
@@ -181,305 +183,271 @@
       text-shadow: 0 1px 2px rgba(255,255,255,0.5);
       z-index: 1;
     }
-    
-    .window-preview-mini .panel-glass.operable-glass .panel-label {
-      color: rgba(22,101,52,0.7);
-    }
-    
+    .window-preview-mini .panel-glass.operable-glass .panel-label { color: rgba(22,101,52,0.7); }
     .window-preview-mini .mullion {
       background: linear-gradient(145deg, #606060, #505050);
       flex-shrink: 0;
     }
-    
-    .window-preview-mini .mullion.horizontal {
-      width: 2px;
-      height: 100%;
-    }
-    
-    .window-preview-mini .mullion.vertical {
-      width: 100%;
-      height: 2px;
-    }
+    .window-preview-mini .mullion.horizontal { width: 2px; height: 100%; }
+    .window-preview-mini .mullion.vertical { width: 100%; height: 2px; }
   </style>
 </head>
 <body>
-  <div class="quote-container">
-    <!-- Header -->
-    <div class="quote-header">
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-800 mb-2"><%= project.projectName %></h1>
-          <% if (project.clientName) { %>
-            <p class="text-lg text-gray-600">Client: <span class="font-semibold"><%= project.clientName %></span></p>
-          <% } %>
-          <div class="mt-2 space-y-1">
-            <p class="text-sm text-gray-500">
-              Quote Date: <span class="font-semibold text-gray-700"><%= new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
-            </p>
-            <% 
-              const quoteDate = new Date();
-              const validThroughDate = new Date(quoteDate);
-              validThroughDate.setMonth(validThroughDate.getMonth() + 1);
-            %>
-            <p class="text-sm text-gray-500">
-              Valid Through: <span class="font-semibold text-gray-700"><%= validThroughDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
-            </p>
-          </div>
+  <div class="quote-shell">
+    <div class="quote-top">
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600 mb-1">Quotation</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-2"><%= project.projectName %></h1>
+        <% if (project.quoteNumber) { %>
+          <p class="text-sm text-slate-600 mb-1">Quote <span class="font-mono font-semibold text-slate-900"><%= project.quoteNumber %></span></p>
+        <% } %>
+        <% if (project.clientName) { %>
+          <p class="text-slate-600">Client: <span class="font-semibold text-slate-800"><%= project.clientName %></span></p>
+        <% } %>
+        <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-500">
+          <% const quoteDate = new Date(); %>
+          <span>Date: <strong class="text-slate-700 font-medium"><%= quoteDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></strong></span>
+          <% const validThrough = new Date(quoteDate); validThrough.setMonth(validThrough.getMonth() + 1); %>
+          <span>Valid through: <strong class="text-slate-700 font-medium"><%= validThrough.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></strong></span>
         </div>
-        <div class="logo-container">
-          <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
-            <img src="<%= companyLogo %>" alt="Company Logo">
-          <% } else { %>
-            <div class="logo-placeholder">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          <% } %>
-        </div>
+      </div>
+      <div class="logo-box">
+        <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
+          <img src="<%= companyLogo %>" alt="Logo">
+        <% } else { %>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        <% } %>
       </div>
     </div>
 
-    <!-- Window Items Table -->
     <% if (windowItems.length > 0) { %>
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-800">Window Items</h2>
-      </div>
-      <table class="quote-table">
-        <thead>
-          <tr>
-            <th class="w-32">Preview</th>
-            <th>#</th>
-            <th>Item Name</th>
-            <th id="dimensionsHeader">Dimensions (in)</th>
-            <th>Description</th>
-            <th class="text-center">Quantity</th>
-            <th class="text-right">Unit Price</th>
-            <th class="text-right">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% windowItems.forEach((item, index) => { %>
+      <div class="quote-table-wrap">
+        <table class="quote-table">
+          <thead>
             <tr>
-              <td class="py-3">
-                <div class="window-preview-mini" 
+              <th class="col-center w-10">#</th>
+              <th class="col-center min-w-[120px]">Item</th>
+              <th class="col-center w-[100px]">Preview</th>
+              <th class="col-spec min-w-[280px]">Specifications</th>
+              <th class="col-center w-14">Qty</th>
+              <th class="col-center w-28">Unit Price</th>
+              <th class="col-center w-28">Total Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% windowItems.forEach((item, index) => {
+              let glassType = '—';
+              let glassDescription = '';
+              let flangeSize = 'N/A';
+              let missileType = '—';
+              let lowE = 'NO';
+              let glassColor = '—';
+              if (item.description) {
+                const gtm = item.description.match(/Glass Type:\s*([^-\n]+)/);
+                if (gtm) glassType = gtm[1].trim();
+                const gdm = item.description.match(/Glass Type:\s*[^-\n]+-\s*(.+?)(?:\n|$)/);
+                if (gdm) glassDescription = gdm[1].trim();
+                const fm = item.description.match(/Flanged:\s*([^\n]+)/);
+                if (fm) {
+                  flangeSize = fm[1].trim().replace(/\n/g, '').replace(/"+$/, '') + '"';
+                }
+                if (/Missile Impact:\s*Large Missile Impact \(LMI\)/i.test(item.description) || /Missile Impact:\s*LMI/i.test(item.description)) missileType = 'LMI';
+                else if (/Missile Impact:\s*Small Missile Impact \(SMI\)/i.test(item.description) || /Missile Impact:\s*SMI/i.test(item.description)) missileType = 'SMI';
+                const le = item.description.match(/Low\s*E:\s*([^\n]+)/i);
+                if (le) lowE = le[1].trim();
+                const gc = item.description.match(/Glass\s*Color:\s*([^\n]+)/i);
+                if (gc) glassColor = gc[1].trim();
+              }
+              const aluminumColor = item.color && item.color !== 'Various' ? item.color : '—';
+              let windowSystemType = item.style || (item.windowSystem && item.windowSystem.type) || '—';
+              const wsm = item.description && item.description.match(/Window System:\s*([^\n]+)/);
+              if (wsm) windowSystemType = wsm[1].trim();
+              const markupPct = typeof item._markupPct === 'number' ? item._markupPct : 20;
+              const qUnit = typeof item._quotedUnit === 'number' ? item._quotedUnit : (Number(item.unitPrice) || 0) * (1 + markupPct / 100);
+              const qLine = typeof item._quotedLineTotal === 'number' ? item._quotedLineTotal : (Number(item.totalPrice) || 0) * (1 + markupPct / 100);
+            %>
+            <tr>
+              <% const panelCfg = item.windowSystem && item.windowSystem.panelConfiguration ? item.windowSystem.panelConfiguration : {}; %>
+              <% /* encodeURIComponent avoids broken attributes (JSON ") and EJS escaping mangling HTML entities */ %>
+              <td class="col-center text-slate-500 money"><%= index + 1 %></td>
+              <td class="col-center">
+                <div class="font-semibold text-slate-900"><%= item.itemName %></div>
+              </td>
+              <td class="col-center">
+                <div class="window-preview-mini"
                      data-item-id="<%= item._id %>"
                      data-width="<%= item.width %>"
                      data-height="<%= item.height %>"
-                     data-panel-config="<%= item.windowSystem && item.windowSystem.panelConfiguration ? JSON.stringify(item.windowSystem.panelConfiguration) : '{}' %>"
-                     style="width: 100px; height: 75px; margin: 0 auto;">
+                     data-panel-config="<%= encodeURIComponent(JSON.stringify(panelCfg)) %>"
+                     style="width: 120px; height: 90px;">
                 </div>
               </td>
-              <td class="text-gray-600"><%= index + 1 %></td>
-              <td>
-                <div class="font-medium text-gray-900"><%= item.itemName %></div>
-              </td>
-              <td class="text-gray-700">
-                <div class="dimension-display" 
-                     data-width-inches="<%= item.width %>" 
-                     data-height-inches="<%= item.height %>">
-                  <%= parseFloat(item.width).toFixed(2) %> × <%= parseFloat(item.height).toFixed(2) %>
-                </div>
-              </td>
-              <td>
-                <% if (item.description) { %>
-                  <div class="text-xs text-gray-600 whitespace-pre-wrap" style="max-width: 250px;">
-                    <%= item.description %>
+              <td class="col-spec">
+                <div class="spec-grid">
+                  <div class="spec-row">
+                    <span class="spec-l">System</span>
+                    <span class="spec-v"><%= windowSystemType %></span>
                   </div>
-                <% } else { %>
-                  <span class="text-gray-400 text-xs">—</span>
-                <% } %>
+                  <div class="spec-row">
+                    <span class="spec-l" id="dimLabel-<%= index %>">Dimensions</span>
+                    <span class="spec-v">
+                      <span class="dimension-display money"
+                            data-width-inches="<%= item.width %>"
+                            data-height-inches="<%= item.height %>">
+                        <%= parseFloat(item.width).toFixed(2) %> × <%= parseFloat(item.height).toFixed(2) %>
+                      </span>
+                      <span class="dimension-unit-label text-slate-500 text-xs"> in</span>
+                    </span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Missile</span>
+                    <span class="spec-v <%= missileType === '—' ? 'spec-v-muted' : '' %>"><%= missileType %></span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Aluminum</span>
+                    <span class="spec-v <%= aluminumColor === '—' ? 'spec-v-muted' : '' %>"><%= aluminumColor %></span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Glass</span>
+                    <span class="spec-v <%= glassType === '—' ? 'spec-v-muted' : '' %>"><%= glassType %></span>
+                  </div>
+                  <% if (glassDescription) { %>
+                  <div class="spec-row">
+                    <span class="spec-l">Glass note</span>
+                    <span class="spec-v"><%= glassDescription %></span>
+                  </div>
+                  <% } %>
+                  <div class="spec-row">
+                    <span class="spec-l">Glass color</span>
+                    <span class="spec-v <%= glassColor === '—' ? 'spec-v-muted' : '' %>"><%= glassColor %></span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Low-E</span>
+                    <span class="spec-v"><%= lowE %></span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Flanged</span>
+                    <span class="spec-v <%= flangeSize === 'N/A' ? 'spec-v-muted' : '' %>"><%= flangeSize %></span>
+                  </div>
+                </div>
               </td>
-              <td class="text-center">
-                <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-semibold">
-                  <%= item.quantity %>
-                </span>
-              </td>
-              <td class="text-right text-gray-700">
-                $<%= parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
-              </td>
-              <td class="text-right font-semibold text-green-600">
-                $<%= parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
-              </td>
+              <td class="col-center money font-medium text-slate-800"><%= item.quantity %></td>
+              <td class="col-center money font-medium text-slate-800">$<%= qUnit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+              <td class="col-center money font-semibold text-slate-900">$<%= qLine.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
             </tr>
-          <% }) %>
-        </tbody>
-      </table>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
 
-      <!-- Total Section -->
-      <div class="quote-total">
-        <div class="flex justify-between items-center">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-800 mb-1">Total Project Value</h3>
-            <p class="text-sm text-gray-600">Including all window items</p>
-          </div>
-          <div class="text-right">
-            <div class="text-3xl font-bold text-green-600">
-              $<%= parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
-            </div>
-          </div>
+      <div class="total-bar">
+        <div>
+          <h3 class="text-base font-semibold text-slate-900">Total (USD)</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Per-line markup applied · USD</p>
+        </div>
+        <div class="text-2xl sm:text-3xl font-bold text-slate-900 money">
+          $<%= parseFloat(quotedProjectTotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
         </div>
       </div>
     <% } else { %>
-      <div class="text-center py-12">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-        </svg>
-        <p class="text-gray-600 font-medium">No window items in this quote</p>
+      <div class="text-center py-14 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+        <p class="text-slate-700 font-medium">No windows in this quote</p>
+        <p class="text-slate-500 text-sm mt-1">Add windows on the project page first</p>
       </div>
     <% } %>
 
-    <!-- Footer -->
-    <div class="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
-      <p>This is a preview of the quotation. For official quotes, please contact your representative.</p>
+    <div class="mt-8 pt-6 border-t border-slate-200 text-center text-xs text-slate-500">
+      <p>Preview only. Official terms may apply.</p>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="no-print mt-6 text-center flex justify-center gap-4">
-      <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-        </svg>
-        Print Quote
+    <div class="no-print mt-6 flex flex-wrap justify-center gap-3">
+      <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+        Print
       </button>
-      <a id="downloadPdfLink" href="/projects/<%= project._id %>/quote-pdf?unit=inches" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2 inline-flex">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Download as PDF
+      <a id="downloadPdfLink" href="/projects/<%= project._id %>/quote-pdf?unit=inches" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        Download PDF
       </a>
     </div>
   </div>
 
   <script>
-    // Render window previews
     function renderWindowPreviews() {
       document.querySelectorAll('.window-preview-mini').forEach(preview => {
-        const width = parseFloat(preview.dataset.width) || 0;
-        const height = parseFloat(preview.dataset.height) || 0;
-        const panelConfigStr = preview.dataset.panelConfig || '{}';
-        
+        const raw = preview.getAttribute('data-panel-config') || '%7B%7D';
+        let panelConfigStr;
+        try {
+          panelConfigStr = decodeURIComponent(raw);
+        } catch (e) {
+          panelConfigStr = '{}';
+        }
         try {
           const panelConfig = JSON.parse(panelConfigStr);
-          const container = preview;
-          container.innerHTML = '';
-          
-          // Create aluminum frame
+          preview.innerHTML = '';
           const frame = document.createElement('div');
           frame.className = 'aluminum-frame';
-          
           const panelContainer = document.createElement('div');
           panelContainer.className = 'panel-container';
-          
-          // Set direction based on orientation
-          if (panelConfig.orientation === 'vertical') {
-            panelContainer.style.flexDirection = 'column';
-          } else {
-            panelContainer.style.flexDirection = 'row';
-          }
-          
-          // Get panels and ratios
+          panelContainer.style.flexDirection = panelConfig.orientation === 'vertical' ? 'column' : 'row';
           const panels = panelConfig.panels || ['O'];
           const ratios = panelConfig.panelRatios || panels.map(() => 1);
-          const totalRatio = ratios.reduce((a, b) => a + b, 0);
-          
-          // Render panels
           panels.forEach((panel, index) => {
             const isOperable = panel === 'X';
             const ratio = ratios[index] || 1;
-            
             const panelDiv = document.createElement('div');
-            panelDiv.className = `panel-glass ${isOperable ? 'operable-glass' : ''}`;
-            panelDiv.style.flex = `${ratio} 0 0%`;
-            
+            panelDiv.className = 'panel-glass' + (isOperable ? ' operable-glass' : '');
+            panelDiv.style.flex = ratio + ' 0 0%';
             const label = document.createElement('div');
             label.className = 'panel-label';
             label.textContent = panel;
             panelDiv.appendChild(label);
-            
             panelContainer.appendChild(panelDiv);
-            
-            // Add mullion if not last panel
             if (index < panels.length - 1 && panelConfig.hasMullion) {
               const mullion = document.createElement('div');
-              mullion.className = `mullion ${panelConfig.orientation === 'vertical' ? 'vertical' : 'horizontal'}`;
+              mullion.className = 'mullion ' + (panelConfig.orientation === 'vertical' ? 'vertical' : 'horizontal');
               panelContainer.appendChild(mullion);
             }
           });
-          
           frame.appendChild(panelContainer);
-          container.appendChild(frame);
+          preview.appendChild(frame);
         } catch (e) {
-          // If no config, show simple placeholder
-          container.innerHTML = `
-            <div class="aluminum-frame" style="display: flex; align-items: center; justify-content: center;">
-              <div class="panel-glass" style="width: 100%; height: 100%;">
-                <div class="panel-label" style="font-size: 10px;">Window</div>
-              </div>
-            </div>
-          `;
+          preview.innerHTML = '<div class="aluminum-frame" style="display:flex;align-items:center;justify-content:center;height:100%;"><div class="panel-glass" style="width:100%;height:100%;"><div class="panel-label" style="font-size:10px;">Window</div></div></div>';
         }
       });
     }
-    
-    // Initialize previews on load
-    document.addEventListener('DOMContentLoaded', renderWindowPreviews);
-    
-    // Unit conversion functions (global scope)
-    function inchesToMm(inches) {
-      return inches * 25.4;
-    }
-    
-    function mmToInches(mm) {
-      return mm / 25.4;
-    }
-    
-    // Update dimensions based on global unit preference
+
+    function inchesToMm(inches) { return inches * 25.4; }
+
     function updateDimensionsFromGlobal() {
       const unit = window.globalPreferences?.unit || 'inches';
-      const dimensionsHeader = document.getElementById('dimensionsHeader');
-      
-      if (dimensionsHeader) {
-        dimensionsHeader.textContent = unit === 'inches' ? 'Dimensions (in)' : 'Dimensions (mm)';
-      }
-      
-      // Update all dimension displays
       document.querySelectorAll('.dimension-display').forEach(display => {
-        const widthInches = parseFloat(display.dataset.widthInches);
-        const heightInches = parseFloat(display.dataset.heightInches);
-        
-        if (isNaN(widthInches) || isNaN(heightInches)) return;
-        
+        const w = parseFloat(display.dataset.widthInches);
+        const h = parseFloat(display.dataset.heightInches);
+        if (isNaN(w) || isNaN(h)) return;
         if (unit === 'inches') {
-          display.textContent = `${widthInches.toFixed(2)} × ${heightInches.toFixed(2)}`;
+          display.textContent = w.toFixed(2) + ' × ' + h.toFixed(2);
         } else {
-          const widthMm = inchesToMm(widthInches);
-          const heightMm = inchesToMm(heightInches);
-          display.textContent = `${Math.round(widthMm)} × ${Math.round(heightMm)}`;
+          display.textContent = Math.round(inchesToMm(w)) + ' × ' + Math.round(inchesToMm(h));
         }
       });
-      
-      // Update PDF download link to match current unit
+      document.querySelectorAll('.dimension-unit-label').forEach(el => {
+        el.textContent = (window.globalPreferences?.unit || 'inches') === 'inches' ? ' in' : ' mm';
+      });
       const downloadLink = document.getElementById('downloadPdfLink');
       if (downloadLink) {
-        const projectId = downloadLink.href.match(/\/projects\/([^\/]+)\/quote-pdf/)?.[1];
-        if (projectId) {
-          downloadLink.href = `/projects/${projectId}/quote-pdf?unit=${unit}`;
-        }
+        const m = downloadLink.href.match(/\/projects\/([^/]+)\/quote-pdf/);
+        if (m) downloadLink.href = '/projects/' + m[1] + '/quote-pdf?unit=' + unit;
       }
     }
-    
-    // Initialize and listen to global preference changes
+
     document.addEventListener('DOMContentLoaded', () => {
-      // Initialize from global preferences
+      renderWindowPreviews();
       updateDimensionsFromGlobal();
-      
-      // Listen to global preference changes
-      window.addEventListener('unitChanged', (event) => {
-        updateDimensionsFromGlobal();
-      });
+      window.addEventListener('unitChanged', updateDimensionsFromGlobal);
     });
   </script>
 </body>
 </html>
-

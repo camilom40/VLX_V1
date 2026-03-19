@@ -10,38 +10,89 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/css/dashboard.css">
     <style>
-        body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: #f1f5f9;
+            background-image:
+                radial-gradient(ellipse 120% 80% at 0% -20%, rgba(59, 130, 246, 0.12), transparent 50%),
+                radial-gradient(ellipse 100% 60% at 100% 0%, rgba(99, 102, 241, 0.08), transparent 45%);
+            background-attachment: fixed;
+        }
+
+        .dashboard-hero {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.98) 100%);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 12px 40px -12px rgba(15, 23, 42, 0.12);
+        }
         
         .main-card {
             background: white;
-            border-radius: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 20px 25px -5px rgba(0,0,0,0.05);
-            border: 1px solid rgba(226,232,240,0.8);
+            border-radius: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 16px 40px -16px rgba(15, 23, 42, 0.1);
+            border: 1px solid rgba(226,232,240,0.85);
         }
         
         .stat-card {
-            background: white;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-            border-left: 4px solid;
-            transition: all 0.3s ease;
+            background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+            border-radius: 1rem;
+            padding: 1rem 1.125rem;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 12px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
-        
-        .stat-card-blue { border-left-color: #3b82f6; }
-        .stat-card-green { border-left-color: #10b981; }
-        .stat-card-purple { border-left-color: #8b5cf6; }
-        .stat-card-amber { border-left-color: #f59e0b; }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 1rem 1rem 0 0;
+            opacity: 0.9;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.12);
+            border-color: #e2e8f0;
+        }
+        .stat-card-blue::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .stat-card-green::before { background: linear-gradient(90deg, #10b981, #34d399); }
+        .stat-card-purple::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .stat-card-amber::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
         
         .stat-icon {
-            width: 2.25rem;
-            height: 2.25rem;
-            border-radius: 0.5rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.625rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.625rem;
+        }
+
+        .stat-value {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        .toolbar-surface {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 0.875rem;
+        }
+
+        .table-shell {
+            border-radius: 0.875rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .table-shell thead th {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            font-weight: 600;
+            color: #475569;
+            text-transform: none;
+            letter-spacing: 0;
         }
         
         .project-card {
@@ -171,63 +222,86 @@
 <body class="min-h-screen flex flex-col">
     <%- include('partials/_header.ejs') %>
 
-    <main role="main" class="container mx-auto px-4 py-8 flex-grow">
-        <!-- Dashboard Header -->
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+    <main role="main" class="max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 lg:py-10 flex-grow">
+        <!-- Hero -->
+        <div class="dashboard-hero px-5 py-6 sm:px-8 sm:py-7 mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div class="flex items-start gap-4 min-w-0">
+                    <div class="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600/90 mb-1">Dashboard</p>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Your projects</h1>
+                        <p class="text-slate-600 text-sm sm:text-base mt-1">Welcome back, <span class="font-semibold text-slate-800"><%= typeof user !== 'undefined' ? user.username : 'User' %></span>. Manage quotes and track portfolio value.</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800">My Projects Dashboard</h1>
-                    <p class="text-gray-500 text-sm">Welcome back, <%= typeof user !== 'undefined' ? user.username : 'User' %></p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <!-- Company Logo -->
-                <div class="company-logo-container relative">
-                    <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
-                        <img src="<%= companyLogo %>" alt="Company Logo" class="company-logo-image">
-                    <% } else { %>
-                        <div class="company-logo-placeholder">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                    <% } %>
-                    <label for="logoUpload" class="logo-upload-btn">
-                        <%= typeof companyLogo !== 'undefined' && companyLogo ? 'Change' : 'Upload' %>
-                    </label>
-                    <input type="file" id="logoUpload" class="hidden" accept="image/*">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                    <a href="/projects/new" class="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        New project
+                    </a>
+                    <div class="company-logo-container relative mx-auto sm:mx-0">
+                        <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
+                            <img src="<%= companyLogo %>" alt="Company Logo" class="company-logo-image rounded-2xl ring-2 ring-white shadow-md">
+                        <% } else { %>
+                            <div class="company-logo-placeholder rounded-2xl ring-2 ring-slate-200/80">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        <% } %>
+                        <label for="logoUpload" class="logo-upload-btn">
+                            <%= typeof companyLogo !== 'undefined' && companyLogo ? 'Change logo' : 'Upload logo' %>
+                        </label>
+                        <input type="file" id="logoUpload" class="hidden" accept="image/*">
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Enhanced Statistics Cards -->
+        <!-- Statistics -->
         <% if (typeof stats !== 'undefined' && stats) { %>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <!-- Total Projects -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
             <div class="stat-card stat-card-blue">
-                <div class="stat-icon bg-blue-100 text-blue-600">
+                <div class="stat-icon bg-blue-50 text-blue-600">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                 </div>
-                <div class="text-xl font-bold text-gray-800 mb-0.5"><%= stats.totalProjects || 0 %></div>
-                <div class="text-xs text-gray-600">Total Projects</div>
+                <div class="stat-value text-2xl font-bold text-slate-900"><%= stats.totalProjects || 0 %></div>
+                <div class="text-xs font-medium text-slate-500 mt-0.5">Projects</div>
             </div>
-            
-            <!-- Active Clients -->
-            <div class="stat-card stat-card-amber">
-                <div class="stat-icon bg-amber-100 text-amber-600">
+            <div class="stat-card stat-card-green">
+                <div class="stat-icon bg-emerald-50 text-emerald-600">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                     </svg>
                 </div>
-                <div class="text-xl font-bold text-gray-800 mb-0.5"><%= stats.uniqueClients || 0 %></div>
-                <div class="text-xs text-gray-600">Active Clients</div>
+                <div class="stat-value text-2xl font-bold text-slate-900"><%= stats.totalWindows || 0 %></div>
+                <div class="text-xs font-medium text-slate-500 mt-0.5">Windows quoted</div>
+            </div>
+            <div class="stat-card stat-card-purple">
+                <div class="stat-icon bg-violet-50 text-violet-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="stat-value text-lg sm:text-2xl font-bold text-slate-900 dashboard-portfolio-stat project-value-display truncate" data-value-usd="<%= stats.totalPortfolioValue || 0 %>">—</div>
+                <div class="text-xs font-medium text-slate-500 mt-0.5">Portfolio value</div>
+            </div>
+            <div class="stat-card stat-card-amber">
+                <div class="stat-icon bg-amber-50 text-amber-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <div class="stat-value text-2xl font-bold text-slate-900"><%= stats.uniqueClients || 0 %></div>
+                <div class="text-xs font-medium text-slate-500 mt-0.5">Clients</div>
             </div>
         </div>
         <% } %>
@@ -235,8 +309,11 @@
 
         <!-- Recent Activity -->
         <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
-        <div class="main-card p-6 mb-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+        <div class="main-card p-6 mb-8">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <h3 class="text-lg font-semibold text-slate-800">Recent activity</h3>
+                <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Last updates</span>
+            </div>
             <div id="recentActivity" class="max-h-64 overflow-y-auto">
                 <% 
                 const recentProjects = projects.slice(0, 5).map(p => {
@@ -270,12 +347,15 @@
         <% } %>
 
         <!-- Projects List -->
-        <div class="main-card p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">All Projects</h2>
+        <div class="main-card p-6 sm:p-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-900 tracking-tight">All projects</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Search, sort, and manage your quotes</p>
+                </div>
                 <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-600" id="projectCount"><%= typeof projects !== 'undefined' ? projects.length : 0 %> projects</span>
-                    <button onclick="exportProjects()" class="text-gray-400 hover:text-gray-600 transition-colors" title="Export to Excel">
+                    <span class="text-sm font-medium text-slate-600 tabular-nums" id="projectCount"><%= typeof projects !== 'undefined' ? projects.length : 0 %> projects</span>
+                    <button onclick="exportProjects()" type="button" class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:border-slate-300 transition-colors" title="Export to Excel">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
@@ -283,15 +363,8 @@
                 </div>
             </div>
             
-            <!-- New Project Button & Bulk Actions -->
-            <div class="mb-4 flex flex-wrap items-center gap-3">
-                <a href="/projects/new" class="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    New Project
-                </a>
-                
+            <!-- Bulk actions -->
+            <div class="mb-5 flex flex-wrap items-center gap-3">
                 <!-- Bulk Delete Button (hidden by default) -->
                 <div id="bulkActionsBar" class="hidden items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
                     <span id="selectedCount" class="text-sm text-red-700 font-medium">0 selected</span>
@@ -307,15 +380,15 @@
                 </div>
             </div>
             
-            <!-- Search & Sort Bar -->
-            <div class="flex flex-col sm:flex-row gap-3 mb-6 pb-4 border-b border-gray-200">
-                <div class="search-container flex-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <!-- Search & Sort -->
+            <div class="toolbar-surface p-3 sm:p-4 flex flex-col sm:flex-row gap-3 mb-6">
+                <div class="search-container flex-1 min-w-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <input type="text" id="projectSearch" placeholder="Search projects..." class="search-input">
+                    <input type="text" id="projectSearch" placeholder="Search by name, client, or quote #..." class="search-input w-full rounded-lg border border-slate-200 text-sm">
                 </div>
-                <select id="sortSelect" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="sortSelect" class="px-4 py-2.5 border border-slate-200 bg-white rounded-lg text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[12rem]">
                     <option value="updated">Sort by: Recently Updated</option>
                     <option value="created">Sort by: Date Created</option>
                     <option value="name">Sort by: Name</option>
@@ -363,9 +436,9 @@
                                 </div>
                                 
                                 <div class="grid grid-cols-2 gap-3 mb-3">
-                                    <div class="bg-blue-50 rounded-lg p-2">
-                                        <div class="text-xs text-gray-600 mb-1">Windows</div>
-                                        <div class="text-lg font-bold text-blue-600"><%= project.windowCount || 0 %></div>
+                                    <div class="bg-slate-50 rounded-lg p-2 border border-slate-100">
+                                        <div class="text-xs text-slate-500 mb-1">Windows</div>
+                                        <div class="text-lg font-semibold text-slate-800 tabular-nums"><%= project.windowCount || 0 %></div>
                                     </div>
                                     <div class="bg-purple-50 rounded-lg p-2">
                                         <div class="text-xs text-gray-600 mb-1">Value</div>
@@ -422,35 +495,35 @@
             </div>
 
             <!-- Desktop Table View -->
-            <div class="hidden lg:block overflow-x-auto">
+            <div class="hidden lg:block table-shell overflow-x-auto">
                 <% if (typeof projects !== 'undefined' && projects.length > 0) { %>
-                    <table class="min-w-full divide-y divide-gray-200" id="projectTable">
-                        <thead class="bg-gray-50">
+                    <table class="min-w-full divide-y divide-slate-200" id="projectTable">
+                        <thead>
                             <tr>
-                                <th class="px-4 py-3 text-left">
-                                    <input type="checkbox" id="selectAllProjects" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" title="Select All">
+                                <th class="px-4 py-3.5 text-left border-b border-slate-200">
+                                    <input type="checkbox" id="selectAllProjects" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" title="Select All">
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('name')">
-                                    Project Name <span class="sort-indicator" id="sort-name"></span>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-100/80 transition-colors border-b border-slate-200" onclick="sortTable('name')">
+                                    Project <span class="sort-indicator text-slate-400" id="sort-name"></span>
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('client')">
-                                    Client <span class="sort-indicator" id="sort-client"></span>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-100/80 transition-colors border-b border-slate-200" onclick="sortTable('client')">
+                                    Client <span class="sort-indicator text-slate-400" id="sort-client"></span>
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('windows')">
-                                    Windows <span class="sort-indicator" id="sort-windows"></span>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-100/80 transition-colors border-b border-slate-200" onclick="sortTable('windows')">
+                                    Windows <span class="sort-indicator text-slate-400" id="sort-windows"></span>
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('value')">
-                                    Value <span class="sort-indicator" id="sort-value"></span>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-100/80 transition-colors border-b border-slate-200" onclick="sortTable('value')">
+                                    Value <span class="sort-indicator text-slate-400" id="sort-value"></span>
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('updated')">
-                                    Last Updated <span class="sort-indicator" id="sort-updated"></span>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-100/80 transition-colors border-b border-slate-200" onclick="sortTable('updated')">
+                                    Updated <span class="sort-indicator text-slate-400" id="sort-updated"></span>
                                 </th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-600 border-b border-slate-200">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200" id="projectTableBody">
+                        <tbody class="bg-white divide-y divide-slate-100" id="projectTableBody">
                             <% projects.forEach(function(project) { %>
-                                <tr class="hover:bg-gray-50 project-row transition-colors" 
+                                <tr class="hover:bg-slate-50/80 project-row transition-colors" 
                                     data-project-id="<%= project._id %>"
                                     data-project-name="<%= project.projectName.toLowerCase() %>" 
                                     data-client-name="<%= (project.clientName || '').toLowerCase() %>"
@@ -480,9 +553,7 @@
                                         <div class="text-sm text-gray-900"><%= project.clientName || 'N/A' %></div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                                            <%= project.windowCount || 0 %>
-                                        </span>
+                                        <span class="text-sm text-slate-700 tabular-nums"><%= project.windowCount || 0 %></span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-semibold text-gray-900 project-value-display" data-value-usd="<%= project.projectValue || 0 %>">
@@ -610,8 +681,10 @@
         }
 
         function sortProjects() {
-            const cards = Array.from(document.querySelectorAll('#projectCardsContainer .project-card'));
-            const rows = Array.from(document.querySelectorAll('#projectTableBody .project-row'));
+            const containerCards = document.getElementById('projectCardsContainer');
+            const tableBody = document.getElementById('projectTableBody');
+            const cards = containerCards ? Array.from(containerCards.querySelectorAll('.project-card')) : [];
+            const rows = tableBody ? Array.from(tableBody.querySelectorAll('.project-row')) : [];
             
             const sortFunction = (a, b) => {
                 let aVal, bVal;
@@ -640,8 +713,12 @@
                 }
             };
             
-            cards.sort(sortFunction).forEach(card => document.getElementById('projectCardsContainer').appendChild(card));
-            rows.sort(sortFunction).forEach(row => document.getElementById('projectTableBody').appendChild(row));
+            if (containerCards && cards.length) {
+                cards.sort(sortFunction).forEach(card => containerCards.appendChild(card));
+            }
+            if (tableBody && rows.length) {
+                rows.sort(sortFunction).forEach(row => tableBody.appendChild(row));
+            }
             
             // Update sort indicators
             document.querySelectorAll('.sort-indicator').forEach(ind => ind.textContent = '');
@@ -675,7 +752,8 @@
                 }
             });
             
-            document.getElementById('projectCount').textContent = `${visibleCount} projects`;
+            const countEl = document.getElementById('projectCount');
+            if (countEl) countEl.textContent = `${visibleCount} projects`;
         }
 
         // Delete project with modal
@@ -813,7 +891,8 @@
                                 const projectId = el.getAttribute('data-project-id');
                                 if (projectId) uniqueProjectIds.add(projectId);
                             });
-                            document.getElementById('projectCount').textContent = `${uniqueProjectIds.size} projects`;
+                            const pc = document.getElementById('projectCount');
+                            if (pc) pc.textContent = `${uniqueProjectIds.size} projects`;
                             // Reload page after a short delay to update stats
                             setTimeout(() => window.location.reload(), 1500);
                         } else {

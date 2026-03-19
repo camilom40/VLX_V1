@@ -5,17 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= project.projectName %> - Project Details</title>
   <%- include('../partials/_head.ejs') %>
-  <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/dashboard.css">
   <style>
-    body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #f1f5f9;
+      background-image:
+        radial-gradient(ellipse 120% 80% at 0% -20%, rgba(59, 130, 246, 0.12), transparent 50%),
+        radial-gradient(ellipse 100% 60% at 100% 0%, rgba(99, 102, 241, 0.08), transparent 45%);
+      background-attachment: fixed;
+    }
+
+    .project-hero {
+      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.98) 100%);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 12px 40px -12px rgba(15, 23, 42, 0.12);
+    }
+
+    .hero-stat {
+      background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      padding: 1rem 1.25rem;
+      min-width: 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .hero-stat-primary { box-shadow: inset 0 3px 0 0 #6366f1; }
+    .hero-stat-rate { box-shadow: inset 0 3px 0 0 #f59e0b; }
     
     .main-card {
       background: white;
-      border-radius: 1rem;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.05);
-      border: 1px solid rgba(226,232,240,0.8);
+      border-radius: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 16px 40px -16px rgba(15, 23, 42, 0.1);
+      border: 1px solid rgba(226,232,240,0.85);
     }
     
     .stat-card {
@@ -28,28 +52,31 @@
     .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
     
     .btn-primary {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
       color: white; font-weight: 600; padding: 0.625rem 1.25rem;
-      border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(59,130,246,0.3);
-      transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+      border-radius: 0.75rem; box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+      border: none; cursor: pointer;
     }
-    .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); transform: translateY(-1px); }
+    .btn-primary:hover { box-shadow: 0 6px 20px rgba(59,130,246,0.45); transform: translateY(-1px); }
     
     .btn-secondary {
-      background: #f1f5f9; color: #475569; font-weight: 600;
-      padding: 0.625rem 1.25rem; border-radius: 0.625rem;
-      border: 2px solid #e2e8f0; transition: all 0.3s ease;
+      background: #fff; color: #475569; font-weight: 600;
+      padding: 0.625rem 1.25rem; border-radius: 0.75rem;
+      border: 1px solid #e2e8f0; transition: background 0.2s ease, border-color 0.2s ease;
       display: inline-flex; align-items: center; gap: 0.5rem;
+      text-decoration: none;
     }
-    .btn-secondary:hover { background: #e2e8f0; border-color: #cbd5e1; }
+    .btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
     
     .btn-danger {
       background: linear-gradient(135deg, #ef4444, #dc2626);
       color: white; font-weight: 600; padding: 0.625rem 1.25rem;
-      border-radius: 0.625rem; box-shadow: 0 4px 14px rgba(239,68,68,0.3);
-      transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+      border-radius: 0.75rem; box-shadow: 0 4px 14px rgba(239,68,68,0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease; display: inline-flex; align-items: center; gap: 0.5rem;
+      border: none; cursor: pointer;
     }
-    .btn-danger:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); transform: translateY(-1px); }
+    .btn-danger:hover { box-shadow: 0 6px 18px rgba(239,68,68,0.4); transform: translateY(-1px); }
     
     .form-input {
       width: 100%;
@@ -76,9 +103,12 @@
       border-collapse: separate;
       border-spacing: 0;
       background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      overflow: hidden;
     }
     .data-table thead {
-      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
       position: sticky;
       top: 0;
       z-index: 20;
@@ -87,11 +117,11 @@
       padding: 0.875rem 1rem;
       text-align: center;
       font-weight: 600;
-      color: white;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.05em;
-      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      color: #475569;
+      text-transform: none;
+      font-size: 0.8125rem;
+      letter-spacing: 0.01em;
+      border-bottom: 1px solid #e2e8f0;
     }
     .data-table th:first-child { border-top-left-radius: 0.5rem; }
     .data-table th:last-child { border-top-right-radius: 0.5rem; }
@@ -100,16 +130,16 @@
       background: white;
     }
     .data-table tbody tr:hover td { 
-      background: #f8fbff;
-      border-bottom-color: #dbeafe;
+      background: #f8fafc;
+      border-bottom-color: #e2e8f0;
     }
 
     .data-table tbody tr:hover td:first-child {
-      box-shadow: inset 1px 0 0 #dbeafe;
+      box-shadow: inset 1px 0 0 #e2e8f0;
     }
 
     .data-table tbody tr:hover td:last-child {
-      box-shadow: inset -1px 0 0 #dbeafe;
+      box-shadow: inset -1px 0 0 #e2e8f0;
     }
     .data-table td {
       padding: 0.875rem 1rem;
@@ -414,86 +444,72 @@
 <body class="min-h-screen flex flex-col" data-exchange-rate="<%= typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate : 4000 %>">
   <%- include('../partials/_header.ejs') %>
 
-  <main role="main" class="max-w-[1440px] mx-auto mt-6 px-4 flex-grow mb-16">
-    <!-- Back to Dashboard Button -->
-    <div class="mb-4">
-      <a href="/dashboard" class="btn-secondary inline-flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Dashboard
-      </a>
-    </div>
+  <main role="main" class="max-w-7xl xl:max-w-[1440px] mx-auto w-full px-4 sm:px-6 py-8 lg:py-10 flex-grow mb-16">
+    <a href="/dashboard" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 mb-6 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Dashboard
+    </a>
 
-    <!-- Project Header -->
-    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-        <div>
+    <div class="project-hero p-6 sm:p-8 mb-8">
+      <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-8">
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600/90 mb-1">Project</p>
           <div class="flex flex-wrap items-center gap-3 mb-2">
-            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800"><%= project.projectName %></h2>
+            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"><%= project.projectName %></h2>
             <% if (project.quoteNumber) { %>
-              <span class="px-4 py-1.5 text-sm font-bold bg-gray-800 text-white rounded border border-gray-700 whitespace-nowrap tracking-wide">
+              <span class="px-3 py-1 text-xs font-mono font-semibold bg-slate-800 text-white rounded-lg border border-slate-700 whitespace-nowrap">
                 <%= project.quoteNumber %>
               </span>
             <% } %>
           </div>
-          <p class="text-gray-600 mb-4">
-            <span class="font-medium">Client:</span> <%= project.clientName || 'Not specified' %>
+          <p class="text-slate-600 text-sm sm:text-base mb-4">
+            <span class="font-medium text-slate-700">Client</span> · <%= project.clientName || '—' %>
           </p>
-          <div class="flex flex-col xs:flex-row space-y-2 xs:space-y-0 xs:space-x-4 text-sm text-gray-500">
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+            <div class="flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span>Created: <%= project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A' %></span>
+              <span>Created <%= project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A' %></span>
             </div>
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>Updated: <%= project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : 'N/A' %></span>
+              <span>Updated <%= project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : 'N/A' %></span>
             </div>
             <% if (typeof frozenExchangeRate !== 'undefined' && frozenExchangeRate) { %>
-            <div class="flex items-center" title="Exchange rate frozen when first window was added. Rate: 1 USD = <%= frozenExchangeRate.toLocaleString() %> COP<% if (typeof exchangeRateFrozenAt !== 'undefined' && exchangeRateFrozenAt) { %> (Frozen: <%= new Date(exchangeRateFrozenAt).toLocaleDateString() %>)<% } %>">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="flex items-center gap-1.5" title="Exchange rate frozen when first window was added. Rate: 1 USD = <%= frozenExchangeRate.toLocaleString() %> COP<% if (typeof exchangeRateFrozenAt !== 'undefined' && exchangeRateFrozenAt) { %> (Frozen: <%= new Date(exchangeRateFrozenAt).toLocaleDateString() %>)<% } %>">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              <span class="text-amber-600">Rate: <%= frozenExchangeRate.toLocaleString() %> COP/USD</span>
+              <span class="text-amber-700/90"><%= frozenExchangeRate.toLocaleString() %> COP/USD <span class="text-slate-500 font-normal">(frozen)</span></span>
             </div>
             <% } %>
           </div>
         </div>
-        
-        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-4">
-          <div class="bg-blue-50 rounded-lg px-6 py-4 border border-blue-100" 
+
+        <div class="flex flex-col sm:flex-row xl:flex-col gap-4 shrink-0 w-full sm:w-auto xl:w-64">
+          <div class="hero-stat hero-stat-primary flex-1 sm:flex-initial"
                data-project-total="<%= projectTotal %>"
                data-cost-settings='<%= JSON.stringify(costSettings || {}) %>'>
-            <div class="text-blue-800 text-xl font-bold" id="displayTotal">$<%= projectTotal %></div>
-            <div class="text-blue-600 text-sm">Total Project Value</div>
+            <div class="text-xs font-medium text-slate-500 mb-1">Total</div>
+            <div class="text-xl sm:text-2xl font-bold text-slate-900 tabular-nums tracking-tight" id="displayTotal">$<%= projectTotal %></div>
           </div>
-          
-          <!-- Exchange Rate Card -->
-          <div class="bg-amber-50 rounded-lg px-6 py-4 border border-amber-200">
+
+          <div class="hero-stat hero-stat-rate flex-1 sm:flex-initial">
             <% if (typeof frozenExchangeRate !== 'undefined' && frozenExchangeRate) { %>
-              <div class="flex items-center gap-2 mb-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <div class="text-amber-800 text-xl font-bold"><%= frozenExchangeRate.toLocaleString() %> COP/USD</div>
-              </div>
-              <div class="text-amber-600 text-sm">Exchange Rate (Frozen)</div>
+              <div class="text-xs font-medium text-slate-500 mb-1">TRM (frozen)</div>
+              <div class="text-lg font-bold text-slate-900 tabular-nums"><%= frozenExchangeRate.toLocaleString() %> <span class="text-sm font-semibold text-slate-600">COP/USD</span></div>
               <% if (typeof exchangeRateFrozenAt !== 'undefined' && exchangeRateFrozenAt) { %>
-                <div class="text-amber-500 text-xs mt-1">Since <%= new Date(exchangeRateFrozenAt).toLocaleDateString() %></div>
+                <div class="text-xs text-slate-500 mt-1">Since <%= new Date(exchangeRateFrozenAt).toLocaleDateString() %></div>
               <% } %>
             <% } else { %>
-              <div class="flex items-center gap-2 mb-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <div class="text-amber-800 text-xl font-bold"><%= typeof currentExchangeRate !== 'undefined' && currentExchangeRate ? currentExchangeRate.toLocaleString() : (typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate.toLocaleString() : 'N/A') %> COP/USD</div>
-              </div>
-              <div class="text-amber-600 text-sm">Current Exchange Rate</div>
-              <div class="text-amber-500 text-xs mt-1">Will freeze when first window is added</div>
+              <div class="text-xs font-medium text-slate-500 mb-1">TRM (current)</div>
+              <div class="text-lg font-bold text-slate-900 tabular-nums"><%= typeof currentExchangeRate !== 'undefined' && currentExchangeRate ? currentExchangeRate.toLocaleString() : (typeof exchangeRate !== 'undefined' && exchangeRate ? exchangeRate.toLocaleString() : 'N/A') %> <span class="text-sm font-semibold text-slate-600">COP/USD</span></div>
+              <div class="text-xs text-slate-500 mt-1">Locks when first window is added</div>
             <% } %>
           </div>
         </div>
@@ -502,14 +518,18 @@
 
     <!-- Main Content: Window Items Table -->
     <div>
-        <div class="main-card p-6">
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-            <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              </svg>
-              Window Items (<span id="itemCount"><%= windowItems.length %></span>)
-            </h3>
+        <div class="main-card p-6 sm:p-8">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  </svg>
+                </span>
+                Windows <span class="text-slate-400 font-medium tabular-nums">(<span id="itemCount"><%= windowItems.length %></span>)</span>
+              </h3>
+            </div>
             <div class="flex items-center gap-3">
               <!-- Bulk Delete Button (hidden by default) -->
               <button id="bulkDeleteBtn" 
@@ -531,18 +551,18 @@
           </div>
           
           <% if (windowItems.length === 0) { %>
-            <div class="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            <div class="text-center py-14 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 mx-auto text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               </svg>
-              <p class="text-gray-600 font-medium mb-2">No window items added yet</p>
-              <p class="text-gray-400 text-sm">Use the form to add your first window item</p>
+              <p class="text-slate-700 font-medium mb-1">No windows yet</p>
+              <p class="text-slate-500 text-sm">Add a window to start quoting</p>
             </div>
           <% } else { %>
             <!-- Mobile view: Cards -->
             <div class="lg:hidden space-y-4">
               <!-- Mobile Select All -->
-              <div class="bg-gray-50 rounded-lg p-4 mb-4 flex items-center justify-between">
+              <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-4 flex items-center justify-between">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" 
                          id="selectAllCheckboxMobile" 
@@ -918,7 +938,7 @@
 
     <!-- Add Window Modal -->
     <div id="addWindowModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4" style="display: none;">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-200/80 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
@@ -984,11 +1004,12 @@
     
     <!-- Optional Project Costs (admin only) -->
     <% if (session && session.role === 'admin') { %>
-    <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
-      <h3 class="text-xl font-semibold text-gray-800 mb-4">Optional Project Costs</h3>
+    <div class="main-card p-6 sm:p-8 mt-8">
+      <h3 class="text-lg font-semibold text-slate-900 mb-1">Optional project costs</h3>
+      <p class="text-sm text-slate-500 mb-6">Admin — freight and overhead</p>
       
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-gray-50 rounded-lg p-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
           <label class="flex items-center space-x-3">
             <input type="checkbox" id="includeSeaFreight" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="calculateProjectTotal()">
             <div>
@@ -998,7 +1019,7 @@
           </label>
         </div>
         
-        <div class="bg-gray-50 rounded-lg p-4">
+        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
           <label class="flex items-center space-x-3">
             <input type="checkbox" id="includeLandFreight" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="calculateProjectTotal()">
             <div>
@@ -1008,7 +1029,7 @@
           </label>
         </div>
         
-        <div class="bg-gray-50 rounded-lg p-4">
+        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
           <label class="flex items-center space-x-3">
             <input type="checkbox" id="includeAdminExpenses" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="calculateProjectTotal()">
             <div>
@@ -1020,8 +1041,8 @@
       </div>
       
       <!-- Cost Breakdown -->
-      <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 class="text-lg font-medium text-gray-800 mb-3">Cost Breakdown</h4>
+      <div class="mt-6 rounded-xl border border-slate-200 bg-slate-50/80 p-5">
+        <h4 class="text-sm font-semibold text-slate-800 mb-4">Cost breakdown</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div class="space-y-2">
             <div class="flex justify-between">
@@ -1043,9 +1064,9 @@
               <span class="font-medium" id="adminExpensesAmount">$0.00</span>
             </div>
             <hr class="border-gray-300">
-            <div class="flex justify-between text-lg font-bold">
-              <span class="text-gray-800">Final Total:</span>
-              <span class="text-green-600" id="finalProjectTotal">$<%= projectTotal %></span>
+            <div class="flex justify-between text-base font-bold pt-1">
+              <span class="text-slate-800">Final total</span>
+              <span class="text-slate-900 tabular-nums" id="finalProjectTotal">$<%= projectTotal %></span>
             </div>
           </div>
         </div>
@@ -1054,7 +1075,7 @@
     <% } %>
     
     <!-- Action Buttons -->
-    <div class="mt-6 flex flex-col sm:flex-row flex-wrap justify-end gap-3">
+    <div class="mt-8 flex flex-col sm:flex-row flex-wrap justify-end gap-3 p-5 sm:p-6 rounded-xl border border-slate-200 bg-white shadow-sm">
       <a href="/dashboard" class="btn-secondary w-full sm:w-auto">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
