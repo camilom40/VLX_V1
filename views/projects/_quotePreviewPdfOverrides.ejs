@@ -1,0 +1,176 @@
+    /* Letter PDF: printable width — table fits; visuals match on-screen quote where noted */
+    @page {
+      size: letter;
+      margin: 0.35in;
+    }
+    body.quote-pdf {
+      padding: 0 !important;
+      background: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body.quote-pdf .quote-shell {
+      max-width: 100% !important;
+      padding: 0.5rem 0.4rem !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+    body.quote-pdf .quote-top {
+      gap: 0.65rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+    /* Same logo frame size as quote preview */
+    body.quote-pdf .logo-box {
+      width: 112px !important;
+      height: 112px !important;
+    }
+    body.quote-pdf .quote-table-wrap {
+      overflow: visible !important;
+      margin: 0 -0.15rem;
+    }
+    body.quote-pdf .quote-table {
+      min-width: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      table-layout: fixed;
+      border-radius: 0.35rem;
+      font-size: 7pt;
+    }
+    body.quote-pdf .quote-table th {
+      min-width: 0 !important;
+      padding: 0.3rem 0.2rem;
+      font-size: 6pt;
+      letter-spacing: 0.02em;
+      word-wrap: break-word;
+      hyphens: auto;
+    }
+    body.quote-pdf .quote-table td {
+      min-width: 0 !important;
+      padding: 0.3rem 0.2rem;
+      font-size: 7pt;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+      vertical-align: middle;
+    }
+    /* Specifications: centered in column (PDF), block centered in cell */
+    body.quote-pdf .quote-table th.col-spec,
+    body.quote-pdf .quote-table td.col-spec {
+      text-align: center !important;
+      vertical-align: middle;
+    }
+    body.quote-pdf .quote-table td.col-spec .spec-grid {
+      display: inline-grid !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      text-align: left;
+      vertical-align: middle;
+    }
+    /* Column share for 7 columns */
+    body.quote-pdf .quote-table th:nth-child(1),
+    body.quote-pdf .quote-table td:nth-child(1) { width: 3%; }
+    body.quote-pdf .quote-table th:nth-child(2),
+    body.quote-pdf .quote-table td:nth-child(2) { width: 11%; }
+    body.quote-pdf .quote-table th:nth-child(3),
+    body.quote-pdf .quote-table td:nth-child(3) { width: 9%; }
+    body.quote-pdf .quote-table th:nth-child(4),
+    body.quote-pdf .quote-table td:nth-child(4) { width: 40%; }
+    body.quote-pdf .quote-table th:nth-child(5),
+    body.quote-pdf .quote-table td:nth-child(5) { width: 6%; }
+    body.quote-pdf .quote-table th:nth-child(6),
+    body.quote-pdf .quote-table td:nth-child(6) { width: 14%; }
+    body.quote-pdf .quote-table th:nth-child(7),
+    body.quote-pdf .quote-table td:nth-child(7) { width: 17%; }
+    body.quote-pdf .spec-grid {
+      max-width: 100% !important;
+      gap: 0.15rem;
+    }
+    body.quote-pdf .spec-row {
+      grid-template-columns: 52px minmax(0, 1fr) !important;
+      gap: 0.2rem;
+      font-size: 6pt;
+    }
+    body.quote-pdf .spec-l {
+      font-size: 5.5pt !important;
+      padding-top: 0;
+    }
+    body.quote-pdf .spec-v {
+      line-height: 1.25;
+      font-size: 6pt;
+    }
+    /* Window mini preview: same gradients; PDF — one crisp edge, no stacked shadows (looks “off” when rasterized) */
+    body.quote-pdf .window-preview-mini {
+      width: 120px !important;
+      height: 90px !important;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: none !important;
+      border: 1px solid #94a3b8;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body.quote-pdf .window-preview-mini .aluminum-frame {
+      flex: 1 1 0 !important;
+      min-height: 0 !important;
+      min-width: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+      background: linear-gradient(145deg, #909090 0%, #707070 20%, #585858 50%, #707070 80%, #909090 100%) !important;
+      border-radius: 2px;
+      padding: 2px;
+      box-shadow: none !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body.quote-pdf .window-preview-mini .panel-container {
+      flex: 1 1 0 !important;
+      min-height: 0 !important;
+      min-width: 0 !important;
+    }
+    body.quote-pdf .window-preview-mini .panel-glass {
+      background: linear-gradient(180deg, rgba(191,219,254,0.8) 0%, rgba(147,197,253,0.6) 50%, rgba(191,219,254,0.7) 100%) !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body.quote-pdf .window-preview-mini .panel-glass.operable-glass {
+      background: linear-gradient(180deg, rgba(186,230,253,0.75) 0%, rgba(147,197,253,0.55) 50%, rgba(186,230,253,0.65) 100%) !important;
+    }
+    body.quote-pdf .window-preview-mini .panel-glass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.22) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    body.quote-pdf .window-preview-mini .mullion {
+      background: #4b5563 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body.quote-pdf .window-preview-mini .panel-glass .panel-label {
+      font-size: 8px !important;
+      font-weight: bold !important;
+      color: rgba(30,64,175,0.6) !important;
+      text-shadow: 0 1px 2px rgba(255,255,255,0.5) !important;
+      z-index: 1;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body.quote-pdf .window-preview-mini .panel-glass.operable-glass .panel-label {
+      color: rgba(22,101,52,0.7) !important;
+    }
+    body.quote-pdf .total-bar {
+      margin-top: 0.65rem;
+      padding: 0.55rem 0.65rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body.quote-pdf .total-bar .text-2xl {
+      font-size: 1.1rem !important;
+      line-height: 1.2;
+    }
+    body.quote-pdf h1 { font-size: 1.1rem !important; }

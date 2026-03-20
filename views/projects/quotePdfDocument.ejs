@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <base href="<%= assetBaseUrl %>/">
+  <title>Quote · <%= project.projectName %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { corePlugins: { preflight: false } };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+  <%- include('_quotePreviewStyles') %>
+  </style>
+  <style>
+  <%- include('_quotePreviewPdfOverrides') %>
+  </style>
+</head>
+<body class="quote-pdf" style="opacity:1;margin:0;padding:0;background:#fff;font-family:'DM Sans',sans-serif">
+  <div class="quote-shell">
+    <%- include('_quotePreviewMain') %>
+  </div>
+  <script>
+    function renderWindowPreviews() {
+      document.querySelectorAll('.window-preview-mini').forEach(preview => {
+        const raw = preview.getAttribute('data-panel-config') || '%7B%7D';
+        let panelConfigStr;
+        try {
+          panelConfigStr = decodeURIComponent(raw);
+        } catch (e) {
+          panelConfigStr = '{}';
+        }
+        try {
+          const panelConfig = JSON.parse(panelConfigStr);
+          preview.innerHTML = '';
+          const frame = document.createElement('div');
+          frame.className = 'aluminum-frame';
+          const panelContainer = document.createElement('div');
+          panelContainer.className = 'panel-container';
+          panelContainer.style.flexDirection = panelConfig.orientation === 'vertical' ? 'column' : 'row';
+          const panels = panelConfig.panels || ['O'];
+          const ratios = panelConfig.panelRatios || panels.map(() => 1);
+          panels.forEach((panel, index) => {
+            const isOperable = panel === 'X';
+            const ratio = ratios[index] || 1;
+            const panelDiv = document.createElement('div');
+            panelDiv.className = 'panel-glass' + (isOperable ? ' operable-glass' : '');
+            panelDiv.style.flex = ratio + ' 0 0%';
+            const label = document.createElement('div');
+            label.className = 'panel-label';
+            label.textContent = panel;
+            panelDiv.appendChild(label);
+            panelContainer.appendChild(panelDiv);
+            if (index < panels.length - 1 && panelConfig.hasMullion) {
+              const mullion = document.createElement('div');
+              mullion.className = 'mullion ' + (panelConfig.orientation === 'vertical' ? 'vertical' : 'horizontal');
+              panelContainer.appendChild(mullion);
+            }
+          });
+          frame.appendChild(panelContainer);
+          preview.appendChild(frame);
+        } catch (e) {
+          preview.innerHTML = '<div class="aluminum-frame" style="display:flex;align-items:center;justify-content:center;height:100%;"><div class="panel-glass" style="width:100%;height:100%;"><div class="panel-label" style="font-size:10px;">Window</div></div></div>';
+        }
+      });
+    }
+    renderWindowPreviews();
+  </script>
+</body>
+</html>

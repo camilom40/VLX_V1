@@ -11,6 +11,11 @@ const {
 } = require('../utils/pricingCalculator');
 const fs = require('fs');
 const path = require('path');
+const ejs = require('ejs');
+const util = require('util');
+const renderFile = util.promisify(ejs.renderFile);
+const { getQuotePreviewLocals } = require('../utils/quotePreviewData');
+const { getWindowItemDisplaySpecs } = require('../utils/windowItemDisplaySpecs');
 
 // Route to display all projects (list page)
 router.get('/projects', isAuthenticated, async (req, res) => {
@@ -270,75 +275,11 @@ router.get('/projects/:id/quote-preview', isAuthenticated, async (req, res) => {
   try {
     const projectId = req.params.id;
     const userId = req.session.userId;
-
-    // Find the project and ensure it belongs to the current user
-    const project = await Project.findOne({ _id: projectId, userId });
-
-    if (!project) {
+    const data = await getQuotePreviewLocals(projectId, userId);
+    if (!data) {
       return res.status(404).send('Project not found or access denied.');
     }
-
-    // Get all window items for this project
-    const windowItems = await WindowItem.find({ projectId }).sort({ createdAt: -1 });
-
-    // Get window system configurations for each window item
-    const WindowSystem = require('../models/Window');
-    const windowItemsWithConfig = await Promise.all(
-      windowItems.map(async (item) => {
-        // Try to find the window system by matching the style or extracting from description
-        let windowSystem = null;
-        if (item.style) {
-          windowSystem = await WindowSystem.findOne({ type: item.style })
-            .populate('profiles.profile')
-            .populate('accessories.accessory')
-            .lean();
-        }
-        
-        // If not found, try to extract from description
-        if (!windowSystem && item.description) {
-          const match = item.description.match(/Window System: ([^\n]+)/);
-          if (match) {
-            const systemType = match[1].trim();
-            windowSystem = await WindowSystem.findOne({ type: systemType })
-              .populate('profiles.profile')
-              .populate('accessories.accessory')
-              .lean();
-          }
-        }
-        
-        const plain = {
-          ...item.toObject(),
-          windowSystem: windowSystem
-        };
-        // Quoted prices match project details: base DB prices × (1 + markup%)
-        const m =
-          plain.markup !== undefined && plain.markup !== null && !Number.isNaN(Number(plain.markup))
-            ? Number(plain.markup)
-            : 20;
-        const baseU = Number(plain.unitPrice) || 0;
-        const baseT = Number(plain.totalPrice) || 0;
-        plain._markupPct = m;
-        plain._quotedUnit = baseU * (1 + m / 100);
-        plain._quotedLineTotal = baseT * (1 + m / 100);
-        return plain;
-      })
-    );
-
-    const projectTotal = windowItems.reduce((total, item) => total + item.totalPrice, 0);
-    const quotedProjectTotal = windowItemsWithConfig.reduce((sum, i) => sum + (i._quotedLineTotal || 0), 0);
-
-    // Get the company logo from user's database record
-    const user = await User.findById(userId).lean();
-    const companyLogo = user?.companyLogo || null;
-
-    res.render('projects/quotePreview', {
-      project,
-      windowItems: windowItemsWithConfig,
-      projectTotal: projectTotal.toFixed(2),
-      quotedProjectTotal: quotedProjectTotal.toFixed(2),
-      companyLogo: companyLogo
-    });
-
+    res.render('projects/quotePreview', data);
   } catch (error) {
     console.error("Error fetching quote preview:", error);
     res.status(500).send('Failed to load quote preview.');
@@ -413,8 +354,9 @@ router.get('/projects/:id', isAuthenticated, async (req, res) => {
     const CostSettings = require('../models/CostSettings');
     const costSettings = await CostSettings.findOne();
 
-    res.render('projects/projectDetails', { 
-      project, 
+    res.render('projects/projectDetails', {
+      session: req.session,
+      project,
       windowItems: windowItemsWithConfig,
       windowSystems,
       projectTotal: projectTotal.toFixed(2),
@@ -2137,291 +2079,142 @@ router.post('/projects/:id/duplicate', isAuthenticated, async (req, res) => {
   }
 });
 
-// Route to export quote as PDF (for quote preview)
+// Route to export quote as PDF — same HTML as quote preview (Puppeteer render)
 router.get('/projects/:id/quote-pdf', isAuthenticated, async (req, res) => {
+  let browser;
   try {
     const projectId = req.params.id;
     const userId = req.session.userId;
-    const PDFDocument = require('pdfkit');
-    const path = require('path');
-    const fs = require('fs');
-
-    // Get unit preference from query parameter (default to inches)
     const unit = req.query.unit || 'inches';
 
-    // Find the project and ensure it belongs to the current user
-    const project = await Project.findOne({ _id: projectId, userId });
-
-    if (!project) {
+    const data = await getQuotePreviewLocals(projectId, userId);
+    if (!data) {
       return res.status(404).send('Project not found or access denied.');
     }
 
-    // Get all window items for this project
-    const windowItems = await WindowItem.find({ projectId }).sort({ createdAt: -1 });
+    const proto = req.get('x-forwarded-proto') || req.protocol;
+    const host = req.get('host');
+    const assetBaseUrl = `${proto}://${host}`;
 
-    // Calculate total project value
-    const projectTotal = windowItems.reduce((total, item) => total + item.totalPrice, 0);
-    
-    // Helper function to format dimensions based on unit
-    const formatDimension = (widthInches, heightInches) => {
+    function pdfFormatDimension(widthInches, heightInches) {
+      const w = parseFloat(widthInches) || 0;
+      const h = parseFloat(heightInches) || 0;
       if (unit === 'mm') {
-        const widthMm = Math.round(widthInches * 25.4);
-        const heightMm = Math.round(heightInches * 25.4);
-        return `${widthMm} × ${heightMm}`;
-      } else {
-        return `${parseFloat(widthInches).toFixed(2)} × ${parseFloat(heightInches).toFixed(2)}`;
+        return `${Math.round(w * 25.4)} × ${Math.round(h * 25.4)}`;
       }
-    };
-    
-    const dimensionUnitLabel = unit === 'mm' ? 'mm' : 'in';
+      return `${w.toFixed(2)} × ${h.toFixed(2)}`;
+    }
+    const pdfDimensionSuffix = unit === 'mm' ? ' mm' : ' in';
 
-    // Get company logo path from user's database record
-    const user = await User.findById(userId).lean();
-    let logoPath = null;
-    if (user?.companyLogo) {
-      // Convert the URL path to a file system path
-      const logoUrl = user.companyLogo;
-      // Remove leading slash and join with public directory
-      const relativePath = logoUrl.startsWith('/') ? logoUrl.substring(1) : logoUrl;
-      const fullPath = path.join(__dirname, '../public', relativePath);
-      if (fs.existsSync(fullPath)) {
-        logoPath = fullPath;
+    let pdfCompanyLogo = data.companyLogo;
+    if (pdfCompanyLogo && typeof pdfCompanyLogo === 'string' && !pdfCompanyLogo.startsWith('data:')) {
+      const publicRoot = path.join(__dirname, '../public');
+      let relativePath = null;
+      const raw = pdfCompanyLogo.trim().replace(/\\/g, '/');
+      if (raw.startsWith('/')) {
+        relativePath = raw.replace(/^\//, '');
+      } else if (/^https?:\/\//i.test(raw)) {
+        try {
+          relativePath = new URL(raw).pathname.replace(/^\//, '');
+        } catch (e) {
+          /* keep URL */
+        }
+      } else if (!raw.includes('://')) {
+        relativePath = raw.replace(/^\//, '');
+      }
+      if (relativePath) {
+        const fullLogoPath = path.join(publicRoot, relativePath);
+        try {
+          if (fs.existsSync(fullLogoPath)) {
+            const ext = path.extname(fullLogoPath).toLowerCase();
+            const mimeMap = {
+              '.png': 'image/png',
+              '.jpg': 'image/jpeg',
+              '.jpeg': 'image/jpeg',
+              '.webp': 'image/webp',
+              '.gif': 'image/gif',
+              '.svg': 'image/svg+xml'
+            };
+            const mime = mimeMap[ext] || 'image/png';
+            pdfCompanyLogo = `data:${mime};base64,${fs.readFileSync(fullLogoPath).toString('base64')}`;
+          }
+        } catch (e) {
+          console.error('Quote PDF: could not embed company logo file', fullLogoPath, e.message);
+        }
       }
     }
 
-    // Calculate dates
-    const quoteDate = new Date();
-    const validThroughDate = new Date(quoteDate);
-    validThroughDate.setMonth(validThroughDate.getMonth() + 1);
+    const templatePath = path.join(__dirname, '../views/projects/quotePdfDocument.ejs');
+    const html = await renderFile(templatePath, {
+      ...data,
+      companyLogo: pdfCompanyLogo,
+      assetBaseUrl,
+      pdfMode: true,
+      pdfFormatDimension,
+      pdfDimensionSuffix,
+      getWindowItemDisplaySpecs
+    });
 
-    // Create PDF document
-    const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
-    
-    // Set response headers
+    const puppeteer = require('puppeteer');
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+    const page = await browser.newPage();
+    /* ~7.8in at 96 CSS px/in — matches printable width so wide table isn’t clipped */
+    await page.setViewport({ width: 748, height: 1100, deviceScaleFactor: 2 });
+    await page.setContent(html, { waitUntil: 'load', timeout: 90000 });
+    try {
+      await page.evaluateHandle(() => document.fonts.ready);
+    } catch (e) {
+      /* ignore */
+    }
+    await new Promise((r) => setTimeout(r, 400));
+    await page.evaluate(() =>
+      Promise.all(
+        Array.from(document.images).map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete) return resolve();
+              img.addEventListener('load', () => resolve(), { once: true });
+              img.addEventListener('error', () => resolve(), { once: true });
+              setTimeout(resolve, 5000);
+            })
+        )
+      )
+    );
+
+    const pdfBuffer = await page.pdf({
+      format: 'Letter',
+      printBackground: true,
+      margin: { top: '0.35in', right: '0.35in', bottom: '0.35in', left: '0.35in' },
+      scale: 0.92
+    });
+
+    const safeName = data.project.projectName.replace(/[^a-z0-9]/gi, '_');
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="Quote_${project.projectName.replace(/[^a-z0-9]/gi, '_')}.pdf"`);
-
-    // Pipe PDF to response
-    doc.pipe(res);
-
-    // Header Section
-    let yPos = 50;
-    
-    // Logo (if available)
-    if (logoPath && fs.existsSync(logoPath)) {
+    res.setHeader('Content-Disposition', `attachment; filename="Quote_${safeName}.pdf"`);
+    res.send(Buffer.from(pdfBuffer));
+  } catch (error) {
+    console.error('Error generating quote PDF:', error);
+    if (!res.headersSent) {
+      res.status(500).send('Failed to generate PDF. Ensure Puppeteer/Chromium is installed (npm install puppeteer).');
+    }
+  } finally {
+    if (browser) {
       try {
-        doc.image(logoPath, 50, yPos, { width: 100, height: 100, fit: [100, 100] });
+        await browser.close();
       } catch (e) {
-        console.error('Error loading logo:', e);
+        /* ignore */
       }
     }
-    
-    // Title and project info
-    doc.fontSize(24).font('Helvetica-Bold')
-       .text(project.projectName, 450, yPos, { align: 'right', width: 100 });
-    
-    yPos += 30;
-    
-    if (project.clientName) {
-      doc.fontSize(14).font('Helvetica')
-         .text(`Client: ${project.clientName}`, 450, yPos, { align: 'right', width: 100 });
-      yPos += 20;
-    }
-    
-    // Dates
-    doc.fontSize(10).font('Helvetica')
-       .text(`Quote Date: ${quoteDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 450, yPos, { align: 'right', width: 100 });
-    yPos += 15;
-    doc.text(`Valid Through: ${validThroughDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 450, yPos, { align: 'right', width: 100 });
-    
-    yPos = 180;
-
-    // Window Items Table
-    if (windowItems.length > 0) {
-      doc.fontSize(18).font('Helvetica-Bold')
-         .text('Window Items', 50, yPos);
-      yPos += 30;
-
-      // Table headers
-      const tableTop = yPos;
-      const colWidths = [30, 180, 100, 60, 100, 100];
-      const tableLeft = 50;
-      
-      doc.fontSize(10).font('Helvetica-Bold');
-      doc.text('#', tableLeft, tableTop);
-      doc.text('Item Name', tableLeft + colWidths[0], tableTop);
-      doc.text(`Dimensions (${dimensionUnitLabel})`, tableLeft + colWidths[0] + colWidths[1], tableTop);
-      doc.text('Qty', tableLeft + colWidths[0] + colWidths[1] + colWidths[2], tableTop, { width: colWidths[3], align: 'center' });
-      doc.text('Unit Price', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], tableTop, { width: colWidths[4], align: 'right' });
-      doc.text('Total', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], tableTop, { width: colWidths[5], align: 'right' });
-      
-      // Draw header line
-      doc.moveTo(tableLeft, tableTop + 15)
-         .lineTo(tableLeft + colWidths.reduce((a, b) => a + b, 0), tableTop + 15)
-         .stroke();
-      
-      yPos = tableTop + 25;
-      doc.font('Helvetica');
-      
-      windowItems.forEach((item, index) => {
-        // Check if we need a new page
-        if (yPos > 700) {
-          doc.addPage();
-          yPos = 50;
-        }
-        
-        doc.fontSize(9);
-        doc.text((index + 1).toString(), tableLeft, yPos);
-        
-        // Item name with description if available
-        let itemText = item.itemName;
-        if (item.description && item.description.length > 60) {
-          itemText += '\n' + item.description.substring(0, 60) + '...';
-        } else if (item.description) {
-          itemText += '\n' + item.description;
-        }
-        doc.text(itemText, tableLeft + colWidths[0], yPos, { width: colWidths[1] });
-        
-        doc.text(formatDimension(item.width, item.height), 
-                 tableLeft + colWidths[0] + colWidths[1], yPos, { width: colWidths[2] });
-        doc.text(item.quantity.toString(), 
-                 tableLeft + colWidths[0] + colWidths[1] + colWidths[2], yPos, { width: colWidths[3], align: 'center' });
-        doc.text(`$${parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
-                 tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], yPos, { width: colWidths[4], align: 'right' });
-        doc.text(`$${parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
-                 tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], yPos, { width: colWidths[5], align: 'right' });
-        
-        // Calculate height needed for this row
-        const lines = item.description ? Math.ceil(item.description.length / 60) + 1 : 1;
-        yPos += (lines * 12) + 5;
-      });
-
-      // Total row
-      yPos += 10;
-      doc.moveTo(tableLeft, yPos)
-         .lineTo(tableLeft + colWidths.reduce((a, b) => a + b, 0), yPos)
-         .stroke();
-      
-      yPos += 15;
-      doc.fontSize(14).font('Helvetica-Bold');
-      doc.text('Total Project Value:', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], yPos, { width: colWidths[4], align: 'right' });
-      doc.fontSize(16);
-      doc.text(`$${parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
-               tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4], yPos, { width: colWidths[5], align: 'right' });
-    } else {
-      doc.fontSize(12).text('No window items in this quote.', { align: 'center' });
-    }
-
-    // Footer
-    yPos = 750;
-    doc.fontSize(8).font('Helvetica')
-       .text('This is a preview of the quotation. For official quotes, please contact your representative.', 
-             50, yPos, { align: 'center', width: 500 });
-
-    // Finalize PDF
-    doc.end();
-
-  } catch (error) {
-    console.error("Error generating quote PDF:", error);
-    res.status(500).send('Failed to generate PDF.');
   }
 });
 
-// Route to export project as PDF
-router.get('/projects/:id/export-pdf', isAuthenticated, async (req, res) => {
-  try {
-    const projectId = req.params.id;
-    const userId = req.session.userId;
-    const PDFDocument = require('pdfkit');
-
-    // Find the project and ensure it belongs to the current user
-    const project = await Project.findOne({ _id: projectId, userId });
-
-    if (!project) {
-      return res.status(404).send('Project not found or access denied.');
-    }
-
-    // Get all window items for this project
-    const windowItems = await WindowItem.find({ projectId }).sort({ createdAt: -1 });
-
-    // Calculate total project value
-    const projectTotal = windowItems.reduce((total, item) => total + item.totalPrice, 0);
-
-    // Create PDF document
-    const doc = new PDFDocument({ margin: 50 });
-    
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="Project_${project.projectName.replace(/[^a-z0-9]/gi, '_')}.pdf"`);
-
-    // Pipe PDF to response
-    doc.pipe(res);
-
-    // Add content to PDF
-    doc.fontSize(20).text(project.projectName, { align: 'center' });
-    doc.moveDown();
-    
-    if (project.clientName) {
-      doc.fontSize(14).text(`Client: ${project.clientName}`, { align: 'center' });
-      doc.moveDown();
-    }
-    
-    doc.fontSize(12).text(`Created: ${project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}`);
-    doc.text(`Last Updated: ${project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : 'N/A'}`);
-    doc.moveDown();
-
-    // Add window items table
-    if (windowItems.length > 0) {
-      doc.fontSize(16).text('Window Items', { underline: true });
-      doc.moveDown(0.5);
-
-      // Table headers
-      const tableTop = doc.y;
-      let tableLeft = 50;
-      const colWidths = [150, 100, 50, 100, 100];
-      
-      doc.fontSize(10).font('Helvetica-Bold');
-      doc.text('Item Name', tableLeft, tableTop);
-      doc.text('Dimensions', tableLeft + colWidths[0], tableTop);
-      doc.text('Qty', tableLeft + colWidths[0] + colWidths[1], tableTop);
-      doc.text('Unit Price', tableLeft + colWidths[0] + colWidths[1] + colWidths[2], tableTop);
-      doc.text('Total', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], tableTop);
-      
-      let yPos = tableTop + 20;
-      doc.font('Helvetica');
-      
-      windowItems.forEach(item => {
-        if (yPos > 700) { // New page if needed
-          doc.addPage();
-          yPos = 50;
-        }
-        
-        doc.fontSize(9);
-        doc.text(item.itemName || 'N/A', tableLeft, yPos, { width: colWidths[0] });
-        doc.text(`${parseFloat(item.width).toFixed(2)} × ${parseFloat(item.height).toFixed(2)} in`, tableLeft + colWidths[0], yPos, { width: colWidths[1] });
-        doc.text(item.quantity.toString(), tableLeft + colWidths[0] + colWidths[1], yPos, { width: colWidths[2] });
-        doc.text(`$${parseFloat(item.unitPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, tableLeft + colWidths[0] + colWidths[1] + colWidths[2], yPos, { width: colWidths[3] });
-        doc.text(`$${parseFloat(item.totalPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], yPos, { width: colWidths[4] });
-        
-        yPos += 20;
-      });
-
-      // Total row
-      yPos += 10;
-      doc.font('Helvetica-Bold').fontSize(12);
-      doc.text('TOTAL:', tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] - 50, yPos);
-      doc.text(`$${parseFloat(projectTotal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], yPos);
-    } else {
-      doc.fontSize(12).text('No window items added to this project yet.', { align: 'center' });
-    }
-
-    // Finalize PDF
-    doc.end();
-
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    res.status(500).send('Failed to generate PDF.');
-  }
+// Same output as quote preview PDF (legacy path)
+router.get('/projects/:id/export-pdf', isAuthenticated, (req, res) => {
+  const u = req.query.unit || 'inches';
+  res.redirect(`/projects/${req.params.id}/quote-pdf?unit=${encodeURIComponent(u)}`);
 });
 
 module.exports = router;

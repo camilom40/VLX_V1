@@ -28,6 +28,7 @@
     "nodemailer": "^7.0.12",
     "nodemon": "^3.1.10",
     "pdfkit": "^0.15.0",
+    "puppeteer": "^24.40.0",
     "sharp": "^0.33.5"
   },
   "devDependencies": {

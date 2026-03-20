@@ -745,42 +745,17 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <% windowItems.forEach((item, index) => { 
-                    // Parse glass information from description
-                    let glassType = '—';
-                    let glassColor = '—';
-                    let lowE = 'NO';
-                    let missileType = '—';
-                    let glassDescription = '';
-                    let flangeSize = 'N/A';
-                    
-                    if (item.description) {
-                      // Extract Glass Type
-                      const glassTypeMatch = item.description.match(/Glass Type:\s*([^-]+)/);
-                      if (glassTypeMatch) {
-                        glassType = glassTypeMatch[1].trim();
-                      }
-                      
-                      // Extract full glass description (after the dash)
-                      const glassDescMatch = item.description.match(/Glass Type:\s*[^-]+-\s*(.+?)(?:\n|$)/);
-                      if (glassDescMatch) {
-                        glassDescription = glassDescMatch[1].trim();
-                      }
-                      
-                      // Extract Flange information
-                      const flangeMatch = item.description.match(/Flanged:\s*([^\n]+)/);
-                      if (flangeMatch) {
-                        flangeSize = flangeMatch[1].trim().replace(/\n/g, '').trim();
-                        // Remove any trailing quotes and add a single quote
-                        flangeSize = flangeSize.replace(/"+$/, '') + '"';
-                      }
-                    }
-                    
-                    // Get color from item.color (Aluminum Color)
-                    const aluminumColor = item.color && item.color !== 'Various' ? item.color : '—';
-                    
-                    // Get window system type
-                    const windowSystemType = item.style || item.windowSystem?.type || '—';
+                  <% windowItems.forEach((item, index) => {
+                    const specs = getWindowItemDisplaySpecs(item);
+                    const {
+                      glassType,
+                      glassColor,
+                      lowE,
+                      missileType,
+                      glassDescription,
+                      flangeSize,
+                      aluminumColor
+                    } = specs;
                   %>
                     <tr class="desktop-item-row" data-item-id="<%= item._id %>">
                       <td class="py-3 text-center">
@@ -1003,7 +978,7 @@
     </div>
     
     <!-- Optional Project Costs (admin only) -->
-    <% if (session && session.role === 'admin') { %>
+    <% if (locals.session && locals.session.role === 'admin') { %>
     <div class="main-card p-6 sm:p-8 mt-8">
       <h3 class="text-lg font-semibold text-slate-900 mb-1">Optional project costs</h3>
       <p class="text-sm text-slate-500 mb-6">Admin — freight and overhead</p>

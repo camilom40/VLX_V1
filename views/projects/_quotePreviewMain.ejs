@@ -1,0 +1,151 @@
+    <div class="quote-top">
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600 mb-1">Quotation</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-2"><%= project.projectName %></h1>
+        <% if (project.quoteNumber) { %>
+          <p class="text-sm text-slate-600 mb-1">Quote <span class="font-mono font-semibold text-slate-900"><%= project.quoteNumber %></span></p>
+        <% } %>
+        <% if (project.clientName) { %>
+          <p class="text-slate-600">Client: <span class="font-semibold text-slate-800"><%= project.clientName %></span></p>
+        <% } %>
+        <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-500">
+          <% const quoteDate = new Date(); %>
+          <span>Date: <strong class="text-slate-700 font-medium"><%= quoteDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></strong></span>
+          <% const validThrough = new Date(quoteDate); validThrough.setMonth(validThrough.getMonth() + 1); %>
+          <span>Valid through: <strong class="text-slate-700 font-medium"><%= validThrough.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></strong></span>
+        </div>
+      </div>
+      <div class="logo-box">
+        <% if (typeof companyLogo !== 'undefined' && companyLogo) { %>
+          <img src="<%= companyLogo %>" alt="Logo">
+        <% } else { %>
+          <div class="quote-brand-fallback flex flex-col items-center justify-center text-center px-2 py-1 leading-tight" aria-label="Vitralux Windows">
+            <span class="text-lg font-bold text-indigo-900 tracking-tight">Vitralux</span>
+            <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Windows</span>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (windowItems.length > 0) { %>
+      <div class="quote-table-wrap">
+        <table class="quote-table">
+          <thead>
+            <tr>
+              <th class="col-center w-10">#</th>
+              <th class="col-center min-w-[120px]">Item</th>
+              <th class="col-center w-[100px]">Preview</th>
+              <th class="col-spec min-w-[280px]">Specifications</th>
+              <th class="col-center w-14">Qty</th>
+              <th class="col-center w-28">Unit Price</th>
+              <th class="col-center w-28">Total Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% windowItems.forEach((item, index) => {
+              const specs = getWindowItemDisplaySpecs(item);
+              const {
+                glassType,
+                glassDescription,
+                flangeSize,
+                missileType,
+                lowE,
+                glassColor,
+                aluminumColor
+              } = specs;
+              const markupPct = typeof item._markupPct === 'number' ? item._markupPct : 20;
+              const qUnit = typeof item._quotedUnit === 'number' ? item._quotedUnit : (Number(item.unitPrice) || 0) * (1 + markupPct / 100);
+              const qLine = typeof item._quotedLineTotal === 'number' ? item._quotedLineTotal : (Number(item.totalPrice) || 0) * (1 + markupPct / 100);
+            %>
+            <tr>
+              <% const panelCfg = item.windowSystem && item.windowSystem.panelConfiguration ? item.windowSystem.panelConfiguration : {}; %>
+              <td class="col-center text-slate-500 money"><%= index + 1 %></td>
+              <td class="col-center">
+                <div class="font-semibold text-slate-900"><%= item.itemName %></div>
+              </td>
+              <td class="col-center">
+                <div class="window-preview-mini"
+                     data-item-id="<%= item._id %>"
+                     data-width="<%= item.width %>"
+                     data-height="<%= item.height %>"
+                     data-panel-config="<%= encodeURIComponent(JSON.stringify(panelCfg)) %>"
+                     style="width: 120px; height: 90px;">
+                </div>
+              </td>
+              <td class="col-spec">
+                <div class="spec-grid">
+                  <div class="spec-row">
+                    <span class="spec-l" id="dimLabel-<%= index %>">Dimensions</span>
+                    <span class="spec-v">
+                      <% if (typeof pdfMode !== 'undefined' && pdfMode) { %>
+                        <span class="money"><%= pdfFormatDimension(item.width, item.height) %></span>
+                        <span class="text-slate-500 text-xs"><%= pdfDimensionSuffix %></span>
+                      <% } else { %>
+                    <span class="dimension-display money flex flex-col gap-0.5"
+                          data-width-inches="<%= item.width %>"
+                          data-height-inches="<%= item.height %>">
+                      <span>Width: <%= parseFloat(item.width).toFixed(2) %> <span class="dimension-unit">in</span></span>
+                      <span>Height: <%= parseFloat(item.height).toFixed(2) %> <span class="dimension-unit">in</span></span>
+                    </span>
+                      <% } %>
+                    </span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Missile Impact</span>
+                    <span class="spec-v <%= missileType === '—' ? 'spec-v-muted' : '' %>"><%= missileType %></span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Aluminum Color</span>
+                    <span class="spec-v <%= aluminumColor === '—' ? 'spec-v-muted' : '' %>"><%= aluminumColor %></span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Glass Type</span>
+                    <span class="spec-v <%= glassType === '—' ? 'spec-v-muted' : '' %>"><%= glassType %></span>
+                  </div>
+                  <% if (glassDescription) { %>
+                  <div class="spec-row">
+                    <span class="spec-l">Glass Description</span>
+                    <span class="spec-v"><%= glassDescription %></span>
+                  </div>
+                  <% } %>
+                  <div class="spec-row">
+                    <span class="spec-l">Glass Color</span>
+                    <span class="spec-v <%= glassColor === '—' ? 'spec-v-muted' : '' %>"><%= glassColor %></span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Low E</span>
+                    <span class="spec-v"><%= lowE %></span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-l">Flanged</span>
+                    <span class="spec-v <%= flangeSize === 'N/A' ? 'spec-v-muted' : '' %>"><%= flangeSize %></span>
+                  </div>
+                </div>
+              </td>
+              <td class="col-center money font-medium text-slate-800"><%= item.quantity %></td>
+              <td class="col-center money font-medium text-slate-800">$<%= qUnit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+              <td class="col-center money font-semibold text-slate-900">$<%= qLine.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="total-bar">
+        <div class="min-w-0">
+          <h3 class="text-base font-semibold text-slate-900">Total (USD)</h3>
+        </div>
+        <div class="text-2xl sm:text-3xl font-bold text-slate-900 money text-right">
+          $<%= parseFloat(quotedProjectTotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="text-center py-14 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+        <p class="text-slate-700 font-medium">No windows in this quote</p>
+        <p class="text-slate-500 text-sm mt-1">Add windows on the project page first</p>
+      </div>
+    <% } %>
+
+    <div class="mt-8 pt-6 border-t border-slate-200 text-center text-xs text-slate-500">
+      <p>Preview only. Official terms may apply.</p>
+    </div>

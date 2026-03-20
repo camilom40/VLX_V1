@@ -44,6 +44,9 @@ if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const { getWindowItemDisplaySpecs } = require('./utils/windowItemDisplaySpecs');
+app.locals.getWindowItemDisplaySpecs = getWindowItemDisplaySpecs;
+
 // Middleware to parse request bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
